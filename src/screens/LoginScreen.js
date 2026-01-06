@@ -83,7 +83,7 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="your@email.com"
+              placeholder="Email"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -125,7 +125,7 @@ const LoginScreen = ({ navigation }) => {
             </View>
 
             <Button
-              title="Sign in with Apple 🍎"
+              title="Sign in with Apple"
               variant="secondary"
               onPress={handleAppleSignIn}
               loading={loading}
