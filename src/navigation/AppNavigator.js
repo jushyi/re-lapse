@@ -1,10 +1,17 @@
 import React from 'react';
+import { Text, ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../context/AuthContext';
 
-// Import placeholder screens (we'll create these next)
+// Import auth screens
 import LoginScreen from '../screens/LoginScreen';
+import SignUpScreen from '../screens/SignUpScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+
+// Import main app screens
 import FeedScreen from '../screens/FeedScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -67,17 +74,27 @@ const MainTabNavigator = () => {
 /**
  * Simple tab icon component (emoji-based for now)
  */
-const TabIcon = ({ icon, color }) => {
-  return <span style={{ fontSize: 24 }}>{icon}</span>;
+const TabIcon = ({ icon }) => {
+  return <Text style={{ fontSize: 24 }}>{icon}</Text>;
 };
 
 /**
  * Root Stack Navigator (handles auth flow)
  */
 const AppNavigator = () => {
-  // TODO: In Week 3-4, we'll add auth state management here
-  // For now, we'll always show the Login screen as entry point
-  const isLoggedIn = false; // This will be managed by AuthContext later
+  const { user, userProfile, initializing } = useAuth();
+
+  // Show loading screen while checking auth state
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator size="large" color="#000000" />
+      </View>
+    );
+  }
+
+  const isAuthenticated = !!user;
+  const needsProfileSetup = isAuthenticated && userProfile && (!userProfile.displayName || userProfile.displayName === userProfile.username);
 
   return (
     <NavigationContainer>
@@ -86,11 +103,18 @@ const AppNavigator = () => {
           headerShown: false,
         }}
       >
-        {!isLoggedIn ? (
-          // Auth Stack
-          <Stack.Screen name="Login" component={LoginScreen} />
+        {!isAuthenticated ? (
+          // Auth Stack - User not logged in
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </>
+        ) : needsProfileSetup ? (
+          // Profile Setup - User logged in but needs to complete profile
+          <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
         ) : (
-          // Main App Stack
+          // Main App - User fully authenticated and profile complete
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         )}
       </Stack.Navigator>
