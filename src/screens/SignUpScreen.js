@@ -107,7 +107,7 @@ const SignUpScreen = ({ navigation }) => {
             <View style={styles.form}>
               <Input
                 label="Email"
-                placeholder="your@email.com"
+                placeholder="Email"
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -120,7 +120,7 @@ const SignUpScreen = ({ navigation }) => {
 
               <Input
                 label="Username"
-                placeholder="username"
+                placeholder="Username"
                 value={username}
                 onChangeText={(text) => {
                   setUsername(text);
@@ -132,7 +132,7 @@ const SignUpScreen = ({ navigation }) => {
 
               <Input
                 label="Password"
-                placeholder="At least 8 characters"
+                placeholder="Password"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -171,7 +171,7 @@ const SignUpScreen = ({ navigation }) => {
               </View>
 
               <Button
-                title="Sign in with Apple 🍎"
+                title="Sign in with Apple"
                 variant="secondary"
                 onPress={handleAppleSignIn}
                 loading={loading}
