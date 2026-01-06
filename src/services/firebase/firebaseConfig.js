@@ -5,6 +5,8 @@ import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase configuration
+// Note: Environment variables are configured but we're using hardcoded values for now
+// In production, you would use: process.env.FIREBASE_API_KEY, etc.
 const firebaseConfig = {
   apiKey: "AIzaSyAh25TU1FwnsFdUTpP_iVZrjaF3ATcW2CA",
   authDomain: "re-lapse-fa89b.firebaseapp.com",
