@@ -3,11 +3,8 @@ import {
   doc,
   query,
   where,
-  orderBy,
   getDocs,
   getDoc,
-  limit,
-  startAfter,
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
@@ -23,31 +20,18 @@ import { db } from './firebaseConfig';
  */
 export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
   try {
-    // Query for triaged photos with photoState = 'journaled'
-    // Note: We don't use composite index, so we filter in client
+    // Simplified query: Only filter by photoState = 'journal'
+    // Status will be implicitly 'triaged' since only triaged photos have photoState
+    // We'll sort in JavaScript to avoid composite index requirement
     let feedQuery = query(
       collection(db, 'photos'),
-      where('status', '==', 'triaged'),
-      where('photoState', '==', 'journaled'),
-      orderBy('capturedAt', 'desc'),
-      limit(limitCount)
+      where('photoState', '==', 'journal')
     );
-
-    // If we have a lastDoc, start after it for pagination
-    if (lastDoc) {
-      feedQuery = query(
-        collection(db, 'photos'),
-        where('status', '==', 'triaged'),
-        where('photoState', '==', 'journaled'),
-        orderBy('capturedAt', 'desc'),
-        startAfter(lastDoc),
-        limit(limitCount)
-      );
-    }
 
     const snapshot = await getDocs(feedQuery);
 
-    const photos = await Promise.all(
+    // Fetch all photos with user data
+    const allPhotos = await Promise.all(
       snapshot.docs.map(async (photoDoc) => {
         const photoData = photoDoc.data();
 
@@ -68,14 +52,28 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
       })
     );
 
-    // Get the last document for pagination
-    const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+    // Sort by capturedAt in descending order (newest first) - client-side
+    const sortedPhotos = allPhotos.sort((a, b) => {
+      const aTime = a.capturedAt?.seconds || 0;
+      const bTime = b.capturedAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    // Handle pagination manually
+    const startIndex = lastDoc ? lastDoc.paginationIndex + 1 : 0;
+    const endIndex = startIndex + limitCount;
+    const paginatedPhotos = sortedPhotos.slice(startIndex, endIndex);
+
+    // Create pagination marker
+    const lastVisible = paginatedPhotos.length > 0
+      ? { paginationIndex: endIndex - 1 }
+      : null;
 
     return {
       success: true,
-      photos,
+      photos: paginatedPhotos,
       lastDoc: lastVisible,
-      hasMore: snapshot.docs.length === limitCount,
+      hasMore: endIndex < sortedPhotos.length,
     };
   } catch (error) {
     console.error('Error fetching feed photos:', error);
@@ -93,19 +91,17 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
  */
 export const subscribeFeedPhotos = (callback, limitCount = 20) => {
   try {
+    // Simplified query to avoid composite index
     const feedQuery = query(
       collection(db, 'photos'),
-      where('status', '==', 'triaged'),
-      where('photoState', '==', 'journaled'),
-      orderBy('capturedAt', 'desc'),
-      limit(limitCount)
+      where('photoState', '==', 'journal')
     );
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(
       feedQuery,
       async (snapshot) => {
-        const photos = await Promise.all(
+        const allPhotos = await Promise.all(
           snapshot.docs.map(async (photoDoc) => {
             const photoData = photoDoc.data();
 
@@ -126,7 +122,17 @@ export const subscribeFeedPhotos = (callback, limitCount = 20) => {
           })
         );
 
-        callback({ success: true, photos });
+        // Sort by capturedAt in descending order (newest first)
+        const sortedPhotos = allPhotos.sort((a, b) => {
+          const aTime = a.capturedAt?.seconds || 0;
+          const bTime = b.capturedAt?.seconds || 0;
+          return bTime - aTime;
+        });
+
+        // Limit to requested count
+        const limitedPhotos = sortedPhotos.slice(0, limitCount);
+
+        callback({ success: true, photos: limitedPhotos });
       },
       (error) => {
         console.error('Error in feed subscription:', error);

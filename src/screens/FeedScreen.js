@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
+import { debugAllPhotos, debugJournaledPhotos } from '../utils/debugFeed';
 
 const FeedScreen = () => {
   const {
@@ -32,6 +33,17 @@ const FeedScreen = () => {
   const handlePhotoPress = (photo) => {
     console.log('Photo pressed:', photo.id);
     // TODO: Navigate to PhotoDetailModal
+  };
+
+  /**
+   * Debug button handler
+   */
+  const handleDebug = async () => {
+    console.log('=== FEED DEBUG START ===');
+    console.log('Current photos in feed state:', photos.length);
+    await debugAllPhotos();
+    await debugJournaledPhotos();
+    console.log('=== FEED DEBUG END ===');
   };
 
   /**
@@ -96,7 +108,9 @@ const FeedScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lapse</Text>
-        {/* TODO: Add notification badge in Week 11 */}
+        <TouchableOpacity onPress={handleDebug} style={styles.debugButton}>
+          <Text style={styles.debugButtonText}>🐛 Debug</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -147,6 +161,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
+  },
+  debugButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FF3B30',
+    borderRadius: 6,
+  },
+  debugButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   feedList: {
     paddingHorizontal: 16,
