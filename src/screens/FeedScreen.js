@@ -1,40 +1,129 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card } from '../components';
+import useFeedPhotos from '../hooks/useFeedPhotos';
+import FeedPhotoCard from '../components/FeedPhotoCard';
+import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
 
 const FeedScreen = () => {
+  const {
+    photos,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    hasMore,
+    loadMorePhotos,
+    refreshFeed,
+  } = useFeedPhotos(true); // Enable real-time updates
+
+  /**
+   * Handle photo card press
+   * TODO: Open Photo Detail Modal (Week 8)
+   */
+  const handlePhotoPress = (photo) => {
+    console.log('Photo pressed:', photo.id);
+    // TODO: Navigate to PhotoDetailModal
+  };
+
+  /**
+   * Render single feed item
+   */
+  const renderFeedItem = ({ item }) => (
+    <FeedPhotoCard photo={item} onPress={() => handlePhotoPress(item)} />
+  );
+
+  /**
+   * Render footer (loading more indicator)
+   */
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#000000" />
+        <Text style={styles.footerText}>Loading more...</Text>
+      </View>
+    );
+  };
+
+  /**
+   * Render empty state
+   */
+  const renderEmptyState = () => {
+    if (loading) return null;
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyIcon}>📸</Text>
+        <Text style={styles.emptyTitle}>No photos yet</Text>
+        <Text style={styles.emptyText}>
+          Start taking photos or add friends to see their photos here
+        </Text>
+        <TouchableOpacity style={styles.emptyButton}>
+          <Text style={styles.emptyButtonText}>Take a Photo</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  /**
+   * Render error state
+   */
+  const renderErrorState = () => {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorTitle}>Something went wrong</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refreshFeed}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lapse</Text>
-        <Text style={styles.notificationBadge}>🔔 (3)</Text>
+        {/* TODO: Add notification badge in Week 11 */}
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Friends Section Placeholder */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Friends</Text>
-          <Text style={styles.placeholder}>
-            Horizontal scrolling friend thumbnails will appear here
-          </Text>
-        </View>
-
-        {/* Highlights Section Placeholder */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Highlights</Text>
-          <Card>
-            <Text style={styles.cardText}>Photo preview (1:1)</Text>
-            <Text style={styles.cardSubtext}>@username • 2h ago</Text>
-            <Text style={styles.cardSubtext}>😂 24  ❤️ 18  🔥 15</Text>
-          </Card>
-          <Card>
-            <Text style={styles.cardText}>Photo preview (1:1)</Text>
-            <Text style={styles.cardSubtext}>@friend2 • 5h ago</Text>
-            <Text style={styles.cardSubtext}>❤️ 12  ✨ 8  💯 6</Text>
-          </Card>
-        </View>
-      </ScrollView>
+      {/* Content */}
+      {loading ? (
+        <FeedLoadingSkeleton count={3} />
+      ) : error ? (
+        renderErrorState()
+      ) : (
+        <FlatList
+          data={photos}
+          renderItem={renderFeedItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.feedList}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshFeed}
+              tintColor="#000000"
+            />
+          }
+          onEndReached={loadMorePhotos}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmptyState}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -57,40 +146,93 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#000000',
   },
-  notificationBadge: {
-    fontSize: 16,
-  },
-  content: {
-    flex: 1,
+  feedList: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 24,
   },
-  section: {
-    marginBottom: 24,
+  footerLoader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  placeholder: {
+  footerText: {
+    marginLeft: 12,
     fontSize: 14,
     color: '#666666',
-    fontStyle: 'italic',
-    padding: 16,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
   },
-  cardText: {
-    fontSize: 16,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 100,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: '600',
+    color: '#000000',
     marginBottom: 8,
   },
-  cardSubtext: {
+  emptyText: {
     fontSize: 14,
     color: '#666666',
-    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emptyButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 100,
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 
