@@ -120,7 +120,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="your@email.com"
+              placeholder="Email"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
