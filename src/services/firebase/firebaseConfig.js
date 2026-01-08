@@ -3,17 +3,24 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID,
+} from '@env';
 
-// Firebase configuration
-// Note: Environment variables are configured but we're using hardcoded values for now
-// In production, you would use: process.env.FIREBASE_API_KEY, etc.
+// Firebase configuration loaded from environment variables (.env file)
+// SECURITY: Never commit .env file to Git - credentials are loaded at runtime
 const firebaseConfig = {
-  apiKey: "AIzaSyAh25TU1FwnsFdUTpP_iVZrjaF3ATcW2CA",
-  authDomain: "re-lapse-fa89b.firebaseapp.com",
-  projectId: "re-lapse-fa89b",
-  storageBucket: "re-lapse-fa89b.firebasestorage.app",
-  messagingSenderId: "958995611148",
-  appId: "1:958995611148:web:619261e38f30793a6e3829"
+  apiKey: FIREBASE_API_KEY,
+  authDomain: FIREBASE_AUTH_DOMAIN,
+  projectId: FIREBASE_PROJECT_ID,
+  storageBucket: FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+  appId: FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
