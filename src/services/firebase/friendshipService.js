@@ -1,0 +1,495 @@
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+  query,
+  where,
+  or,
+  onSnapshot,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { db } from './firebaseConfig';
+
+/**
+ * friendshipService.js
+ *
+ * Handles all friendship-related operations:
+ * - Send, accept, decline friend requests
+ * - Get friendships, pending requests
+ * - Check friendship status
+ * - Real-time friendship listeners
+ *
+ * Friendship Data Model:
+ * - friendshipId: deterministic [lowerUserId]_[higherUserId]
+ * - user1Id: alphabetically first userId
+ * - user2Id: alphabetically second userId
+ * - status: 'pending' | 'accepted'
+ * - requestedBy: userId who sent the request
+ * - createdAt: timestamp
+ * - acceptedAt: timestamp | null
+ */
+
+/**
+ * Generate deterministic friendship ID from two user IDs
+ * Ensures the same friendship document regardless of who sends the request
+ *
+ * @param {string} userId1 - First user ID
+ * @param {string} userId2 - Second user ID
+ * @returns {string} Friendship ID in format: [lowerUserId]_[higherUserId]
+ */
+export const generateFriendshipId = (userId1, userId2) => {
+  const [lowerUserId, higherUserId] = [userId1, userId2].sort();
+  return `${lowerUserId}_${higherUserId}`;
+};
+
+/**
+ * Send a friend request
+ * Creates a new friendship document with status 'pending'
+ *
+ * @param {string} fromUserId - User sending the request
+ * @param {string} toUserId - User receiving the request
+ * @returns {Promise<{success: boolean, friendshipId?: string, error?: string}>}
+ */
+export const sendFriendRequest = async (fromUserId, toUserId) => {
+  try {
+    // Validation
+    if (!fromUserId || !toUserId) {
+      return { success: false, error: 'Invalid user IDs' };
+    }
+
+    if (fromUserId === toUserId) {
+      return { success: false, error: 'Cannot send friend request to yourself' };
+    }
+
+    // Check if friendship already exists
+    const friendshipId = generateFriendshipId(fromUserId, toUserId);
+    const friendshipRef = doc(db, 'friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (friendshipDoc.exists()) {
+      const existingStatus = friendshipDoc.data().status;
+      if (existingStatus === 'accepted') {
+        return { success: false, error: 'Already friends' };
+      } else if (existingStatus === 'pending') {
+        return { success: false, error: 'Friend request already sent' };
+      }
+    }
+
+    // Determine user1Id and user2Id (alphabetical order)
+    const [user1Id, user2Id] = [fromUserId, toUserId].sort();
+
+    // Create friendship document
+    await setDoc(friendshipRef, {
+      user1Id,
+      user2Id,
+      status: 'pending',
+      requestedBy: fromUserId,
+      createdAt: serverTimestamp(),
+      acceptedAt: null,
+    });
+
+    return { success: true, friendshipId };
+  } catch (error) {
+    console.error('Error sending friend request:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Accept a friend request
+ * Updates friendship status from 'pending' to 'accepted'
+ *
+ * @param {string} friendshipId - Friendship document ID
+ * @param {string} userId - User accepting the request
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const acceptFriendRequest = async (friendshipId, userId) => {
+  try {
+    if (!friendshipId || !userId) {
+      return { success: false, error: 'Invalid parameters' };
+    }
+
+    const friendshipRef = doc(db, 'friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      return { success: false, error: 'Friend request not found' };
+    }
+
+    const friendshipData = friendshipDoc.data();
+
+    // Verify user is the recipient (not the sender)
+    if (friendshipData.requestedBy === userId) {
+      return { success: false, error: 'Cannot accept your own friend request' };
+    }
+
+    // Verify friendship involves this user
+    if (friendshipData.user1Id !== userId && friendshipData.user2Id !== userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Verify status is pending
+    if (friendshipData.status !== 'pending') {
+      return { success: false, error: 'Friend request already processed' };
+    }
+
+    // Update to accepted
+    await updateDoc(friendshipRef, {
+      status: 'accepted',
+      acceptedAt: serverTimestamp(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error accepting friend request:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Decline a friend request
+ * Deletes the friendship document
+ *
+ * @param {string} friendshipId - Friendship document ID
+ * @param {string} userId - User declining the request
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const declineFriendRequest = async (friendshipId, userId) => {
+  try {
+    if (!friendshipId || !userId) {
+      return { success: false, error: 'Invalid parameters' };
+    }
+
+    const friendshipRef = doc(db, 'friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      return { success: false, error: 'Friend request not found' };
+    }
+
+    const friendshipData = friendshipDoc.data();
+
+    // Verify user is part of this friendship
+    if (friendshipData.user1Id !== userId && friendshipData.user2Id !== userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Delete friendship document
+    await deleteDoc(friendshipRef);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error declining friend request:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Remove a friend (delete friendship)
+ * Same as declining, but semantically for accepted friendships
+ *
+ * @param {string} userId1 - First user ID
+ * @param {string} userId2 - Second user ID
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const removeFriend = async (userId1, userId2) => {
+  try {
+    if (!userId1 || !userId2) {
+      return { success: false, error: 'Invalid user IDs' };
+    }
+
+    const friendshipId = generateFriendshipId(userId1, userId2);
+    const friendshipRef = doc(db, 'friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      return { success: false, error: 'Friendship not found' };
+    }
+
+    // Delete friendship document
+    await deleteDoc(friendshipRef);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error removing friend:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get all accepted friendships for a user
+ * Returns array of friendship documents with other user's data populated
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, friendships?: Array, error?: string}>}
+ */
+export const getFriendships = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    const friendshipsRef = collection(db, 'friendships');
+
+    // Query friendships where user is either user1Id or user2Id AND status is accepted
+    const q = query(
+      friendshipsRef,
+      or(
+        where('user1Id', '==', userId),
+        where('user2Id', '==', userId)
+      )
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    // Filter for accepted status (client-side since we need OR query for users)
+    const friendships = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === 'accepted') {
+        friendships.push({
+          id: doc.id,
+          ...data,
+        });
+      }
+    });
+
+    // Sort by acceptedAt (most recent first)
+    friendships.sort((a, b) => {
+      const aTime = a.acceptedAt?.toMillis() || 0;
+      const bTime = b.acceptedAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+
+    return { success: true, friendships };
+  } catch (error) {
+    console.error('Error getting friendships:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get incoming pending friend requests for a user
+ * Returns requests where user is NOT the sender
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, requests?: Array, error?: string}>}
+ */
+export const getPendingRequests = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    const friendshipsRef = collection(db, 'friendships');
+
+    // Query friendships where user is either user1Id or user2Id
+    const q = query(
+      friendshipsRef,
+      or(
+        where('user1Id', '==', userId),
+        where('user2Id', '==', userId)
+      )
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    // Filter for pending requests where user is NOT the sender
+    const requests = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === 'pending' && data.requestedBy !== userId) {
+        requests.push({
+          id: doc.id,
+          ...data,
+        });
+      }
+    });
+
+    // Sort by createdAt (most recent first)
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+
+    return { success: true, requests };
+  } catch (error) {
+    console.error('Error getting pending requests:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get outgoing pending friend requests (sent by user)
+ * Returns requests where user IS the sender
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, requests?: Array, error?: string}>}
+ */
+export const getSentRequests = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    const friendshipsRef = collection(db, 'friendships');
+
+    // Query friendships where user is the requester
+    const q = query(
+      friendshipsRef,
+      where('requestedBy', '==', userId),
+      where('status', '==', 'pending')
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    const requests = [];
+    querySnapshot.forEach((doc) => {
+      requests.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Sort by createdAt (most recent first)
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+
+    return { success: true, requests };
+  } catch (error) {
+    console.error('Error getting sent requests:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Check friendship status between two users
+ * Returns: 'none' | 'pending_sent' | 'pending_received' | 'friends'
+ *
+ * @param {string} userId1 - First user ID (typically current user)
+ * @param {string} userId2 - Second user ID (user being checked)
+ * @returns {Promise<{success: boolean, status?: string, friendshipId?: string, error?: string}>}
+ */
+export const checkFriendshipStatus = async (userId1, userId2) => {
+  try {
+    if (!userId1 || !userId2) {
+      return { success: false, error: 'Invalid user IDs' };
+    }
+
+    if (userId1 === userId2) {
+      return { success: true, status: 'self' };
+    }
+
+    const friendshipId = generateFriendshipId(userId1, userId2);
+    const friendshipRef = doc(db, 'friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      return { success: true, status: 'none', friendshipId };
+    }
+
+    const data = friendshipDoc.data();
+
+    if (data.status === 'accepted') {
+      return { success: true, status: 'friends', friendshipId };
+    }
+
+    if (data.status === 'pending') {
+      if (data.requestedBy === userId1) {
+        return { success: true, status: 'pending_sent', friendshipId };
+      } else {
+        return { success: true, status: 'pending_received', friendshipId };
+      }
+    }
+
+    return { success: true, status: 'none', friendshipId };
+  } catch (error) {
+    console.error('Error checking friendship status:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Subscribe to real-time friendship updates for a user
+ * Listens to all friendships where user is involved
+ *
+ * @param {string} userId - User ID
+ * @param {function} callback - Callback function receiving friendship updates
+ * @returns {function} Unsubscribe function
+ */
+export const subscribeFriendships = (userId, callback) => {
+  if (!userId) {
+    console.error('Cannot subscribe: Invalid user ID');
+    return () => {};
+  }
+
+  const friendshipsRef = collection(db, 'friendships');
+
+  const q = query(
+    friendshipsRef,
+    or(
+      where('user1Id', '==', userId),
+      where('user2Id', '==', userId)
+    )
+  );
+
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      const friendships = [];
+      snapshot.forEach((doc) => {
+        friendships.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+      callback(friendships);
+    },
+    (error) => {
+      console.error('Error in friendship subscription:', error);
+      callback([]);
+    }
+  );
+
+  return unsubscribe;
+};
+
+/**
+ * Get friend user IDs for a user (accepted friendships only)
+ * Returns array of user IDs who are friends with the given user
+ * Useful for filtering feed photos
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, friendUserIds?: Array<string>, error?: string}>}
+ */
+export const getFriendUserIds = async (userId) => {
+  try {
+    const result = await getFriendships(userId);
+
+    if (!result.success) {
+      return result;
+    }
+
+    // Extract the "other user" ID from each friendship
+    const friendUserIds = result.friendships.map((friendship) => {
+      if (friendship.user1Id === userId) {
+        return friendship.user2Id;
+      } else {
+        return friendship.user1Id;
+      }
+    });
+
+    return { success: true, friendUserIds };
+  } catch (error) {
+    console.error('Error getting friend user IDs:', error);
+    return { success: false, error: error.message };
+  }
+};

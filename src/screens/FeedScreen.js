@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
@@ -19,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 
 const FeedScreen = () => {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const {
     photos,
     loading,
@@ -34,6 +36,19 @@ const FeedScreen = () => {
   // Modal state
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+
+  /**
+   * Refresh feed when screen comes into focus
+   * This ensures feed reflects current friendship state after adding/removing friends
+   */
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('Feed screen focused - refreshing feed');
+      refreshFeed();
+    });
+
+    return unsubscribe;
+  }, [navigation, refreshFeed]);
 
   /**
    * Handle photo card press - Open detail modal

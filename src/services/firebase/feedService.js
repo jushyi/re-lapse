@@ -11,15 +11,16 @@ import {
 import { db } from './firebaseConfig';
 
 /**
- * Get feed photos (all journaled photos from all users)
- * For MVP: Shows ALL users' journaled photos
- * Week 9: Will be filtered to friends-only
+ * Get feed photos (journaled photos from friends + current user)
+ * Week 9: Filters by friendUserIds (friends-only + current user's own photos)
  *
  * @param {number} limitCount - Number of photos to fetch (default: 20)
  * @param {object} lastDoc - Last document for pagination (optional)
+ * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
+ * @param {string} currentUserId - Current user ID (to include own photos)
  * @returns {Promise} - Feed photos array and last document
  */
-export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
+export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserIds = null, currentUserId = null) => {
   try {
     // Simplified query: Only filter by photoState = 'journal'
     // Status will be implicitly 'triaged' since only triaged photos have photoState
@@ -53,8 +54,15 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
       })
     );
 
+    // Filter by friends + current user if friendUserIds provided
+    let filteredPhotos = allPhotos;
+    if (friendUserIds !== null && currentUserId) {
+      const allowedUserIds = [...friendUserIds, currentUserId];
+      filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+    }
+
     // Sort by capturedAt in descending order (newest first) - client-side
-    const sortedPhotos = allPhotos.sort((a, b) => {
+    const sortedPhotos = filteredPhotos.sort((a, b) => {
       const aTime = a.capturedAt?.seconds || 0;
       const bTime = b.capturedAt?.seconds || 0;
       return bTime - aTime;
@@ -84,13 +92,15 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null) => {
 
 /**
  * Subscribe to real-time feed updates
- * Listens for new journaled photos
+ * Listens for new journaled photos (filtered by friends)
  *
  * @param {function} callback - Callback function to handle updates
  * @param {number} limitCount - Number of photos to watch (default: 20)
+ * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
+ * @param {string} currentUserId - Current user ID (to include own photos)
  * @returns {function} - Unsubscribe function
  */
-export const subscribeFeedPhotos = (callback, limitCount = 20) => {
+export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = null, currentUserId = null) => {
   try {
     // Simplified query to avoid composite index
     const feedQuery = query(
@@ -123,8 +133,15 @@ export const subscribeFeedPhotos = (callback, limitCount = 20) => {
           })
         );
 
+        // Filter by friends + current user if friendUserIds provided
+        let filteredPhotos = allPhotos;
+        if (friendUserIds !== null && currentUserId) {
+          const allowedUserIds = [...friendUserIds, currentUserId];
+          filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+        }
+
         // Sort by capturedAt in descending order (newest first)
-        const sortedPhotos = allPhotos.sort((a, b) => {
+        const sortedPhotos = filteredPhotos.sort((a, b) => {
           const aTime = a.capturedAt?.seconds || 0;
           const bTime = b.capturedAt?.seconds || 0;
           return bTime - aTime;

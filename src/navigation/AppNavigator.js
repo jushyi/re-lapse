@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Text, ActivityIndicator, View } from 'react-native';
+import { Text, ActivityIndicator, View, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { getDevelopingPhotoCount } from '../services/firebase/photoService';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Import auth screens
 import LoginScreen from '../screens/LoginScreen';
@@ -17,12 +18,32 @@ import FeedScreen from '../screens/FeedScreen';
 import CameraScreen from '../screens/CameraScreen';
 import DarkroomScreen from '../screens/DarkroomScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import FriendsListScreen from '../screens/FriendsListScreen';
+import UserSearchScreen from '../screens/UserSearchScreen';
+import FriendRequestsScreen from '../screens/FriendRequestsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 /**
- * Main Tab Navigator (Feed, Camera, Darkroom, Profile)
+ * Friends Stack Navigator (FriendsList, UserSearch, FriendRequests)
+ */
+const FriendsStackNavigator = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="FriendsList" component={FriendsListScreen} />
+      <Stack.Screen name="UserSearch" component={UserSearchScreen} />
+      <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} />
+    </Stack.Navigator>
+  );
+};
+
+/**
+ * Main Tab Navigator (Feed, Camera, Friends, Darkroom, Profile)
  */
 const MainTabNavigator = () => {
   const { user } = useAuth();
@@ -50,54 +71,51 @@ const MainTabNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: '#000000',
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 85 : 65,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingTop: 12,
+          position: 'absolute',
         },
-        tabBarActiveTintColor: '#000000',
+        tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarShowLabel: false,
       }}
     >
       <Tab.Screen
         name="Feed"
         component={FeedScreen}
         options={{
-          tabBarLabel: 'Feed',
-          tabBarIcon: ({ color }) => <TabIcon icon="👥" color={color} />,
+          tabBarIcon: ({ color }) => <FeedIcon color={color} />,
         }}
       />
       <Tab.Screen
         name="Camera"
         component={CameraScreen}
         options={{
-          tabBarLabel: 'Camera',
-          tabBarIcon: ({ color }) => <TabIcon icon="📷" color={color} />,
+          tabBarIcon: ({ color }) => <CameraIcon color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Friends"
+        component={FriendsStackNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <FriendsIcon color={color} />,
         }}
       />
       <Tab.Screen
         name="Darkroom"
         component={DarkroomScreen}
         options={{
-          tabBarLabel: 'Darkroom',
-          tabBarIcon: ({ color }) => (
-            <DarkroomIcon icon="🌑" color={color} count={darkroomCount} />
-          ),
-          tabBarBadge: darkroomCount > 0 ? darkroomCount : undefined,
+          tabBarIcon: ({ color }) => <DarkroomIcon color={color} count={darkroomCount} />,
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon icon="👤" color={color} />,
+          tabBarIcon: ({ color }) => <ProfileIcon color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -105,42 +123,135 @@ const MainTabNavigator = () => {
 };
 
 /**
- * Simple tab icon component (emoji-based for now)
+ * Minimalist Tab Icons (SVG-based)
  */
-const TabIcon = ({ icon }) => {
-  return <Text style={{ fontSize: 24 }}>{icon}</Text>;
-};
 
-/**
- * Darkroom tab icon with badge indicator
- */
-const DarkroomIcon = ({ icon, count }) => {
-  return (
-    <View style={{ position: 'relative' }}>
-      <Text style={{ fontSize: 24 }}>{icon}</Text>
-      {count > 0 && (
-        <View
-          style={{
-            position: 'absolute',
-            top: -4,
-            right: -8,
-            backgroundColor: '#FF3B30',
-            borderRadius: 10,
-            minWidth: 20,
-            height: 20,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 4,
-          }}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>
-            {count > 99 ? '99+' : count}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-};
+// Feed Icon - Two people silhouettes
+const FeedIcon = ({ color }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Circle cx="9" cy="7" r="3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <Circle cx="15" cy="9" r="2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <Path
+      d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M15 20c0-2.21 1.343-4.105 3.25-4.917"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+// Camera Icon - Classic camera shape
+const CameraIcon = ({ color }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="2"
+      y="7"
+      width="20"
+      height="13"
+      rx="2"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle
+      cx="12"
+      cy="13.5"
+      r="3.5"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+// Friends Icon - Two people side by side
+const FriendsIcon = ({ color }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <Circle cx="17" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <Path
+      d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M16 20c0-3.5 2.5-6 6-6"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+// Darkroom Icon - Moon/dark circle with badge
+const DarkroomIcon = ({ color, count }) => (
+  <View style={{ position: 'relative' }}>
+    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+    {count > 0 && (
+      <View
+        style={{
+          position: 'absolute',
+          top: -6,
+          right: -8,
+          backgroundColor: '#FF3B30',
+          borderRadius: 10,
+          minWidth: 18,
+          height: 18,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 4,
+        }}
+      >
+        <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>
+          {count > 99 ? '99+' : count}
+        </Text>
+      </View>
+    )}
+  </View>
+);
+
+// Profile Icon - Simple user silhouette
+const ProfileIcon = ({ color }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="8"
+      r="4"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
 
 /**
  * Root Stack Navigator (handles auth flow)

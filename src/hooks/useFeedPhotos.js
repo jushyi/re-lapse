@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getFeedPhotos, subscribeFeedPhotos } from '../services/firebase/feedService';
+import { getFriendUserIds } from '../services/firebase/friendshipService';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Custom hook for managing feed photos
  * Handles initial load, pagination, real-time updates, and refresh
+ * Week 9: Fetches friendships and filters feed to friends-only
  *
  * @param {boolean} enableRealtime - Enable real-time listener (default: true)
  * @returns {object} - Feed state and control functions
  */
 const useFeedPhotos = (enableRealtime = true) => {
+  const { user } = useAuth();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,16 +20,43 @@ const useFeedPhotos = (enableRealtime = true) => {
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
+  const [friendUserIds, setFriendUserIds] = useState([]);
+
+  /**
+   * Fetch friend user IDs
+   */
+  const fetchFriendships = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      const result = await getFriendUserIds(user.uid);
+      if (result.success) {
+        setFriendUserIds(result.friendUserIds);
+      }
+    } catch (err) {
+      console.error('Error fetching friendships:', err);
+    }
+  }, [user]);
 
   /**
    * Initial load of feed photos
    */
   const loadFeedPhotos = useCallback(async () => {
+    // Don't fetch if user is not authenticated
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const result = await getFeedPhotos(20, null);
+      // Fetch friendships first
+      await fetchFriendships();
+
+      // Then fetch feed photos with friend filter
+      const result = await getFeedPhotos(20, null, friendUserIds, user.uid);
 
       if (result.success) {
         setPhotos(result.photos);
@@ -40,7 +71,7 @@ const useFeedPhotos = (enableRealtime = true) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchFriendships, friendUserIds, user]);
 
   /**
    * Load more photos (pagination)
@@ -52,7 +83,7 @@ const useFeedPhotos = (enableRealtime = true) => {
     try {
       setLoadingMore(true);
 
-      const result = await getFeedPhotos(10, lastDoc);
+      const result = await getFeedPhotos(10, lastDoc, friendUserIds, user?.uid);
 
       if (result.success) {
         setPhotos((prev) => [...prev, ...result.photos]);
@@ -67,7 +98,7 @@ const useFeedPhotos = (enableRealtime = true) => {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, lastDoc]);
+  }, [loadingMore, hasMore, lastDoc, friendUserIds, user]);
 
   /**
    * Refresh feed (pull-to-refresh)
@@ -77,7 +108,10 @@ const useFeedPhotos = (enableRealtime = true) => {
       setRefreshing(true);
       setError(null);
 
-      const result = await getFeedPhotos(20, null);
+      // Refresh friendships too
+      await fetchFriendships();
+
+      const result = await getFeedPhotos(20, null, friendUserIds, user?.uid);
 
       if (result.success) {
         setPhotos(result.photos);
@@ -92,7 +126,7 @@ const useFeedPhotos = (enableRealtime = true) => {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [fetchFriendships, friendUserIds, user]);
 
   /**
    * Update a single photo in state (for optimistic UI updates)
@@ -105,11 +139,30 @@ const useFeedPhotos = (enableRealtime = true) => {
   }, []);
 
   /**
-   * Set up real-time listener on mount
+   * Fetch friendships once on mount
    */
   useEffect(() => {
+    if (user?.uid) {
+      fetchFriendships();
+    }
+  }, [user?.uid]);
+
+  /**
+   * Load feed photos when friendships are fetched
+   */
+  useEffect(() => {
+    if (!user?.uid) return;
+
     // Initial load
     loadFeedPhotos();
+  }, [user?.uid, friendUserIds.length]);
+
+  /**
+   * Set up real-time listener
+   */
+  useEffect(() => {
+    // Don't set up listener until we have the user
+    if (!user?.uid) return;
 
     // Set up real-time listener if enabled
     let unsubscribe = () => {};
@@ -125,14 +178,14 @@ const useFeedPhotos = (enableRealtime = true) => {
         } else {
           console.error('Feed subscription error:', result.error);
         }
-      }, 20);
+      }, 20, friendUserIds, user.uid);
     }
 
     // Cleanup
     return () => {
       unsubscribe();
     };
-  }, [enableRealtime, loadFeedPhotos, loadingMore]);
+  }, [enableRealtime, loadingMore, friendUserIds, user?.uid]);
 
   return {
     photos,
