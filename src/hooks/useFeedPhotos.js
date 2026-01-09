@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getFeedPhotos, subscribeFeedPhotos } from '../services/firebase/feedService';
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import { useAuth } from '../context/AuthContext';
+import logger from '../utils/logger';
 
 /**
  * Custom hook for managing feed photos
@@ -34,7 +35,7 @@ const useFeedPhotos = (enableRealtime = true) => {
         setFriendUserIds(result.friendUserIds);
       }
     } catch (err) {
-      console.error('Error fetching friendships:', err);
+      logger.error('Error fetching friendships', err);
     }
   }, [user]);
 
@@ -66,7 +67,7 @@ const useFeedPhotos = (enableRealtime = true) => {
         setError(result.error);
       }
     } catch (err) {
-      console.error('Error loading feed photos:', err);
+      logger.error('Error loading feed photos', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -93,7 +94,7 @@ const useFeedPhotos = (enableRealtime = true) => {
         setError(result.error);
       }
     } catch (err) {
-      console.error('Error loading more photos:', err);
+      logger.error('Error loading more photos', err);
       setError(err.message);
     } finally {
       setLoadingMore(false);
@@ -121,7 +122,7 @@ const useFeedPhotos = (enableRealtime = true) => {
         setError(result.error);
       }
     } catch (err) {
-      console.error('Error refreshing feed:', err);
+      logger.error('Error refreshing feed', err);
       setError(err.message);
     } finally {
       setRefreshing(false);
@@ -176,7 +177,7 @@ const useFeedPhotos = (enableRealtime = true) => {
             setPhotos(result.photos);
           }
         } else {
-          console.error('Feed subscription error:', result.error);
+          logger.error('Feed subscription error', { error: result.error });
         }
       }, 20, friendUserIds, user.uid);
     }

@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { getDevelopingPhotos, revealPhotos, triagePhoto } from '../services/firebase/photoService';
 import { isDarkroomReadyToReveal, scheduleNextReveal } from '../services/firebase/darkroomService';
-import { debugDarkroom } from '../utils/debugDarkroom';
+import logger from '../utils/logger';
 
 const DarkroomScreen = () => {
   const { user } = useAuth();
@@ -33,39 +33,37 @@ const DarkroomScreen = () => {
     try {
       setLoading(true);
 
-      // DEBUG: Check darkroom status
-      console.log('=== DARKROOM SCREEN: Loading ===');
-      await debugDarkroom(user.uid);
+      logger.debug('Darkroom screen loading');
 
       // Check if darkroom is ready to reveal photos
       const isReady = await isDarkroomReadyToReveal(user.uid);
-      console.log('Is darkroom ready to reveal?', isReady);
+      logger.debug('Darkroom ready status', { isReady });
 
       if (isReady) {
-        console.log('Revealing photos...');
+        logger.info('Revealing photos');
         // Reveal ALL developing photos
         const revealResult = await revealPhotos(user.uid);
-        console.log(`Revealed ${revealResult.count} photos`);
+        logger.info('Photos revealed', { count: revealResult.count });
 
         // Schedule next reveal time (0-2 hours from now)
         await scheduleNextReveal(user.uid);
-        console.log('Next reveal scheduled');
+        logger.debug('Next reveal scheduled');
       }
 
       // Load all developing/revealed photos
       const result = await getDevelopingPhotos(user.uid);
-      console.log('getDevelopingPhotos result:', result);
+      logger.debug('getDevelopingPhotos result', { photoCount: result.photos?.length });
 
       if (result.success) {
         // Filter for revealed photos only
         const revealedPhotos = result.photos.filter(
           photo => photo.status === 'revealed'
         );
-        console.log('Revealed photos to display:', revealedPhotos.length);
+        logger.debug('Revealed photos to display', { count: revealedPhotos.length });
         setPhotos(revealedPhotos);
       }
     } catch (error) {
-      console.error('Error loading developing photos:', error);
+      logger.error('Error loading developing photos', error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +84,7 @@ const DarkroomScreen = () => {
       const actionText = action === 'journal' ? 'journaled' : action === 'archive' ? 'archived' : 'deleted';
       Alert.alert('Success', `Photo ${actionText} successfully!`);
     } catch (error) {
-      console.error('Error triaging photo:', error);
+      logger.error('Error triaging photo', error);
       Alert.alert('Error', 'Failed to process photo. Please try again.');
     }
   };
@@ -125,8 +123,7 @@ const DarkroomScreen = () => {
   const currentPhoto = photos[0]; // Always show first photo in the list
 
   // Debug: Log the photo data
-  console.log('Current photo:', currentPhoto);
-  console.log('Image URL:', currentPhoto?.imageURL);
+  logger.debug('Current photo', { photoId: currentPhoto?.id, hasImageURL: !!currentPhoto?.imageURL });
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -153,8 +150,8 @@ const DarkroomScreen = () => {
             source={{ uri: currentPhoto.imageURL }}
             style={styles.photoImage}
             resizeMode="cover"
-            onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
-            onLoad={() => console.log('Image loaded successfully')}
+            onError={(error) => logger.error('Image load error', error.nativeEvent.error)}
+            onLoad={() => logger.debug('Image loaded successfully')}
           />
         ) : (
           <View style={styles.loadingImageContainer}>

@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { uploadPhoto, deletePhoto } from './storageService';
+import logger from '../../utils/logger';
 
 /**
  * Create a new photo document in Firestore
@@ -21,8 +22,11 @@ import { uploadPhoto, deletePhoto } from './storageService';
  * @returns {Promise} - Photo document data
  */
 export const createPhoto = async (userId, photoUri) => {
+  logger.debug('PhotoService.createPhoto: Starting', { userId });
+
   try {
     // Create photo document first to get ID
+    logger.debug('PhotoService.createPhoto: Creating Firestore document');
     const photoRef = await addDoc(collection(db, 'photos'), {
       userId,
       imageURL: '', // Placeholder, will be updated after upload
@@ -36,19 +40,32 @@ export const createPhoto = async (userId, photoUri) => {
     });
 
     const photoId = photoRef.id;
+    logger.debug('PhotoService.createPhoto: Document created', { photoId });
 
     // Upload photo to Firebase Storage
+    logger.debug('PhotoService.createPhoto: Uploading to Storage', { photoId });
     const uploadResult = await uploadPhoto(photoId, photoUri);
 
     if (!uploadResult.success) {
+      logger.warn('PhotoService.createPhoto: Upload failed, rolling back', {
+        photoId,
+        error: uploadResult.error
+      });
       // If upload fails, delete the document
       await deleteDoc(photoRef);
       return { success: false, error: uploadResult.error };
     }
 
     // Update document with imageURL
+    logger.debug('PhotoService.createPhoto: Updating document with imageURL', { photoId });
     await updateDoc(photoRef, {
       imageURL: uploadResult.url,
+    });
+
+    logger.info('PhotoService.createPhoto: Photo created successfully', {
+      photoId,
+      userId,
+      size: uploadResult.size
     });
 
     return {
@@ -56,7 +73,7 @@ export const createPhoto = async (userId, photoUri) => {
       photoId,
     };
   } catch (error) {
-    console.error('Error creating photo:', error);
+    logger.error('PhotoService.createPhoto: Failed', { userId, error: error.message });
     return { success: false, error: error.message };
   }
 };
@@ -78,6 +95,8 @@ const getCurrentMonth = () => {
  * @returns {Promise} - Array of photo documents
  */
 export const getUserPhotos = async (userId) => {
+  logger.debug('PhotoService.getUserPhotos: Starting', { userId });
+
   try {
     const photosQuery = query(
       collection(db, 'photos'),
@@ -91,9 +110,14 @@ export const getUserPhotos = async (userId) => {
       ...doc.data(),
     }));
 
+    logger.info('PhotoService.getUserPhotos: Retrieved photos', {
+      userId,
+      count: photos.length
+    });
+
     return { success: true, photos };
   } catch (error) {
-    console.error('Error getting user photos:', error);
+    logger.error('PhotoService.getUserPhotos: Failed', { userId, error: error.message });
     return { success: false, error: error.message };
   }
 };
@@ -114,7 +138,7 @@ export const getDevelopingPhotoCount = async (userId) => {
     const snapshot = await getDocs(developingQuery);
     return snapshot.size;
   } catch (error) {
-    console.error('Error getting developing photo count:', error);
+    logger.error('Error getting developing photo count', error);
     return 0;
   }
 };
@@ -162,7 +186,7 @@ export const getDevelopingPhotos = async (userId) => {
 
     return { success: true, photos: allPhotos };
   } catch (error) {
-    console.error('Error getting developing photos:', error);
+    logger.error('Error getting developing photos', error);
     return { success: false, error: error.message };
   }
 };
@@ -198,7 +222,7 @@ export const revealPhotos = async (userId) => {
 
     return { success: true, count: updates.length };
   } catch (error) {
-    console.error('Error revealing photos:', error);
+    logger.error('Error revealing photos', error);
     return { success: false, error: error.message };
   }
 };
@@ -229,7 +253,7 @@ export const triagePhoto = async (photoId, action) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error triaging photo:', error);
+    logger.error('Error triaging photo', error);
     return { success: false, error: error.message };
   }
 };
@@ -260,7 +284,7 @@ export const addReaction = async (photoId, userId, emoji) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error adding reaction:', error);
+    logger.error('Error adding reaction', error);
     return { success: false, error: error.message };
   }
 };
@@ -290,7 +314,7 @@ export const removeReaction = async (photoId, userId) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error removing reaction:', error);
+    logger.error('Error removing reaction', error);
     return { success: false, error: error.message };
   }
 };

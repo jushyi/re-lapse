@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { updateUserDocument } from './firestoreService';
+import logger from '../../utils/logger';
 
 /**
  * Configure how notifications are displayed when app is in foreground
@@ -32,10 +33,10 @@ export const initializeNotifications = async () => {
       });
     }
 
-    console.log('Notifications initialized successfully');
+    logger.info('Notifications initialized successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error initializing notifications:', error);
+    logger.error('Error initializing notifications', error);
     return { success: false, error: error.message };
   }
 };
@@ -57,14 +58,14 @@ export const requestNotificationPermission = async () => {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Notification permission denied');
+      logger.warn('Notification permission denied');
       return { success: false, error: 'Permission denied' };
     }
 
-    console.log('Notification permission granted');
+    logger.info('Notification permission granted');
     return { success: true };
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
+    logger.error('Error requesting notification permission', error);
     return { success: false, error: error.message };
   }
 };
@@ -77,7 +78,7 @@ export const getNotificationToken = async () => {
   try {
     // Check if running on physical device (required for push notifications)
     if (!Device.isDevice) {
-      console.log('Must use physical device for push notifications');
+      logger.info('Must use physical device for push notifications');
       return {
         success: false,
         error: 'Push notifications only work on physical devices',
@@ -98,10 +99,10 @@ export const getNotificationToken = async () => {
     );
 
     const token = tokenData.data;
-    console.log('Got notification token:', token.substring(0, 20) + '...');
+    logger.debug('Got notification token', { tokenPrefix: token.substring(0, 20) });
     return { success: true, data: token };
   } catch (error) {
-    console.error('Error getting notification token:', error);
+    logger.error('Error getting notification token', error);
 
     // If error is about missing projectId, provide helpful message
     if (error.message?.includes('projectId')) {
@@ -126,14 +127,14 @@ export const storeNotificationToken = async (userId, token) => {
     const result = await updateUserDocument(userId, { fcmToken: token });
 
     if (result.success) {
-      console.log('Notification token stored for user:', userId);
+      logger.info('Notification token stored for user', { userId });
       return { success: true };
     } else {
-      console.error('Failed to store notification token:', result.error);
+      logger.error('Failed to store notification token', { error: result.error });
       return { success: false, error: result.error };
     }
   } catch (error) {
-    console.error('Error storing notification token:', error);
+    logger.error('Error storing notification token', error);
     return { success: false, error: error.message };
   }
 };
@@ -144,17 +145,16 @@ export const storeNotificationToken = async (userId, token) => {
  */
 export const handleNotificationReceived = (notification) => {
   try {
-    console.log('Notification received in foreground:', notification);
-
-    const { title, body, data } = notification.request.content;
-    console.log('Title:', title);
-    console.log('Body:', body);
-    console.log('Data:', data);
+    logger.debug('Notification received in foreground', {
+      title: notification.request.content.title,
+      body: notification.request.content.body,
+      data: notification.request.content.data,
+    });
 
     // Could add custom in-app banner here if desired
     // For MVP, expo-notifications handles the display automatically
   } catch (error) {
-    console.error('Error handling notification received:', error);
+    logger.error('Error handling notification received', error);
   }
 };
 
@@ -166,12 +166,10 @@ export const handleNotificationReceived = (notification) => {
  */
 export const handleNotificationTapped = (notification) => {
   try {
-    console.log('Notification tapped:', notification);
-
     const { data } = notification.request.content;
     const { type, photoId, friendshipId } = data || {};
 
-    console.log('Notification type:', type);
+    logger.debug('Notification tapped', { type, photoId, friendshipId });
 
     // Return navigation data based on notification type
     // The actual navigation will be handled by App.js using this data
@@ -207,7 +205,7 @@ export const handleNotificationTapped = (notification) => {
         };
 
       default:
-        console.log('Unknown notification type, navigating to Feed');
+        logger.warn('Unknown notification type, navigating to Feed', { type });
         return {
           success: true,
           data: {
@@ -218,7 +216,7 @@ export const handleNotificationTapped = (notification) => {
         };
     }
   } catch (error) {
-    console.error('Error handling notification tapped:', error);
+    logger.error('Error handling notification tapped', error);
     return { success: false, error: error.message };
   }
 };
@@ -232,10 +230,10 @@ export const checkNotificationPermissions = async () => {
     const { status } = await Notifications.getPermissionsAsync();
     const isGranted = status === 'granted';
 
-    console.log('Notification permission status:', status, 'granted:', isGranted);
+    logger.debug('Notification permission status', { status, granted: isGranted });
     return { success: true, data: { status, granted: isGranted } };
   } catch (error) {
-    console.error('Error checking notification permissions:', error);
+    logger.error('Error checking notification permissions', error);
     return { success: false, error: error.message };
   }
 };
@@ -258,10 +256,10 @@ export const scheduleTestNotification = async (title, body, seconds = 5) => {
       trigger: { seconds },
     });
 
-    console.log('Test notification scheduled:', notificationId);
+    logger.debug('Test notification scheduled', { notificationId });
     return { success: true, data: notificationId };
   } catch (error) {
-    console.error('Error scheduling test notification:', error);
+    logger.error('Error scheduling test notification', error);
     return { success: false, error: error.message };
   }
 };

@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import logger from '../../utils/logger';
 
 /**
  * Get feed photos (journaled photos from friends + current user)
@@ -85,7 +86,7 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
       hasMore: endIndex < sortedPhotos.length,
     };
   } catch (error) {
-    console.error('Error fetching feed photos:', error);
+    logger.error('Error fetching feed photos', error);
     return { success: false, error: error.message, photos: [] };
   }
 };
@@ -153,14 +154,14 @@ export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = n
         callback({ success: true, photos: limitedPhotos });
       },
       (error) => {
-        console.error('Error in feed subscription:', error);
+        logger.error('Error in feed subscription', error);
         callback({ success: false, error: error.message, photos: [] });
       }
     );
 
     return unsubscribe;
   } catch (error) {
-    console.error('Error subscribing to feed photos:', error);
+    logger.error('Error subscribing to feed photos', error);
     return () => {}; // Return empty unsubscribe function
   }
 };
@@ -200,7 +201,7 @@ export const getPhotoById = async (photoId) => {
       },
     };
   } catch (error) {
-    console.error('Error fetching photo by ID:', error);
+    logger.error('Error fetching photo by ID', error);
     return { success: false, error: error.message };
   }
 };
@@ -241,7 +242,7 @@ export const getUserFeedPhotos = async (userId) => {
 
     return { success: true, photos };
   } catch (error) {
-    console.error('Error fetching user feed photos:', error);
+    logger.error('Error fetching user feed photos', error);
     return { success: false, error: error.message, photos: [] };
   }
 };
@@ -286,7 +287,7 @@ export const getFeedStats = async () => {
       },
     };
   } catch (error) {
-    console.error('Error fetching feed stats:', error);
+    logger.error('Error fetching feed stats', error);
     return { success: false, error: error.message };
   }
 };
@@ -341,7 +342,7 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
 
     return { success: true, reactions, reactionCount: totalCount };
   } catch (error) {
-    console.error('Error toggling reaction:', error);
+    logger.error('Error toggling reaction', error);
     return { success: false, error: error.message };
   }
 };

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } fr
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/firebaseConfig';
 import { getTimeAgo } from '../utils/timeUtils';
+import logger from '../utils/logger';
 
 /**
  * FriendRequestCard - Display a friend request
@@ -53,7 +54,7 @@ const FriendRequestCard = ({ request, type, onAccept, onDecline, onCancel, curre
           });
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        logger.error('Error fetching user data', error);
       } finally {
         setLoadingUser(false);
       }

@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import UserSearchCard from '../components/UserSearchCard';
 import { sendFriendRequest, checkFriendshipStatus } from '../services/firebase/friendshipService';
 import { mediumImpact } from '../utils/haptics';
+import logger from '../utils/logger';
 
 /**
  * UserSearchScreen - Search for users by username
@@ -91,7 +92,7 @@ const UserSearchScreen = ({ navigation }) => {
         fetchFriendshipStatuses(results);
       }
     } catch (err) {
-      console.error('Error searching users:', err);
+      logger.error('Error searching users', err);
       setError('Failed to search users');
       setSearchResults([]);
     } finally {
@@ -133,7 +134,7 @@ const UserSearchScreen = ({ navigation }) => {
       const result = await sendFriendRequest(user.uid, toUserId);
 
       if (!result.success) {
-        console.error('Failed to send friend request:', result.error);
+        logger.error('Failed to send friend request', { error: result.error });
         // Revert optimistic update
         setFriendshipStatuses((prev) => ({
           ...prev,
@@ -142,7 +143,7 @@ const UserSearchScreen = ({ navigation }) => {
         alert(result.error || 'Failed to send friend request');
       }
     } catch (err) {
-      console.error('Error sending friend request:', err);
+      logger.error('Error sending friend request', err);
       // Revert optimistic update
       setFriendshipStatuses((prev) => ({
         ...prev,

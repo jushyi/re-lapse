@@ -12,6 +12,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../context/AuthContext';
 import { createPhoto } from '../services/firebase/photoService';
+import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -106,7 +107,7 @@ const CameraScreen = () => {
         skipProcessing: true,
       });
 
-      console.log('Photo captured:', photo.uri);
+      logger.debug('Photo captured', { uri: photo.uri });
 
       // Show photo animation flying to darkroom
       playPhotoAnimation(photo.uri);
@@ -118,7 +119,7 @@ const CameraScreen = () => {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error saving photo:', error);
+      logger.error('Error saving photo', error);
     } finally {
       setIsCapturing(false);
     }

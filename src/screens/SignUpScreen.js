@@ -11,6 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '../components';
 import { useAuth } from '../context/AuthContext';
+import {
+  validateEmail,
+  validateUsername,
+  validatePassword,
+  validatePasswordMatch,
+} from '../utils/validation';
 
 const SignUpScreen = ({ navigation }) => {
   const { signUp, signInWithApple, loading } = useAuth();
@@ -22,45 +28,31 @@ const SignUpScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePassword = (password) => {
-    return password.length >= 8;
-  };
-
-  const validateUsername = (username) => {
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    return usernameRegex.test(username);
-  };
-
   const validate = () => {
     const newErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email';
+    // Email validation using centralized utility
+    const emailError = validateEmail(email.trim());
+    if (emailError) {
+      newErrors.email = emailError;
     }
 
-    if (!username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (!validateUsername(username)) {
-      newErrors.username = 'Username must be 3-20 characters (letters, numbers, underscore only)';
+    // Username validation using centralized utility
+    const usernameError = validateUsername(username.trim());
+    if (usernameError) {
+      newErrors.username = usernameError;
     }
 
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (!validatePassword(password)) {
-      newErrors.password = 'Password must be at least 8 characters';
+    // Password validation using centralized utility
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    // Password confirmation validation
+    const confirmError = validatePasswordMatch(password, confirmPassword);
+    if (confirmError) {
+      newErrors.confirmPassword = confirmError;
     }
 
     setErrors(newErrors);

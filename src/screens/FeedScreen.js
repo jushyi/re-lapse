@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,9 @@ import useFeedPhotos from '../hooks/useFeedPhotos';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
 import PhotoDetailModal from '../components/PhotoDetailModal';
-import { debugAllPhotos, debugJournaledPhotos } from '../utils/debugFeed';
 import { toggleReaction } from '../services/firebase/feedService';
 import { useAuth } from '../context/AuthContext';
+import logger from '../utils/logger';
 
 const FeedScreen = () => {
   const { user } = useAuth();
@@ -27,7 +27,6 @@ const FeedScreen = () => {
     refreshing,
     loadingMore,
     error,
-    hasMore,
     loadMorePhotos,
     refreshFeed,
     updatePhotoInState,
@@ -43,7 +42,7 @@ const FeedScreen = () => {
    */
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log('Feed screen focused - refreshing feed');
+      logger.debug('Feed screen focused - refreshing feed');
       refreshFeed();
     });
 
@@ -106,28 +105,17 @@ const FeedScreen = () => {
     try {
       const result = await toggleReaction(photoId, userId, emoji, currentCount);
       if (!result.success) {
-        console.error('Failed to toggle reaction:', result.error);
+        logger.error('Failed to toggle reaction', { error: result.error });
         // Revert optimistic update on error
         setSelectedPhoto(selectedPhoto);
         updatePhotoInState(photoId, selectedPhoto);
       }
     } catch (error) {
-      console.error('Error toggling reaction:', error);
+      logger.error('Error toggling reaction', error);
       // Revert optimistic update on error
       setSelectedPhoto(selectedPhoto);
       updatePhotoInState(photoId, selectedPhoto);
     }
-  };
-
-  /**
-   * Debug button handler
-   */
-  const handleDebug = async () => {
-    console.log('=== FEED DEBUG START ===');
-    console.log('Current photos in feed state:', photos.length);
-    await debugAllPhotos();
-    await debugJournaledPhotos();
-    console.log('=== FEED DEBUG END ===');
   };
 
   /**
@@ -192,9 +180,6 @@ const FeedScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lapse</Text>
-        <TouchableOpacity onPress={handleDebug} style={styles.debugButton}>
-          <Text style={styles.debugButtonText}>🐛 Debug</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -256,17 +241,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
-  },
-  debugButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#FF3B30',
-    borderRadius: 6,
-  },
-  debugButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   feedList: {
     paddingHorizontal: 16,

@@ -13,6 +13,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import logger from '../../utils/logger';
 
 /**
  * friendshipService.js
@@ -94,7 +95,7 @@ export const sendFriendRequest = async (fromUserId, toUserId) => {
 
     return { success: true, friendshipId };
   } catch (error) {
-    console.error('Error sending friend request:', error);
+    logger.error('Error sending friend request', error);
     return { success: false, error: error.message };
   }
 };
@@ -145,7 +146,7 @@ export const acceptFriendRequest = async (friendshipId, userId) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error accepting friend request:', error);
+    logger.error('Error accepting friend request', error);
     return { success: false, error: error.message };
   }
 };
@@ -183,7 +184,7 @@ export const declineFriendRequest = async (friendshipId, userId) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error declining friend request:', error);
+    logger.error('Error declining friend request', error);
     return { success: false, error: error.message };
   }
 };
@@ -215,7 +216,7 @@ export const removeFriend = async (userId1, userId2) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error removing friend:', error);
+    logger.error('Error removing friend', error);
     return { success: false, error: error.message };
   }
 };
@@ -267,7 +268,7 @@ export const getFriendships = async (userId) => {
 
     return { success: true, friendships };
   } catch (error) {
-    console.error('Error getting friendships:', error);
+    logger.error('Error getting friendships', error);
     return { success: false, error: error.message };
   }
 };
@@ -319,7 +320,7 @@ export const getPendingRequests = async (userId) => {
 
     return { success: true, requests };
   } catch (error) {
-    console.error('Error getting pending requests:', error);
+    logger.error('Error getting pending requests', error);
     return { success: false, error: error.message };
   }
 };
@@ -365,7 +366,7 @@ export const getSentRequests = async (userId) => {
 
     return { success: true, requests };
   } catch (error) {
-    console.error('Error getting sent requests:', error);
+    logger.error('Error getting sent requests', error);
     return { success: false, error: error.message };
   }
 };
@@ -412,7 +413,7 @@ export const checkFriendshipStatus = async (userId1, userId2) => {
 
     return { success: true, status: 'none', friendshipId };
   } catch (error) {
-    console.error('Error checking friendship status:', error);
+    logger.error('Error checking friendship status', error);
     return { success: false, error: error.message };
   }
 };
@@ -427,7 +428,7 @@ export const checkFriendshipStatus = async (userId1, userId2) => {
  */
 export const subscribeFriendships = (userId, callback) => {
   if (!userId) {
-    console.error('Cannot subscribe: Invalid user ID');
+    logger.error('Cannot subscribe: Invalid user ID');
     return () => {};
   }
 
@@ -454,7 +455,7 @@ export const subscribeFriendships = (userId, callback) => {
       callback(friendships);
     },
     (error) => {
-      console.error('Error in friendship subscription:', error);
+      logger.error('Error in friendship subscription', error);
       callback([]);
     }
   );
@@ -489,7 +490,7 @@ export const getFriendUserIds = async (userId) => {
 
     return { success: true, friendUserIds };
   } catch (error) {
-    console.error('Error getting friend user IDs:', error);
+    logger.error('Error getting friend user IDs', error);
     return { success: false, error: error.message };
   }
 };

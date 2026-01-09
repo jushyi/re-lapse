@@ -17,6 +17,7 @@ import { db } from '../services/firebase/firebaseConfig';
 import { useAuth } from '../context/AuthContext';
 import { getFriendships, removeFriend, subscribeFriendships } from '../services/firebase/friendshipService';
 import { mediumImpact } from '../utils/haptics';
+import logger from '../utils/logger';
 
 /**
  * FriendsListScreen - View and manage friends
@@ -74,7 +75,7 @@ const FriendsListScreen = ({ navigation }) => {
               };
             }
           } catch (err) {
-            console.error('Error fetching user data:', err);
+            logger.error('Error fetching user data', err);
           }
 
           return null;
@@ -93,7 +94,7 @@ const FriendsListScreen = ({ navigation }) => {
       setFriends(validFriends);
       setFilteredFriends(validFriends);
     } catch (err) {
-      console.error('Error fetching friends:', err);
+      logger.error('Error fetching friends', err);
       setError('Failed to load friends');
     } finally {
       setLoading(false);
@@ -165,12 +166,12 @@ const FriendsListScreen = ({ navigation }) => {
               const result = await removeFriend(user.uid, friend.userId);
 
               if (!result.success) {
-                console.error('Failed to remove friend:', result.error);
+                logger.error('Failed to remove friend', { error: result.error });
                 alert(result.error || 'Failed to remove friend');
               }
               // Real-time listener will update the UI
             } catch (err) {
-              console.error('Error removing friend:', err);
+              logger.error('Error removing friend', err);
               alert('Failed to remove friend');
             }
           },

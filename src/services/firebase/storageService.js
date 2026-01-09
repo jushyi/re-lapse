@@ -1,6 +1,7 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from './firebaseConfig';
 import * as ImageManipulator from 'expo-image-manipulator';
+import logger from '../../utils/logger';
 
 /**
  * Compress image before upload
@@ -17,7 +18,7 @@ const compressImage = async (uri, quality = 0.7) => {
     );
     return manipResult.uri;
   } catch (error) {
-    console.error('Image compression error:', error);
+    logger.error('Image compression error', error);
     return uri; // Return original if compression fails
   }
 };

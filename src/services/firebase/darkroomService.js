@@ -7,6 +7,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import logger from '../../utils/logger';
 
 /**
  * Get or create darkroom document for user
@@ -44,7 +45,7 @@ export const getDarkroom = async (userId) => {
       darkroom: darkroomDoc.data(),
     };
   } catch (error) {
-    console.error('Error getting darkroom:', error);
+    logger.error('Error getting darkroom', error);
     return { success: false, error: error.message };
   }
 };
@@ -64,7 +65,7 @@ export const isDarkroomReadyToReveal = async (userId) => {
 
     return nextRevealAt && nextRevealAt.seconds <= now.seconds;
   } catch (error) {
-    console.error('Error checking darkroom reveal status:', error);
+    logger.error('Error checking darkroom reveal status', error);
     return false;
   }
 };
@@ -86,7 +87,7 @@ export const scheduleNextReveal = async (userId) => {
 
     return { success: true, nextRevealAt };
   } catch (error) {
-    console.error('Error scheduling next reveal:', error);
+    logger.error('Error scheduling next reveal', error);
     return { success: false, error: error.message };
   }
 };

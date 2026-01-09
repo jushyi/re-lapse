@@ -1,5 +1,6 @@
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import logger from '../../utils/logger';
 
 /**
  * Get today's date in YYYY-MM-DD format
@@ -41,7 +42,7 @@ export const getDailyPhotoCount = async (userId) => {
 
     return { success: true, count: userData.dailyPhotoCount || 0 };
   } catch (error) {
-    console.error('Error getting daily photo count:', error);
+    logger.error('Error getting daily photo count', error);
     return { success: false, error: error.message };
   }
 };
@@ -79,7 +80,7 @@ export const incrementDailyPhotoCount = async (userId) => {
 
     return { success: true, count: newCount };
   } catch (error) {
-    console.error('Error incrementing daily photo count:', error);
+    logger.error('Error incrementing daily photo count', error);
     return { success: false, error: error.message };
   }
 };
@@ -107,7 +108,7 @@ export const checkDailyLimit = async (userId) => {
       remainingShots,
     };
   } catch (error) {
-    console.error('Error checking daily limit:', error);
+    logger.error('Error checking daily limit', error);
     return { success: false, error: error.message };
   }
 };

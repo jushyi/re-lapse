@@ -1,118 +1,131 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
 import { useAuth } from '../context/AuthContext';
-import {
-  testPhotoRevealNotification,
-  testFriendRequestNotification,
-  testReactionNotification,
-} from '../utils/testNotifications';
-import { checkNotificationPermissions } from '../services/firebase/notificationService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../services/firebase/firebaseConfig';
+import { getFriendUserIds } from '../services/firebase/friendshipService';
+import logger from '../utils/logger';
 
 
 const ProfileScreen = () => {
-  const { signOut } = useAuth();
-  const [testStatus, setTestStatus] = useState('');
+  const { signOut, user, userProfile } = useAuth();
+  const [stats, setStats] = useState({ posts: 0, friends: 0, reactions: 0 });
+  const [loading, setLoading] = useState(true);
+
+  // Load user stats on mount
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+
+        // Get total photos (journaled + archived)
+        const photosQuery = query(
+          collection(db, 'photos'),
+          where('userId', '==', user.uid),
+          where('status', '==', 'triaged')
+        );
+        const photosSnapshot = await getDocs(photosQuery);
+        const postsCount = photosSnapshot.size;
+
+        // Get friends count
+        const friendIds = await getFriendUserIds(user.uid);
+        const friendsCount = friendIds.length;
+
+        // Get total reactions received on user's photos
+        let reactionsCount = 0;
+        photosSnapshot.docs.forEach((doc) => {
+          const photoData = doc.data();
+          reactionsCount += photoData.reactionCount || 0;
+        });
+
+        setStats({
+          posts: postsCount,
+          friends: friendsCount,
+          reactions: reactionsCount,
+        });
+      } catch (error) {
+        logger.error('Error loading profile stats', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const handleTestNotification = async (notificationType) => {
-    try {
-      // Check permissions first
-      const permCheck = await checkNotificationPermissions();
-      console.log('Permission check:', permCheck);
-
-      if (!permCheck.success || !permCheck.data?.granted) {
-        Alert.alert(
-          'Notifications Not Enabled',
-          `Please enable notifications in your device settings to test this feature.\n\nStatus: ${permCheck.data?.status || 'unknown'}`,
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      // Schedule the appropriate notification
-      switch (notificationType) {
-        case 'photo_reveal':
-          await testPhotoRevealNotification();
-          break;
-        case 'friend_request':
-          await testFriendRequestNotification();
-          break;
-        case 'reaction':
-          await testReactionNotification();
-          break;
-        default:
-          await testPhotoRevealNotification();
-      }
-
-      setTestStatus('Notification scheduled! Put app in background and wait 3 seconds...');
-      Alert.alert(
-        'Notification Scheduled',
-        'Put the app in the background (minimize it) and wait 3 seconds for the notification to appear.',
-        [{ text: 'OK' }]
-      );
-
-      // Clear status after 5 seconds
-      setTimeout(() => setTestStatus(''), 5000);
-    } catch (error) {
-      console.error('Test notification error:', error);
-      Alert.alert('Error', error.message);
-    }
-  };
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#000000" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.backButton}>← Back</Text>
-          <Text style={styles.settingsButton}>⚙ Settings</Text>
+          <Text style={styles.headerTitle}>Profile</Text>
         </View>
 
         <View style={styles.profileSection}>
-          <View style={styles.profilePhoto}>
-            <Text style={styles.profilePhotoText}>👤</Text>
-          </View>
-          <Text style={styles.username}>@username</Text>
-          <Text style={styles.bio}>Your bio goes here...</Text>
+          {userProfile?.profilePhotoURL ? (
+            <Image
+              source={{ uri: userProfile.profilePhotoURL }}
+              style={styles.profilePhoto}
+            />
+          ) : (
+            <View style={styles.profilePhoto}>
+              <Text style={styles.profilePhotoText}>
+                {userProfile?.displayName?.charAt(0).toUpperCase() || '👤'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
+          <Text style={styles.bio}>
+            {userProfile?.bio || 'No bio yet. Tap Edit Profile to add one.'}
+          </Text>
 
           <View style={styles.stats}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>127</Text>
-              <Text style={styles.statLabel}>Posts</Text>
+              <Text style={styles.statValue}>{stats.posts}</Text>
+              <Text style={styles.statLabel}>Photos</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>56</Text>
+              <Text style={styles.statValue}>{stats.friends}</Text>
               <Text style={styles.statLabel}>Friends</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>234</Text>
+              <Text style={styles.statValue}>{stats.reactions}</Text>
               <Text style={styles.statLabel}>Reactions</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.filtersSection}>
-          <Text style={styles.filterButton}>All Photos ▼</Text>
-          <Text style={styles.filterButton}>January 2026 ▼</Text>
-        </View>
-
-        <View style={styles.photoGrid}>
-          <Text style={styles.gridPlaceholder}>
-            Photo grid (3 columns) will appear here
-          </Text>
-          <Text style={styles.gridPlaceholder}>
-            Shows both journaled + archived photos
+        <View style={styles.comingSoonSection}>
+          <Text style={styles.comingSoonIcon}>📸</Text>
+          <Text style={styles.comingSoonTitle}>Photo Gallery</Text>
+          <Text style={styles.comingSoonText}>
+            Your photo gallery and filters will be available in the next update
           </Text>
         </View>
 
         <Button
           title="Edit Profile"
           variant="outline"
-          onPress={() => console.log('Edit profile')}
+          onPress={() => logger.debug('Edit profile button pressed')}
           style={styles.editButton}
         />
 
@@ -122,29 +135,6 @@ const ProfileScreen = () => {
           onPress={handleSignOut}
           style={styles.signOutButton}
         />
-
-        {testStatus ? (
-          <Text style={styles.testStatus}>{testStatus}</Text>
-        ) : null}
-
-        <View style={styles.testSection}>
-          <Text style={styles.testSectionTitle}>Test Notifications</Text>
-          <Button
-            title="📸 Photo Reveal"
-            onPress={() => handleTestNotification('photo_reveal')}
-            style={styles.testButton}
-          />
-          <Button
-            title="👋 Friend Request"
-            onPress={() => handleTestNotification('friend_request')}
-            style={styles.testButton}
-          />
-          <Button
-            title="❤️ Reaction"
-            onPress={() => handleTestNotification('reaction')}
-            style={styles.testButton}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -158,21 +148,28 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666666',
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    alignItems: 'center',
   },
-  backButton: {
-    fontSize: 16,
-    color: '#000000',
-  },
-  settingsButton: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
     color: '#000000',
   },
   profileSection: {
@@ -188,6 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
   },
   profilePhotoText: {
     fontSize: 48,
@@ -220,29 +218,30 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: 4,
   },
-  filtersSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+  comingSoonSection: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 32,
     backgroundColor: '#FFFFFF',
     marginTop: 16,
+    marginHorizontal: 16,
+    borderRadius: 12,
   },
-  filterButton: {
-    fontSize: 14,
+  comingSoonIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  comingSoonTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 8,
   },
-  photoGrid: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  gridPlaceholder: {
+  comingSoonText: {
     fontSize: 14,
     color: '#666666',
-    fontStyle: 'italic',
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: 20,
   },
   editButton: {
     marginHorizontal: 24,
@@ -251,31 +250,6 @@ const styles = StyleSheet.create({
   signOutButton: {
     marginHorizontal: 24,
     marginBottom: 24,
-  },
-  testSection: {
-    marginHorizontal: 24,
-    marginBottom: 40,
-    padding: 16,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-  },
-  testSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-    color: '#000000',
-  },
-  testButton: {
-    marginBottom: 12,
-  },
-  testStatus: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    marginHorizontal: 24,
-    marginBottom: 16,
-    fontStyle: 'italic',
   },
 });
 

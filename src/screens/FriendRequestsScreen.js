@@ -18,6 +18,7 @@ import {
   declineFriendRequest,
   subscribeFriendships,
 } from '../services/firebase/friendshipService';
+import logger from '../utils/logger';
 import { mediumImpact } from '../utils/haptics';
 
 /**
@@ -56,16 +57,16 @@ const FriendRequestsScreen = () => {
       if (receivedResult.success) {
         setReceivedRequests(receivedResult.requests);
       } else {
-        console.error('Error fetching received requests:', receivedResult.error);
+        logger.error('Error fetching received requests', { error: receivedResult.error });
       }
 
       if (sentResult.success) {
         setSentRequests(sentResult.requests);
       } else {
-        console.error('Error fetching sent requests:', sentResult.error);
+        logger.error('Error fetching sent requests', { error: sentResult.error });
       }
     } catch (err) {
-      console.error('Error fetching requests:', err);
+      logger.error('Error fetching requests', err);
       setError('Failed to load friend requests');
     } finally {
       setLoading(false);
@@ -114,12 +115,12 @@ const FriendRequestsScreen = () => {
       const result = await acceptFriendRequest(friendshipId, user.uid);
 
       if (!result.success) {
-        console.error('Failed to accept friend request:', result.error);
+        logger.error('Failed to accept friend request', { error: result.error });
         alert(result.error || 'Failed to accept friend request');
       }
       // Real-time listener will update the UI
     } catch (err) {
-      console.error('Error accepting friend request:', err);
+      logger.error('Error accepting friend request', err);
       alert('Failed to accept friend request');
     }
   };
@@ -134,12 +135,12 @@ const FriendRequestsScreen = () => {
       const result = await declineFriendRequest(friendshipId, user.uid);
 
       if (!result.success) {
-        console.error('Failed to decline friend request:', result.error);
+        logger.error('Failed to decline friend request', { error: result.error });
         alert(result.error || 'Failed to decline friend request');
       }
       // Real-time listener will update the UI
     } catch (err) {
-      console.error('Error declining friend request:', err);
+      logger.error('Error declining friend request', err);
       alert('Failed to decline friend request');
     }
   };
@@ -154,12 +155,12 @@ const FriendRequestsScreen = () => {
       const result = await declineFriendRequest(friendshipId, user.uid);
 
       if (!result.success) {
-        console.error('Failed to cancel friend request:', result.error);
+        logger.error('Failed to cancel friend request', { error: result.error });
         alert(result.error || 'Failed to cancel friend request');
       }
       // Real-time listener will update the UI
     } catch (err) {
-      console.error('Error canceling friend request:', err);
+      logger.error('Error canceling friend request', err);
       alert('Failed to cancel friend request');
     }
   };

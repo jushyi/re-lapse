@@ -21,6 +21,12 @@ import {
   getNotificationToken,
   storeNotificationToken,
 } from '../services/firebase/notificationService';
+import {
+  validateLength,
+  sanitizeDisplayName,
+  sanitizeBio,
+} from '../utils/validation';
+import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile } = useAuth();
@@ -82,10 +88,18 @@ const ProfileSetupScreen = ({ navigation }) => {
   const validate = () => {
     const newErrors = {};
 
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
-    } else if (displayName.trim().length < 2) {
-      newErrors.displayName = 'Display name must be at least 2 characters';
+    // Display name validation using centralized utility
+    const displayNameError = validateLength(displayName.trim(), 2, 50, 'Display name');
+    if (displayNameError) {
+      newErrors.displayName = displayNameError;
+    }
+
+    // Bio validation (optional field)
+    if (bio && bio.trim().length > 0) {
+      const bioError = validateLength(bio.trim(), 1, 150, 'Bio');
+      if (bioError) {
+        newErrors.bio = bioError;
+      }
     }
 
     setErrors(newErrors);
@@ -104,16 +118,16 @@ const ProfileSetupScreen = ({ navigation }) => {
         if (tokenResult.success && tokenResult.data) {
           // Store token in user document
           await storeNotificationToken(user.uid, tokenResult.data);
-          console.log('Notification permissions granted and token stored');
+          logger.info('Notification permissions granted and token stored');
         } else {
-          console.log('Could not get notification token:', tokenResult.error);
+          logger.warn('Could not get notification token', { error: tokenResult.error });
         }
       } else {
-        console.log('Notification permission denied:', permissionResult.error);
+        logger.info('Notification permission denied', { error: permissionResult.error });
         // Don't show error to user - notifications are optional
       }
     } catch (error) {
-      console.error('Error requesting notification permissions:', error);
+      logger.error('Error requesting notification permissions', error);
       // Don't block user flow - continue even if notifications fail
     }
   };
@@ -141,10 +155,10 @@ const ProfileSetupScreen = ({ navigation }) => {
         }
       }
 
-      // Update user document
+      // Update user document with sanitized data
       const updateData = {
-        displayName: displayName.trim(),
-        bio: bio.trim(),
+        displayName: sanitizeDisplayName(displayName.trim()),
+        bio: sanitizeBio(bio.trim()),
         photoURL,
         profileSetupCompleted: true,
       };

@@ -5,7 +5,6 @@ export { default as Card } from './Card';
 export { default as FeedPhotoCard } from './FeedPhotoCard';
 export { default as FeedLoadingSkeleton } from './FeedLoadingSkeleton';
 export { default as PhotoDetailModal } from './PhotoDetailModal';
-export { default as ReactionPicker } from './ReactionPicker';
 export { default as ReactionDisplay } from './ReactionDisplay';
 export { default as UserSearchCard } from './UserSearchCard';
 export { default as FriendRequestCard } from './FriendRequestCard';

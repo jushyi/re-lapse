@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { validateEmail, validateRequired } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
   const { signIn, signInWithApple, loading } = useAuth();
@@ -18,22 +19,19 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const validate = () => {
     const newErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email';
+    // Email validation using centralized utility
+    const emailError = validateEmail(email.trim());
+    if (emailError) {
+      newErrors.email = emailError;
     }
 
-    if (!password) {
-      newErrors.password = 'Password is required';
+    // Password validation
+    const passwordError = validateRequired(password, 'Password');
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     setErrors(newErrors);
