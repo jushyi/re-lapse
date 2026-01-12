@@ -75,14 +75,26 @@ const DarkroomScreen = () => {
 
   const handleTriage = async (photoId, action) => {
     try {
+      logger.debug('DarkroomScreen: Starting triage', { photoId, action, currentCount: photos.length });
+
       const result = await triagePhoto(photoId, action);
+      logger.debug('DarkroomScreen: Triage result', { success: result.success, error: result.error });
 
       if (!result.success) {
         throw new Error(result.error);
       }
 
       // Remove photo from list
-      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      setPhotos(prev => {
+        const newPhotos = prev.filter(p => p.id !== photoId);
+        logger.debug('DarkroomScreen: Photos updated', {
+          oldCount: prev.length,
+          newCount: newPhotos.length,
+          removedId: photoId,
+          nextPhotoId: newPhotos[0]?.id
+        });
+        return newPhotos;
+      });
 
       // Show confirmation
       const actionText = action === 'journal' ? 'journaled' : action === 'archive' ? 'archived' : 'deleted';
