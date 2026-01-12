@@ -9,12 +9,19 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const DarkroomBottomSheet = ({ visible, count, onClose, onComplete }) => {
   const [isPressing, setIsPressing] = useState(false);
+  const [hapticTriggered, setHapticTriggered] = useState({
+    25: false,
+    50: false,
+    75: false,
+    100: false,
+  });
   const progressValue = useRef(new Animated.Value(0)).current;
   const progressAnimation = useRef(null);
 
@@ -37,13 +44,60 @@ const DarkroomBottomSheet = ({ visible, count, onClose, onComplete }) => {
     if (!visible) {
       progressValue.setValue(0);
       setIsPressing(false);
+      setHapticTriggered({ 25: false, 50: false, 75: false, 100: false });
     }
   }, [visible, progressValue]);
+
+  // Haptic feedback listener
+  useEffect(() => {
+    const listener = progressValue.addListener(({ value }) => {
+      // Trigger haptics at milestones
+      if (value >= 0.25 && !hapticTriggered[25]) {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setHapticTriggered(prev => ({ ...prev, 25: true }));
+          logger.debug('DarkroomBottomSheet: Haptic at 25%');
+        } catch (error) {
+          logger.debug('DarkroomBottomSheet: Haptic failed at 25%', error);
+        }
+      }
+      if (value >= 0.50 && !hapticTriggered[50]) {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setHapticTriggered(prev => ({ ...prev, 50: true }));
+          logger.debug('DarkroomBottomSheet: Haptic at 50%');
+        } catch (error) {
+          logger.debug('DarkroomBottomSheet: Haptic failed at 50%', error);
+        }
+      }
+      if (value >= 0.75 && !hapticTriggered[75]) {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setHapticTriggered(prev => ({ ...prev, 75: true }));
+          logger.debug('DarkroomBottomSheet: Haptic at 75%');
+        } catch (error) {
+          logger.debug('DarkroomBottomSheet: Haptic failed at 75%', error);
+        }
+      }
+      if (value >= 1.0 && !hapticTriggered[100]) {
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setHapticTriggered(prev => ({ ...prev, 100: true }));
+          logger.info('DarkroomBottomSheet: Haptic at 100% (completion)');
+        } catch (error) {
+          logger.debug('DarkroomBottomSheet: Haptic failed at 100%', error);
+        }
+      }
+    });
+
+    return () => progressValue.removeListener(listener);
+  }, [progressValue, hapticTriggered]);
 
   const handlePressIn = () => {
     if (!visible || count === 0) return;
 
     setIsPressing(true);
+    setHapticTriggered({ 25: false, 50: false, 75: false, 100: false });
     logger.info('DarkroomBottomSheet: Press-and-hold started', { count });
 
     // Animate from 0 to 1 over 2 seconds
