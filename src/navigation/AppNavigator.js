@@ -260,7 +260,6 @@ const linking = {
         screens: {
           Feed: 'feed',
           Camera: 'camera',
-          Darkroom: 'darkroom',
           Profile: 'profile',
           Friends: {
             screens: {
@@ -271,6 +270,7 @@ const linking = {
           },
         },
       },
+      Darkroom: 'darkroom',
       Login: 'login',
       SignUp: 'signup',
       ProfileSetup: 'profile-setup',
@@ -323,7 +323,17 @@ const AppNavigator = () => {
           <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
         ) : (
           // Main App - User fully authenticated and profile complete
-          <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+            <Stack.Screen
+              name="Darkroom"
+              component={DarkroomScreen}
+              options={{
+                presentation: 'card',
+                animation: 'slide_from_right',
+              }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
