@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,19 @@ import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Swipe progress milestones for logging
+const PROGRESS_MILESTONES = [25, 50, 75, 100];
+
 /**
  * SwipeablePhotoCard - iOS Mail-style swipeable card for photo triage
  *
  * Features:
  * - Left swipe reveals Archive action (gray background, 📦 icon)
  * - Right swipe reveals Journal action (green background, 📖 icon)
- * - Progressive visual feedback during swipe
- * - Threshold-based completion (100px)
- * - Smooth animations with scale effect
+ * - Progressive visual feedback during swipe (opacity, scale animations)
+ * - Threshold-based completion (100px - iOS Mail behavior)
+ * - Smooth animations with photo scale effect (1.0 → 0.98)
+ * - Comprehensive logging at progress milestones
  *
  * @param {object} photo - Photo object to display
  * @param {function} onSwipeLeft - Callback when Archive action triggered
@@ -29,6 +33,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
   const swipeableRef = useRef(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [lastMilestone, setLastMilestone] = useState(0);
 
   useEffect(() => {
     logger.debug('SwipeablePhotoCard: Component mounted', { photoId: photo?.id });
@@ -39,10 +44,28 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
 
   /**
    * Render left action (Archive)
-   * Progressive animation: opacity and scale based on swipe progress
+   * Progressive animations based on swipe distance:
+   * - Background opacity: 0 → 1 at 60px
+   * - Text opacity: 0 → 1 at 80px
+   * - Icon scale: 0.5 → 1.0 at 100px
+   * - Photo scale: 1.0 → 0.98 at 60px (handled in handleSwipeableWillOpen)
    */
   const renderLeftActions = (progress, dragX) => {
-    const opacity = dragX.interpolate({
+    // Log progress milestones
+    dragX.addListener(({ value }) => {
+      const distance = Math.abs(value);
+      const currentMilestone = PROGRESS_MILESTONES.find(m => distance >= m && m > lastMilestone);
+      if (currentMilestone) {
+        logger.debug('SwipeablePhotoCard: Swipe progress milestone (left)', {
+          photoId: photo?.id,
+          milestone: `${currentMilestone}%`,
+          distance: Math.round(distance),
+        });
+        setLastMilestone(currentMilestone);
+      }
+    });
+
+    const backgroundOpacity = dragX.interpolate({
       inputRange: [0, 60],
       outputRange: [0, 1],
       extrapolate: 'clamp',
@@ -54,15 +77,15 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
       extrapolate: 'clamp',
     });
 
-    const scale = dragX.interpolate({
+    const iconScale = dragX.interpolate({
       inputRange: [0, 100],
       outputRange: [0.5, 1.0],
       extrapolate: 'clamp',
     });
 
     return (
-      <Animated.View style={[styles.actionContainer, styles.leftAction, { opacity }]}>
-        <Animated.View style={{ transform: [{ scale }] }}>
+      <Animated.View style={[styles.actionContainer, styles.leftAction, { opacity: backgroundOpacity }]}>
+        <Animated.View style={{ transform: [{ scale: iconScale }] }}>
           <Text style={styles.actionIcon}>📦</Text>
         </Animated.View>
         <Animated.Text style={[styles.actionText, { opacity: textOpacity }]}>
@@ -74,10 +97,28 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
 
   /**
    * Render right action (Journal)
-   * Progressive animation: opacity and scale based on swipe progress
+   * Progressive animations based on swipe distance:
+   * - Background opacity: 0 → 1 at -60px (right swipe)
+   * - Text opacity: 0 → 1 at -80px
+   * - Icon scale: 0.5 → 1.0 at -100px
+   * - Photo scale: 1.0 → 0.98 at -60px (handled in handleSwipeableWillOpen)
    */
   const renderRightActions = (progress, dragX) => {
-    const opacity = dragX.interpolate({
+    // Log progress milestones
+    dragX.addListener(({ value }) => {
+      const distance = Math.abs(value);
+      const currentMilestone = PROGRESS_MILESTONES.find(m => distance >= m && m > lastMilestone);
+      if (currentMilestone) {
+        logger.debug('SwipeablePhotoCard: Swipe progress milestone (right)', {
+          photoId: photo?.id,
+          milestone: `${currentMilestone}%`,
+          distance: Math.round(distance),
+        });
+        setLastMilestone(currentMilestone);
+      }
+    });
+
+    const backgroundOpacity = dragX.interpolate({
       inputRange: [-60, 0],
       outputRange: [1, 0],
       extrapolate: 'clamp',
@@ -89,15 +130,15 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
       extrapolate: 'clamp',
     });
 
-    const scale = dragX.interpolate({
+    const iconScale = dragX.interpolate({
       inputRange: [-100, 0],
       outputRange: [1.0, 0.5],
       extrapolate: 'clamp',
     });
 
     return (
-      <Animated.View style={[styles.actionContainer, styles.rightAction, { opacity }]}>
-        <Animated.View style={{ transform: [{ scale }] }}>
+      <Animated.View style={[styles.actionContainer, styles.rightAction, { opacity: backgroundOpacity }]}>
+        <Animated.View style={{ transform: [{ scale: iconScale }] }}>
           <Text style={styles.actionIcon}>📖</Text>
         </Animated.View>
         <Animated.Text style={[styles.actionText, { opacity: textOpacity }]}>
@@ -145,7 +186,7 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
   };
 
   /**
-   * Handle swipe complete or cancel - reset photo scale
+   * Handle swipe complete or cancel - reset photo scale and milestone tracking
    */
   const handleSwipeableClose = () => {
     Animated.timing(scaleAnim, {
@@ -153,6 +194,9 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight }) => {
       duration: 200,
       useNativeDriver: true,
     }).start();
+
+    // Reset milestone tracking for next swipe
+    setLastMilestone(0);
   };
 
   if (!photo || !photo.imageURL) {
@@ -203,6 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#2C2C2E',
     overflow: 'hidden',
+    // iOS-style shadow for depth
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -214,6 +259,7 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
   },
   actionContainer: {
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     width: 120,
@@ -221,21 +267,22 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   leftAction: {
-    backgroundColor: '#8E8E93', // iOS gray
+    backgroundColor: '#8E8E93', // iOS system gray
     marginLeft: 24,
   },
   rightAction: {
-    backgroundColor: '#34C759', // iOS green
+    backgroundColor: '#34C759', // iOS system green
     marginRight: 24,
   },
   actionIcon: {
     fontSize: 32,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   actionText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });
 
