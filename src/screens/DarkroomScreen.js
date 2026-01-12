@@ -107,6 +107,9 @@ const DarkroomScreen = () => {
         throw new Error(result.error);
       }
 
+      // Check if this is the last photo
+      const isLastPhoto = photos.length === 1;
+
       // Remove photo from list
       setPhotos(prev => {
         const newPhotos = prev.filter(p => p.id !== photoId);
@@ -114,7 +117,8 @@ const DarkroomScreen = () => {
           oldCount: prev.length,
           newCount: newPhotos.length,
           removedId: photoId,
-          nextPhotoId: newPhotos[0]?.id
+          nextPhotoId: newPhotos[0]?.id,
+          isLastPhoto,
         });
         return newPhotos;
       });
@@ -122,6 +126,14 @@ const DarkroomScreen = () => {
       // Show confirmation
       const actionText = action === 'journal' ? 'journaled' : action === 'archive' ? 'archived' : 'deleted';
       Alert.alert('Success', `Photo ${actionText} successfully!`);
+
+      // Navigate to success screen if this was the last photo
+      if (isLastPhoto) {
+        logger.info('DarkroomScreen: Last photo triaged, navigating to success', { action });
+        setTimeout(() => {
+          navigation.navigate('Success');
+        }, 300); // Allow Alert to show before navigation
+      }
     } catch (error) {
       logger.error('Error triaging photo', error);
       Alert.alert('Error', 'Failed to process photo. Please try again.');

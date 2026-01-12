@@ -20,6 +20,7 @@ import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import FeedScreen from '../screens/FeedScreen';
 import CameraScreen from '../screens/CameraScreen';
 import DarkroomScreen from '../screens/DarkroomScreen';
+import SuccessScreen from '../screens/SuccessScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FriendsListScreen from '../screens/FriendsListScreen';
 import UserSearchScreen from '../screens/UserSearchScreen';
@@ -332,6 +333,15 @@ const AppNavigator = () => {
                 presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: false, // Disable back swipe to prevent accidental exit
+              }}
+            />
+            <Stack.Screen
+              name="Success"
+              component={SuccessScreen}
+              options={{
+                presentation: 'card',
+                animation: 'slide_from_right',
+                gestureEnabled: false, // Prevent accidental back swipe
               }}
             />
           </>
