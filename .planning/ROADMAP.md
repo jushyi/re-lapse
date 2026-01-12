@@ -25,7 +25,7 @@ None
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Remove Darkroom tab from MainTabNavigator, update navigation structure
+- [x] 01-01: Remove Darkroom tab from MainTabNavigator, update navigation structure
 - [ ] 01-02: Add darkroom button to CameraScreen with badge count and disabled state
 
 ### Phase 2: Darkroom Bottom Sheet
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Navigation Restructure | 0/2 | Not started | - |
+| 1. Navigation Restructure | 1/2 | In progress | - |
 | 2. Darkroom Bottom Sheet | 0/2 | Not started | - |
 | 3. Swipe Gesture Triage | 0/2 | Not started | - |
 | 4. Success & Return Flow | 0/2 | Not started | - |
