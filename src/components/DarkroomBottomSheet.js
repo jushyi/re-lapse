@@ -58,22 +58,17 @@ const DarkroomBottomSheet = ({ visible, count, onClose, onComplete }) => {
         logger.debug('DarkroomBottomSheet: Progress reached 100%');
         logger.info('DarkroomBottomSheet: Press-and-hold completed', { count });
 
-        // Reset state
-        setIsPressing(false);
-        progressValue.setValue(0);
+        // Small delay to let user see full bar
+        setTimeout(() => {
+          // Reset state
+          setIsPressing(false);
+          progressValue.setValue(0);
 
-        // Trigger completion callback
-        if (onComplete) {
-          onComplete();
-        }
-      }
-    });
-
-    // Log progress milestones
-    progressValue.addListener(({ value }) => {
-      const percentage = Math.round(value * 100);
-      if (percentage === 25 || percentage === 50 || percentage === 75) {
-        logger.debug('DarkroomBottomSheet: Progress milestone', { percentage });
+          // Trigger completion callback
+          if (onComplete) {
+            onComplete();
+          }
+        }, 200);
       }
     });
   };

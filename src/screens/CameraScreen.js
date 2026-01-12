@@ -251,9 +251,9 @@ const CameraScreen = () => {
           setIsBottomSheetVisible(false);
         }}
         onComplete={() => {
-          // TODO: Will add navigation in next plan
-          logger.debug('DarkroomButton: Bottom sheet completed');
+          logger.info('CameraScreen: Navigating to Darkroom after press-and-hold', { count: darkroomCount });
           setIsBottomSheetVisible(false);
+          navigation.navigate('Darkroom');
         }}
       />
     </View>
