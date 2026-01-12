@@ -128,6 +128,8 @@ export const getUserPhotos = async (userId) => {
  * @returns {Promise<number>} - Count of developing photos
  */
 export const getDevelopingPhotoCount = async (userId) => {
+  logger.debug('PhotoService.getDevelopingPhotoCount: Starting', { userId });
+
   try {
     const developingQuery = query(
       collection(db, 'photos'),
@@ -136,9 +138,19 @@ export const getDevelopingPhotoCount = async (userId) => {
     );
 
     const snapshot = await getDocs(developingQuery);
-    return snapshot.size;
+    const count = snapshot.size;
+
+    logger.info('PhotoService.getDevelopingPhotoCount: Retrieved count', {
+      userId,
+      count
+    });
+
+    return count;
   } catch (error) {
-    logger.error('Error getting developing photo count', error);
+    logger.error('PhotoService.getDevelopingPhotoCount: Failed', {
+      userId,
+      error: error.message
+    });
     return 0;
   }
 };
@@ -149,9 +161,13 @@ export const getDevelopingPhotoCount = async (userId) => {
  * @returns {Promise} - Array of developing photo documents
  */
 export const getDevelopingPhotos = async (userId) => {
+  logger.debug('PhotoService.getDevelopingPhotos: Starting', { userId });
+
   try {
     // Get both developing and revealed photos
     // Note: Removed orderBy to avoid composite index requirement
+    logger.debug('PhotoService.getDevelopingPhotos: Querying developing and revealed photos');
+
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
@@ -179,14 +195,27 @@ export const getDevelopingPhotos = async (userId) => {
       ...doc.data(),
     }));
 
+    logger.debug('PhotoService.getDevelopingPhotos: Query results', {
+      developingCount: developingPhotos.length,
+      revealedCount: revealedPhotos.length
+    });
+
     // Combine and sort by capturedAt in JavaScript (client-side sorting)
     const allPhotos = [...developingPhotos, ...revealedPhotos].sort((a, b) => {
       return a.capturedAt?.seconds - b.capturedAt?.seconds;
     });
 
+    logger.info('PhotoService.getDevelopingPhotos: Retrieved photos', {
+      userId,
+      totalCount: allPhotos.length
+    });
+
     return { success: true, photos: allPhotos };
   } catch (error) {
-    logger.error('Error getting developing photos', error);
+    logger.error('PhotoService.getDevelopingPhotos: Failed', {
+      userId,
+      error: error.message
+    });
     return { success: false, error: error.message };
   }
 };
