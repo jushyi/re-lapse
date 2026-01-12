@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { createPhoto, getDarkroomCounts } from '../services/firebase/photoService';
 import logger from '../utils/logger';
 import Svg, { Path } from 'react-native-svg';
@@ -42,6 +42,7 @@ const CameraScreen = () => {
 
     const loadDarkroomCounts = async () => {
       const counts = await getDarkroomCounts(user.uid);
+      logger.debug('CameraScreen: Darkroom counts updated', counts);
       setDarkroomCounts(counts);
     };
 
@@ -52,6 +53,22 @@ const CameraScreen = () => {
 
     return () => clearInterval(interval);
   }, [user]);
+
+  // Reload counts when screen comes into focus (after returning from Darkroom)
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+
+      const loadDarkroomCounts = async () => {
+        logger.info('CameraScreen: Reloading darkroom counts on focus');
+        const counts = await getDarkroomCounts(user.uid);
+        logger.debug('CameraScreen: Darkroom counts after focus', counts);
+        setDarkroomCounts(counts);
+      };
+
+      loadDarkroomCounts();
+    }, [user])
+  );
 
   // Handle permission request
   if (!permission) {
