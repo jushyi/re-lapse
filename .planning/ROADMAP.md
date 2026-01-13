@@ -4,86 +4,38 @@
 
 This roadmap transforms the Camera and Darkroom experience from two separate tabs into a unified, native-feeling iOS interface. Starting with navigation restructuring, we'll progressively add the darkroom button, implement press-and-hold reveals with haptic feedback, replace buttons with iOS Mail-style swipe gestures, add celebratory success moments, and polish the visual design system across all camera controls.
 
-## Domain Expertise
+## Milestones
 
-None
+- [v1.1 Camera/Darkroom UX Refactor](milestones/v1.1-ROADMAP.md) (Phases 1-5) - SHIPPED 2026-01-12
 
-## Phases
+## Completed Milestones
 
-- [ ] **Phase 1: Navigation Restructure** - Remove Darkroom tab, add darkroom button to Camera
-- [ ] **Phase 2: Darkroom Bottom Sheet** - Press-and-hold reveal UI with progress bar
-- [ ] **Phase 3: Swipe Gesture Triage** - iOS Mail-style swipe actions for Archive/Journal
-- [ ] **Phase 4: Success & Return Flow** - Animated celebration page with camera return
-- [ ] **Phase 5: Camera Icon Redesign** - Update control icons for visual consistency
+<details>
+<summary>v1.1 Camera/Darkroom UX Refactor (Phases 1-5) - SHIPPED 2026-01-12</summary>
 
-## Phase Details
+- [x] Phase 1: Navigation Restructure (1/1 plans) - completed 2026-01-12
+- [x] Phase 2: Darkroom Bottom Sheet (2/2 plans) - completed 2026-01-12
+- [x] Phase 3: Swipe Gesture Triage (2/2 plans) - completed 2026-01-12
+- [x] Phase 4: Success & Return Flow (2/2 plans) - completed 2026-01-13
+- [x] Phase 5: Camera Icon Redesign (1/1 plan) - completed 2026-01-13
 
-### Phase 1: Navigation Restructure
-**Goal**: Remove Darkroom tab from bottom navigation and add darkroom button to CameraScreen
-**Depends on**: Nothing (first phase)
-**Research**: Unlikely (React Navigation restructuring with established patterns)
-**Plans**: 1 plan
-**Status**: Complete
+**Stats:** 5 phases, 8 plans, 4.3 hours execution time
+**See:** [Full archive](milestones/v1.1-ROADMAP.md)
 
-Plans:
-- [x] 01-01: Navigation restructure (remove Darkroom tab, add darkroom button to CameraScreen)
-
-### Phase 2: Darkroom Bottom Sheet
-**Goal**: Implement press-and-hold reveal interaction with progress bar and haptic feedback
-**Depends on**: Phase 1
-**Research**: Unlikely (React Native bottom sheet patterns, existing haptic utilities)
-**Plans**: 2 plans
-**Status**: Complete
-
-Plans:
-- [x] 02-01: Create bottom sheet component with press-and-hold progress bar
-- [x] 02-02: Connect reveal logic with haptic feedback and photo triage transition
-
-### Phase 3: Swipe Gesture Triage
-**Goal**: Replace Archive/Journal buttons with iOS Mail-style swipe gestures
-**Depends on**: Phase 2
-**Research**: Likely (native iOS gesture patterns)
-**Research topics**: React Native gesture libraries (react-native-gesture-handler, Reanimated), iOS Mail swipe-to-action patterns, gesture conflict resolution with bottom sheet
-**Plans**: 2 plans
-**Status**: Complete
-
-Plans:
-- [x] 03-01: Implement swipe gesture detection with left/right actions
-- [x] 03-02: Add native iOS animations and integrate with photoService triage
-
-### Phase 4: Success & Return Flow
-**Goal**: Create animated celebration page after triage with camera return
-**Depends on**: Phase 3
-**Research**: Unlikely (animation libraries already in stack)
-**Plans**: 2 plans
-**Status**: Complete
-
-Plans:
-- [x] 04-01: Build success page with animated celebration (confetti/animation)
-- [x] 04-02: Add "Return to Camera" button and navigation flow
-
-### Phase 5: Camera Icon Redesign
-**Goal**: Update camera control icons to match bottom nav design system
-**Depends on**: Phase 4
-**Research**: Unlikely (internal icon system)
-**Plans**: 1 plan
-**Status**: Complete
-
-Plans:
-- [x] 05-01: Redesign flash, camera toggle icons for visual consistency
+</details>
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Navigation Restructure | 1/1 | Complete | 2026-01-12 |
-| 2. Darkroom Bottom Sheet | 2/2 | Complete | 2026-01-12 |
-| 3. Swipe Gesture Triage | 2/2 | Complete | 2026-01-12 |
-| 4. Success & Return Flow | 2/2 | Complete | 2026-01-13 |
-| 5. Camera Icon Redesign | 1/1 | Complete | 2026-01-13 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Navigation Restructure | v1.1 | 1/1 | Complete | 2026-01-12 |
+| 2. Darkroom Bottom Sheet | v1.1 | 2/2 | Complete | 2026-01-12 |
+| 3. Swipe Gesture Triage | v1.1 | 2/2 | Complete | 2026-01-12 |
+| 4. Success & Return Flow | v1.1 | 2/2 | Complete | 2026-01-13 |
+| 5. Camera Icon Redesign | v1.1 | 1/1 | Complete | 2026-01-13 |
 
 ## MILESTONE COMPLETE
 
