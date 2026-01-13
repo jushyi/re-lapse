@@ -33,12 +33,13 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 
 **Goal**: Set up Firebase phone authentication with phone number input UI and SMS code verification
 **Depends on**: v1.1 complete
-**Research**: Likely (Firebase Phone Auth API, APNs setup for iOS)
-**Research topics**: Firebase Phone Auth configuration, reCAPTCHA verification, APNs silent push setup, expo-auth-session integration
-**Plans**: TBD
+**Research**: Complete (06-RESEARCH.md)
+**Plans**: 3
 
 Plans:
-- [ ] 06-01: TBD (run /gsd:plan-phase 6 to break down)
+- [ ] 06-01: React Native Firebase setup (dependencies, app.json, Firebase Console)
+- [ ] 06-02: Phone auth service and screens (phoneAuthService, PhoneInput, Verification)
+- [ ] 06-03: AuthContext phone auth integration (state management, navigation)
 
 #### Phase 7: Legacy Auth Removal & Cleanup
 
@@ -71,6 +72,6 @@ Plans:
 | 3. Swipe Gesture Triage | v1.1 | 2/2 | Complete | 2026-01-12 |
 | 4. Success & Return Flow | v1.1 | 2/2 | Complete | 2026-01-13 |
 | 5. Camera Icon Redesign | v1.1 | 1/1 | Complete | 2026-01-13 |
-| 6. Phone Auth Implementation | v1.2 | 0/? | Not started | - |
+| 6. Phone Auth Implementation | v1.2 | 0/3 | Planned | - |
 | 7. Legacy Auth Removal & Cleanup | v1.2 | 0/? | Not started | - |
 | 8. Polish & Testing | v1.2 | 0/? | Not started | - |
