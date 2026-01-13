@@ -45,3 +45,4 @@ yarn-error.*
 /.claude/
 # Claude Code temp files
 tmpclaude-*-cwd
+GoogleService-Info.plist

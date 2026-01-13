@@ -13,7 +13,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lapseclone.app"
+      "bundleIdentifier": "com.lapseclone.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "notification": {
       "iosDisplayInForeground": true
@@ -50,7 +54,6 @@
           }
         }
       ],
-      "@react-native-firebase/app",
       "@react-native-firebase/auth"
     ],
     "extra": {
