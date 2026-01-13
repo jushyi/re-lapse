@@ -15,6 +15,9 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+// Phone auth screens
+import PhoneInputScreen from '../screens/PhoneInputScreen';
+import VerificationScreen from '../screens/VerificationScreen';
 
 // Import main app screens
 import FeedScreen from '../screens/FeedScreen';
@@ -275,6 +278,8 @@ const linking = {
       Login: 'login',
       SignUp: 'signup',
       ProfileSetup: 'profile-setup',
+      PhoneInput: 'phone-input',
+      Verification: 'verification',
     },
   },
 };
@@ -317,6 +322,14 @@ const AppNavigator = () => {
             <Stack.Screen
               name="ForgotPassword"
               component={ForgotPasswordScreen}
+            />
+            <Stack.Screen
+              name="PhoneInput"
+              component={PhoneInputScreen}
+            />
+            <Stack.Screen
+              name="Verification"
+              component={VerificationScreen}
             />
           </>
         ) : needsProfileSetup ? (
