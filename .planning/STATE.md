@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-12)
 ## Current Position
 
 Phase: 6 of 8 (Phone Auth Implementation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-13 - Completed 06-01-PLAN.md
+Last activity: 2026-01-13 - Completed 06-02-PLAN.md
 
-Progress: █░░░░░░░░░ 14% (v1.2: 1/~7 plans)
+Progress: ██░░░░░░░░ 29% (v1.2: 2/~7 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 30 min
-- Total execution time: 4.5 hours
+- Total plans completed: 10
+- Average duration: 29 min
+- Total execution time: 4.8 hours
 
 **By Phase (v1.1):**
 
@@ -37,7 +37,7 @@ Progress: █░░░░░░░░░ 14% (v1.2: 1/~7 plans)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 6 | 1/3 | 12 min | 12 min |
+| 6 | 2/3 | 30 min | 15 min |
 
 ## Accumulated Context
 
@@ -50,6 +50,9 @@ All v1.1 decisions documented in PROJECT.md Key Decisions table with outcomes ma
 |-------|----------|-----------|
 | 6-01 | React Native Firebase for phone auth | JS SDK cannot support silent APNs verification; native SDK enables seamless phone auth |
 | 6-01 | libphonenumber-js for validation | Lightweight validation first, can enhance UI later |
+| 6-02 | Manual country picker (no external lib) | Simpler implementation with 15 common countries, can enhance later |
+| 6-02 | Auto-submit on 6 digits | Better UX - no need to press verify button |
+| 6-02 | Navigate back for resend | Simpler than in-place resend, allows number correction |
 
 ### Deferred Issues
 
@@ -67,14 +70,14 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-13
-Stopped at: Completed 06-01-PLAN.md (React Native Firebase Setup)
+Stopped at: Completed 06-02-PLAN.md (Phone Auth Service and Screens)
 Resume file: None
 
 ## What's Next
 
 Continue Phase 6 Phone Auth Implementation:
 - [x] 06-01: React Native Firebase setup - COMPLETE
-- [ ] 06-02: Phone auth service and screens (phoneAuthService, PhoneInput, Verification)
+- [x] 06-02: Phone auth service and screens - COMPLETE
 - [ ] 06-03: AuthContext phone auth integration (state management, navigation)
 
 Then:
