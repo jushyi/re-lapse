@@ -24,6 +24,63 @@ const FOOTER_HEIGHT = 200;
 const CAMERA_HEIGHT = SCREEN_HEIGHT - FOOTER_HEIGHT;
 const FLOATING_CONTROL_OFFSET = 10; // Gap above footer edge
 
+// Flash icon SVG component - matches bottom nav design system
+const FlashIcon = ({ color = '#FFFFFF', mode = 'off' }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M13 2L4.09 12.35a1 1 0 0 0 .77 1.65H11v6a1 1 0 0 0 1.84.54l8.91-10.35a1 1 0 0 0-.77-1.65H13V2z"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill={mode === 'on' ? color : 'none'}
+    />
+  </Svg>
+);
+
+// Flip camera icon SVG component - matches bottom nav design system
+const FlipCameraIcon = ({ color = '#FFFFFF' }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    {/* Camera body outline */}
+    <Path
+      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2v11z"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Circular arrows for flip/rotate */}
+    <Path
+      d="M12 17a4 4 0 1 0 0-8"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M8 13l-1.5-1.5L8 10"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 9a4 4 0 1 1 0 8"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 13l1.5 1.5L16 16"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const CameraScreen = () => {
   const { user } = useAuth();
   const navigation = useNavigation();
@@ -108,18 +165,6 @@ const CameraScreen = () => {
       if (current === 'on') return 'auto';
       return 'off';
     });
-  };
-
-  const getFlashIcon = () => {
-    if (flash === 'off') return '⚡️';
-    if (flash === 'on') return '⚡';
-    return '⚡️';
-  };
-
-  const getFlashLabel = () => {
-    if (flash === 'off') return 'OFF';
-    if (flash === 'on') return 'ON';
-    return 'AUTO';
   };
 
   const playPhotoAnimation = (photoUri) => {
@@ -257,8 +302,8 @@ const CameraScreen = () => {
           style={styles.floatingButton}
           onPress={toggleFlash}
         >
-          <Text style={styles.flashIcon}>{getFlashIcon()}</Text>
-          <Text style={styles.flashLabel}>{getFlashLabel()}</Text>
+          <FlashIcon color="#FFFFFF" mode={flash} />
+          {flash === 'auto' && <Text style={styles.flashLabel}>AUTO</Text>}
         </TouchableOpacity>
 
         {/* Flip Camera Button (bottom right of camera area) */}
@@ -266,7 +311,7 @@ const CameraScreen = () => {
           style={styles.floatingButton}
           onPress={toggleCameraFacing}
         >
-          <Text style={styles.controlIcon}>🔄</Text>
+          <FlipCameraIcon color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -472,17 +517,11 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   // Flash control
-  flashIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
   flashLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#FFFFFF',
     fontWeight: '600',
-  },
-  controlIcon: {
-    fontSize: 28,
+    marginTop: 4,
   },
   // Capture button
   captureButton: {
