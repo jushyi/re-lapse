@@ -49,3 +49,14 @@ export {
   checkNotificationPermissions,
   scheduleTestNotification,
 } from './notificationService';
+
+// Export Phone Auth service functions (React Native Firebase)
+export {
+  validatePhoneNumber,
+  sendVerificationCode,
+  verifyCode,
+  getCurrentUser as getPhoneAuthCurrentUser,
+  signOut as phoneAuthSignOut,
+  onAuthStateChanged as phoneAuthOnAuthStateChanged,
+  getPhoneAuthErrorMessage,
+} from './phoneAuthService';
