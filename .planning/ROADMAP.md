@@ -37,7 +37,7 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 **Plans**: 3
 
 Plans:
-- [ ] 06-01: React Native Firebase setup (dependencies, app.json, Firebase Console)
+- [x] 06-01: React Native Firebase setup (dependencies, app.json, Firebase Console) - completed 2026-01-13
 - [ ] 06-02: Phone auth service and screens (phoneAuthService, PhoneInput, Verification)
 - [ ] 06-03: AuthContext phone auth integration (state management, navigation)
 
@@ -72,6 +72,6 @@ Plans:
 | 3. Swipe Gesture Triage | v1.1 | 2/2 | Complete | 2026-01-12 |
 | 4. Success & Return Flow | v1.1 | 2/2 | Complete | 2026-01-13 |
 | 5. Camera Icon Redesign | v1.1 | 1/1 | Complete | 2026-01-13 |
-| 6. Phone Auth Implementation | v1.2 | 0/3 | Planned | - |
+| 6. Phone Auth Implementation | v1.2 | 1/3 | In progress | - |
 | 7. Legacy Auth Removal & Cleanup | v1.2 | 0/? | Not started | - |
 | 8. Polish & Testing | v1.2 | 0/? | Not started | - |
