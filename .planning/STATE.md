@@ -70,8 +70,17 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-13
-Stopped at: Completed 06-02-PLAN.md (Phone Auth Service and Screens)
+Stopped at: 06-03-PLAN.md Task 4 checkpoint - BLOCKED on Apple Developer account
 Resume file: None
+
+### Blocker
+
+**Apple Developer Account Required**
+- Tasks 1-3 of 06-03 complete (code changes done)
+- Task 4 (verification checkpoint) requires EAS Build
+- EAS Build for iOS requires Apple Developer Program ($99/year)
+- User signing up - account approval takes 24-48 hours
+- Once approved, run: `eas build --profile development --platform ios`
 
 ## What's Next
 
