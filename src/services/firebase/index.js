@@ -1,5 +1,6 @@
 // Export Firebase configuration and instances
-export { app, auth, db, storage } from './firebaseConfig';
+// Note: 'auth' is not exported - authentication uses React Native Firebase directly
+export { app, db, storage } from './firebaseConfig';
 
 // Export Firestore service functions
 export {
