@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-12)
 ## Current Position
 
 Phase: 6 of 8 (Phone Auth Implementation)
-Plan: 2 of 3 in current phase
+Plan: 2 of 3 in current phase (+ FIX plan complete)
 Status: In progress
-Last activity: 2026-01-13 - Completed 06-02-PLAN.md
+Last activity: 2026-01-19 - Completed 06-FIX-PLAN.md (UAT blocker resolved)
 
 Progress: ██░░░░░░░░ 29% (v1.2: 2/~7 plans)
 
@@ -53,6 +53,7 @@ All v1.1 decisions documented in PROJECT.md Key Decisions table with outcomes ma
 | 6-02 | Manual country picker (no external lib) | Simpler implementation with 15 common countries, can enhance later |
 | 6-02 | Auto-submit on 6 digits | Better UX - no need to press verify button |
 | 6-02 | Navigate back for resend | Simpler than in-place resend, allows number correction |
+| 6-FIX | reCAPTCHA fallback over APNs | Simpler than configuring APNs certificates; works without full push notification setup |
 
 ### Deferred Issues
 
@@ -69,24 +70,23 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-13
-Stopped at: 06-03-PLAN.md Task 4 checkpoint - BLOCKED on Apple Developer account
+Last session: 2026-01-19
+Stopped at: Completed 06-FIX-PLAN.md
 Resume file: None
 
-### Blocker
+### Recent Progress
 
-**Apple Developer Account Required**
-- Tasks 1-3 of 06-03 complete (code changes done)
-- Task 4 (verification checkpoint) requires EAS Build
-- EAS Build for iOS requires Apple Developer Program ($99/year)
-- User signing up - account approval takes 24-48 hours
-- Once approved, run: `eas build --profile development --platform ios`
+- UAT-001 blocker resolved (phone auth crash)
+- Apple Developer account now active
+- EAS builds working
+- Phone auth verified end-to-end
 
 ## What's Next
 
 Continue Phase 6 Phone Auth Implementation:
 - [x] 06-01: React Native Firebase setup - COMPLETE
 - [x] 06-02: Phone auth service and screens - COMPLETE
+- [x] 06-FIX: Phone auth reCAPTCHA configuration - COMPLETE (UAT-001 resolved)
 - [ ] 06-03: AuthContext phone auth integration (state management, navigation)
 
 Then:
