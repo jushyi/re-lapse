@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-12)
 
 ## Current Position
 
-Phase: 7 of 8 (Legacy Auth Removal & Cleanup) - COMPLETE
-Plan: 1 of 1 in current phase
-Status: Phase 7 complete - ready for Phase 8
-Last activity: 2026-01-19 - Completed 07-01-PLAN.md (Legacy auth removal)
+Phase: 8 of 8 (Polish & Testing)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-01-19 - Completed 08-01-PLAN.md (Phone auth cleanup & error boundaries)
 
-Progress: █████████░ 71% (v1.2: 5/7 plans)
+Progress: █████████░ 86% (v1.2: 6/7 plans)
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: █████████░ 71% (v1.2: 5/7 plans)
 |-------|-------|-------|----------|
 | 6 | 4/4 | 90 min | 23 min |
 | 7 | 1/1 | 15 min | 15 min |
+| 8 | 1/? | 4 min | 4 min |
 
 ## Accumulated Context
 
@@ -59,6 +60,7 @@ All v1.1 decisions documented in PROJECT.md Key Decisions table with outcomes ma
 | 6-03 | Check profileSetupCompleted !== true | Handles false, undefined, and null for legacy and new users |
 | 7-01 | Full deletion of authService.js | All email auth functions removed; entire file deleted rather than keeping utility functions |
 | 7-01 | Removed Firebase JS SDK auth initialization | Authentication now uses React Native Firebase exclusively; JS SDK retained only for Firestore/Storage |
+| 8-01 | ErrorBoundary inside NavigationContainer, outside AuthProvider | Catches UI errors while allowing auth state listeners to work normally |
 
 ### Deferred Issues
 
@@ -76,21 +78,19 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 07-01-PLAN.md (Phase 7 complete)
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
 
 ### Recent Progress
 
-- Phase 7 complete: Removed all legacy email/Apple auth code (~973 lines)
-- AuthContext now phone-only (signUp, signIn, signInWithApple removed)
-- Deleted LoginScreen, SignUpScreen, ForgotPasswordScreen
-- Deleted authService.js entirely
-- Firebase JS SDK auth initialization removed
+- Phase 8 started: Polish & Testing
+- 08-01 complete: Committed phone auth cleanup, added ErrorBoundary component
+- App now protected from white-screen crashes
 
 ## What's Next
 
-Phase 7 Legacy Auth Removal - COMPLETE:
-- [x] 07-01: Legacy auth removal (email/Apple auth, screens, authService.js) - COMPLETE
+Phase 8 Polish & Testing - IN PROGRESS:
+- [x] 08-01: Phone auth cleanup & error boundaries - COMPLETE
 
 Next:
-- Phase 8: Polish & Testing (Error handling, international support)
+- Continue Phase 8 plans (TBD)

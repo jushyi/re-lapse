@@ -60,9 +60,10 @@ Plans:
 **Depends on**: Phase 7
 **Research**: Unlikely (internal patterns)
 **Plans**: TBD
+**Status**: In progress
 
 Plans:
-- [ ] 08-01: TBD
+- [x] 08-01: Phone auth cleanup & error boundaries - completed 2026-01-19
 
 ## Progress
 
@@ -77,4 +78,4 @@ Plans:
 | 5. Camera Icon Redesign | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 6. Phone Auth Implementation | v1.2 | 4/4 | Complete | 2026-01-19 |
 | 7. Legacy Auth Removal & Cleanup | v1.2 | 1/1 | Complete | 2026-01-19 |
-| 8. Polish & Testing | v1.2 | 0/? | Not started | - |
+| 8. Polish & Testing | v1.2 | 1/? | In progress | - |
