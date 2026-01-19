@@ -31,13 +31,43 @@ const createUserDocumentNative = async (userId, userData) => {
 
 const getUserDocumentNative = async (userId) => {
   try {
+    logger.debug('getUserDocumentNative: Fetching user document', { userId });
     const userDoc = await firestore().collection('users').doc(userId).get();
-    if (userDoc.exists) {
-      return { success: true, data: { id: userDoc.id, ...userDoc.data() } };
+    // RN Firebase uses exists as a boolean property (not a function in newer versions)
+    // But some versions use exists() as a method - check both
+    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    logger.debug('getUserDocumentNative: Document fetched', {
+      userId,
+      exists: docExists,
+      hasData: !!userDoc.data()
+    });
+    if (docExists) {
+      const data = userDoc.data();
+      logger.debug('getUserDocumentNative: User found', {
+        userId,
+        profileSetupCompleted: data?.profileSetupCompleted
+      });
+      return { success: true, data: { id: userDoc.id, ...data } };
     }
+    logger.debug('getUserDocumentNative: User not found', { userId });
     return { success: false, error: 'User not found' };
   } catch (error) {
     logger.error('getUserDocumentNative: Failed', { error: error.message });
+    return { success: false, error: error.message };
+  }
+};
+
+const updateUserDocumentNative = async (userId, updateData) => {
+  try {
+    logger.debug('updateUserDocumentNative: Updating user document', { userId, fields: Object.keys(updateData) });
+    await firestore().collection('users').doc(userId).update({
+      ...updateData,
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
+    logger.info('updateUserDocumentNative: Success', { userId });
+    return { success: true };
+  } catch (error) {
+    logger.error('updateUserDocumentNative: Failed', { error: error.message });
     return { success: false, error: error.message };
   }
 };
@@ -76,11 +106,19 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(null);
 
         // Fetch user profile from Firestore using native SDK (shares auth state with RN Firebase Auth)
-        logger.debug('AuthContext: Fetching user profile from Firestore (native)');
+        logger.debug('AuthContext: Fetching user profile from Firestore (native)', {
+          userId: firebaseUser.uid
+        });
         const profileResult = await getUserDocumentNative(firebaseUser.uid);
+        logger.debug('AuthContext: getUserDocumentNative result', {
+          success: profileResult.success,
+          hasData: !!profileResult.data,
+          error: profileResult.error
+        });
         if (profileResult.success) {
-          logger.debug('AuthContext: User profile loaded', {
-            profileSetupCompleted: profileResult.data?.profileSetupCompleted
+          logger.info('AuthContext: User profile loaded - checking profileSetupCompleted', {
+            profileSetupCompleted: profileResult.data?.profileSetupCompleted,
+            willShowProfileSetup: profileResult.data?.profileSetupCompleted === false
           });
           setUserProfile(profileResult.data);
         } else {
@@ -100,17 +138,24 @@ export const AuthProvider = ({ children }) => {
 
           const createResult = await createUserDocumentNative(firebaseUser.uid, userDoc);
           if (createResult.success) {
-            setUserProfile({ ...userDoc, createdAt: new Date() });
-            logger.info('AuthContext: New user profile created', {
-              profileSetupCompleted: userDoc.profileSetupCompleted
+            const newProfile = { ...userDoc, createdAt: new Date() };
+            logger.info('AuthContext: New user profile created - setting userProfile', {
+              profileSetupCompleted: newProfile.profileSetupCompleted,
+              willShowProfileSetup: newProfile.profileSetupCompleted === false
             });
+            setUserProfile(newProfile);
           } else {
             // Even if Firestore write fails, use the local userDoc
             // so user can still proceed to ProfileSetup
             logger.error('AuthContext: Failed to create user document in Firestore', {
               error: createResult.error
             });
-            setUserProfile({ ...userDoc, createdAt: new Date() });
+            const fallbackProfile = { ...userDoc, createdAt: new Date() };
+            logger.info('AuthContext: Using fallback profile - setting userProfile', {
+              profileSetupCompleted: fallbackProfile.profileSetupCompleted,
+              willShowProfileSetup: fallbackProfile.profileSetupCompleted === false
+            });
+            setUserProfile(fallbackProfile);
           }
         }
       } else {
@@ -254,6 +299,8 @@ export const AuthProvider = ({ children }) => {
     // Common
     signOut,
     updateUserProfile,
+    // Native Firestore operations (required for phone auth users)
+    updateUserDocumentNative,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

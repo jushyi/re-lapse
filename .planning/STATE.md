@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-12)
 
 ## Current Position
 
-Phase: 6 of 8 (Phone Auth Implementation)
-Plan: 2 of 3 in current phase (+ FIX plan complete)
-Status: In progress
-Last activity: 2026-01-19 - Completed 06-FIX-PLAN.md (UAT blocker resolved)
+Phase: 6 of 8 (Phone Auth Implementation) - COMPLETE
+Plan: 3 of 3 in current phase (+ FIX plan complete)
+Status: Phase 6 complete - ready for Phase 7
+Last activity: 2026-01-19 - Completed 06-03-PLAN.md (Phone auth integration)
 
-Progress: ██░░░░░░░░ 29% (v1.2: 2/~7 plans)
+Progress: ████░░░░░░ 43% (v1.2: 4/~7 plans)
 
 ## Performance Metrics
 
@@ -37,7 +37,7 @@ Progress: ██░░░░░░░░ 29% (v1.2: 2/~7 plans)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 6 | 2/3 | 30 min | 15 min |
+| 6 | 4/4 | 90 min | 23 min |
 
 ## Accumulated Context
 
@@ -54,6 +54,8 @@ All v1.1 decisions documented in PROJECT.md Key Decisions table with outcomes ma
 | 6-02 | Auto-submit on 6 digits | Better UX - no need to press verify button |
 | 6-02 | Navigate back for resend | Simpler than in-place resend, allows number correction |
 | 6-FIX | reCAPTCHA fallback over APNs | Simpler than configuring APNs certificates; works without full push notification setup |
+| 6-03 | RN Firebase Firestore for phone auth users | JS SDK Firestore doesn't share auth state with RN Firebase Auth; native SDK required |
+| 6-03 | Check profileSetupCompleted !== true | Handles false, undefined, and null for legacy and new users |
 
 ### Deferred Issues
 
@@ -71,24 +73,24 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 06-FIX-PLAN.md
+Stopped at: Completed 06-03-PLAN.md (Phase 6 complete)
 Resume file: None
 
 ### Recent Progress
 
-- UAT-001 blocker resolved (phone auth crash)
-- Apple Developer account now active
-- EAS builds working
-- Phone auth verified end-to-end
+- Phase 6 complete: Full phone auth flow working
+- AuthContext integrated with RN Firebase Auth and Firestore
+- New users properly routed to ProfileSetup
+- Profile updates working with native Firestore
 
 ## What's Next
 
-Continue Phase 6 Phone Auth Implementation:
+Phase 6 Phone Auth Implementation - COMPLETE:
 - [x] 06-01: React Native Firebase setup - COMPLETE
 - [x] 06-02: Phone auth service and screens - COMPLETE
-- [x] 06-FIX: Phone auth reCAPTCHA configuration - COMPLETE (UAT-001 resolved)
-- [ ] 06-03: AuthContext phone auth integration (state management, navigation)
+- [x] 06-FIX: Phone auth reCAPTCHA configuration - COMPLETE
+- [x] 06-03: AuthContext phone auth integration - COMPLETE
 
-Then:
-- Phase 7: Legacy Auth Removal & Cleanup (Remove email/Apple auth)
+Next:
+- Phase 7: Legacy Auth Removal & Cleanup (Remove email/Apple auth, migrate remaining JS SDK usage)
 - Phase 8: Polish & Testing (Error handling, international support)

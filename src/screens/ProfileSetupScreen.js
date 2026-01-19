@@ -15,7 +15,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { Button, Input } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto } from '../services/firebase/storageService';
-import { updateUserDocument } from '../services/firebase/firestoreService';
 import {
   requestNotificationPermission,
   getNotificationToken,
@@ -29,7 +28,7 @@ import {
 import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation }) => {
-  const { user, userProfile, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
 
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [bio, setBio] = useState(userProfile?.bio || '');
@@ -163,7 +162,7 @@ const ProfileSetupScreen = ({ navigation }) => {
         profileSetupCompleted: true,
       };
 
-      const updateResult = await updateUserDocument(user.uid, updateData);
+      const updateResult = await updateUserDocumentNative(user.uid, updateData);
 
       if (updateResult.success) {
         // Update local profile state - this will trigger navigation via AppNavigator
@@ -196,7 +195,7 @@ const ProfileSetupScreen = ({ navigation }) => {
       profileSetupCompleted: true,
     };
 
-    updateUserDocument(user.uid, skipData).then((result) => {
+    updateUserDocumentNative(user.uid, skipData).then((result) => {
       if (result.success) {
         updateUserProfile({
           ...userProfile,

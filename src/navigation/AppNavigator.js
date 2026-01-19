@@ -312,7 +312,8 @@ const AppNavigator = () => {
   }
 
   // Show ProfileSetup if user is authenticated but hasn't completed profile setup
-  const needsProfileSetup = isAuthenticated && userProfile && userProfile.profileSetupCompleted === false;
+  // Check for both false AND undefined/missing (for users created before this field existed)
+  const needsProfileSetup = isAuthenticated && userProfile && userProfile.profileSetupCompleted !== true;
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>

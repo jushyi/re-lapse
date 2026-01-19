@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { updateUserDocument } from './firestoreService';
+import firestore from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 /**
@@ -124,17 +124,16 @@ export const getNotificationToken = async () => {
  */
 export const storeNotificationToken = async (userId, token) => {
   try {
-    const result = await updateUserDocument(userId, { fcmToken: token });
+    // Use React Native Firebase Firestore directly (shares auth state with RN Firebase Auth)
+    await firestore().collection('users').doc(userId).update({
+      fcmToken: token,
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
 
-    if (result.success) {
-      logger.info('Notification token stored for user', { userId });
-      return { success: true };
-    } else {
-      logger.error('Failed to store notification token', { error: result.error });
-      return { success: false, error: result.error };
-    }
+    logger.info('Notification token stored for user', { userId });
+    return { success: true };
   } catch (error) {
-    logger.error('Error storing notification token', error);
+    logger.error('Error storing notification token', { error: error.message });
     return { success: false, error: error.message };
   }
 };
