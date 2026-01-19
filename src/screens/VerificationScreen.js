@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
 import { verifyCode } from '../services/firebase/phoneAuthService';
+import { formatPhoneWithCountry } from '../utils/phoneUtils';
 import logger from '../utils/logger';
 
 /**
@@ -148,7 +149,9 @@ const VerificationScreen = ({ navigation, route }) => {
           <Text style={styles.subtitle}>
             Enter the 6-digit code sent to
           </Text>
-          <Text style={styles.phoneNumber}>{phoneNumber || 'your phone'}</Text>
+          <Text style={styles.phoneNumber}>
+            {e164 ? formatPhoneWithCountry(e164) : phoneNumber || 'your phone'}
+          </Text>
 
           {/* Code Input */}
           <View style={styles.codeInputContainer}>

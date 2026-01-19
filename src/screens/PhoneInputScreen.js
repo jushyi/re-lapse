@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '../components';
 import { sendVerificationCode } from '../services/firebase/phoneAuthService';
+import { formatAsUserTypes } from '../utils/phoneUtils';
 import logger from '../utils/logger';
 
 /**
@@ -42,7 +43,8 @@ const COUNTRY_CODES = [
  * Uses React Native Firebase native phone auth
  */
 const PhoneInputScreen = ({ navigation }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(''); // Raw digits only
+  const [formattedPhone, setFormattedPhone] = useState(''); // Formatted for display
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]); // Default to US
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -99,12 +101,23 @@ const PhoneInputScreen = ({ navigation }) => {
     setSelectedCountry(country);
     setShowCountryPicker(false);
     setError(''); // Clear error when country changes
+
+    // Re-format phone number for new country
+    if (phoneNumber) {
+      const formatted = formatAsUserTypes(phoneNumber, country.country);
+      setFormattedPhone(formatted);
+    }
   };
 
   const handlePhoneChange = (text) => {
     // Remove any non-numeric characters except for formatting
     const cleaned = text.replace(/[^0-9]/g, '');
     setPhoneNumber(cleaned);
+
+    // Update formatted display as user types
+    const formatted = formatAsUserTypes(cleaned, selectedCountry.country);
+    setFormattedPhone(formatted);
+
     if (error) setError(''); // Clear error on change
   };
 
@@ -162,8 +175,8 @@ const PhoneInputScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.phoneInputWrapper}>
                   <Input
-                    placeholder="Phone number"
-                    value={phoneNumber}
+                    placeholder="(555) 555-5555"
+                    value={formattedPhone || phoneNumber}
                     onChangeText={handlePhoneChange}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
