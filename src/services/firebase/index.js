@@ -1,16 +1,6 @@
 // Export Firebase configuration and instances
 export { app, auth, db, storage } from './firebaseConfig';
 
-// Export Auth service functions
-export {
-  signUpWithEmail,
-  signInWithEmail,
-  signOutUser,
-  resetPassword,
-  updateUserProfile,
-  getCurrentUser,
-} from './authService';
-
 // Export Firestore service functions
 export {
   createUserDocument,
