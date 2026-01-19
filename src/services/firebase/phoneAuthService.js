@@ -1,14 +1,14 @@
 /**
  * Phone Authentication Service
  *
- * Uses @react-native-firebase/auth for native phone verification
- * (NOT Firebase JS SDK - native SDK enables silent APNs verification)
+ * Uses React Native Firebase for native phone verification on iOS
+ * This approach uses native APNs silent push or reCAPTCHA fallback
  *
- * Flow: PhoneInputScreen -> sendVerificationCode -> VerificationScreen -> verifyCode
+ * Flow: PhoneInputScreen -> VerificationScreen -> App
  */
 
-import auth from '@react-native-firebase/auth';
-import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
+import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import logger from '../../utils/logger';
 
 /**
@@ -41,6 +41,10 @@ export const getPhoneAuthErrorMessage = (errorCode) => {
       return 'Network error. Please check your connection.';
     case 'auth/captcha-check-failed':
       return 'Verification failed. Please try again.';
+    case 'auth/app-not-authorized':
+      return 'App not authorized. Please try again later.';
+    case 'auth/missing-client-identifier':
+      return 'Configuration error. Please try again later.';
     default:
       return 'An error occurred. Please try again.';
   }
@@ -101,7 +105,8 @@ export const validatePhoneNumber = (phoneNumber, countryCode) => {
 };
 
 /**
- * Send SMS verification code to phone number
+ * Send SMS verification code to phone number using React Native Firebase
+ *
  * @param {string} phoneNumber - Phone number without country code
  * @param {string} countryCode - ISO country code (e.g., 'US', 'GB')
  * @returns {Promise<object>} - { success, confirmation?, formattedNumber?, error? }
@@ -122,15 +127,17 @@ export const sendVerificationCode = async (phoneNumber, countryCode) => {
   }
 
   try {
-    logger.debug('phoneAuthService.sendVerificationCode: Calling Firebase', {
+    logger.debug('phoneAuthService.sendVerificationCode: Calling signInWithPhoneNumber', {
       e164: validation.e164
     });
 
-    // Call Firebase phone auth with E.164 formatted number
-    const confirmation = await auth().signInWithPhoneNumber(validation.e164);
+    // Get auth instance and sign in with phone number
+    const auth = getAuth();
+    const confirmation = await signInWithPhoneNumber(auth, validation.e164);
 
     logger.info('phoneAuthService.sendVerificationCode: Code sent successfully', {
-      formattedNumber: validation.formatted
+      formattedNumber: validation.formatted,
+      hasConfirmation: !!confirmation
     });
 
     return {
@@ -144,7 +151,8 @@ export const sendVerificationCode = async (phoneNumber, countryCode) => {
     logger.error('phoneAuthService.sendVerificationCode: Failed', {
       errorCode: error.code,
       errorMessage: error.message,
-      userMessage: errorMessage
+      userMessage: errorMessage,
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
     return { success: false, error: errorMessage };
   }
@@ -181,17 +189,15 @@ export const verifyCode = async (confirmation, code) => {
     logger.debug('phoneAuthService.verifyCode: Confirming code');
 
     // Confirm the verification code
-    const credential = await confirmation.confirm(code);
+    const userCredential = await confirmation.confirm(code);
 
     logger.info('phoneAuthService.verifyCode: Success', {
-      userId: credential.user?.uid,
-      isNewUser: credential.additionalUserInfo?.isNewUser
+      userId: userCredential.user?.uid
     });
 
     return {
       success: true,
-      user: credential.user,
-      isNewUser: credential.additionalUserInfo?.isNewUser,
+      user: userCredential.user,
     };
   } catch (error) {
     const errorMessage = getPhoneAuthErrorMessage(error.code);
@@ -209,7 +215,8 @@ export const verifyCode = async (confirmation, code) => {
  * @returns {object|null} - Current Firebase user or null
  */
 export const getCurrentUser = () => {
-  const user = auth().currentUser;
+  const auth = getAuth();
+  const user = auth.currentUser;
   logger.debug('phoneAuthService.getCurrentUser', {
     hasUser: !!user,
     userId: user?.uid
@@ -225,7 +232,8 @@ export const signOut = async () => {
   logger.debug('phoneAuthService.signOut: Starting');
 
   try {
-    await auth().signOut();
+    const auth = getAuth();
+    await auth.signOut();
     logger.info('phoneAuthService.signOut: Success');
     return { success: true };
   } catch (error) {
@@ -244,5 +252,6 @@ export const signOut = async () => {
  */
 export const onAuthStateChanged = (callback) => {
   logger.debug('phoneAuthService.onAuthStateChanged: Subscribing');
-  return auth().onAuthStateChanged(callback);
+  const auth = getAuth();
+  return auth.onAuthStateChanged(callback);
 };

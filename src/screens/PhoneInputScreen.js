@@ -5,7 +5,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
   Modal,
   FlatList,
@@ -40,6 +39,7 @@ const COUNTRY_CODES = [
 /**
  * Phone Input Screen
  * First step of phone authentication - enter phone number and receive SMS code
+ * Uses React Native Firebase native phone auth
  */
 const PhoneInputScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -66,7 +66,10 @@ const PhoneInputScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const result = await sendVerificationCode(phoneNumber, selectedCountry.country);
+      const result = await sendVerificationCode(
+        phoneNumber,
+        selectedCountry.country
+      );
 
       if (result.success) {
         logger.info('PhoneInputScreen: Code sent, navigating to verification', {

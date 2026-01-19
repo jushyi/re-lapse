@@ -7,16 +7,16 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
-import { verifyCode, sendVerificationCode } from '../services/firebase/phoneAuthService';
+import { verifyCode } from '../services/firebase/phoneAuthService';
 import logger from '../utils/logger';
 
 /**
  * Verification Screen
  * Second step of phone authentication - enter 6-digit SMS code
+ * Uses confirmation object from React Native Firebase
  */
 const VerificationScreen = ({ navigation, route }) => {
   const { confirmation, phoneNumber, e164 } = route.params || {};
@@ -25,7 +25,6 @@ const VerificationScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
-  const [currentConfirmation, setCurrentConfirmation] = useState(confirmation);
 
   const inputRef = useRef(null);
 
@@ -86,12 +85,12 @@ const VerificationScreen = ({ navigation, route }) => {
     setLoading(true);
 
     try {
-      const result = await verifyCode(currentConfirmation, code);
+      // Use confirmation object to verify code
+      const result = await verifyCode(confirmation, code);
 
       if (result.success) {
         logger.info('VerificationScreen: Verification successful', {
-          userId: result.user?.uid,
-          isNewUser: result.isNewUser
+          userId: result.user?.uid
         });
 
         // Auth state listener in AuthContext will handle navigation
@@ -115,22 +114,9 @@ const VerificationScreen = ({ navigation, route }) => {
     if (resendTimer > 0) return;
 
     logger.info('VerificationScreen: Resend code pressed');
-    setLoading(true);
-    setError('');
 
-    try {
-      // Extract country code from e164 (need to determine country)
-      // For simplicity, navigate back to let user try again
-      // A more sophisticated approach would store the country code in params
-
-      // Navigate back to phone input screen
-      navigation.goBack();
-    } catch (err) {
-      logger.error('VerificationScreen: Resend failed', { error: err.message });
-      setError('Failed to resend code. Please go back and try again.');
-    } finally {
-      setLoading(false);
-    }
+    // Navigate back to phone input screen to resend
+    navigation.goBack();
   };
 
   const handleCodeChange = (text) => {
