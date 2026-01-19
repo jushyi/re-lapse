@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-12)
 ## Current Position
 
 Phase: 8 of 8 (Polish & Testing)
-Plan: 1 of ? in current phase
+Plan: 2 of ? in current phase
 Status: In progress
-Last activity: 2026-01-19 - Completed 08-01-PLAN.md (Phone auth cleanup & error boundaries)
+Last activity: 2026-01-19 - Completed 08-02-PLAN.md (Phone auth UX polish)
 
-Progress: █████████░ 86% (v1.2: 6/7 plans)
+Progress: █████████░ 89% (v1.2: 7/? plans)
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: █████████░ 86% (v1.2: 6/7 plans)
 |-------|-------|-------|----------|
 | 6 | 4/4 | 90 min | 23 min |
 | 7 | 1/1 | 15 min | 15 min |
-| 8 | 1/? | 4 min | 4 min |
+| 8 | 2/? | 10 min | 5 min |
 
 ## Accumulated Context
 
@@ -61,6 +61,8 @@ All v1.1 decisions documented in PROJECT.md Key Decisions table with outcomes ma
 | 7-01 | Full deletion of authService.js | All email auth functions removed; entire file deleted rather than keeping utility functions |
 | 7-01 | Removed Firebase JS SDK auth initialization | Authentication now uses React Native Firebase exclusively; JS SDK retained only for Firestore/Storage |
 | 8-01 | ErrorBoundary inside NavigationContainer, outside AuthProvider | Catches UI errors while allowing auth state listeners to work normally |
+| 8-02 | AsYouType formatter for real-time phone formatting | Better UX without blocking input, shows formatted preview as user types |
+| 8-02 | 3-second retry delay after verification errors | Prevents rapid retry spam while not frustrating legitimate users |
 
 ### Deferred Issues
 
@@ -78,19 +80,20 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 08-01-PLAN.md
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
 
 ### Recent Progress
 
 - Phase 8 started: Polish & Testing
-- 08-01 complete: Committed phone auth cleanup, added ErrorBoundary component
-- App now protected from white-screen crashes
+- 08-01 complete: Phone auth cleanup, ErrorBoundary component
+- 08-02 complete: Phone number formatting, error UX improvements
 
 ## What's Next
 
 Phase 8 Polish & Testing - IN PROGRESS:
 - [x] 08-01: Phone auth cleanup & error boundaries - COMPLETE
+- [x] 08-02: Phone auth UX polish - COMPLETE
 
 Next:
 - Continue Phase 8 plans (TBD)
