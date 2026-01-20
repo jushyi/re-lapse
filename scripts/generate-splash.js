@@ -1,6 +1,6 @@
 /**
- * Generate splash screen for Lapse Clone
- * Creates "LAPSE" text centered on off-white background
+ * Generate splash screen for Oly
+ * Creates "OLY" text centered on off-white background with coral accent
  */
 const sharp = require('sharp');
 const path = require('path');
@@ -11,11 +11,11 @@ const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 const SPLASH_WIDTH = 1284;
 const SPLASH_HEIGHT = 2778;
 const BACKGROUND_COLOR = '#FAFAFA';
-const TEXT_COLOR = '#000000';
+const TEXT_COLOR = '#FF6B6B'; // Coral - matches icon color
 
 // Create SVG for splash screen
 function createSplashSvg(width, height) {
-  const fontSize = Math.floor(width * 0.15);
+  const fontSize = Math.floor(width * 0.18);
   const textY = Math.floor(height * 0.48);
 
   return `
@@ -30,14 +30,14 @@ function createSplashSvg(width, height) {
     fill="${TEXT_COLOR}"
     text-anchor="middle"
     dominant-baseline="middle"
-    letter-spacing="0.15em"
-  >LAPSE</text>
+    letter-spacing="0.2em"
+  >OLY</text>
 </svg>
   `.trim();
 }
 
 async function generateSplash() {
-  console.log('Generating splash screen...');
+  console.log('Generating Oly splash screen...');
 
   try {
     const splashSvg = Buffer.from(createSplashSvg(SPLASH_WIDTH, SPLASH_HEIGHT));
@@ -48,6 +48,7 @@ async function generateSplash() {
     console.log(`✓ Created assets/splash.png (${SPLASH_WIDTH}x${SPLASH_HEIGHT})`);
 
     console.log('\n✅ Splash screen generated successfully!');
+    console.log('Design: OLY text in coral on off-white background');
   } catch (error) {
     console.error('Error generating splash:', error);
     process.exit(1);
