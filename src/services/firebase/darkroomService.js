@@ -98,6 +98,52 @@ export const scheduleNextReveal = async (userId) => {
 };
 
 /**
+ * Ensure darkroom exists and has valid nextRevealAt for new photo capture
+ * Called when user takes a photo to ensure timing is accurate
+ * @param {string} userId - User ID
+ * @returns {Promise}
+ */
+export const ensureDarkroomInitialized = async (userId) => {
+  try {
+    const darkroomRef = doc(db, 'darkrooms', userId);
+    const darkroomDoc = await getDoc(darkroomRef);
+
+    if (!darkroomDoc.exists()) {
+      // Create new darkroom with initial reveal time
+      const nextRevealAt = calculateNextRevealTime();
+      await setDoc(darkroomRef, {
+        userId,
+        nextRevealAt,
+        lastRevealedAt: null,
+        createdAt: Timestamp.now(),
+      });
+      logger.info('DarkroomService: Created new darkroom for user', { userId });
+      return { success: true, created: true };
+    }
+
+    // Darkroom exists - check if nextRevealAt is in the past (stale)
+    const { nextRevealAt } = darkroomDoc.data();
+    const now = Timestamp.now();
+
+    if (!nextRevealAt || nextRevealAt.seconds < now.seconds) {
+      // nextRevealAt is stale or missing - set a new one
+      const newNextRevealAt = calculateNextRevealTime();
+      await updateDoc(darkroomRef, {
+        nextRevealAt: newNextRevealAt,
+      });
+      logger.info('DarkroomService: Refreshed stale nextRevealAt', { userId });
+      return { success: true, refreshed: true };
+    }
+
+    // nextRevealAt is still in the future - no change needed
+    return { success: true };
+  } catch (error) {
+    logger.error('DarkroomService: Failed to ensure darkroom initialized', { userId, error: error.message });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Calculate random reveal time (0-15 minutes from now)
  * @returns {Timestamp} - Next reveal timestamp
  */

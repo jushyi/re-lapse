@@ -13,6 +13,7 @@ import {
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 import { uploadPhoto, deletePhoto } from './storageService';
+import { ensureDarkroomInitialized } from './darkroomService';
 import logger from '../../utils/logger';
 
 // Initialize Firestore once at module level
@@ -71,6 +72,9 @@ export const createPhoto = async (userId, photoUri) => {
       userId,
       size: uploadResult.size
     });
+
+    // Ensure darkroom has valid timing for this new photo
+    await ensureDarkroomInitialized(userId);
 
     return {
       success: true,
