@@ -7,12 +7,25 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 ## Milestones
 
 - ✅ **v1.1 Camera/Darkroom UX Refactor** - [archive](milestones/v1.1-ROADMAP.md) (Phases 1-5, shipped 2026-01-12)
-- 🚧 **v1.2 Phone Authentication** - Phases 6-8 (in progress)
+- ✅ **v1.2 Phone Authentication** - [archive](milestones/v1.2-ROADMAP.md) (Phases 6-8, shipped 2026-01-19)
+- 📋 **v1.3 (Planned)** - TBD
 
 ## Completed Milestones
 
 <details>
-<summary>v1.1 Camera/Darkroom UX Refactor (Phases 1-5) - SHIPPED 2026-01-12</summary>
+<summary>✅ v1.2 Phone Authentication (Phases 6-8) - SHIPPED 2026-01-19</summary>
+
+- [x] Phase 6: Phone Auth Implementation (4/4 plans) - completed 2026-01-19
+- [x] Phase 7: Legacy Auth Removal & Cleanup (1/1 plan) - completed 2026-01-19
+- [x] Phase 8: Polish & Testing (3/3 plans) - completed 2026-01-19
+
+**Stats:** 3 phases, 8 plans, 2.1 hours execution time
+**See:** [Full archive](milestones/v1.2-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ v1.1 Camera/Darkroom UX Refactor (Phases 1-5) - SHIPPED 2026-01-12</summary>
 
 - [x] Phase 1: Navigation Restructure (1/1 plans) - completed 2026-01-12
 - [x] Phase 2: Darkroom Bottom Sheet (2/2 plans) - completed 2026-01-12
@@ -25,51 +38,9 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 
 </details>
 
-### 🚧 v1.2 Phone Authentication (In Progress)
-
-**Milestone Goal:** Migrate authentication from email/Apple Sign-In to phone-only with SMS verification
-
-#### Phase 6: Phone Auth Implementation
-
-**Goal**: Set up Firebase phone authentication with phone number input UI and SMS code verification
-**Depends on**: v1.1 complete
-**Research**: Complete (06-RESEARCH.md)
-**Plans**: 4 (including FIX plan)
-**Status**: COMPLETE
-
-Plans:
-- [x] 06-01: React Native Firebase setup (dependencies, app.json, Firebase Console) - completed 2026-01-13
-- [x] 06-02: Phone auth service and screens (phoneAuthService, PhoneInput, Verification) - completed 2026-01-13
-- [x] 06-FIX: Phone auth reCAPTCHA configuration - completed 2026-01-19
-- [x] 06-03: AuthContext phone auth integration (state management, navigation) - completed 2026-01-19
-
-#### Phase 7: Legacy Auth Removal & Cleanup
-
-**Goal**: Remove email/password and Apple Sign-In flows, update AuthContext for phone-only auth
-**Depends on**: Phase 6
-**Research**: None required
-**Plans**: 1
-**Status**: COMPLETE
-
-Plans:
-- [x] 07-01: Legacy auth removal (email/Apple auth, screens, authService.js) - completed 2026-01-19
-
-#### Phase 8: Polish & Testing
-
-**Goal**: Error handling, edge cases, phone number formatting, and international support
-**Depends on**: Phase 7
-**Research**: Unlikely (internal patterns)
-**Plans**: TBD
-**Status**: COMPLETE
-
-Plans:
-- [x] 08-01: Phone auth cleanup & error boundaries - completed 2026-01-19
-- [x] 08-02: Phone auth UX polish (formatting, error messages) - completed 2026-01-19
-- [x] 08-03: App icon and splash screen assets - completed 2026-01-19
-
 ## Progress
 
-**Execution Order:** Phases execute in numeric order: 6 → 7 → 8
+**All phases complete through v1.2**
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|

@@ -1,5 +1,33 @@
 # Project Milestones: Lapse Clone
 
+## v1.2 Phone Authentication (Shipped: 2026-01-19)
+
+**Delivered:** Migrated authentication from email/Apple Sign-In to phone-only with SMS verification, removing legacy auth code and adding polish.
+
+**Phases completed:** 6-8 (8 plans total, including 1 FIX plan)
+
+**Key accomplishments:**
+
+- Migrated to phone-only authentication using React Native Firebase with SMS verification
+- Fixed phone auth reCAPTCHA configuration (URL scheme, GoogleService-Info.plist)
+- Removed 973 lines of legacy auth code (email/password, Apple Sign-In)
+- Added ErrorBoundary component for crash resilience with user-friendly fallback
+- Polished phone auth UX with real-time formatting, shake animations, retry delays
+- Created custom app branding (minimalist "L" icon, LAPSE splash screen)
+
+**Stats:**
+
+- 44 files created/modified
+- 4,679 lines added, 1,089 removed (net +3,590)
+- 3 phases, 8 plans
+- 2.1 hours execution time (14 days elapsed)
+
+**Git range:** `b72b9d4` (chore 06-01) → `44b236f` (docs 08-03)
+
+**What's next:** v1.3 or production release - TestFlight distribution, remote notification testing, final bug fixes
+
+---
+
 ## v1.1 Camera/Darkroom UX Refactor (Shipped: 2026-01-12)
 
 **Delivered:** Unified camera and darkroom experience with native iOS gestures, press-and-hold reveals, swipe-to-triage actions, and visual polish.
