@@ -321,20 +321,23 @@ export const getSentRequests = async (userId) => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query friendships where user is the requester
+    // Query friendships where user is the requester (single field to avoid composite index)
     const q = query(
       collection(db, 'friendships'),
-      where('requestedBy', '==', userId),
-      where('status', '==', 'pending')
+      where('requestedBy', '==', userId)
     );
     const querySnapshot = await getDocs(q);
 
+    // Filter for pending status client-side
     const requests = [];
     querySnapshot.forEach((doc) => {
-      requests.push({
-        id: doc.id,
-        ...doc.data(),
-      });
+      const data = doc.data();
+      if (data.status === 'pending') {
+        requests.push({
+          id: doc.id,
+          ...data,
+        });
+      }
     });
 
     // Sort by createdAt (most recent first)
