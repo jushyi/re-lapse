@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +15,8 @@ import useFeedPhotos from '../hooks/useFeedPhotos';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
 import PhotoDetailModal from '../components/PhotoDetailModal';
-import { toggleReaction } from '../services/firebase/feedService';
+import { FriendStoryCard } from '../components';
+import { toggleReaction, getFriendStoriesData } from '../services/firebase/feedService';
 import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 
@@ -36,6 +38,10 @@ const FeedScreen = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
+  // Stories state
+  const [friendStories, setFriendStories] = useState([]);
+  const [storiesLoading, setStoriesLoading] = useState(true);
+
   /**
    * Refresh feed when screen comes into focus
    * This ensures feed reflects current friendship state after adding/removing friends
@@ -48,6 +54,35 @@ const FeedScreen = () => {
 
     return unsubscribe;
   }, [navigation, refreshFeed]);
+
+  /**
+   * Load friend stories data on mount
+   */
+  useEffect(() => {
+    const loadFriendStories = async () => {
+      logger.debug('FeedScreen: Loading friend stories data');
+      setStoriesLoading(true);
+      const result = await getFriendStoriesData(user.uid);
+      if (result.success) {
+        logger.info('FeedScreen: Friend stories loaded', { count: result.friendStories.length });
+        setFriendStories(result.friendStories);
+      } else {
+        logger.error('FeedScreen: Failed to load friend stories', { error: result.error });
+      }
+      setStoriesLoading(false);
+    };
+    if (user?.uid) {
+      loadFriendStories();
+    }
+  }, [user?.uid]);
+
+  /**
+   * Handle opening stories for a friend
+   * TODO: Open StoriesViewerModal in Plan 03
+   */
+  const handleOpenStories = (friend) => {
+    logger.info('FeedScreen: User tapped friend story', { friendId: friend.userId, displayName: friend.displayName });
+  };
 
   /**
    * Handle photo card press - Open detail modal
@@ -175,12 +210,69 @@ const FeedScreen = () => {
     );
   };
 
+  /**
+   * Render stories loading skeleton
+   */
+  const renderStoriesLoadingSkeleton = () => {
+    return (
+      <View style={styles.storiesSkeletonContainer}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <View key={i} style={styles.storySkeletonItem}>
+            <View style={styles.storySkeletonCircle} />
+            <View style={styles.storySkeletonText} />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  /**
+   * Render stories row
+   */
+  const renderStoriesRow = () => {
+    // Don't show stories row if loading or no friends have photos
+    if (storiesLoading) {
+      return (
+        <View style={styles.storiesContainer}>
+          {renderStoriesLoadingSkeleton()}
+        </View>
+      );
+    }
+
+    // Hide stories row if no friends have photos
+    if (friendStories.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.storiesContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storiesScrollContent}
+        >
+          {friendStories.map((friend, index) => (
+            <FriendStoryCard
+              key={friend.userId}
+              friend={friend}
+              onPress={() => handleOpenStories(friend)}
+              isFirst={index === 0}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lapse</Text>
       </View>
+
+      {/* Stories Row */}
+      {renderStoriesRow()}
 
       {/* Content */}
       {loading ? (
@@ -327,6 +419,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // Stories row styles
+  storiesContainer: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+    backgroundColor: '#000000',
+  },
+  storiesScrollContent: {
+    paddingHorizontal: 12,
+  },
+  // Stories loading skeleton styles
+  storiesSkeletonContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+  },
+  storySkeletonItem: {
+    width: 75,
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  storySkeletonCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2A2A2A',
+    marginBottom: 6,
+  },
+  storySkeletonText: {
+    width: 50,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#2A2A2A',
   },
 });
 
