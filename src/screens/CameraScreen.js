@@ -12,7 +12,8 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
-import { createPhoto, getDarkroomCounts } from '../services/firebase/photoService';
+import { getDarkroomCounts } from '../services/firebase/photoService';
+import { addToQueue, initializeQueue } from '../services/uploadQueueService';
 import logger from '../utils/logger';
 import Svg, { Path } from 'react-native-svg';
 import { DarkroomBottomSheet } from '../components';
@@ -99,6 +100,11 @@ const CameraScreen = () => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const cameraRef = useRef(null);
   const animatedValue = useRef(new Animated.Value(0)).current;
+
+  // Initialize upload queue on app start
+  useEffect(() => {
+    initializeQueue();
+  }, []);
 
   // Load darkroom counts on mount and poll every 30s
   useEffect(() => {
@@ -214,25 +220,24 @@ const CameraScreen = () => {
         skipProcessing: true,
       });
 
-      logger.debug('Photo captured', { uri: photo.uri });
+      logger.debug('CameraScreen: Photo captured', { uri: photo.uri });
 
-      // Show photo animation flying to darkroom
+      // Queue for background upload (non-blocking)
+      addToQueue(user.uid, photo.uri);
+
+      // Play animation (don't await - camera should be ready immediately)
       playPhotoAnimation(photo.uri);
 
-      // Auto-save to darkroom (developing status)
-      const result = await createPhoto(user.uid, photo.uri);
+      // Optimistically update badge count (+1 developing)
+      setDarkroomCounts(prev => ({
+        ...prev,
+        developingCount: prev.developingCount + 1,
+        totalCount: prev.totalCount + 1,
+      }));
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      // Immediately update badge count after successful photo creation
-      logger.debug('CameraScreen: Refreshing badge count after photo capture');
-      const updatedCounts = await getDarkroomCounts(user.uid);
-      setDarkroomCounts(updatedCounts);
-      logger.info('CameraScreen: Badge count updated', updatedCounts);
+      logger.info('CameraScreen: Photo queued for background upload');
     } catch (error) {
-      logger.error('Error saving photo', error);
+      logger.error('CameraScreen: Error capturing photo', error);
     } finally {
       setIsCapturing(false);
     }
