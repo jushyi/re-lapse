@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc } from '@react-native-firebase/firestore';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
+
+// Initialize Firestore
+const db = getFirestore();
 
 /**
  * FriendRequestCard - Display a friend request
@@ -43,10 +46,11 @@ const FriendRequestCard = ({ request, type, onAccept, onDecline, onCancel, curre
     const fetchUserData = async () => {
       try {
         const otherUserId = getOtherUserId();
-        const userDoc = await firestore().collection('users').doc(otherUserId).get();
+        const userRef = doc(db, 'users', otherUserId);
+        const userDoc = await getDoc(userRef);
 
-        const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-        if (docExists) {
+        // Modular API uses exists as a property
+        if (userDoc.exists) {
           setOtherUser({
             id: userDoc.id,
             ...userDoc.data(),

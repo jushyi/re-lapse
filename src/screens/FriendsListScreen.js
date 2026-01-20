@@ -12,11 +12,14 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc } from '@react-native-firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getFriendships, removeFriend, subscribeFriendships } from '../services/firebase/friendshipService';
 import { mediumImpact } from '../utils/haptics';
 import logger from '../utils/logger';
+
+// Initialize Firestore
+const db = getFirestore();
 
 /**
  * FriendsListScreen - View and manage friends
@@ -62,10 +65,11 @@ const FriendsListScreen = ({ navigation }) => {
             friendship.user1Id === user.uid ? friendship.user2Id : friendship.user1Id;
 
           try {
-            const userDoc = await firestore().collection('users').doc(otherUserId).get();
+            const userRef = doc(db, 'users', otherUserId);
+            const userDoc = await getDoc(userRef);
 
-            const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-            if (docExists) {
+            // Modular API uses exists as a property
+            if (userDoc.exists) {
               return {
                 friendshipId: friendship.id,
                 userId: otherUserId,
