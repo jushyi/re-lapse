@@ -1,5 +1,6 @@
 import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { getFriendUserIds } from './friendshipService';
 
 // Initialize Firestore once at module level
 const db = getFirestore();
@@ -390,6 +391,118 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
   } catch (error) {
     logger.error('feedService.getTopPhotosByEngagement: Failed', {
       userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get friend stories data for the Stories UI
+ * Fetches all friends with their top photos ranked by engagement
+ *
+ * @param {string} currentUserId - Current user's ID
+ * @returns {Promise<{success: boolean, friendStories?: Array, error?: string}>}
+ */
+export const getFriendStoriesData = async (currentUserId) => {
+  logger.debug('feedService.getFriendStoriesData: Starting', { currentUserId });
+
+  try {
+    if (!currentUserId) {
+      logger.warn('feedService.getFriendStoriesData: Missing currentUserId');
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    // Step 1: Get friend user IDs
+    const friendsResult = await getFriendUserIds(currentUserId);
+    if (!friendsResult.success) {
+      logger.error('feedService.getFriendStoriesData: Failed to get friend IDs', {
+        error: friendsResult.error,
+      });
+      return { success: false, error: friendsResult.error };
+    }
+
+    const friendUserIds = friendsResult.friendUserIds || [];
+    logger.debug('feedService.getFriendStoriesData: Got friend IDs', {
+      friendCount: friendUserIds.length,
+    });
+
+    if (friendUserIds.length === 0) {
+      logger.info('feedService.getFriendStoriesData: No friends found');
+      return { success: true, friendStories: [] };
+    }
+
+    // Step 2: Fetch user profile and photos for each friend in parallel
+    const friendDataPromises = friendUserIds.map(async (friendId) => {
+      // Fetch user profile
+      const userDocRef = doc(db, 'users', friendId);
+      const userDocSnap = await getDoc(userDocRef);
+      const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+
+      // Fetch top 5 photos by engagement
+      const photosResult = await getTopPhotosByEngagement(friendId, 5);
+      const topPhotos = photosResult.success ? photosResult.photos : [];
+
+      // Get total count of journal photos for this user
+      const totalPhotosQuery = query(
+        collection(db, 'photos'),
+        where('userId', '==', friendId),
+        where('photoState', '==', 'journal')
+      );
+      const totalPhotosSnapshot = await getDocs(totalPhotosQuery);
+      const totalPhotoCount = totalPhotosSnapshot.size;
+
+      // Find most recent photo for sorting
+      let mostRecentCapturedAt = null;
+      if (topPhotos.length > 0) {
+        // Photos are sorted by reactionCount, need to find most recent
+        mostRecentCapturedAt = topPhotos.reduce((latest, photo) => {
+          const photoTime = photo.capturedAt?.seconds || 0;
+          return photoTime > latest ? photoTime : latest;
+        }, 0);
+      }
+
+      return {
+        userId: friendId,
+        username: userData.username || 'unknown',
+        displayName: userData.displayName || 'Unknown User',
+        profilePhotoURL: userData.profilePhotoURL || null,
+        topPhotos,
+        totalPhotoCount,
+        hasPhotos: totalPhotoCount > 0,
+        mostRecentCapturedAt,
+      };
+    });
+
+    const friendDataResults = await Promise.all(friendDataPromises);
+
+    // Step 3: Filter out friends with zero photos
+    const friendsWithPhotos = friendDataResults.filter((friend) => friend.hasPhotos);
+
+    logger.debug('feedService.getFriendStoriesData: Filtered friends', {
+      totalFriends: friendDataResults.length,
+      friendsWithPhotos: friendsWithPhotos.length,
+    });
+
+    // Step 4: Sort by most recent photo (newest first)
+    friendsWithPhotos.sort((a, b) => {
+      const aTime = a.mostRecentCapturedAt || 0;
+      const bTime = b.mostRecentCapturedAt || 0;
+      return bTime - aTime;
+    });
+
+    // Clean up the sorting helper field
+    const friendStories = friendsWithPhotos.map(({ mostRecentCapturedAt, ...friend }) => friend);
+
+    logger.info('feedService.getFriendStoriesData: Success', {
+      currentUserId,
+      friendStoriesCount: friendStories.length,
+    });
+
+    return { success: true, friendStories };
+  } catch (error) {
+    logger.error('feedService.getFriendStoriesData: Failed', {
+      currentUserId,
       error: error.message,
     });
     return { success: false, error: error.message };
