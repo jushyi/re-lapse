@@ -38,6 +38,19 @@ Plans:
 Plans:
 - [x] 12-01: Fix exists() Method Calls
 
+#### Phase 12.1: Friends List Screen Crash Fix (INSERTED)
+
+**Goal**: Fix FriendsListScreen crash - ErrorBoundary catching component tree error
+**Depends on**: Phase 12
+**Research**: Unlikely (internal debugging)
+**Plans**: 1
+
+Plans:
+- [x] 12.1-01: Fix Filter.or Usage
+
+**Details:**
+Fixed Filter.or access pattern - named import doesn't expose .or method per GitHub issue #7346. Solution: use firestore.Filter.or() via default import.
+
 #### Phase 13: Production Build & Branding
 
 **Goal**: EAS build setup, app icon, splash screen, TestFlight prep
@@ -114,5 +127,6 @@ Plans:
 | 10. Storage Migration & Cleanup | v1.3 | 2/2 | Complete | 2026-01-19 |
 | 11. Firebase Modular API Migration | v1.4 | 4/4 | Complete | 2026-01-19 |
 | 12. Friendship Service Fix + Testing | v1.4 | 1/1 | Complete | 2026-01-19 |
+| 12.1 Friends List Screen Crash Fix | v1.4 | 1/1 | Complete | 2026-01-19 |
 | 13. Production Build & Branding | v1.4 | 0/? | Not started | - |
 | 14. Remote Notification Testing & Polish | v1.4 | 0/? | Not started | - |
