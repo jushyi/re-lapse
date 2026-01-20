@@ -1,4 +1,4 @@
-import firestore, { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from '@react-native-firebase/firestore';
+import firestore, { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, or, onSnapshot, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 // Initialize Firestore once at module level
@@ -223,13 +223,13 @@ export const getFriendships = async (userId) => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query friendships where user is either user1Id or user2Id using firestore.Filter.or
+    // Query friendships where user is either user1Id or user2Id using modular or() function
     const q = query(
       collection(db, 'friendships'),
-      where(firestore.Filter.or(
-        firestore.Filter.where('user1Id', '==', userId),
-        firestore.Filter.where('user2Id', '==', userId)
-      ))
+      or(
+        where('user1Id', '==', userId),
+        where('user2Id', '==', userId)
+      )
     );
     const querySnapshot = await getDocs(q);
 
@@ -272,13 +272,13 @@ export const getPendingRequests = async (userId) => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query friendships where user is either user1Id or user2Id using firestore.Filter.or
+    // Query friendships where user is either user1Id or user2Id using modular or() function
     const q = query(
       collection(db, 'friendships'),
-      where(firestore.Filter.or(
-        firestore.Filter.where('user1Id', '==', userId),
-        firestore.Filter.where('user2Id', '==', userId)
-      ))
+      or(
+        where('user1Id', '==', userId),
+        where('user2Id', '==', userId)
+      )
     );
     const querySnapshot = await getDocs(q);
 
@@ -412,12 +412,13 @@ export const subscribeFriendships = (userId, callback) => {
     return () => {};
   }
 
+  // Query using modular or() function
   const q = query(
     collection(db, 'friendships'),
-    where(firestore.Filter.or(
-      firestore.Filter.where('user1Id', '==', userId),
-      firestore.Filter.where('user2Id', '==', userId)
-    ))
+    or(
+      where('user1Id', '==', userId),
+      where('user2Id', '==', userId)
+    )
   );
 
   const unsubscribe = onSnapshot(
