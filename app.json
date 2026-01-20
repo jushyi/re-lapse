@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lapseclone.app",
+      "bundleIdentifier": "com.oly.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
         "aps-environment": "development"
@@ -45,7 +45,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.lapsecloneapp"
+      "package": "com.oly.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,7 +55,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Lapse to access your camera to take photos.",
+          "cameraPermission": "Allow Oly to access your camera to take photos.",
           "microphonePermission": false
         }
       ],
