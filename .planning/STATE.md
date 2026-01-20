@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 
 ## Current Position
 
-Phase: 12.1 of 14 (Friends List Screen Crash Fix - INSERTED)
-Plan: FIX3 applied after UAT
-Status: Phase complete (pending re-verification)
-Last activity: 2026-01-19 - Completed 12.1-01-FIX3.md (UAT-003 fix)
+Phase: 12.2 of 14 (Feed Stories Feature - INSERTED)
+Plan: 01 of 4 ready for execution
+Status: Planned
+Last activity: 2026-01-19 - Phase 12.2 planned with 4 plans (service layer, UI components, viewer, polish)
 
 Progress: █████████░ 93%
 
@@ -53,6 +53,7 @@ None.
 - v1.3 Firebase SDK Consolidation shipped: 2 phases, 4 plans (Phases 9-10) - 2026-01-19
 - Milestone v1.4 created: Production Ready, 4 phases (Phase 11-14)
 - Phase 12.1 inserted after Phase 12: Friends List Screen Crash Fix (URGENT) - FriendsListScreen crashing on load
+- Phase 12.2 inserted after Phase 12.1: Feed Stories Feature - IG Stories-style viewer + curated top 5 feed
 
 ## Session Continuity
 

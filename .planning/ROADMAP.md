@@ -51,10 +51,26 @@ Plans:
 **Details:**
 Fixed Filter.or access pattern via modular API. The firestore.Filter.or() pattern was also broken. Solution: use modular or(where(...), where(...)) pattern per React Native Firebase v22+ modular API exports.
 
+#### Phase 12.2: Feed Stories Feature (INSERTED)
+
+**Goal**: Add Instagram Stories-style viewer for friends' photos with curated feed showing top 5 snaps
+**Depends on**: Phase 12.1
+**Research**: Level 0 - Skip (existing patterns for gestures, animations, Firestore queries)
+**Plans**: 4
+
+Plans:
+- [ ] 12.2-01: Service Layer (getTopPhotosByEngagement, getFriendStoriesData)
+- [ ] 12.2-02: Stories Row Component (FriendStoryCard + horizontal row in FeedScreen)
+- [ ] 12.2-03: Stories Viewer (StoriesViewerModal with navigation gestures)
+- [ ] 12.2-04: Feed Curation & Polish (top 5 per friend, edge cases)
+
+**Details:**
+Feature request: PhotoCards of friends that when tapped display all of friend's snaps in IG Story-style viewer. Main feed changes to show only top 5 snaps from friends, ranked by engagement (reactionCount - no comments system exists).
+
 #### Phase 13: Production Build & Branding
 
 **Goal**: EAS build setup, app icon, splash screen, TestFlight prep
-**Depends on**: Phase 12
+**Depends on**: Phase 12.2
 **Research**: Likely (EAS Build, first deployment)
 **Research topics**: EAS Build configuration, iOS App Store requirements
 **Plans**: TBD
@@ -128,5 +144,6 @@ Plans:
 | 11. Firebase Modular API Migration | v1.4 | 4/4 | Complete | 2026-01-19 |
 | 12. Friendship Service Fix + Testing | v1.4 | 1/1 | Complete | 2026-01-19 |
 | 12.1 Friends List Screen Crash Fix | v1.4 | 1/1 | Complete | 2026-01-19 |
+| 12.2 Feed Stories Feature | v1.4 | 0/? | Not started | - |
 | 13. Production Build & Branding | v1.4 | 0/? | Not started | - |
 | 14. Remote Notification Testing & Polish | v1.4 | 0/? | Not started | - |
