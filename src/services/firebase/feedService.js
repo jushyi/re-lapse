@@ -30,7 +30,7 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
         // Fetch user data for each photo
         const userDocRef = doc(db, 'users', photoData.userId);
         const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.exists ? userDocSnap.data() : {};
+        const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
         return {
           id: photoDoc.id,
@@ -105,7 +105,7 @@ export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = n
             // Fetch user data for each photo
             const userDocRef = doc(db, 'users', photoData.userId);
             const userDocSnap = await getDoc(userDocRef);
-            const userData = userDocSnap.exists ? userDocSnap.data() : {};
+            const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
               return {
                 id: photoDoc.id,
@@ -164,7 +164,7 @@ export const getPhotoById = async (photoId) => {
     const photoRef = doc(db, 'photos', photoId);
     const photoDocSnap = await getDoc(photoRef);
 
-    if (!photoDocSnap.exists) {
+    if (!photoDocSnap.exists()) {
       return { success: false, error: 'Photo not found' };
     }
 
@@ -173,7 +173,7 @@ export const getPhotoById = async (photoId) => {
     // Fetch user data
     const userDocRef = doc(db, 'users', photoData.userId);
     const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.exists ? userDocSnap.data() : {};
+    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
     return {
       success: true,
@@ -215,7 +215,7 @@ export const getUserFeedPhotos = async (userId) => {
     // Fetch user data once
     const userDocRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.exists ? userDocSnap.data() : {};
+    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
     const photos = snapshot.docs.map((photoDoc) => ({
       id: photoDoc.id,
@@ -294,7 +294,7 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
     const photoRef = doc(db, 'photos', photoId);
     const photoDocSnap = await getDoc(photoRef);
 
-    if (!photoDocSnap.exists) {
+    if (!photoDocSnap.exists()) {
       return { success: false, error: 'Photo not found' };
     }
 
