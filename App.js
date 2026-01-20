@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
+import auth from '@react-native-firebase/auth';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import { ErrorBoundary, AnimatedSplash } from './src/components';
@@ -11,6 +13,12 @@ import {
   handleNotificationReceived,
   handleNotificationTapped,
 } from './src/services/firebase/notificationService';
+import {
+  isDarkroomReadyToReveal,
+  scheduleNextReveal,
+} from './src/services/firebase/darkroomService';
+import { revealPhotos } from './src/services/firebase/photoService';
+import logger from './src/utils/logger';
 
 // Prevent the native splash screen from auto-hiding
 // This keeps it visible while our animated splash runs
@@ -80,6 +88,42 @@ export default function App() {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
+  }, []);
+
+  // Check for pending photo reveals when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        // Check for pending reveals when app comes to foreground
+        const currentUser = auth().currentUser;
+        if (currentUser) {
+          logger.debug('App: Checking for pending reveals on foreground', {
+            userId: currentUser.uid,
+          });
+          try {
+            const isReady = await isDarkroomReadyToReveal(currentUser.uid);
+            if (isReady) {
+              logger.info('App: Revealing photos on foreground', {
+                userId: currentUser.uid,
+              });
+              const revealResult = await revealPhotos(currentUser.uid);
+              await scheduleNextReveal(currentUser.uid);
+              logger.info('App: Foreground reveal complete', {
+                userId: currentUser.uid,
+                revealedCount: revealResult.count,
+              });
+            }
+          } catch (error) {
+            logger.error('App: Failed to check/reveal photos on foreground', {
+              userId: currentUser.uid,
+              error: error.message,
+            });
+          }
+        }
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   return (
