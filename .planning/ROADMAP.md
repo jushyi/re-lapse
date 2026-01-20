@@ -93,6 +93,19 @@ Plans:
 **Details:**
 Fixed darkroom timing accuracy by adding ensureDarkroomInitialized() call on photo capture. Reduced reveal interval from 0-2 hours to 0-15 minutes.
 
+#### Phase 13.2: Darkroom Auto-Reveal Fix (INSERTED)
+
+**Goal**: Fix darkroom not revealing photos when nextRevealAt time passes - reveal happens only when user opens DarkroomScreen
+**Depends on**: Phase 13.1
+**Research**: Unlikely (internal debugging)
+**Plans**: 1
+
+Plans:
+- [ ] 13.2-01: Fix ensureDarkroomInitialized + Add foreground reveal check
+
+**Details:**
+Bug: When nextRevealAt time passes, nothing happens automatically. The reveal logic only runs when the user opens DarkroomScreen. Additionally, ensureDarkroomInitialized() resets stale nextRevealAt without revealing photos first, causing photos to remain in 'developing' state indefinitely.
+
 #### Phase 14: Remote Notification Testing & Polish
 
 **Goal**: End-to-end notification verification, final bug fixes
@@ -162,4 +175,5 @@ Plans:
 | 12.2 Feed Stories Feature | v1.4 | 4/4 | Complete | 2026-01-20 |
 | 13. Production Build & Branding | v1.4 | 3/3 | Complete | 2026-01-20 |
 | 13.1 Darkroom Reveal Timing Fix | v1.4 | 1/1 | Complete | 2026-01-20 |
+| 13.2 Darkroom Auto-Reveal Fix | v1.4 | 0/1 | Planned | - |
 | 14. Remote Notification Testing & Polish | v1.4 | 0/1 | Planned | - |
