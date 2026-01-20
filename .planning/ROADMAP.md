@@ -16,15 +16,15 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 
 **Milestone Goal:** Make the core camera-to-darkroom experience feel instant and delightful
 
-#### Phase 15: Background Photo Upload
+#### Phase 15: Background Photo Upload (Complete)
 
 **Goal**: Async capture pipeline with upload queue and progress indicators - photos save instantly, upload in background
 **Depends on**: Previous milestone complete
 **Research**: Unlikely (internal patterns, React Native background task APIs well-established)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 15-01: TBD (run /gsd:plan-phase 15 to break down)
+- [x] 15-01: Background upload queue and async capture - completed 2026-01-20
 
 #### Phase 16: Camera Capture Feedback
 
@@ -134,7 +134,7 @@ Plans:
 | 13.1 Darkroom Reveal Timing Fix | v1.4 | 1/1 | Complete | 2026-01-20 |
 | 13.2 Darkroom Auto-Reveal Fix | v1.4 | 1/1 | Complete | 2026-01-20 |
 | 14. Remote Notification Testing & Polish | v1.4 | 1/1 | Complete | 2026-01-20 |
-| 15. Background Photo Upload | v1.5 | 0/? | Not started | - |
+| 15. Background Photo Upload | v1.5 | 1/1 | Complete | 2026-01-20 |
 | 16. Camera Capture Feedback | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
