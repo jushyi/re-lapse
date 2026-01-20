@@ -12,8 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase/firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getFriendships, removeFriend, subscribeFriendships } from '../services/firebase/friendshipService';
 import { mediumImpact } from '../utils/haptics';
@@ -63,10 +62,10 @@ const FriendsListScreen = ({ navigation }) => {
             friendship.user1Id === user.uid ? friendship.user2Id : friendship.user1Id;
 
           try {
-            const userRef = doc(db, 'users', otherUserId);
-            const userDoc = await getDoc(userRef);
+            const userDoc = await firestore().collection('users').doc(otherUserId).get();
 
-            if (userDoc.exists()) {
+            const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+            if (docExists) {
               return {
                 friendshipId: friendship.id,
                 userId: otherUserId,

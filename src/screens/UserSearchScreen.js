@@ -9,8 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '../services/firebase/firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import UserSearchCard from '../components/UserSearchCard';
 import { sendFriendRequest, checkFriendshipStatus } from '../services/firebase/friendshipService';
@@ -63,15 +62,12 @@ const UserSearchScreen = ({ navigation }) => {
       const normalizedTerm = term.toLowerCase().trim();
 
       // Query Firestore users collection
-      const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef,
-        where('username', '>=', normalizedTerm),
-        where('username', '<=', normalizedTerm + '\uf8ff'),
-        limit(20)
-      );
-
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await firestore()
+        .collection('users')
+        .where('username', '>=', normalizedTerm)
+        .where('username', '<=', normalizedTerm + '\uf8ff')
+        .limit(20)
+        .get();
 
       const results = [];
       querySnapshot.forEach((doc) => {

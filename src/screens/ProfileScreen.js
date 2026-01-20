@@ -3,8 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../services/firebase/firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import logger from '../utils/logger';
 
@@ -23,12 +22,11 @@ const ProfileScreen = () => {
         setLoading(true);
 
         // Get total photos (journaled + archived)
-        const photosQuery = query(
-          collection(db, 'photos'),
-          where('userId', '==', user.uid),
-          where('status', '==', 'triaged')
-        );
-        const photosSnapshot = await getDocs(photosQuery);
+        const photosSnapshot = await firestore()
+          .collection('photos')
+          .where('userId', '==', user.uid)
+          .where('status', '==', 'triaged')
+          .get();
         const postsCount = photosSnapshot.size;
 
         // Get friends count
