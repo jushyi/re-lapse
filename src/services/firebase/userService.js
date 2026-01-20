@@ -1,5 +1,4 @@
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 /**
@@ -21,10 +20,11 @@ const getTodayDate = () => {
  */
 export const getDailyPhotoCount = async (userId) => {
   try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestore().collection('users').doc(userId);
+    const userDoc = await userRef.get();
 
-    if (!userDoc.exists()) {
+    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    if (!docExists) {
       return { success: false, error: 'User not found' };
     }
 
@@ -33,7 +33,7 @@ export const getDailyPhotoCount = async (userId) => {
 
     // Check if it's a new day, reset count if so
     if (userData.lastPhotoDate !== today) {
-      await updateDoc(userRef, {
+      await userRef.update({
         dailyPhotoCount: 0,
         lastPhotoDate: today,
       });
@@ -54,10 +54,11 @@ export const getDailyPhotoCount = async (userId) => {
  */
 export const incrementDailyPhotoCount = async (userId) => {
   try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestore().collection('users').doc(userId);
+    const userDoc = await userRef.get();
 
-    if (!userDoc.exists()) {
+    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    if (!docExists) {
       return { success: false, error: 'User not found' };
     }
 
@@ -73,7 +74,7 @@ export const incrementDailyPhotoCount = async (userId) => {
       newCount = (userData.dailyPhotoCount || 0) + 1;
     }
 
-    await updateDoc(userRef, {
+    await userRef.update({
       dailyPhotoCount: newCount,
       lastPhotoDate: today,
     });
