@@ -29,6 +29,7 @@
     "expo-image-picker": "~17.0.10",
     "expo-notifications": "~0.32.16",
     "expo-secure-store": "~15.0.8",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "libphonenumber-js": "^1.12.34",
     "react": "19.1.0",
