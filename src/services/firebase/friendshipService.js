@@ -60,7 +60,7 @@ export const sendFriendRequest = async (fromUserId, toUserId) => {
     const friendshipRef = doc(db, 'friendships', friendshipId);
     const friendshipDocSnap = await getDoc(friendshipRef);
 
-    if (friendshipDocSnap.exists) {
+    if (friendshipDocSnap.exists()) {
       const existingStatus = friendshipDocSnap.data().status;
       if (existingStatus === 'accepted') {
         return { success: false, error: 'Already friends' };
@@ -106,7 +106,7 @@ export const acceptFriendRequest = async (friendshipId, userId) => {
     const friendshipRef = doc(db, 'friendships', friendshipId);
     const friendshipDocSnap = await getDoc(friendshipRef);
 
-    if (!friendshipDocSnap.exists) {
+    if (!friendshipDocSnap.exists()) {
       return { success: false, error: 'Friend request not found' };
     }
 
@@ -157,7 +157,7 @@ export const declineFriendRequest = async (friendshipId, userId) => {
     const friendshipRef = doc(db, 'friendships', friendshipId);
     const friendshipDocSnap = await getDoc(friendshipRef);
 
-    if (!friendshipDocSnap.exists) {
+    if (!friendshipDocSnap.exists()) {
       return { success: false, error: 'Friend request not found' };
     }
 
@@ -196,7 +196,7 @@ export const removeFriend = async (userId1, userId2) => {
     const friendshipRef = doc(db, 'friendships', friendshipId);
     const friendshipDocSnap = await getDoc(friendshipRef);
 
-    if (!friendshipDocSnap.exists) {
+    if (!friendshipDocSnap.exists()) {
       return { success: false, error: 'Friendship not found' };
     }
 
@@ -373,7 +373,7 @@ export const checkFriendshipStatus = async (userId1, userId2) => {
     const friendshipRef = doc(db, 'friendships', friendshipId);
     const friendshipDocSnap = await getDoc(friendshipRef);
 
-    if (!friendshipDocSnap.exists) {
+    if (!friendshipDocSnap.exists()) {
       return { success: true, status: 'none', friendshipId };
     }
 
