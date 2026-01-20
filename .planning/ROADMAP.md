@@ -88,10 +88,10 @@ Plans:
 **Plans**: 1
 
 Plans:
-- [ ] 13.1-01: Timing Fix & Countdown Display
+- [x] 13.1-01: Timing Fix & Darkroom Initialization
 
 **Details:**
-User reported that darkroom "nextRevealAt" timing is inaccurate. Additionally, changing reveal interval from 0-2 hours to 0-15 minutes for faster photo reveals.
+Fixed darkroom timing accuracy by adding ensureDarkroomInitialized() call on photo capture. Reduced reveal interval from 0-2 hours to 0-15 minutes.
 
 #### Phase 14: Remote Notification Testing & Polish
 
@@ -161,5 +161,5 @@ Plans:
 | 12.1 Friends List Screen Crash Fix | v1.4 | 1/1 | Complete | 2026-01-19 |
 | 12.2 Feed Stories Feature | v1.4 | 4/4 | Complete | 2026-01-20 |
 | 13. Production Build & Branding | v1.4 | 3/3 | Complete | 2026-01-20 |
-| 13.1 Darkroom Reveal Timing Fix | v1.4 | 0/? | Not started | - |
+| 13.1 Darkroom Reveal Timing Fix | v1.4 | 1/1 | Complete | 2026-01-20 |
 | 14. Remote Notification Testing & Polish | v1.4 | 0/? | Not started | - |
