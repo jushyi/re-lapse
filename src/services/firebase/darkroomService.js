@@ -1,5 +1,16 @@
-import firestore from '@react-native-firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  Timestamp,
+} from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+
+// Initialize Firestore once at module level
+const db = getFirestore();
 
 /**
  * Get or create darkroom document for user
@@ -8,17 +19,15 @@ import logger from '../../utils/logger';
  */
 export const getDarkroom = async (userId) => {
   try {
-    const darkroomRef = firestore().collection('darkrooms').doc(userId);
-    const darkroomDoc = await darkroomRef.get();
+    const darkroomRef = doc(db, 'darkrooms', userId);
+    const darkroomDoc = await getDoc(darkroomRef);
 
-    // Handle both function and property for exists check (RN Firebase version differences)
-    const docExists = typeof darkroomDoc.exists === 'function' ? darkroomDoc.exists() : darkroomDoc.exists;
-
-    if (!docExists) {
+    // In modular API, exists is a boolean property
+    if (!darkroomDoc.exists) {
       // Create new darkroom with initial reveal time
       const nextRevealAt = calculateNextRevealTime();
-      const createdAt = firestore.Timestamp.now();
-      await darkroomRef.set({
+      const createdAt = Timestamp.now();
+      await setDoc(darkroomRef, {
         userId,
         nextRevealAt,
         lastRevealedAt: null,
@@ -57,7 +66,7 @@ export const isDarkroomReadyToReveal = async (userId) => {
     if (!result.success) return false;
 
     const { nextRevealAt } = result.darkroom;
-    const now = firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     return nextRevealAt && nextRevealAt.seconds <= now.seconds;
   } catch (error) {
@@ -73,12 +82,12 @@ export const isDarkroomReadyToReveal = async (userId) => {
  */
 export const scheduleNextReveal = async (userId) => {
   try {
-    const darkroomRef = firestore().collection('darkrooms').doc(userId);
+    const darkroomRef = doc(db, 'darkrooms', userId);
     const nextRevealAt = calculateNextRevealTime();
 
-    await darkroomRef.update({
+    await updateDoc(darkroomRef, {
       nextRevealAt,
-      lastRevealedAt: firestore.FieldValue.serverTimestamp(),
+      lastRevealedAt: serverTimestamp(),
     });
 
     return { success: true, nextRevealAt };
@@ -96,5 +105,5 @@ const calculateNextRevealTime = () => {
   const now = new Date();
   const randomHours = Math.random() * 2; // Random between 0-2 hours
   const revealTime = new Date(now.getTime() + randomHours * 60 * 60 * 1000);
-  return firestore.Timestamp.fromDate(revealTime);
+  return Timestamp.fromDate(revealTime);
 };
