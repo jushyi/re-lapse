@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 15 of 18 (Background Photo Upload)
-Plan: 1 of 1 complete
-Status: Phase complete
-Last activity: 2026-01-20 - Phase 15 completed (background photo upload)
+Plan: 1 of 1 complete + UAT fixes
+Status: Phase complete (with UAT fixes)
+Last activity: 2026-01-20 - Completed 15-01-FIX (UAT issues resolved)
 
 Progress: ██░░░░░░░░ 25% (v1.5: 1/4 phases)
 
@@ -57,9 +57,10 @@ None.
 ### Roadmap Evolution
 
 - Milestone v1.5 created: Camera Performance & UX Polish, 4 phases (Phase 15-18)
+- Phase 18.1 inserted after Phase 18: Batched Darkroom Triage with Undo (URGENT) - better UX with local decisions, undo capability, and session persistence
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Phase 15 complete, ready for Phase 16
+Stopped at: Phase 15-01-FIX complete (UAT issues resolved), ready for Phase 16
 Resume file: None
