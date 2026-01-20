@@ -1,16 +1,20 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 // Use React Native Firebase for auth and firestore (required for phone auth)
 import { getAuth, onAuthStateChanged as firebaseOnAuthStateChanged } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../utils/logger';
+
+// Initialize Firestore
+const db = getFirestore();
 
 // React Native Firebase Firestore functions for phone auth users
 // These use the native SDK which shares auth state with RN Firebase Auth
 const createUserDocumentNative = async (userId, userData) => {
   try {
-    await firestore().collection('users').doc(userId).set({
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
       ...userData,
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       dailyPhotoCount: 0,
       lastPhotoDate: new Date().toISOString().split('T')[0],
     });
@@ -24,10 +28,10 @@ const createUserDocumentNative = async (userId, userData) => {
 const getUserDocumentNative = async (userId) => {
   try {
     logger.debug('getUserDocumentNative: Fetching user document', { userId });
-    const userDoc = await firestore().collection('users').doc(userId).get();
-    // RN Firebase uses exists as a boolean property (not a function in newer versions)
-    // But some versions use exists() as a method - check both
-    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    // Modular API uses exists as a property
+    const docExists = userDoc.exists;
     logger.debug('getUserDocumentNative: Document fetched', {
       userId,
       exists: docExists,
@@ -52,9 +56,10 @@ const getUserDocumentNative = async (userId) => {
 const updateUserDocumentNative = async (userId, updateData) => {
   try {
     logger.debug('updateUserDocumentNative: Updating user document', { userId, fields: Object.keys(updateData) });
-    await firestore().collection('users').doc(userId).update({
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
       ...updateData,
-      updatedAt: firestore.FieldValue.serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
     logger.info('updateUserDocumentNative: Success', { userId });
     return { success: true };
