@@ -2,8 +2,11 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+
+// Initialize Firestore once at module level
+const db = getFirestore();
 
 /**
  * Configure how notifications are displayed when app is in foreground
@@ -125,9 +128,10 @@ export const getNotificationToken = async () => {
 export const storeNotificationToken = async (userId, token) => {
   try {
     // Use React Native Firebase Firestore directly (shares auth state with RN Firebase Auth)
-    await firestore().collection('users').doc(userId).update({
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
       fcmToken: token,
-      updatedAt: firestore.FieldValue.serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
 
     logger.info('Notification token stored for user', { userId });

@@ -1,5 +1,8 @@
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+
+// Initialize Firestore once at module level
+const db = getFirestore();
 
 /**
  * Get today's date in YYYY-MM-DD format
@@ -20,20 +23,19 @@ const getTodayDate = () => {
  */
 export const getDailyPhotoCount = async (userId) => {
   try {
-    const userRef = firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();
+    const userRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userRef);
 
-    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-    if (!docExists) {
+    if (!userDocSnap.exists) {
       return { success: false, error: 'User not found' };
     }
 
-    const userData = userDoc.data();
+    const userData = userDocSnap.data();
     const today = getTodayDate();
 
     // Check if it's a new day, reset count if so
     if (userData.lastPhotoDate !== today) {
-      await userRef.update({
+      await updateDoc(userRef, {
         dailyPhotoCount: 0,
         lastPhotoDate: today,
       });
@@ -54,15 +56,14 @@ export const getDailyPhotoCount = async (userId) => {
  */
 export const incrementDailyPhotoCount = async (userId) => {
   try {
-    const userRef = firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();
+    const userRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userRef);
 
-    const docExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-    if (!docExists) {
+    if (!userDocSnap.exists) {
       return { success: false, error: 'User not found' };
     }
 
-    const userData = userDoc.data();
+    const userData = userDocSnap.data();
     const today = getTodayDate();
 
     let newCount;
@@ -74,7 +75,7 @@ export const incrementDailyPhotoCount = async (userId) => {
       newCount = (userData.dailyPhotoCount || 0) + 1;
     }
 
-    await userRef.update({
+    await updateDoc(userRef, {
       dailyPhotoCount: newCount,
       lastPhotoDate: today,
     });
