@@ -44,12 +44,13 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 
 #### Phase 9: Firestore Services Migration
 
-**Goal**: Migrate photoService.js, feedService.js, and friendshipService.js from Firebase JS SDK to React Native Firebase
+**Goal**: Migrate photoService.js, feedService.js, friendshipService.js, and darkroomService.js from Firebase JS SDK to React Native Firebase
 **Depends on**: v1.2 complete
-**Research**: Unlikely (AuthContext.js already demonstrates correct RN Firebase pattern)
+**Research**: Not needed (AuthContext.js already demonstrates correct RN Firebase pattern)
 
 Plans:
-- [ ] 09-01: TBD (run /gsd:plan-phase 9 to break down)
+- [ ] 09-01: Core Photo Services Migration (photoService.js, darkroomService.js)
+- [ ] 09-02: Social Services Migration (feedService.js, friendshipService.js)
 
 #### Phase 10: Storage Migration & Cleanup
 
@@ -74,5 +75,5 @@ Plans:
 | 6. Phone Auth Implementation | v1.2 | 4/4 | Complete | 2026-01-19 |
 | 7. Legacy Auth Removal & Cleanup | v1.2 | 1/1 | Complete | 2026-01-19 |
 | 8. Polish & Testing | v1.2 | 3/3 | Complete | 2026-01-19 |
-| 9. Firestore Services Migration | v1.3 | 0/? | Not started | - |
+| 9. Firestore Services Migration | v1.3 | 0/2 | Planned | - |
 | 10. Storage Migration & Cleanup | v1.3 | 0/? | Not started | - |
