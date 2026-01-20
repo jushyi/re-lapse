@@ -332,3 +332,66 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Get top photos by engagement (reaction count) for a specific user
+ * Used for Stories feature - shows most engaging photos first
+ *
+ * @param {string} userId - User ID to fetch photos for
+ * @param {number} limit - Maximum number of photos to return (default: 5)
+ * @returns {Promise<{success: boolean, photos?: Array, error?: string}>}
+ */
+export const getTopPhotosByEngagement = async (userId, limit = 5) => {
+  logger.debug('feedService.getTopPhotosByEngagement: Starting', { userId, limit });
+
+  try {
+    if (!userId) {
+      logger.warn('feedService.getTopPhotosByEngagement: Missing userId');
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    // Query photos where userId matches AND photoState == 'journal' (feed-visible only)
+    // Using simple query to avoid composite index requirement
+    const q = query(
+      collection(db, 'photos'),
+      where('userId', '==', userId),
+      where('photoState', '==', 'journal')
+    );
+    const snapshot = await getDocs(q);
+
+    logger.debug('feedService.getTopPhotosByEngagement: Query complete', {
+      userId,
+      totalPhotos: snapshot.size,
+    });
+
+    // Map to photo objects
+    const photos = snapshot.docs.map((photoDoc) => ({
+      id: photoDoc.id,
+      ...photoDoc.data(),
+    }));
+
+    // Sort client-side by reactionCount descending (highest engagement first)
+    photos.sort((a, b) => {
+      const aCount = a.reactionCount || 0;
+      const bCount = b.reactionCount || 0;
+      return bCount - aCount;
+    });
+
+    // Return top N photos
+    const topPhotos = photos.slice(0, limit);
+
+    logger.info('feedService.getTopPhotosByEngagement: Success', {
+      userId,
+      requested: limit,
+      returned: topPhotos.length,
+    });
+
+    return { success: true, photos: topPhotos };
+  } catch (error) {
+    logger.error('feedService.getTopPhotosByEngagement: Failed', {
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
