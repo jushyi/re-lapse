@@ -30,8 +30,8 @@ const getUserDocumentNative = async (userId) => {
     logger.debug('getUserDocumentNative: Fetching user document', { userId });
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
-    // Modular API uses exists as a property
-    const docExists = userDoc.exists;
+    // Modular API uses exists() as a method
+    const docExists = userDoc.exists();
     logger.debug('getUserDocumentNative: Document fetched', {
       userId,
       exists: docExists,
