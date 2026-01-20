@@ -26,7 +26,7 @@ export const getDailyPhotoCount = async (userId) => {
     const userRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userRef);
 
-    if (!userDocSnap.exists) {
+    if (!userDocSnap.exists()) {
       return { success: false, error: 'User not found' };
     }
 
@@ -59,7 +59,7 @@ export const incrementDailyPhotoCount = async (userId) => {
     const userRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userRef);
 
-    if (!userDocSnap.exists) {
+    if (!userDocSnap.exists()) {
       return { success: false, error: 'User not found' };
     }
 
