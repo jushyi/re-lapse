@@ -295,16 +295,26 @@ const CameraScreen = () => {
     outputRange: [1, 0.7, 0.3, 0.15, 0.15],
   });
 
-  // Arc trajectory: rises slightly at start, then curves down to destination
+  // Darkroom button position calculation:
+  // Footer is at bottom: TAB_BAR_HEIGHT (65) from screen bottom, FOOTER_HEIGHT (160) tall
+  // Footer controls are centered with gap: 40 between buttons (56px wide each)
+  // Darkroom button is first (left of capture), so it's at: center - 40 - 40 - 28 = center - 108
+  // Final Y position from center: footer center is at SCREEN_HEIGHT - TAB_BAR_HEIGHT - FOOTER_HEIGHT/2 - 10 (paddingBottom adjustment)
+  // Offset from screen center (50%): targetY - SCREEN_HEIGHT/2
+  const DARKROOM_BUTTON_OFFSET_X = -108; // Left of center (gap + half capture button + half darkroom button)
+  const DARKROOM_BUTTON_Y = SCREEN_HEIGHT - TAB_BAR_HEIGHT - FOOTER_HEIGHT / 2 - 10;
+  const DARKROOM_OFFSET_FROM_CENTER_Y = DARKROOM_BUTTON_Y - SCREEN_HEIGHT / 2;
+
+  // Arc trajectory: rises slightly at start, then curves down to darkroom button
   const photoTranslateY = animatedValue.interpolate({
     inputRange: [0, 0.2, 0.5, 0.8, 1, 2],
-    outputRange: [0, -40, SCREEN_HEIGHT * 0.25, SCREEN_HEIGHT * 0.55, SCREEN_HEIGHT * 0.7, SCREEN_HEIGHT * 0.7],
+    outputRange: [0, -40, DARKROOM_OFFSET_FROM_CENTER_Y * 0.3, DARKROOM_OFFSET_FROM_CENTER_Y * 0.7, DARKROOM_OFFSET_FROM_CENTER_Y, DARKROOM_OFFSET_FROM_CENTER_Y],
   });
 
-  // Curved X path: starts moving left, then curves right toward darkroom button
+  // Curved X path: starts moving right slightly, then curves LEFT toward darkroom button
   const photoTranslateX = animatedValue.interpolate({
     inputRange: [0, 0.3, 0.6, 1, 2],
-    outputRange: [0, -50, SCREEN_WIDTH * 0.05, SCREEN_WIDTH * 0.25, SCREEN_WIDTH * 0.25],
+    outputRange: [0, 30, DARKROOM_BUTTON_OFFSET_X * 0.3, DARKROOM_BUTTON_OFFSET_X, DARKROOM_BUTTON_OFFSET_X],
   });
 
   const photoOpacity = animatedValue.interpolate({
@@ -339,7 +349,7 @@ const CameraScreen = () => {
             bounceAnim={badgeBounce}
           />
 
-          {/* Capture Button (center) */}
+          {/* Capture Button (center) - no spinner, flash provides instant feedback */}
           <TouchableOpacity
             style={[
               styles.captureButton,
@@ -347,12 +357,9 @@ const CameraScreen = () => {
             ]}
             onPress={takePicture}
             disabled={isCapturing}
+            activeOpacity={0.7}
           >
-            {isCapturing ? (
-              <ActivityIndicator size="large" color="#000000" />
-            ) : (
-              <View style={styles.captureButtonInner} />
-            )}
+            <View style={styles.captureButtonInner} />
           </TouchableOpacity>
 
           {/* Debug Button (right of capture) */}
