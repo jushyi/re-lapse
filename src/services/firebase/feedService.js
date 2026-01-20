@@ -1,14 +1,4 @@
-import {
-  collection,
-  doc,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  onSnapshot,
-  updateDoc,
-} from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 /**
@@ -26,12 +16,10 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
     // Simplified query: Only filter by photoState = 'journal'
     // Status will be implicitly 'triaged' since only triaged photos have photoState
     // We'll sort in JavaScript to avoid composite index requirement
-    let feedQuery = query(
-      collection(db, 'photos'),
-      where('photoState', '==', 'journal')
-    );
-
-    const snapshot = await getDocs(feedQuery);
+    const snapshot = await firestore()
+      .collection('photos')
+      .where('photoState', '==', 'journal')
+      .get();
 
     // Fetch all photos with user data
     const allPhotos = await Promise.all(
@@ -39,8 +27,9 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
         const photoData = photoDoc.data();
 
         // Fetch user data for each photo
-        const userDoc = await getDoc(doc(db, 'users', photoData.userId));
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        const userDoc = await firestore().collection('users').doc(photoData.userId).get();
+        const userExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+        const userData = userExists ? userDoc.data() : {};
 
         return {
           id: photoDoc.id,
@@ -103,61 +92,58 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
  */
 export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = null, currentUserId = null) => {
   try {
-    // Simplified query to avoid composite index
-    const feedQuery = query(
-      collection(db, 'photos'),
-      where('photoState', '==', 'journal')
-    );
-
     // Set up real-time listener
-    const unsubscribe = onSnapshot(
-      feedQuery,
-      async (snapshot) => {
-        const allPhotos = await Promise.all(
-          snapshot.docs.map(async (photoDoc) => {
-            const photoData = photoDoc.data();
+    const unsubscribe = firestore()
+      .collection('photos')
+      .where('photoState', '==', 'journal')
+      .onSnapshot(
+        async (snapshot) => {
+          const allPhotos = await Promise.all(
+            snapshot.docs.map(async (photoDoc) => {
+              const photoData = photoDoc.data();
 
-            // Fetch user data for each photo
-            const userDoc = await getDoc(doc(db, 'users', photoData.userId));
-            const userData = userDoc.exists() ? userDoc.data() : {};
+              // Fetch user data for each photo
+              const userDoc = await firestore().collection('users').doc(photoData.userId).get();
+              const userExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+              const userData = userExists ? userDoc.data() : {};
 
-            return {
-              id: photoDoc.id,
-              ...photoData,
-              user: {
-                uid: photoData.userId,
-                username: userData.username || 'unknown',
-                displayName: userData.displayName || 'Unknown User',
-                profilePhotoURL: userData.profilePhotoURL || null,
-              },
-            };
-          })
-        );
+              return {
+                id: photoDoc.id,
+                ...photoData,
+                user: {
+                  uid: photoData.userId,
+                  username: userData.username || 'unknown',
+                  displayName: userData.displayName || 'Unknown User',
+                  profilePhotoURL: userData.profilePhotoURL || null,
+                },
+              };
+            })
+          );
 
-        // Filter by friends + current user if friendUserIds provided
-        let filteredPhotos = allPhotos;
-        if (friendUserIds !== null && currentUserId) {
-          const allowedUserIds = [...friendUserIds, currentUserId];
-          filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+          // Filter by friends + current user if friendUserIds provided
+          let filteredPhotos = allPhotos;
+          if (friendUserIds !== null && currentUserId) {
+            const allowedUserIds = [...friendUserIds, currentUserId];
+            filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+          }
+
+          // Sort by capturedAt in descending order (newest first)
+          const sortedPhotos = filteredPhotos.sort((a, b) => {
+            const aTime = a.capturedAt?.seconds || 0;
+            const bTime = b.capturedAt?.seconds || 0;
+            return bTime - aTime;
+          });
+
+          // Limit to requested count
+          const limitedPhotos = sortedPhotos.slice(0, limitCount);
+
+          callback({ success: true, photos: limitedPhotos });
+        },
+        (error) => {
+          logger.error('Error in feed subscription', error);
+          callback({ success: false, error: error.message, photos: [] });
         }
-
-        // Sort by capturedAt in descending order (newest first)
-        const sortedPhotos = filteredPhotos.sort((a, b) => {
-          const aTime = a.capturedAt?.seconds || 0;
-          const bTime = b.capturedAt?.seconds || 0;
-          return bTime - aTime;
-        });
-
-        // Limit to requested count
-        const limitedPhotos = sortedPhotos.slice(0, limitCount);
-
-        callback({ success: true, photos: limitedPhotos });
-      },
-      (error) => {
-        logger.error('Error in feed subscription', error);
-        callback({ success: false, error: error.message, photos: [] });
-      }
-    );
+      );
 
     return unsubscribe;
   } catch (error) {
@@ -175,17 +161,19 @@ export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = n
  */
 export const getPhotoById = async (photoId) => {
   try {
-    const photoDoc = await getDoc(doc(db, 'photos', photoId));
+    const photoDoc = await firestore().collection('photos').doc(photoId).get();
 
-    if (!photoDoc.exists()) {
+    const photoExists = typeof photoDoc.exists === 'function' ? photoDoc.exists() : photoDoc.exists;
+    if (!photoExists) {
       return { success: false, error: 'Photo not found' };
     }
 
     const photoData = photoDoc.data();
 
     // Fetch user data
-    const userDoc = await getDoc(doc(db, 'users', photoData.userId));
-    const userData = userDoc.exists() ? userDoc.data() : {};
+    const userDoc = await firestore().collection('users').doc(photoData.userId).get();
+    const userExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    const userData = userExists ? userDoc.data() : {};
 
     return {
       success: true,
@@ -216,18 +204,17 @@ export const getPhotoById = async (photoId) => {
 export const getUserFeedPhotos = async (userId) => {
   try {
     // Query for all triaged photos (journaled + archived)
-    const photosQuery = query(
-      collection(db, 'photos'),
-      where('userId', '==', userId),
-      where('status', '==', 'triaged'),
-      orderBy('capturedAt', 'desc')
-    );
-
-    const snapshot = await getDocs(photosQuery);
+    const snapshot = await firestore()
+      .collection('photos')
+      .where('userId', '==', userId)
+      .where('status', '==', 'triaged')
+      .orderBy('capturedAt', 'desc')
+      .get();
 
     // Fetch user data once
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userData = userDoc.exists() ? userDoc.data() : {};
+    const userDoc = await firestore().collection('users').doc(userId).get();
+    const userExists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+    const userData = userExists ? userDoc.data() : {};
 
     const photos = snapshot.docs.map((photoDoc) => ({
       id: photoDoc.id,
@@ -254,27 +241,21 @@ export const getUserFeedPhotos = async (userId) => {
  */
 export const getFeedStats = async () => {
   try {
-    const journaledQuery = query(
-      collection(db, 'photos'),
-      where('status', '==', 'triaged'),
-      where('photoState', '==', 'journaled')
-    );
-
-    const archivedQuery = query(
-      collection(db, 'photos'),
-      where('status', '==', 'triaged'),
-      where('photoState', '==', 'archived')
-    );
-
-    const developingQuery = query(
-      collection(db, 'photos'),
-      where('status', '==', 'developing')
-    );
-
     const [journaledSnapshot, archivedSnapshot, developingSnapshot] = await Promise.all([
-      getDocs(journaledQuery),
-      getDocs(archivedQuery),
-      getDocs(developingQuery),
+      firestore()
+        .collection('photos')
+        .where('status', '==', 'triaged')
+        .where('photoState', '==', 'journaled')
+        .get(),
+      firestore()
+        .collection('photos')
+        .where('status', '==', 'triaged')
+        .where('photoState', '==', 'archived')
+        .get(),
+      firestore()
+        .collection('photos')
+        .where('status', '==', 'developing')
+        .get(),
     ]);
 
     return {
@@ -305,10 +286,11 @@ export const getFeedStats = async () => {
  */
 export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
   try {
-    const photoRef = doc(db, 'photos', photoId);
-    const photoDoc = await getDoc(photoRef);
+    const photoRef = firestore().collection('photos').doc(photoId);
+    const photoDoc = await photoRef.get();
 
-    if (!photoDoc.exists()) {
+    const photoExists = typeof photoDoc.exists === 'function' ? photoDoc.exists() : photoDoc.exists;
+    if (!photoExists) {
       return { success: false, error: 'Photo not found' };
     }
 
@@ -335,7 +317,7 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
     });
 
     // Update photo document
-    await updateDoc(photoRef, {
+    await photoRef.update({
       reactions,
       reactionCount: totalCount,
     });
