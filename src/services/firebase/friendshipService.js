@@ -321,18 +321,22 @@ export const getSentRequests = async (userId) => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query friendships where user is the requester (single field to avoid composite index)
+    // Query friendships where user is either user1Id or user2Id using modular or() function
+    // (Firestore security rules only allow queries where user is user1Id or user2Id)
     const q = query(
       collection(db, 'friendships'),
-      where('requestedBy', '==', userId)
+      or(
+        where('user1Id', '==', userId),
+        where('user2Id', '==', userId)
+      )
     );
     const querySnapshot = await getDocs(q);
 
-    // Filter for pending status client-side
+    // Filter for pending requests WHERE USER IS THE SENDER (client-side)
     const requests = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.status === 'pending') {
+      if (data.status === 'pending' && data.requestedBy === userId) {
         requests.push({
           id: doc.id,
           ...data,
