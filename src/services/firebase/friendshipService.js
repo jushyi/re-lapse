@@ -1,4 +1,4 @@
-import firestore, { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, or, onSnapshot, serverTimestamp } from '@react-native-firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, or, onSnapshot, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 // Initialize Firestore once at module level
