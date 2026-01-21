@@ -60,28 +60,33 @@ const COLORS = {
   fillGradientEnd: '#A855F7',     // Lighter fill right
 };
 
-// YouTube-style spinner: segmented ring spins around static play triangle
+// YouTube-style spinner: 2/3 solid arc + dots, spins around static play triangle
 const SpinnerIcon = ({ rotation, color = COLORS.textPrimary }) => {
   return (
     <View style={styles.spinnerOuter}>
-      {/* Rotating segmented ring - 3/4 arc (top, right, bottom visible, left gap) */}
+      {/* Rotating ring container */}
       <Animated.View
         style={[
           styles.spinnerRingContainer,
           { transform: [{ rotate: rotation }] }
         ]}
       >
+        {/* 2/3 solid arc (top and right sides) */}
         <View
           style={[
             styles.spinnerRing,
             {
               borderTopColor: color,
               borderRightColor: color,
-              borderBottomColor: color,
+              borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
             }
           ]}
         />
+        {/* Small dots for remaining 1/3 (bottom-left quadrant) */}
+        <View style={[styles.spinnerDot, styles.spinnerDot1, { backgroundColor: color }]} />
+        <View style={[styles.spinnerDot, styles.spinnerDot2, { backgroundColor: color }]} />
+        <View style={[styles.spinnerDot, styles.spinnerDot3, { backgroundColor: color }]} />
       </Animated.View>
       {/* Static play triangle in center */}
       <View style={[styles.playTriangle, { borderLeftColor: color }]} />
@@ -601,7 +606,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginLeft: 12,
   },
-  // Spinner - segmented ring spins around static play triangle
+  // Spinner - 2/3 solid arc + dots, spins around static play triangle
   spinnerOuter: {
     width: 24,
     height: 24,
@@ -620,6 +625,26 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
+  },
+  // Small dots positioned along the remaining 1/3 arc (bottom-left)
+  spinnerDot: {
+    position: 'absolute',
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  // Dots positioned at ~210°, ~240°, ~270° (bottom-left quadrant)
+  spinnerDot1: {
+    bottom: 2,
+    left: 3,
+  },
+  spinnerDot2: {
+    bottom: 5,
+    left: 0,
+  },
+  spinnerDot3: {
+    top: 10,
+    left: 0,
   },
   playTriangle: {
     width: 0,
