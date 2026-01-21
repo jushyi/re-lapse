@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Animated,
   Dimensions,
   ActivityIndicator,
@@ -99,7 +98,6 @@ const CameraScreen = () => {
   const [flash, setFlash] = useState('off');
   const [zoom, setZoom] = useState(ZOOM_LEVELS[0]); // Default to 1x (first item now)
   const [isCapturing, setIsCapturing] = useState(false);
-  const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [darkroomCounts, setDarkroomCounts] = useState({
     totalCount: 0,
     developingCount: 0,
@@ -108,9 +106,10 @@ const CameraScreen = () => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
   const cameraRef = useRef(null);
-  const animatedValue = useRef(new Animated.Value(0)).current;
   const flashOpacity = useRef(new Animated.Value(0)).current;
-  const badgeBounce = useRef(new Animated.Value(1)).current;
+  // Animation values for card stack capture feedback
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const cardFanSpread = useRef(new Animated.Value(0)).current; // 0 = normal, 1 = fanned out
 
   // Initialize upload queue on app start
   useEffect(() => {
@@ -225,51 +224,45 @@ const CameraScreen = () => {
     ]).start(() => setShowFlash(false));
   };
 
-  // Play badge bounce when photo "lands" in darkroom
-  const playBadgeBounce = () => {
-    badgeBounce.setValue(1);
-    Animated.sequence([
-      Animated.spring(badgeBounce, {
-        toValue: 1.3,
-        friction: 3,
-        tension: 200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(badgeBounce, {
-        toValue: 1,
-        friction: 4,
-        tension: 100,
-        useNativeDriver: true,
-      }),
+  // Play card stack capture animation - cards fan out and enlarge, then return
+  const playCardCaptureAnimation = () => {
+    // Reset values
+    cardScale.setValue(1);
+    cardFanSpread.setValue(0);
+
+    // Animate: fan out + scale up, then return to normal
+    Animated.parallel([
+      // Scale: 1 -> 1.25 -> 1
+      Animated.sequence([
+        Animated.spring(cardScale, {
+          toValue: 1.25,
+          friction: 4,
+          tension: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Fan spread: 0 -> 1 -> 0
+      Animated.sequence([
+        Animated.spring(cardFanSpread, {
+          toValue: 1,
+          friction: 4,
+          tension: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardFanSpread, {
+          toValue: 0,
+          friction: 5,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
-  };
-
-  const playPhotoAnimation = (photoUri) => {
-    // Flash already started in takePicture() - don't duplicate
-
-    setCapturedPhoto(photoUri);
-    animatedValue.setValue(0);
-
-    Animated.sequence([
-      // Arc trajectory to darkroom position with physics-style easing
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      // Fade out
-      Animated.timing(animatedValue, {
-        toValue: 2,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setCapturedPhoto(null);
-      animatedValue.setValue(0);
-    });
-
-    // Trigger badge bounce when photo reaches destination (at t=600ms)
-    setTimeout(playBadgeBounce, 600);
   };
 
   const takePicture = async () => {
@@ -293,8 +286,8 @@ const CameraScreen = () => {
       // Queue for background upload (non-blocking)
       addToQueue(user.uid, photo.uri);
 
-      // Play animation (don't await - camera should be ready immediately)
-      playPhotoAnimation(photo.uri);
+      // Play card stack animation (fan out + scale)
+      playCardCaptureAnimation();
 
       // Optimistically update badge count (+1 developing)
       setDarkroomCounts(prev => ({
@@ -310,45 +303,6 @@ const CameraScreen = () => {
       setIsCapturing(false);
     }
   };
-
-  // Calculate animation interpolations with curved arc trajectory
-  const photoScale = animatedValue.interpolate({
-    inputRange: [0, 0.3, 0.7, 1, 2],
-    outputRange: [1, 0.7, 0.3, 0.15, 0.15],
-  });
-
-  // Darkroom button position calculation:
-  // Footer is at bottom: TAB_BAR_HEIGHT (65) from screen bottom, FOOTER_HEIGHT (160) tall
-  // Footer controls are centered with gap: 40 between buttons (56px wide each)
-  // Darkroom button is first (left of capture), so it's at: center - 40 - 40 - 28 = center - 108
-  // Final Y position from center: footer center is at SCREEN_HEIGHT - TAB_BAR_HEIGHT - FOOTER_HEIGHT/2 - 10 (paddingBottom adjustment)
-  // Offset from screen center (50%): targetY - SCREEN_HEIGHT/2
-  const DARKROOM_BUTTON_OFFSET_X = -108; // Left of center (gap + half capture button + half darkroom button)
-  const DARKROOM_BUTTON_Y = SCREEN_HEIGHT - TAB_BAR_HEIGHT - FOOTER_HEIGHT / 2 - 10;
-  const DARKROOM_OFFSET_FROM_CENTER_Y = DARKROOM_BUTTON_Y - SCREEN_HEIGHT / 2;
-
-  // Arc trajectory: rises slightly at start, then curves down to darkroom button
-  const photoTranslateY = animatedValue.interpolate({
-    inputRange: [0, 0.2, 0.5, 0.8, 1, 2],
-    outputRange: [0, -40, DARKROOM_OFFSET_FROM_CENTER_Y * 0.3, DARKROOM_OFFSET_FROM_CENTER_Y * 0.7, DARKROOM_OFFSET_FROM_CENTER_Y, DARKROOM_OFFSET_FROM_CENTER_Y],
-  });
-
-  // Curved X path: starts moving right slightly, then curves LEFT toward darkroom button
-  const photoTranslateX = animatedValue.interpolate({
-    inputRange: [0, 0.3, 0.6, 1, 2],
-    outputRange: [0, 30, DARKROOM_BUTTON_OFFSET_X * 0.3, DARKROOM_BUTTON_OFFSET_X, DARKROOM_BUTTON_OFFSET_X],
-  });
-
-  const photoOpacity = animatedValue.interpolate({
-    inputRange: [0, 1, 1.5, 2],
-    outputRange: [1, 1, 0.5, 0],
-  });
-
-  // Slight rotation during flight for more dynamic feel
-  const photoRotate = animatedValue.interpolate({
-    inputRange: [0, 0.3, 0.7, 1, 2],
-    outputRange: ['0deg', '-5deg', '5deg', '0deg', '0deg'],
-  });
 
   return (
     <View style={styles.container}>
@@ -425,7 +379,8 @@ const CameraScreen = () => {
           <DarkroomCardButton
             count={darkroomCounts.totalCount}
             onPress={() => setIsBottomSheetVisible(true)}
-            bounceAnim={badgeBounce}
+            scaleAnim={cardScale}
+            fanSpreadAnim={cardFanSpread}
           />
 
           {/* Capture Button (center) - 10% larger with spaced ring */}
@@ -458,26 +413,6 @@ const CameraScreen = () => {
         />
       )}
 
-      {/* Animated Photo Snapshot */}
-      {capturedPhoto && (
-        <Animated.View
-          style={[
-            styles.animatedPhoto,
-            {
-              transform: [
-                { scale: photoScale },
-                { translateY: photoTranslateY },
-                { translateX: photoTranslateX },
-                { rotate: photoRotate },
-              ],
-              opacity: photoOpacity,
-            },
-          ]}
-        >
-          <Image source={{ uri: capturedPhoto }} style={styles.photoSnapshot} />
-        </Animated.View>
-      )}
-
       {/* Darkroom Bottom Sheet */}
       <DarkroomBottomSheet
         visible={isBottomSheetVisible}
@@ -505,35 +440,19 @@ const CameraScreen = () => {
 const CARD_WIDTH = 50; // ~75% of capture button width (66px would be 75% of 88, but we need to fit in footer)
 const CARD_HEIGHT = 66; // 4:3 aspect ratio
 
-// DarkroomCardButton Component - photo card stack design
-const DarkroomCardButton = ({ count, onPress, bounceAnim }) => {
+// Base fanning values (at rest state)
+const BASE_ROTATION_PER_CARD = 4; // degrees - fans UPWARD (positive rotation)
+const BASE_OFFSET_PER_CARD = 3; // pixels offset to the left
+// Animation spread multiplier (how much more fanning during animation)
+const SPREAD_ROTATION_MULTIPLIER = 2.5; // rotation increases by this factor
+const SPREAD_OFFSET_MULTIPLIER = 2; // offset increases by this factor
+
+// DarkroomCardButton Component - photo card stack design with capture animation
+const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim }) => {
   const isDisabled = count === 0;
 
   // Determine number of cards to show (1-4 max)
   const cardCount = Math.min(Math.max(count, 1), 4);
-
-  // Card positions for fanning effect
-  // Each card rotates and offsets progressively from the top card
-  const getCardStyle = (index, total) => {
-    if (total === 1) {
-      // Single card - no rotation or offset
-      return { rotate: '0deg', translateX: 0, zIndex: 1 };
-    }
-
-    // Calculate position from bottom (0) to top (total-1)
-    const positionFromTop = total - 1 - index;
-
-    // Progressive rotation and offset
-    // Bottom cards rotate more, top card is straight
-    const rotationPerCard = -4; // degrees per position from top
-    const offsetPerCard = 3; // pixels per position from top
-
-    return {
-      rotate: `${positionFromTop * rotationPerCard}deg`,
-      translateX: positionFromTop * offsetPerCard,
-      zIndex: index + 1, // Higher index = on top
-    };
-  };
 
   const handlePress = () => {
     if (onPress) {
@@ -542,13 +461,71 @@ const DarkroomCardButton = ({ count, onPress, bounceAnim }) => {
     }
   };
 
-  // Render stack of cards
+  // Render stack of cards with animated transforms
   const renderCards = () => {
     const cards = [];
 
     for (let i = 0; i < cardCount; i++) {
       const isTopCard = i === cardCount - 1;
-      const cardStyle = getCardStyle(i, cardCount);
+
+      // Calculate position from top (0 = top, higher = further back)
+      const positionFromTop = cardCount - 1 - i;
+
+      // Base rotation and offset (at rest)
+      // Cards fan UPWARD - bottom cards rotate positive (counter-clockwise)
+      const baseRotation = positionFromTop * BASE_ROTATION_PER_CARD;
+      const baseOffset = positionFromTop * BASE_OFFSET_PER_CARD;
+
+      // Single card has no fanning
+      if (cardCount === 1) {
+        cards.push(
+          <Animated.View
+            key={i}
+            style={[
+              styles.darkroomCard,
+              {
+                position: 'absolute',
+                transform: scaleAnim ? [{ scale: scaleAnim }] : [],
+                zIndex: 1,
+              },
+            ]}
+          >
+            {count > 0 && (
+              <Text style={styles.darkroomCardText}>
+                {count > 99 ? '99+' : count}
+              </Text>
+            )}
+          </Animated.View>
+        );
+        continue;
+      }
+
+      // Animated rotation interpolation: base + (spread * multiplier)
+      const animatedRotation = fanSpreadAnim
+        ? fanSpreadAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [
+              `${baseRotation}deg`,
+              `${baseRotation * SPREAD_ROTATION_MULTIPLIER}deg`,
+            ],
+          })
+        : `${baseRotation}deg`;
+
+      // Animated offset interpolation
+      const animatedOffset = fanSpreadAnim
+        ? fanSpreadAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [baseOffset, baseOffset * SPREAD_OFFSET_MULTIPLIER],
+          })
+        : baseOffset;
+
+      // Animated Y offset - cards move up during spread
+      const animatedTranslateY = fanSpreadAnim
+        ? fanSpreadAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, -positionFromTop * 4], // Cards rise upward during animation
+          })
+        : 0;
 
       cards.push(
         <Animated.View
@@ -558,11 +535,12 @@ const DarkroomCardButton = ({ count, onPress, bounceAnim }) => {
             {
               position: 'absolute',
               transform: [
-                { rotate: cardStyle.rotate },
-                { translateX: cardStyle.translateX },
-                ...(isTopCard && bounceAnim ? [{ scale: bounceAnim }] : []),
+                { rotate: animatedRotation },
+                { translateX: animatedOffset },
+                { translateY: animatedTranslateY },
+                ...(scaleAnim ? [{ scale: scaleAnim }] : []),
               ],
-              zIndex: cardStyle.zIndex,
+              zIndex: i + 1, // Higher index = on top
             },
           ]}
         >
@@ -799,29 +777,6 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     backgroundColor: '#FFFFFF',
-  },
-  // Animated photo
-  animatedPhoto: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -150,
-    marginTop: -200,
-    width: 300,
-    height: 400,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  photoSnapshot: {
-    width: '100%',
-    height: '100%',
   },
   // Flash overlay for camera shutter effect
   flashOverlay: {
