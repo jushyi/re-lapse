@@ -629,39 +629,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
   },
-  // 6 small dots positioned along remaining 1/3 arc (bottom-left, ~180° to ~270°)
-  // Circle radius = 12, dots at radius ~11 from center
+  // 6 small dots along remaining 1/3 arc (bottom-left quadrant)
+  // Container 24x24, center at (12,12), radius 10 from center
+  // Arc spans from ~135° to ~225° (bottom-left), dots spaced ~15° apart
+  // Formula: left = 12 + r*cos(angle) - dotSize/2, top = 12 + r*sin(angle) - dotSize/2
   spinnerDot: {
     position: 'absolute',
     width: 2,
     height: 2,
     borderRadius: 1,
   },
-  // Dots evenly spaced from ~195° to ~270° (15° increments)
-  // Using polar coordinates: x = 12 + 11*cos(angle), y = 12 + 11*sin(angle)
-  spinnerDot1: { // ~195°
-    left: 1,
-    top: 15,
-  },
-  spinnerDot2: { // ~210°
-    left: 2,
+  spinnerDot1: { // 140°
+    left: 4,
     top: 18,
   },
-  spinnerDot3: { // ~225°
+  spinnerDot2: { // 155°
+    left: 2,
+    top: 16,
+  },
+  spinnerDot3: { // 170°
+    left: 1,
+    top: 13,
+  },
+  spinnerDot4: { // 190°
+    left: 1,
+    top: 10,
+  },
+  spinnerDot5: { // 205°
+    left: 2,
+    top: 7,
+  },
+  spinnerDot6: { // 220°
     left: 4,
-    top: 20,
-  },
-  spinnerDot4: { // ~240°
-    left: 7,
-    top: 21,
-  },
-  spinnerDot5: { // ~255°
-    left: 10,
-    top: 22,
-  },
-  spinnerDot6: { // ~270°
-    left: 13,
-    top: 22,
+    top: 5,
   },
   playTriangle: {
     width: 0,
