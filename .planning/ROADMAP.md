@@ -41,17 +41,17 @@ Plans:
 - revealedCount and revealAll passed in notification payload
 - App navigates to Camera with reveal params on tap
 
-#### Phase 15.2: Camera UI & Darkroom Animation Overhaul (INSERTED) - In Progress
+#### Phase 15.2: Camera UI & Darkroom Animation Overhaul (INSERTED) - Complete
 
 **Goal**: Complete visual redesign of camera controls footer, darkroom card stack button, and capture animation
 **Depends on**: Phase 15.1
 **Research**: Unlikely (React Native Reanimated already in use, internal UI patterns)
-**Plans**: 2/3 complete
+**Plans**: 3/3 complete
 
 Plans:
 - [x] 15.2-01: Camera footer UI redesign - completed 2026-01-21
 - [x] 15.2-02: Darkroom button card stack - completed 2026-01-21
-- [ ] 15.2-03: Capture animation change (TBD)
+- [x] 15.2-03: Capture animation change - completed 2026-01-21
 
 **Details:**
 Camera Footer Redesign:
@@ -99,10 +99,23 @@ Plans:
 Plans:
 - [ ] 16-01: TBD (run /gsd:plan-phase 16 to break down)
 
+#### Phase 16.1: UI Overhaul for Darkroom Bottom Sheet (INSERTED)
+
+**Goal**: Redesign the darkroom bottom sheet UI for improved visual polish and user experience
+**Depends on**: Phase 16
+**Research**: Unlikely (React Native Reanimated already in use, internal UI patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 16.1-01: TBD (run /gsd:plan-phase 16.1 to break down)
+
+**Details:**
+[To be added during planning]
+
 #### Phase 17: Darkroom UX Polish
 
 **Goal**: Improved reveal animations, smoother triage gestures, better navigation flow, and polished empty/loading states
-**Depends on**: Phase 16
+**Depends on**: Phase 16.1
 **Research**: Unlikely (internal patterns, React Native Reanimated already in use)
 **Plans**: TBD
 
@@ -219,8 +232,9 @@ New behavior:
 | 14. Remote Notification Testing & Polish | v1.4 | 1/1 | Complete | 2026-01-20 |
 | 15. Background Photo Upload | v1.5 | 1/1 | Complete | 2026-01-20 |
 | 15.1 Darkroom Notification Fix | v1.5 | 1/1 | Complete | 2026-01-21 |
-| 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 2/3 | In progress | - |
+| 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 3/3 | Complete | 2026-01-21 |
 | 16. Camera Capture Feedback | v1.5 | 0/? | Not started | - |
+| 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |

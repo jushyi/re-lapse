@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 15.2 of 18.1 (Camera UI & Darkroom Animation Overhaul)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-21 - Completed 15.2-02 (Darkroom card stack button)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-21 - Completed 15.2-03 (Capture animation change)
 
-Progress: ███░░░░░░░ 35% (v1.5: 3/7 phases partially)
+Progress: ████░░░░░░ 40% (v1.5: 4/9 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 43 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 6 in v1.5)
+- Total plans completed: 44 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 7 in v1.5)
 - Average duration: 17 min
 - Total execution time: 9.4 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 0.9h v1.5)
 
@@ -31,7 +31,7 @@ Progress: ███░░░░░░░ 35% (v1.5: 3/7 phases partially)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.1 | 6 | 53 min |
+| v1.5 | 15-18.1 | 7 | 54 min |
 
 ## Accumulated Context
 
@@ -61,9 +61,10 @@ None.
 - Phase 15.1 inserted after Phase 15: Darkroom Notification Fix (URGENT) - fix notification spam, add iOS Live Activities, reveal-all-on-tap UX
 - Phase 15.2 inserted after Phase 15.1: Camera UI & Darkroom Animation Overhaul (URGENT) - footer redesign, card stack button, bounce animation, rounded camera edges
 - Phase 15.3 inserted after Phase 15.2: ISS-001 - Add True 0.5x Ultra-Wide Zoom (URGENT) - implement true ultra-wide lens switching instead of digital zoom
+- Phase 16.1 inserted after Phase 16: UI Overhaul for Darkroom Bottom Sheet (URGENT) - redesign darkroom bottom sheet UI for improved visual polish
 
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 15.2-02 (Darkroom card stack button)
+Stopped at: Completed 15.2-03 (Capture animation change) - Phase 15.2 complete
 Resume file: None
