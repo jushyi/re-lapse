@@ -139,26 +139,30 @@ const CameraScreen = () => {
 
   // Build dynamic zoom levels based on device capabilities (iOS ultra-wide support)
   const zoomLevels = useMemo(() => {
-    // Only show 0.5x on iOS, with ultra-wide support, on back camera
+    // Build base levels with explicit wide-angle lens (on iOS) or null (on Android)
+    const baseLevels = ZOOM_LEVELS_BASE.map(level => ({
+      ...level,
+      lens: wideAngleLens, // Explicit lens instead of null
+    }));
+
+    // Add 0.5x only on iOS with ultra-wide support, on back camera
     if (Platform.OS === 'ios' && hasUltraWide && facing === 'back') {
-      // Find the actual ultra-wide lens string from availableLenses
-      // iOS lens names: "Back Ultra Wide Camera" or "builtInUltraWideCamera"
       const ultraWideLens = availableLenses.find(lens =>
         lens.toLowerCase().includes('ultra wide') ||
         lens.toLowerCase().includes('ultrawide')
       );
       logger.debug('CameraScreen: Building zoom levels with ultra-wide', {
         ultraWideLens,
+        wideAngleLens,
         facing,
-        availableLenses,
       });
       return [
         { ...ULTRA_WIDE_LEVEL, lens: ultraWideLens },
-        ...ZOOM_LEVELS_BASE,
+        ...baseLevels,
       ];
     }
-    return ZOOM_LEVELS_BASE;
-  }, [hasUltraWide, facing, availableLenses]);
+    return baseLevels;
+  }, [hasUltraWide, facing, availableLenses, wideAngleLens]);
 
   // Fallback: Try to get lenses via async method when camera ref is available
   useEffect(() => {
