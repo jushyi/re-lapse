@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
-import auth from '@react-native-firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import { ErrorBoundary, AnimatedSplash } from './src/components';
@@ -54,7 +54,7 @@ export default function App() {
     // Request notification permissions and store token for authenticated users
     // This ensures existing users who already completed profile setup get prompted
     const requestPermissionsAndToken = async () => {
-      const currentUser = auth().currentUser;
+      const currentUser = getAuth().currentUser;
       if (currentUser) {
         try {
           const permResult = await requestNotificationPermission();
@@ -136,7 +136,7 @@ export default function App() {
     const subscription = AppState.addEventListener('change', async (nextAppState) => {
       if (nextAppState === 'active') {
         // Check for pending reveals when app comes to foreground
-        const currentUser = auth().currentUser;
+        const currentUser = getAuth().currentUser;
         if (currentUser) {
           logger.debug('App: Checking for pending reveals on foreground', {
             userId: currentUser.uid,
