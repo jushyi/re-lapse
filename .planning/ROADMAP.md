@@ -41,15 +41,17 @@ Plans:
 - revealedCount and revealAll passed in notification payload
 - App navigates to Camera with reveal params on tap
 
-#### Phase 15.2: Camera UI & Darkroom Animation Overhaul (INSERTED)
+#### Phase 15.2: Camera UI & Darkroom Animation Overhaul (INSERTED) - In Progress
 
 **Goal**: Complete visual redesign of camera controls footer, darkroom card stack button, and capture animation
 **Depends on**: Phase 15.1
 **Research**: Unlikely (React Native Reanimated already in use, internal UI patterns)
-**Plans**: TBD
+**Plans**: 1/3 complete
 
 Plans:
-- [ ] 15.2-01: TBD (run /gsd:plan-phase 15.2 to break down)
+- [x] 15.2-01: Camera footer UI redesign - completed 2026-01-21
+- [ ] 15.2-02: Darkroom button card stack (TBD)
+- [ ] 15.2-03: Capture animation change (TBD)
 
 **Details:**
 Camera Footer Redesign:
@@ -204,7 +206,7 @@ New behavior:
 | 14. Remote Notification Testing & Polish | v1.4 | 1/1 | Complete | 2026-01-20 |
 | 15. Background Photo Upload | v1.5 | 1/1 | Complete | 2026-01-20 |
 | 15.1 Darkroom Notification Fix | v1.5 | 1/1 | Complete | 2026-01-21 |
-| 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 0/? | Not started | - |
+| 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 1/3 | In progress | - |
 | 16. Camera Capture Feedback | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |

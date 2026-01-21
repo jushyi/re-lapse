@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 15.1 of 18.1 (Darkroom Notification Fix)
-Plan: 1 of 1 complete
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 15.1-01-PLAN.md
+Phase: 15.2 of 18.1 (Camera UI & Darkroom Animation Overhaul)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-21 - Completed 15.2-01-PLAN.md
 
-Progress: ██░░░░░░░░ 28% (v1.5: 2/7 phases)
+Progress: ███░░░░░░░ 30% (v1.5: 3/7 phases partially)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 2 in v1.5)
+- Total plans completed: 40 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 3 in v1.5)
 - Average duration: 17 min
-- Total execution time: 8.9 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 0.4h v1.5)
+- Total execution time: 8.97 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 0.47h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: ██░░░░░░░░ 28% (v1.5: 2/7 phases)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.1 | 2 | 25 min |
+| v1.5 | 15-18.1 | 3 | 29 min |
 
 ## Accumulated Context
 
@@ -64,5 +64,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 15.1-01 complete, ready for Phase 15.2
+Stopped at: Phase 15.2-01 complete (camera footer redesign), next is 15.2-02 (darkroom button + capture animation)
 Resume file: None
