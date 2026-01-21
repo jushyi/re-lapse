@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 16 of 18.2 (Camera Capture Feedback)
+Phase: 16.1 of 18.2 (UI Overhaul for Darkroom Bottom Sheet)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-21 - Completed 16-01 (DSLR-style capture feedback)
+Last activity: 2026-01-21 - Completed 16.1-01 (Darkroom bottom sheet UI overhaul)
 
-Progress: ██████░░░░ 55% (v1.5: 6/10 phases complete)
+Progress: ███████░░░ 60% (v1.5: 7/10 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 9 in v1.5)
+- Total plans completed: 47 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 10 in v1.5)
 - Average duration: 16 min
-- Total execution time: 9.7 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 1.2h v1.5)
+- Total execution time: 9.8 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 1.3h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: ██████░░░░ 55% (v1.5: 6/10 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.2 | 9 | 74 min |
+| v1.5 | 15-18.2 | 10 | 82 min |
 
 ## Accumulated Context
 
@@ -67,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 16-01 (DSLR-style capture feedback) - Phase 16 complete
+Stopped at: Completed 16.1-01 (Darkroom bottom sheet UI overhaul) - Phase 16.1 complete
 Resume file: None

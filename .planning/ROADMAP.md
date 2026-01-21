@@ -107,18 +107,23 @@ Plans:
 - Pressable component for onPressIn/onPressOut events
 - Flash overlay contained within camera preview bounds with rounded corners
 
-#### Phase 16.1: UI Overhaul for Darkroom Bottom Sheet (INSERTED)
+#### Phase 16.1: UI Overhaul for Darkroom Bottom Sheet (INSERTED) - Complete
 
 **Goal**: Redesign the darkroom bottom sheet UI for improved visual polish and user experience
 **Depends on**: Phase 16
 **Research**: Unlikely (React Native Reanimated already in use, internal UI patterns)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 16.1-01: TBD (run /gsd:plan-phase 16.1 to break down)
+- [x] 16.1-01: Darkroom bottom sheet UI overhaul - completed 2026-01-21
 
-**Details:**
-[To be added during planning]
+**Delivered:**
+- Dark theme (#1A1A1A) with header layout (title + status dot + status text)
+- Card stack display (1-4 fanned cards) in bottom sheet header
+- Neon purple gradient hold-to-reveal button using expo-linear-gradient
+- Fill animation left-to-right (1600ms, 1.25x faster)
+- Spinner that speeds up 2x during hold
+- Crescendo haptic feedback (4 intensity phases)
 
 #### Phase 17: Darkroom UX Polish
 
@@ -263,7 +268,7 @@ Complete rebrand from "Lapse" to "Rewind":
 | 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 3/3 | Complete | 2026-01-21 |
 | 15.3 ISS-001 - Add True 0.5x Ultra-Wide Zoom | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16. Camera Capture Feedback | v1.5 | 1/1 | Complete | 2026-01-21 |
-| 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 0/? | Not started | - |
+| 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |
