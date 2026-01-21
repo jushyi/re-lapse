@@ -21,11 +21,10 @@ import { DarkroomBottomSheet } from '../components';
 
 // Zoom level configuration
 // expo-camera zoom is 0-1 range where 0 is no zoom and 1 is max zoom
-// Mapping: 0.5x=0, 1x=0.17, 2x=0.33, 3x=0.5
+// Mapping: 0.5x=0, 1x=0.17, 3x=0.5 (removed 2x per UAT feedback)
 const ZOOM_LEVELS = [
   { label: '.5', value: 0.5, cameraZoom: 0 },
-  { label: '1x', value: 1, cameraZoom: 0.17 },
-  { label: '2', value: 2, cameraZoom: 0.33 },
+  { label: '1', value: 1, cameraZoom: 0.17 },
   { label: '3', value: 3, cameraZoom: 0.5 },
 ];
 
@@ -381,26 +380,36 @@ const CameraScreen = () => {
 
         {/* Zoom Control Bar - centered */}
         <View style={styles.zoomBar}>
-          {ZOOM_LEVELS.map((level) => (
-            <TouchableOpacity
-              key={level.value}
-              style={[
-                styles.zoomButton,
-                zoom.value === level.value && styles.zoomButtonActive,
-              ]}
-              onPress={() => handleZoomChange(level)}
-              activeOpacity={0.7}
-            >
-              <Text
+          {ZOOM_LEVELS.map((level) => {
+            const isSelected = zoom.value === level.value;
+            return (
+              <TouchableOpacity
+                key={level.value}
                 style={[
-                  styles.zoomButtonText,
-                  zoom.value === level.value && styles.zoomButtonTextActive,
+                  styles.zoomButton,
+                  isSelected && styles.zoomButtonActive,
                 ]}
+                onPress={() => handleZoomChange(level)}
+                activeOpacity={0.7}
               >
-                {zoom.value === level.value ? `${level.value === 0.5 ? '.5' : level.value}x` : (level.value === 0.5 ? '.5' : String(level.value))}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.zoomLabelContainer}>
+                  <Text
+                    style={[
+                      styles.zoomButtonText,
+                      isSelected && styles.zoomButtonTextActive,
+                    ]}
+                  >
+                    {level.label}
+                  </Text>
+                  {isSelected && (
+                    <Text style={[styles.zoomButtonText, styles.zoomButtonTextActive, styles.zoomSuffix]}>
+                      x
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Flip Camera Button (far right) */}
@@ -627,6 +636,11 @@ const styles = StyleSheet.create({
   zoomButtonActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
+  zoomLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   zoomButtonText: {
     fontSize: 14,
     fontWeight: '600',
@@ -634,6 +648,10 @@ const styles = StyleSheet.create({
   },
   zoomButtonTextActive: {
     color: '#FFFFFF',
+  },
+  zoomSuffix: {
+    fontSize: 12, // Slightly smaller for the 'x'
+    marginLeft: 1,
   },
   // Circle button - 50px for flash and flip (10% smaller than original 56px)
   circleButton: {
