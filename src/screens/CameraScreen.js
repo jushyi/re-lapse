@@ -245,6 +245,11 @@ const CameraScreen = () => {
     }
   }, [route.params?.openDarkroom, navigation]);
 
+  // Debug: Log lens changes to verify switching works
+  useEffect(() => {
+    logger.info('CameraScreen: selectedLens changed', { selectedLens });
+  }, [selectedLens]);
+
   // Handle permission request
   if (!permission) {
     return (
@@ -302,9 +307,11 @@ const CameraScreen = () => {
       if (Platform.OS === 'ios') {
         setSelectedLens(zoomLevel.lens || null);
       }
-      logger.debug('CameraScreen: Zoom level changed', {
-        zoom: zoomLevel.value,
+      logger.info('CameraScreen: Zoom level changed', {
+        from: zoom.value,
+        to: zoomLevel.value,
         lens: zoomLevel.lens,
+        selectedLens: zoomLevel.lens || null,
       });
     }
   };
