@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../context/AuthContext';
@@ -20,12 +21,21 @@ import { DarkroomBottomSheet } from '../components';
 
 // Zoom level configuration
 // expo-camera zoom is 0-1 range where 0 is baseline (1x) and 1 is max zoom
-// Removed 0.5x until we can access ultra-wide lens properly
-const ZOOM_LEVELS = [
-  { label: '1', value: 1, cameraZoom: 0 },         // Baseline (true 1x, no zoom)
-  { label: '2', value: 2, cameraZoom: 0.17 },      // 2x zoom
-  { label: '3', value: 3, cameraZoom: 0.33 },      // 3x telephoto
+// Base zoom levels (always available)
+const ZOOM_LEVELS_BASE = [
+  { label: '1', value: 1, lens: null, cameraZoom: 0 },         // Baseline (true 1x, no zoom)
+  { label: '2', value: 2, lens: null, cameraZoom: 0.17 },      // 2x zoom
+  { label: '3', value: 3, lens: null, cameraZoom: 0.33 },      // 3x telephoto
 ];
+
+// Ultra-wide lens level (iOS only, when device supports it)
+// Lens string from iOS AVFoundation - will be matched against actual values from device
+const ULTRA_WIDE_LEVEL = {
+  label: '0.5',
+  value: 0.5,
+  lens: 'ultra-wide', // Marker - actual lens string comes from availableLenses
+  cameraZoom: 0, // Ultra-wide uses native lens, not digital zoom
+};
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -96,7 +106,7 @@ const CameraScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState('off');
-  const [zoom, setZoom] = useState(ZOOM_LEVELS[0]); // Default to 1x (first item now)
+  const [zoom, setZoom] = useState(ZOOM_LEVELS_BASE[0]); // Default to 1x
   const [isCapturing, setIsCapturing] = useState(false);
   const [darkroomCounts, setDarkroomCounts] = useState({
     totalCount: 0,
@@ -105,11 +115,35 @@ const CameraScreen = () => {
   });
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  // Ultra-wide lens state (iOS only)
+  const [availableLenses, setAvailableLenses] = useState([]);
+  const [selectedLens, setSelectedLens] = useState(null);
+  const [hasUltraWide, setHasUltraWide] = useState(false);
   const cameraRef = useRef(null);
   const flashOpacity = useRef(new Animated.Value(0)).current;
   // Animation values for card stack capture feedback
   const cardScale = useRef(new Animated.Value(1)).current;
   const cardFanSpread = useRef(new Animated.Value(0)).current; // 0 = normal, 1 = fanned out
+
+  // Build dynamic zoom levels based on device capabilities (iOS ultra-wide support)
+  const zoomLevels = useMemo(() => {
+    // Only show 0.5x on iOS, with ultra-wide support, on back camera
+    if (Platform.OS === 'ios' && hasUltraWide && facing === 'back') {
+      // Find the actual ultra-wide lens string from availableLenses
+      const ultraWideLens = availableLenses.find(lens =>
+        lens.toLowerCase().includes('ultrawide')
+      );
+      logger.debug('CameraScreen: Building zoom levels with ultra-wide', {
+        ultraWideLens,
+        facing,
+      });
+      return [
+        { ...ULTRA_WIDE_LEVEL, lens: ultraWideLens },
+        ...ZOOM_LEVELS_BASE,
+      ];
+    }
+    return ZOOM_LEVELS_BASE;
+  }, [hasUltraWide, facing, availableLenses]);
 
   // Initialize upload queue on app start
   useEffect(() => {
@@ -186,7 +220,19 @@ const CameraScreen = () => {
 
   const toggleCameraFacing = () => {
     lightImpact();
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
+    setFacing(current => {
+      const newFacing = current === 'back' ? 'front' : 'back';
+      // Reset ultra-wide lens when switching to front camera (no ultra-wide on front)
+      if (newFacing === 'front' && Platform.OS === 'ios') {
+        setSelectedLens(null);
+        // If currently on 0.5x, reset to 1x
+        if (zoom.value === 0.5) {
+          setZoom(ZOOM_LEVELS_BASE[0]); // Reset to 1x
+          logger.debug('CameraScreen: Reset zoom to 1x (front camera has no ultra-wide)');
+        }
+      }
+      return newFacing;
+    });
   };
 
   const toggleFlash = () => {
@@ -202,7 +248,14 @@ const CameraScreen = () => {
     if (zoomLevel.value !== zoom.value) {
       lightImpact();
       setZoom(zoomLevel);
-      logger.debug('CameraScreen: Zoom level changed', { zoom: zoomLevel.value });
+      // Set lens for ultra-wide, null for standard zoom (iOS only)
+      if (Platform.OS === 'ios') {
+        setSelectedLens(zoomLevel.lens || null);
+      }
+      logger.debug('CameraScreen: Zoom level changed', {
+        zoom: zoomLevel.value,
+        lens: zoomLevel.lens,
+      });
     }
   };
 
@@ -224,41 +277,37 @@ const CameraScreen = () => {
     ]).start(() => setShowFlash(false));
   };
 
-  // Play card stack capture animation - cards fan out and enlarge, then return
+  // Play card stack capture animation - cards fan out and enlarge, then snap back
   const playCardCaptureAnimation = () => {
     // Reset values
     cardScale.setValue(1);
     cardFanSpread.setValue(0);
 
-    // Animate: fan out + scale up, then return to normal
+    // Animate: quick fan out + scale up, then immediate snap back
     Animated.parallel([
-      // Scale: 1 -> 1.25 -> 1
+      // Scale: 1 -> 1.2 -> 1 (quick expand, immediate return)
       Animated.sequence([
-        Animated.spring(cardScale, {
-          toValue: 1.25,
-          friction: 4,
-          tension: 200,
+        Animated.timing(cardScale, {
+          toValue: 1.2,
+          duration: 120, // Quick expand
           useNativeDriver: true,
         }),
-        Animated.spring(cardScale, {
+        Animated.timing(cardScale, {
           toValue: 1,
-          friction: 5,
-          tension: 100,
+          duration: 100, // Immediate snap back
           useNativeDriver: true,
         }),
       ]),
-      // Fan spread: 0 -> 1 -> 0
+      // Fan spread: 0 -> 1 -> 0 (quick fan, immediate return)
       Animated.sequence([
-        Animated.spring(cardFanSpread, {
+        Animated.timing(cardFanSpread, {
           toValue: 1,
-          friction: 4,
-          tension: 200,
+          duration: 120, // Quick fan out
           useNativeDriver: true,
         }),
-        Animated.spring(cardFanSpread, {
+        Animated.timing(cardFanSpread, {
           toValue: 0,
-          friction: 5,
-          tension: 100,
+          duration: 100, // Immediate snap back
           useNativeDriver: true,
         }),
       ]),
@@ -314,6 +363,21 @@ const CameraScreen = () => {
           facing={facing}
           flash={flash}
           zoom={zoom.cameraZoom}
+          onAvailableLensesChanged={(event) => {
+            // iOS only: Detect available lenses including ultra-wide
+            if (Platform.OS === 'ios') {
+              logger.debug('CameraScreen: Available lenses detected', { lenses: event.lenses });
+              setAvailableLenses(event.lenses);
+              const hasUW = event.lenses.some(lens =>
+                lens.toLowerCase().includes('ultrawide')
+              );
+              setHasUltraWide(hasUW);
+              if (hasUW) {
+                logger.info('CameraScreen: Ultra-wide lens available');
+              }
+            }
+          }}
+          {...(Platform.OS === 'ios' && selectedLens && { selectedLens })}
         />
       </View>
 
@@ -330,7 +394,7 @@ const CameraScreen = () => {
 
         {/* Zoom Control Bar - centered */}
         <View style={styles.zoomBar}>
-          {ZOOM_LEVELS.map((level) => {
+          {zoomLevels.map((level) => {
             const isSelected = zoom.value === level.value;
             return (
               <TouchableOpacity
@@ -437,12 +501,13 @@ const CameraScreen = () => {
 };
 
 // Card dimensions for darkroom button (4:3 aspect ratio like a photo)
-const CARD_WIDTH = 50; // ~75% of capture button width (66px would be 75% of 88, but we need to fit in footer)
-const CARD_HEIGHT = 66; // 4:3 aspect ratio
+const CARD_WIDTH = 63; // ~95% of capture button size (84 * 0.75 for 4:3 aspect)
+const CARD_HEIGHT = 84; // ~95% of capture button diameter (88 * 0.95)
 
 // Base fanning values (at rest state)
-const BASE_ROTATION_PER_CARD = 4; // degrees - fans UPWARD (positive rotation)
-const BASE_OFFSET_PER_CARD = 3; // pixels offset to the left
+// Back cards fan RIGHT, top card leans LEFT to keep stack visually centered
+const BASE_ROTATION_PER_CARD = 6; // degrees - back cards rotate right (positive)
+const BASE_OFFSET_PER_CARD = 5; // pixels - back cards offset right (positive)
 // Animation spread multiplier (how much more fanning during animation)
 const SPREAD_ROTATION_MULTIPLIER = 2.5; // rotation increases by this factor
 const SPREAD_OFFSET_MULTIPLIER = 2; // offset increases by this factor
@@ -465,6 +530,11 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim }) => {
   const renderCards = () => {
     const cards = [];
 
+    // Calculate center compensation - shifts entire stack left so it stays visually centered
+    // The more cards, the more we need to shift left to compensate for right-fanning
+    const centerCompensation = ((cardCount - 1) * BASE_OFFSET_PER_CARD) / 2;
+    const rotationCompensation = ((cardCount - 1) * BASE_ROTATION_PER_CARD) / 2;
+
     for (let i = 0; i < cardCount; i++) {
       const isTopCard = i === cardCount - 1;
 
@@ -472,9 +542,9 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim }) => {
       const positionFromTop = cardCount - 1 - i;
 
       // Base rotation and offset (at rest)
-      // Cards fan UPWARD - bottom cards rotate positive (counter-clockwise)
-      const baseRotation = positionFromTop * BASE_ROTATION_PER_CARD;
-      const baseOffset = positionFromTop * BASE_OFFSET_PER_CARD;
+      // Back cards fan RIGHT, but we subtract compensation to keep stack centered
+      const baseRotation = (positionFromTop * BASE_ROTATION_PER_CARD) - rotationCompensation;
+      const baseOffset = (positionFromTop * BASE_OFFSET_PER_CARD) - centerCompensation;
 
       // Single card has no fanning
       if (cardCount === 1) {
@@ -490,11 +560,9 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim }) => {
               },
             ]}
           >
-            {count > 0 && (
-              <Text style={styles.darkroomCardText}>
-                {count > 99 ? '99+' : count}
-              </Text>
-            )}
+            <Text style={styles.darkroomCardText}>
+              {count > 99 ? '99+' : count}
+            </Text>
           </Animated.View>
         );
         continue;
@@ -545,7 +613,7 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim }) => {
           ]}
         >
           {/* Only show count on top card */}
-          {isTopCard && count > 0 && (
+          {isTopCard && (
             <Text style={styles.darkroomCardText}>
               {count > 99 ? '99+' : count}
             </Text>
@@ -626,11 +694,11 @@ const styles = StyleSheet.create({
   },
   footerControls: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 24,
     paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 40,
+    width: '100%',
   },
   // Zoom control bar - centered in floating controls row
   zoomBar: {
@@ -701,7 +769,7 @@ const styles = StyleSheet.create({
   },
   // Darkroom card stack container - holds fanned cards
   darkroomCardContainer: {
-    width: CARD_WIDTH + 16, // Extra space for fanning offset
+    width: CARD_WIDTH + 20, // Extra space for fanning offset (increased for larger cards)
     height: CARD_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
@@ -734,7 +802,7 @@ const styles = StyleSheet.create({
   },
   // Invisible spacer to balance darkroom button and center capture button
   footerSpacer: {
-    width: CARD_WIDTH + 16, // Match container width
+    width: CARD_WIDTH + 20, // Match container width
     height: CARD_HEIGHT,
     opacity: 0,
   },
