@@ -56,6 +56,26 @@ Plans:
 Plans:
 - [ ] 18-01: TBD (run /gsd:plan-phase 18 to break down)
 
+#### Phase 18.1: Batched Darkroom Triage with Undo (INSERTED)
+
+**Goal**: Batch triage decisions locally until user confirms, with undo capability and session persistence
+**Depends on**: Phase 18
+**Research**: Unlikely (React Native state management and AsyncStorage patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 18.1-01: TBD (run /gsd:plan-phase 18.1 to break down)
+
+**Details:**
+Current behavior: Triage choices (archive/journal/delete) save immediately to Firestore on swipe, no undo option.
+
+New behavior:
+- Triage decisions stored locally during session (not saved to Firestore until confirmed)
+- Undo button at top of screen to reverse last decision and re-triage that photo
+- "Done" or "Back to Camera" button finalizes and saves all decisions to Firestore
+- If darkroom closed mid-triage (app backgrounded, crash, etc.), session persists via AsyncStorage
+- Reopening darkroom restores the same batch with any previous local decisions intact
+
 ## Completed Milestones
 
 <details>
@@ -138,3 +158,4 @@ Plans:
 | 16. Camera Capture Feedback | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
+| 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |

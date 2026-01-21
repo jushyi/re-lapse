@@ -6,9 +6,22 @@
 
 ## Open Issues
 
-[None - all issues resolved]
+None - all issues resolved.
 
 ## Resolved Issues
+
+### UAT-003: Perceptible delay between button press and capture feedback
+
+**Discovered:** 2026-01-21
+**Resolved:** 2026-01-21
+**Phase/Plan:** 15-01-FIX2
+**Severity:** Major
+**Feature:** Instant camera capture
+**Description:** There's a slight but noticeable delay between pressing the capture button and when the photo is actually taken/effects play. This buffer makes the experience feel clunky rather than instant.
+**Expected:** Capture should feel immediate - button press → instant feedback with no perceptible lag
+**Actual:** Small delay exists between tap and camera response, breaking the "instant" feel
+**Resolution:** Moved playFlashEffect() to fire immediately at start of takePicture(), before awaiting camera capture. Flash now runs in parallel with the 100-200ms camera operation, providing zero perceived delay.
+**Commit:** 8e9542d
 
 ### UAT-001: Camera still shows loading spinner and delay after capture
 
