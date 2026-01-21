@@ -76,18 +76,21 @@ Capture Animation Change:
 - Replace with "bounce" animation on darkroom button (scale up then back to normal)
 - Quick, satisfying feedback indicating photo was captured
 
-#### Phase 15.3: ISS-001 - Add True 0.5x Ultra-Wide Zoom (INSERTED)
+#### Phase 15.3: ISS-001 - Add True 0.5x Ultra-Wide Zoom (INSERTED) - Complete
 
 **Goal**: Implement true 0.5x ultra-wide zoom via lens switching instead of digital zoom
 **Depends on**: Phase 15.2
-**Research**: Likely (expo-camera lens switching API, device capability detection)
-**Plans**: TBD
+**Research**: Complete
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 15.3-01: TBD (run /gsd:plan-phase 15.3 to break down)
+- [x] 15.3-01: True 0.5x ultra-wide zoom via iOS lens switching - completed 2026-01-21
 
-**Details:**
-[To be added during planning]
+**Delivered:**
+- iOS ultra-wide lens detection via onAvailableLensesChanged + async fallback
+- Dynamic 0.5x zoom option appears only on iOS devices with ultra-wide (back camera)
+- selectedLens prop wiring for physical lens switching
+- Android gracefully shows 1x, 2x, 3x only
 
 #### Phase 16: Camera Capture Feedback
 
@@ -233,6 +236,7 @@ New behavior:
 | 15. Background Photo Upload | v1.5 | 1/1 | Complete | 2026-01-20 |
 | 15.1 Darkroom Notification Fix | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 15.2 Camera UI & Darkroom Animation Overhaul | v1.5 | 3/3 | Complete | 2026-01-21 |
+| 15.3 ISS-001 - Add True 0.5x Ultra-Wide Zoom | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16. Camera Capture Feedback | v1.5 | 0/? | Not started | - |
 | 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
