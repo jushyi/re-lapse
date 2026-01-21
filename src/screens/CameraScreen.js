@@ -130,10 +130,10 @@ const CameraScreen = () => {
     // Only show 0.5x on iOS, with ultra-wide support, on back camera
     if (Platform.OS === 'ios' && hasUltraWide && facing === 'back') {
       // Find the actual ultra-wide lens string from availableLenses
-      // iOS lens names: builtInUltraWideCamera, builtInWideAngleCamera, etc.
+      // iOS lens names: "Back Ultra Wide Camera" or "builtInUltraWideCamera"
       const ultraWideLens = availableLenses.find(lens =>
-        lens.toLowerCase().includes('ultrawide') ||
-        lens.includes('UltraWide')
+        lens.toLowerCase().includes('ultra wide') ||
+        lens.toLowerCase().includes('ultrawide')
       );
       logger.debug('CameraScreen: Building zoom levels with ultra-wide', {
         ultraWideLens,
@@ -158,8 +158,8 @@ const CameraScreen = () => {
           if (lenses && lenses.length > 0) {
             setAvailableLenses(lenses);
             const hasUW = lenses.some(lens =>
-              lens.toLowerCase().includes('ultrawide') ||
-              lens.includes('UltraWide')
+              lens.toLowerCase().includes('ultra wide') ||
+              lens.toLowerCase().includes('ultrawide')
             );
             setHasUltraWide(hasUW);
             if (hasUW) {
@@ -405,10 +405,10 @@ const CameraScreen = () => {
                 count: event.lenses.length,
               });
               setAvailableLenses(event.lenses);
-              // Check for ultra-wide: builtInUltraWideCamera or similar
+              // Check for ultra-wide: "Back Ultra Wide Camera" or "builtInUltraWideCamera"
               const hasUW = event.lenses.some(lens =>
-                lens.toLowerCase().includes('ultrawide') ||
-                lens.includes('UltraWide')
+                lens.toLowerCase().includes('ultra wide') ||
+                lens.toLowerCase().includes('ultrawide')
               );
               setHasUltraWide(hasUW);
               logger.info('CameraScreen: Ultra-wide detection result', {
