@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17 of 18.2 (Darkroom UX Polish)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 17-01-PLAN.md
+Plan: 1 of 1 + FIX in current phase
+Status: Phase complete (including UAT fixes)
+Last activity: 2026-01-21 - Completed 17-01-FIX.md
 
 Progress: ████████░░ 73% (v1.5: 10/11 phases complete)
 
@@ -69,5 +69,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 17-01-PLAN.md - Phase 17 complete
+Stopped at: Completed 17-01-FIX.md - Phase 17 UAT fixes complete
 Resume file: None
