@@ -629,39 +629,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
   },
-  // 6 small dots along remaining 1/3 arc (bottom-left quadrant)
-  // Container 24x24, center at (12,12), radius 10 from center
-  // Arc spans from ~135° to ~225° (bottom-left), dots spaced ~15° apart
-  // Formula: left = 12 + r*cos(angle) - dotSize/2, top = 12 + r*sin(angle) - dotSize/2
+  // 6 dots along the left side arc where border is transparent
+  // Border ring is at edge (radius 11 from center 12,12)
+  // Dots need to be ON the ring edge, filling gap from ~135° to ~225° (90° span)
+  // 6 dots = ~15° apart across 90° arc
   spinnerDot: {
     position: 'absolute',
     width: 2,
     height: 2,
     borderRadius: 1,
   },
-  spinnerDot1: { // 140°
-    left: 4,
+  // Positions calculated: left = 12 + 11*cos(angle) - 1, top = 12 + 11*sin(angle) - 1
+  spinnerDot1: { // 135° (bottom-left corner, where solid arc ends)
+    left: -1,
     top: 18,
   },
-  spinnerDot2: { // 155°
-    left: 2,
-    top: 16,
+  spinnerDot2: { // 153°
+    left: -2,
+    top: 15,
   },
-  spinnerDot3: { // 170°
-    left: 1,
-    top: 13,
+  spinnerDot3: { // 171°
+    left: -2,
+    top: 11,
   },
-  spinnerDot4: { // 190°
-    left: 1,
-    top: 10,
+  spinnerDot4: { // 189°
+    left: -2,
+    top: 8,
   },
-  spinnerDot5: { // 205°
-    left: 2,
-    top: 7,
-  },
-  spinnerDot6: { // 220°
-    left: 4,
+  spinnerDot5: { // 207°
+    left: -1,
     top: 5,
+  },
+  spinnerDot6: { // 225° (top-left corner, where solid arc starts)
+    left: 2,
+    top: 3,
   },
   playTriangle: {
     width: 0,
