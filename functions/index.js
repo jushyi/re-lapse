@@ -159,6 +159,9 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
 /**
  * Cloud Function: Send notification when photos are revealed in darkroom
  * Triggered when darkroom document is updated with new revealedAt timestamp
+ *
+ * IMPORTANT: Uses lastNotifiedAt to ensure only ONE notification per reveal batch.
+ * This prevents spam when the scheduled function runs frequently.
  */
 exports.sendPhotoRevealNotification = functions.firestore
   .document('darkrooms/{userId}')
@@ -168,20 +171,56 @@ exports.sendPhotoRevealNotification = functions.firestore
       const before = change.before.data();
       const after = change.after.data();
 
-      // Check if photos were just revealed (nextRevealAt changed)
-      const wasRevealed = before.nextRevealAt !== after.nextRevealAt &&
-                          after.lastRevealedAt &&
-                          after.lastRevealedAt.toMillis() > before.lastRevealedAt?.toMillis();
+      // Check if this is a reveal event (lastRevealedAt changed)
+      const lastRevealedAtBefore = before.lastRevealedAt?.toMillis() || 0;
+      const lastRevealedAtAfter = after.lastRevealedAt?.toMillis() || 0;
+      const wasRevealed = lastRevealedAtAfter > lastRevealedAtBefore;
 
       if (!wasRevealed) {
-        console.log('No new photo reveal, skipping notification');
+        console.log('sendPhotoRevealNotification: No new reveal, skipping notification');
+        return null;
+      }
+
+      // Check if we already notified for this batch (lastNotifiedAt >= lastRevealedAt)
+      const lastNotifiedAt = after.lastNotifiedAt?.toMillis() || 0;
+      if (lastNotifiedAt >= lastRevealedAtAfter) {
+        console.log('sendPhotoRevealNotification: Already notified for this batch, skipping');
+        return null;
+      }
+
+      // Count photos revealed in THIS batch (revealedAt within 5 seconds of lastRevealedAt)
+      // This tolerance accounts for batch commit timing differences
+      const toleranceMs = 5000;
+      const batchStartTime = lastRevealedAtAfter - toleranceMs;
+      const batchEndTime = lastRevealedAtAfter + toleranceMs;
+
+      const photosSnapshot = await admin.firestore()
+        .collection('photos')
+        .where('userId', '==', userId)
+        .where('status', '==', 'revealed')
+        .get();
+
+      // Filter photos by revealedAt timestamp within the batch window
+      const photosInBatch = photosSnapshot.docs.filter((doc) => {
+        const revealedAt = doc.data().revealedAt?.toMillis() || 0;
+        return revealedAt >= batchStartTime && revealedAt <= batchEndTime;
+      });
+
+      const photosRevealed = photosInBatch.length;
+
+      if (photosRevealed === 0) {
+        console.log('sendPhotoRevealNotification: No photos revealed in this batch, skipping notification');
+        // Still update lastNotifiedAt to prevent future checks for this batch
+        await admin.firestore().collection('darkrooms').doc(userId).update({
+          lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
         return null;
       }
 
       // Get user's FCM token
       const userDoc = await admin.firestore().collection('users').doc(userId).get();
       if (!userDoc.exists) {
-        console.error('User not found:', userId);
+        console.error('sendPhotoRevealNotification: User not found:', userId);
         return null;
       }
 
@@ -189,36 +228,39 @@ exports.sendPhotoRevealNotification = functions.firestore
       const fcmToken = userData.fcmToken;
 
       if (!fcmToken) {
-        console.log('User has no FCM token, skipping notification:', userId);
+        console.log('sendPhotoRevealNotification: User has no FCM token, skipping:', userId);
         return null;
       }
 
-      // Count how many photos were revealed
-      const photosSnapshot = await admin.firestore()
-        .collection('photos')
-        .where('userId', '==', userId)
-        .where('status', '==', 'revealed')
-        .get();
-
-      const photoCount = photosSnapshot.size;
-
-      // Send notification
+      // Send notification with reveal data
       const title = '📸 Photos Ready!';
-      const body = photoCount === 1
+      const body = photosRevealed === 1
         ? 'Your photo is ready to view in the darkroom'
-        : `${photoCount} photos are ready to view in the darkroom`;
+        : `${photosRevealed} photos are ready to view in the darkroom`;
 
       const result = await sendPushNotification(
         fcmToken,
         title,
         body,
-        { type: 'photo_reveal' }
+        {
+          type: 'photo_reveal',
+          revealedCount: String(photosRevealed),
+          revealAll: 'true',
+        }
       );
 
-      console.log('Photo reveal notification sent to:', userId, result);
+      // Update lastNotifiedAt AFTER successfully sending notification
+      await admin.firestore().collection('darkrooms').doc(userId).update({
+        lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log('sendPhotoRevealNotification: Notification sent to', userId, {
+        photosRevealed,
+        result,
+      });
       return result;
     } catch (error) {
-      console.error('Error in sendPhotoRevealNotification:', error);
+      console.error('sendPhotoRevealNotification: Error:', error);
       return null;
     }
   });
