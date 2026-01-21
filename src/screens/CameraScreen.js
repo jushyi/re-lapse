@@ -563,6 +563,8 @@ const styles = StyleSheet.create({
     height: CAMERA_HEIGHT - CAMERA_PREVIEW_MARGIN * 2,
     borderRadius: CAMERA_BORDER_RADIUS,
     overflow: 'hidden',
+    borderWidth: 0, // Explicitly remove any border
+    backgroundColor: '#000000', // Match container background to prevent outline artifacts
   },
   // Camera - fills the container
   camera: {
