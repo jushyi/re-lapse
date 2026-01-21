@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -123,42 +122,15 @@ const DarkroomScreen = () => {
         return newPhotos;
       });
 
-      // Show confirmation
-      const actionText = action === 'journal' ? 'journaled' : action === 'archive' ? 'archived' : 'deleted';
-      Alert.alert('Success', `Photo ${actionText} successfully!`);
-
       // Navigate to success screen if this was the last photo
       if (isLastPhoto) {
         logger.info('DarkroomScreen: Last photo triaged, navigating to success', { action });
         setTimeout(() => {
           navigation.navigate('Success');
-        }, 300); // Allow Alert to show before navigation
+        }, 100);
       }
     } catch (error) {
       logger.error('Error triaging photo', error);
-      Alert.alert('Error', 'Failed to process photo. Please try again.');
-    }
-  };
-
-  // Debug function to force reveal photos immediately (for testing)
-  const debugDarkroom = async (userId) => {
-    try {
-      logger.info('DarkroomScreen: Debug - Force revealing photos');
-
-      // Force reveal all developing photos
-      const revealResult = await revealPhotos(userId);
-      logger.info('DarkroomScreen: Debug - Photos force revealed', {
-        count: revealResult.count,
-        success: revealResult.success,
-      });
-
-      // Schedule next reveal time
-      await scheduleNextReveal(userId);
-
-      // Reload photos
-      await loadDevelopingPhotos();
-    } catch (error) {
-      logger.error('DarkroomScreen: Debug - Force reveal failed', error);
     }
   };
 
@@ -205,12 +177,7 @@ const DarkroomScreen = () => {
               <Text style={styles.headerTitle}>Darkroom</Text>
               <Text style={styles.headerSubtitle}>No photos ready</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => debugDarkroom(user.uid)}
-              style={styles.debugButton}
-            >
-              <Text style={styles.debugButtonIcon}>🐛</Text>
-            </TouchableOpacity>
+            <View style={styles.headerPlaceholder} />
           </View>
 
           <View style={styles.emptyContainer}>
@@ -248,12 +215,7 @@ const DarkroomScreen = () => {
             {photos.length} {photos.length === 1 ? 'photo' : 'photos'} ready to review
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => debugDarkroom(user.uid)}
-          style={styles.debugButton}
-        >
-          <Text style={styles.debugButtonIcon}>🐛</Text>
-        </TouchableOpacity>
+        <View style={styles.headerPlaceholder} />
       </View>
 
       {/* Swipeable Photo Card */}
@@ -327,19 +289,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
-  debugButtonLarge: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.5)',
-  },
-  debugButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -368,16 +317,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
   },
-  debugButton: {
+  headerPlaceholder: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    borderRadius: 20,
-  },
-  debugButtonIcon: {
-    fontSize: 20,
   },
   headerTitle: {
     fontSize: 28,
