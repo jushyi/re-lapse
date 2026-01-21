@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 16.1 of 18.2 (UI Overhaul for Darkroom Bottom Sheet)
-Plan: 1 of 1 in current phase (+ FIX plan)
-Status: Phase complete (including UAT fixes)
-Last activity: 2026-01-21 - Completed 16.1-01-FIX (UAT fixes for darkroom bottom sheet)
+Plan: 1 of 1 in current phase (+ FIX plan with UAT-003 spinner fixes)
+Status: Phase complete (all UAT issues resolved)
+Last activity: 2026-01-21 - Completed 16.1-01-FIX (UAT-003 spinner fixes)
 
 Progress: ███████░░░ 60% (v1.5: 7/10 phases complete)
 
@@ -63,9 +63,10 @@ None.
 - Phase 15.3 inserted after Phase 15.2: ISS-001 - Add True 0.5x Ultra-Wide Zoom (URGENT) - implement true ultra-wide lens switching instead of digital zoom
 - Phase 16.1 inserted after Phase 16: UI Overhaul for Darkroom Bottom Sheet (URGENT) - redesign darkroom bottom sheet UI for improved visual polish
 - Phase 18.2 inserted after Phase 18.1: Rename App to Rewind (URGENT) - complete rebrand from "Lapse" to "Rewind" across all code and assets
+- Phase 16.2 inserted after Phase 16.1: Fix 0.5x Ultra-Wide Zoom (URGENT) - 0.5x shows same as 1x, camera not switching properly
 
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 16.1-01-FIX (UAT fixes) - Phase 16.1 fully complete
+Stopped at: Completed 16.1-01-FIX (UAT-003 spinner fixes) - Phase 16.1 fully complete
 Resume file: None

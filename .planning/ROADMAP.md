@@ -125,10 +125,23 @@ Plans:
 - Spinner that speeds up 2x during hold
 - Crescendo haptic feedback (4 intensity phases)
 
+#### Phase 16.2: Fix 0.5x Ultra-Wide Zoom (INSERTED)
+
+**Goal**: Fix 0.5x zoom which appears to be showing same view as 1x and not switching cameras properly
+**Depends on**: Phase 16.1
+**Research**: Likely (need to investigate why lens switching stopped working)
+**Plans**: TBD
+
+Plans:
+- [ ] 16.2-01: TBD (run /gsd:plan-phase 16.2 to break down)
+
+**Details:**
+Issue: The 0.5x ultra-wide zoom functionality (implemented in Phase 15.3) appears broken - shows same view as 1x and doesn't switch cameras properly.
+
 #### Phase 17: Darkroom UX Polish
 
 **Goal**: Improved reveal animations, smoother triage gestures, better navigation flow, and polished empty/loading states
-**Depends on**: Phase 16.1
+**Depends on**: Phase 16.2
 **Research**: Unlikely (internal patterns, React Native Reanimated already in use)
 **Plans**: TBD
 
@@ -269,6 +282,7 @@ Complete rebrand from "Lapse" to "Rewind":
 | 15.3 ISS-001 - Add True 0.5x Ultra-Wide Zoom | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16. Camera Capture Feedback | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 1/1 | Complete | 2026-01-21 |
+| 16.2 Fix 0.5x Ultra-Wide Zoom | v1.5 | 0/? | Not started | - |
 | 17. Darkroom UX Polish | v1.5 | 0/? | Not started | - |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |
