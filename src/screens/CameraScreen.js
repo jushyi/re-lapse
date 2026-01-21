@@ -227,8 +227,7 @@ const CameraScreen = () => {
   };
 
   const playPhotoAnimation = (photoUri) => {
-    // Start flash effect immediately
-    playFlashEffect();
+    // Flash already started in takePicture() - don't duplicate
 
     setCapturedPhoto(photoUri);
     animatedValue.setValue(0);
@@ -260,6 +259,10 @@ const CameraScreen = () => {
 
     try {
       setIsCapturing(true);
+
+      // INSTANT FEEDBACK: Flash fires immediately on tap!
+      // Camera capture runs in parallel with flash animation
+      playFlashEffect();
 
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
