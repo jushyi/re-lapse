@@ -13,7 +13,28 @@ import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SHEET_HEIGHT = 320; // Approximate height of sheet content
+const SHEET_HEIGHT = 280; // Adjusted height for new layout
+
+// Card dimensions for darkroom card stack (matching CameraScreen)
+const CARD_WIDTH = 63;
+const CARD_HEIGHT = 84;
+
+// Base fanning values (at rest state)
+const BASE_ROTATION_PER_CARD = 6;
+const BASE_OFFSET_PER_CARD = 5;
+
+// Colors
+const COLORS = {
+  sheetBackground: '#1A1A1A',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#888888',
+  statusReady: '#22C55E',
+  statusDeveloping: '#EF4444',
+  cardBackground: '#2A2A2A',
+  cardBorder: 'rgba(255, 255, 255, 0.3)',
+  progressBackground: '#333333',
+  progressFill: '#007AFF',
+};
 
 const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose, onComplete }) => {
   const [isPressing, setIsPressing] = useState(false);
@@ -190,6 +211,66 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
     outputRange: ['0%', '100%'],
   });
 
+  // Render card stack (duplicated from CameraScreen's DarkroomCardButton)
+  const renderCardStack = () => {
+    const cardCount = Math.min(Math.max(totalCount, 1), 4);
+    const cards = [];
+
+    // Calculate center compensation
+    const centerCompensation = ((cardCount - 1) * BASE_OFFSET_PER_CARD) / 2;
+    const rotationCompensation = ((cardCount - 1) * BASE_ROTATION_PER_CARD) / 2;
+
+    for (let i = 0; i < cardCount; i++) {
+      const isTopCard = i === cardCount - 1;
+      const positionFromTop = cardCount - 1 - i;
+
+      // Base rotation and offset
+      const baseRotation = (positionFromTop * BASE_ROTATION_PER_CARD) - rotationCompensation;
+      const baseOffset = (positionFromTop * BASE_OFFSET_PER_CARD) - centerCompensation;
+
+      cards.push(
+        <View
+          key={i}
+          style={[
+            styles.cardStackCard,
+            {
+              position: 'absolute',
+              transform: [
+                { rotate: `${baseRotation}deg` },
+                { translateX: baseOffset },
+              ],
+              zIndex: i + 1,
+            },
+          ]}
+        >
+          {isTopCard && (
+            <Text style={styles.cardStackText}>
+              {totalCount > 99 ? '99+' : totalCount}
+            </Text>
+          )}
+        </View>
+      );
+    }
+
+    return cards;
+  };
+
+  // Get status dot color and text
+  const getStatusInfo = () => {
+    if (hasRevealedPhotos) {
+      return {
+        color: COLORS.statusReady,
+        text: `(${revealedCount}) ready to reveal`,
+      };
+    }
+    return {
+      color: COLORS.statusDeveloping,
+      text: 'Photos still developing',
+    };
+  };
+
+  const statusInfo = getStatusInfo();
+
   return (
     <Modal
       visible={visible}
@@ -214,23 +295,21 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
             },
           ]}
         >
-          {/* Header */}
-          <Text style={styles.headerText}>
-            {hasRevealedPhotos ? 'Press and hold to reveal' : 'Darkroom'}
-          </Text>
+          {/* Header Row - Title/Status on left, Card Stack on right */}
+          <View style={styles.headerRow}>
+            {/* Left side: Title and Status */}
+            <View style={styles.headerLeft}>
+              <View style={styles.titleRow}>
+                <Text style={styles.titleText}>Darkroom</Text>
+                <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+              </View>
+              <Text style={styles.statusText}>{statusInfo.text}</Text>
+            </View>
 
-          {/* Badge Count Display */}
-          <View style={styles.countContainer}>
-            <Text style={styles.countNumber}>{hasRevealedPhotos ? revealedCount : totalCount}</Text>
-            <Text style={styles.countLabel}>
-              {hasRevealedPhotos
-                ? revealedCount === 1
-                  ? 'photo ready'
-                  : 'photos ready'
-                : totalCount === 1
-                ? 'photo developing'
-                : 'photos developing'}
-            </Text>
+            {/* Right side: Card Stack */}
+            <View style={styles.cardStackContainer}>
+              {renderCardStack()}
+            </View>
           </View>
 
           {/* Progress Bar Container - only show if photos are ready */}
@@ -260,7 +339,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
           {/* Message for developing photos */}
           {!hasRevealedPhotos && (
             <Text style={styles.developingText}>
-              Photos are still developing...{'\n'}Check back soon!
+              Check back soon!
             </Text>
           )}
         </Animated.View>
@@ -279,63 +358,100 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.sheetBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 24,
     paddingBottom: Platform.OS === 'ios' ? 48 : 32,
-    alignItems: 'center',
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
+  // Header row - flex row with title/status left, cards right
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 24,
   },
-  countContainer: {
+  headerLeft: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 4,
   },
-  countNumber: {
-    fontSize: 48,
+  titleText: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 8,
+    color: COLORS.textPrimary,
+    marginRight: 10,
   },
-  countLabel: {
-    fontSize: 16,
-    color: '#666666',
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
+  statusText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  // Card stack container
+  cardStackContainer: {
+    width: CARD_WIDTH + 20,
+    height: CARD_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardStackCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 8,
+    backgroundColor: COLORS.cardBackground,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardStackText: {
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // Progress bar
   progressContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 16,
   },
   progressBackground: {
     width: '100%',
     height: 12,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: COLORS.progressBackground,
     borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 16,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.progressFill,
     borderRadius: 6,
   },
   progressText: {
     fontSize: 14,
-    color: '#999999',
+    color: COLORS.textSecondary,
     fontWeight: '600',
   },
   developingText: {
     fontSize: 16,
-    color: '#666666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginTop: 8,
+    marginTop: 16,
   },
 });
 
