@@ -600,14 +600,14 @@ const styles = StyleSheet.create({
     height: FLOATING_BUTTON_SIZE,
     borderRadius: FLOATING_BUTTON_SIZE / 2,
   },
-  // Footer bar - absolute positioned, solid dark background, above tab bar
+  // Footer bar - absolute positioned, black background (matches nav bar), above tab bar
   footerBar: {
     position: 'absolute',
     bottom: TAB_BAR_HEIGHT,
     left: 0,
     right: 0,
     height: FOOTER_HEIGHT,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
