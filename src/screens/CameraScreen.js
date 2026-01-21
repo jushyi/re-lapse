@@ -421,6 +421,15 @@ const CameraScreen = () => {
           }}
           {...(Platform.OS === 'ios' && selectedLens && { selectedLens })}
         />
+        {/* Flash Overlay (camera shutter effect) - contained within camera preview */}
+        {showFlash && (
+          <Animated.View
+            style={[
+              styles.flashOverlay,
+              { opacity: flashOpacity },
+            ]}
+          />
+        )}
       </View>
 
       {/* Floating Controls Row - Flash (left), Zoom (center), Flip (right) - positioned above footer */}
@@ -512,16 +521,6 @@ const CameraScreen = () => {
           <View style={styles.footerSpacer} />
         </View>
       </View>
-
-      {/* Flash Overlay (camera shutter effect) */}
-      {showFlash && (
-        <Animated.View
-          style={[
-            styles.flashOverlay,
-            { opacity: flashOpacity },
-          ]}
-        />
-      )}
 
       {/* Darkroom Bottom Sheet */}
       <DarkroomBottomSheet
@@ -895,14 +894,12 @@ const styles = StyleSheet.create({
     borderRadius: 38,
     backgroundColor: '#FFFFFF',
   },
-  // Flash overlay for camera shutter effect
+  // Flash overlay for camera shutter effect - contained within camera preview
   flashOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: CAMERA_BORDER_RADIUS,
+    borderBottomRightRadius: CAMERA_BORDER_RADIUS,
     zIndex: 100,
   },
 });
