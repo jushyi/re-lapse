@@ -20,12 +20,12 @@ import Svg, { Path } from 'react-native-svg';
 import { DarkroomBottomSheet } from '../components';
 
 // Zoom level configuration
-// expo-camera zoom is 0-1 range where 0 is no zoom and 1 is max zoom
-// Mapping: 0.5x=0, 1x=0.17, 3x=0.5 (removed 2x per UAT feedback)
+// expo-camera zoom is 0-1 range where 0 is no zoom (1x) and 1 is max zoom
+// Corrected mapping: 0.5x=0 (wide/same as 1x on most devices), 1x=0 (baseline), 3x=0.25
 const ZOOM_LEVELS = [
-  { label: '.5', value: 0.5, cameraZoom: 0 },
-  { label: '1', value: 1, cameraZoom: 0.17 },
-  { label: '3', value: 3, cameraZoom: 0.5 },
+  { label: '.5', value: 0.5, cameraZoom: 0 },      // Wide angle - same as 1x on most devices
+  { label: '1', value: 1, cameraZoom: 0 },         // Normal - NO ZOOM (was wrongly 0.17)
+  { label: '3', value: 3, cameraZoom: 0.25 },      // 3x telephoto (reduced from 0.5)
 ];
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -54,41 +54,34 @@ const FlashIcon = ({ color = '#FFFFFF', mode = 'off' }) => (
   </Svg>
 );
 
-// Flip camera icon SVG component - matches bottom nav design system
+// Flip camera icon SVG component - clean rotation arrows design
 const FlipCameraIcon = ({ color = '#FFFFFF' }) => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    {/* Camera body outline */}
+    {/* Top arrow - curves right and down */}
     <Path
-      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2v11z"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    {/* Circular arrows for flip/rotate */}
-    <Path
-      d="M12 17a4 4 0 1 0 0-8"
+      d="M17 1l4 4-4 4"
       stroke={color}
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <Path
-      d="M8 13l-1.5-1.5L8 10"
+      d="M3 11V9a4 4 0 0 1 4-4h14"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Bottom arrow - curves left and up */}
+    <Path
+      d="M7 23l-4-4 4-4"
       stroke={color}
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <Path
-      d="M12 9a4 4 0 1 1 0 8"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M16 13l1.5 1.5L16 16"
+      d="M21 13v2a4 4 0 0 1-4 4H3"
       stroke={color}
       strokeWidth="1.5"
       strokeLinecap="round"
@@ -193,10 +186,12 @@ const CameraScreen = () => {
   }
 
   const toggleCameraFacing = () => {
+    lightImpact();
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   const toggleFlash = () => {
+    lightImpact();
     setFlash(current => {
       if (current === 'off') return 'on';
       if (current === 'on') return 'auto';
@@ -282,6 +277,7 @@ const CameraScreen = () => {
 
     try {
       setIsCapturing(true);
+      lightImpact();
 
       // INSTANT FEEDBACK: Flash fires immediately on tap!
       // Camera capture runs in parallel with flash animation
@@ -446,6 +442,9 @@ const CameraScreen = () => {
               <View style={styles.captureButtonInner} />
             </View>
           </TouchableOpacity>
+
+          {/* Invisible spacer to balance darkroom button and center capture button */}
+          <View style={styles.footerSpacer} />
         </View>
       </View>
 
@@ -694,6 +693,12 @@ const styles = StyleSheet.create({
   },
   darkroomButtonDisabled: {
     opacity: 0.4,
+  },
+  // Invisible spacer to balance darkroom button and center capture button
+  footerSpacer: {
+    width: 50, // Same as darkroom button width
+    height: 50,
+    opacity: 0,
   },
   // Flash auto indicator (small letter on button)
   flashLabel: {
