@@ -255,6 +255,18 @@ const DarkroomScreen = () => {
     cardRef.current?.triggerJournal();
   };
 
+  // UAT-002: Trigger fade-in animation when success state is shown
+  // NOTE: This useEffect must be before any early returns to comply with Rules of Hooks
+  useEffect(() => {
+    if ((triageComplete || pendingSuccess) && photos.length === 0) {
+      Animated.timing(successFadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [triageComplete, pendingSuccess, photos.length, successFadeAnim]);
+
   if (loading) {
     return (
       <GestureHandlerRootView style={styles.container}>
@@ -267,17 +279,6 @@ const DarkroomScreen = () => {
       </GestureHandlerRootView>
     );
   }
-
-  // UAT-002: Trigger fade-in animation when success state is shown
-  useEffect(() => {
-    if ((triageComplete || pendingSuccess) && photos.length === 0) {
-      Animated.timing(successFadeAnim, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [triageComplete, pendingSuccess, photos.length, successFadeAnim]);
 
   // Inline success state - shows after triage completes (same structure as empty state)
   // UAT-001: Also show if pendingSuccess is true (prevents empty state flash before triageComplete is set)
