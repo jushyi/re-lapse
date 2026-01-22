@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17 of 18.2 (Darkroom UX Polish)
-Plan: 1 of 1 + FIX in current phase
-Status: Phase complete (including UAT fixes)
-Last activity: 2026-01-21 - Completed 17-01-FIX.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 17-02-PLAN.md
 
-Progress: ████████░░ 73% (v1.5: 10/11 phases complete)
+Progress: ████████░░ 77% (v1.5: 11/12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 50 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 13 in v1.5)
+- Total plans completed: 51 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 14 in v1.5)
 - Average duration: 16 min
-- Total execution time: 10.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 1.6h v1.5)
+- Total execution time: 10.3 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 1.8h v1.5)
 
 **By Milestone:**
 
@@ -31,13 +31,18 @@ Progress: ████████░░ 73% (v1.5: 10/11 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.2 | 13 | 98 min |
+| v1.5 | 15-18.2 | 14 | 110 min |
 
 ## Accumulated Context
 
 ### Decisions
 
 All decisions documented in PROJECT.md Key Decisions table with outcomes.
+
+| Phase | Decision | Rationale |
+|-------|----------|-----------|
+| 17-02 | Gesture.Pan() API for swipe gestures | useAnimatedGestureHandler deprecated in Reanimated v4 |
+| 17-02 | View-based icons for overlays | Cleaner look than emoji, consistent styling |
 
 ### Deferred Issues
 
@@ -68,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-21
-Stopped at: Completed 17-01-FIX.md - Phase 17 UAT fixes complete
+Last session: 2026-01-22
+Stopped at: Completed 17-02-PLAN.md - Flick animation with arc motion
 Resume file: None

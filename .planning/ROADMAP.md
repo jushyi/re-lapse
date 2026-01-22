@@ -161,16 +161,21 @@ Plans:
 **Goal**: Improved reveal animations, smoother triage gestures, better navigation flow, and polished empty/loading states
 **Depends on**: Phase 16.3
 **Research**: Unlikely (internal patterns, React Native Reanimated already in use)
-**Plans**: 1/1 complete
+**Plans**: 2/2 complete
 
 Plans:
 - [x] 17-01: Triage flow polish - confirmations removed, button triage added, photo cards resized - completed 2026-01-21
+- [x] 17-02: Flick animation with arc motion, on-card overlays, three-stage haptics - completed 2026-01-22
 
 **Delivered:**
 - Removed all confirmation popups for instant triage
 - Added Archive/Delete/Journal button bar with haptic feedback
 - Increased photo card size (92% width, 4:5 aspect ratio) with black border
 - Removed debug button from header
+- Flick-style swipe animation with downward arc motion
+- On-card confirmation overlays with non-emoji icons
+- Three-stage haptic feedback (threshold, release, completion)
+- Down-swipe for delete gesture
 
 #### Phase 18: Reaction Notification Debouncing
 
@@ -308,7 +313,7 @@ Complete rebrand from "Lapse" to "Rewind":
 | 16.1 UI Overhaul for Darkroom Bottom Sheet | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16.2 Fix 0.5x Ultra-Wide Zoom | v1.5 | 1/1 | Complete | 2026-01-21 |
 | 16.3 Fix React Native Firebase Warnings | v1.5 | 1/1 | Complete | 2026-01-21 |
-| 17. Darkroom UX Polish | v1.5 | 1/1 | Complete | 2026-01-21 |
+| 17. Darkroom UX Polish | v1.5 | 2/2 | Complete | 2026-01-22 |
 | 18. Reaction Notification Debouncing | v1.5 | 0/? | Not started | - |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |
 | 18.2 Rename App to Rewind | v1.5 | 0/? | Not started | - |
