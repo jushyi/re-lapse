@@ -362,32 +362,23 @@ const DarkroomScreen = () => {
                 <Text style={styles.headerTitle}>Darkroom</Text>
                 <Text style={styles.headerSubtitle}>All done!</Text>
               </View>
-              {/* 18.1-02: Header actions - Done button and Undo button in success state */}
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  style={[styles.doneButtonHeader, saving && styles.doneButtonDisabled]}
-                  onPress={handleDone}
-                  disabled={saving}
-                >
-                  <Text style={styles.doneButtonTextHeader}>{saving ? 'Saving...' : 'Done'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.undoButton,
-                    (undoStack.length === 0 || undoingPhoto !== null) && styles.undoButtonDisabled
-                  ]}
-                  onPress={handleUndo}
-                  disabled={undoStack.length === 0 || undoingPhoto !== null}
-                >
-                  <Text style={styles.undoIcon}>↩</Text>
-                  <Text style={[
-                    styles.undoText,
-                    (undoStack.length === 0 || undoingPhoto !== null) && styles.undoTextDisabled
-                  ]}>
-                    Undo{undoStack.length > 0 ? ` (${undoStack.length})` : ''}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {/* 18.1: Undo button only in success state header - Done button is at bottom of screen */}
+              <TouchableOpacity
+                style={[
+                  styles.undoButton,
+                  (undoStack.length === 0 || undoingPhoto !== null) && styles.undoButtonDisabled
+                ]}
+                onPress={handleUndo}
+                disabled={undoStack.length === 0 || undoingPhoto !== null}
+              >
+                <Text style={styles.undoIcon}>↩</Text>
+                <Text style={[
+                  styles.undoText,
+                  (undoStack.length === 0 || undoingPhoto !== null) && styles.undoTextDisabled
+                ]}>
+                  Undo{undoStack.length > 0 ? ` (${undoStack.length})` : ''}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* UAT-002: Success content with fade-in animation, emoji text, bottom button */}
@@ -474,34 +465,23 @@ const DarkroomScreen = () => {
               {photos.length} {photos.length === 1 ? 'photo' : 'photos'} ready to review
             </Text>
           </View>
-          {/* 18.1-02: Header actions - Done button (when decisions exist) and Undo button */}
-          <View style={styles.headerActions}>
-            {undoStack.length > 0 && (
-              <TouchableOpacity
-                style={[styles.doneButtonHeader, saving && styles.doneButtonDisabled]}
-                onPress={handleDone}
-                disabled={saving}
-              >
-                <Text style={styles.doneButtonTextHeader}>{saving ? 'Saving...' : 'Done'}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[
-                styles.undoButton,
-                (undoStack.length === 0 || undoingPhoto !== null) && styles.undoButtonDisabled
-              ]}
-              onPress={handleUndo}
-              disabled={undoStack.length === 0 || undoingPhoto !== null}
-            >
-              <Text style={styles.undoIcon}>↩</Text>
-              <Text style={[
-                styles.undoText,
-                (undoStack.length === 0 || undoingPhoto !== null) && styles.undoTextDisabled
-              ]}>
-                Undo{undoStack.length > 0 ? ` (${undoStack.length})` : ''}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* 18.1: Undo button only in triage header - Done button only shows on success screen */}
+          <TouchableOpacity
+            style={[
+              styles.undoButton,
+              (undoStack.length === 0 || undoingPhoto !== null) && styles.undoButtonDisabled
+            ]}
+            onPress={handleUndo}
+            disabled={undoStack.length === 0 || undoingPhoto !== null}
+          >
+            <Text style={styles.undoIcon}>↩</Text>
+            <Text style={[
+              styles.undoText,
+              (undoStack.length === 0 || undoingPhoto !== null) && styles.undoTextDisabled
+            ]}>
+              Undo{undoStack.length > 0 ? ` (${undoStack.length})` : ''}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Stacked Photo Cards (UAT-005) - render up to 3 cards */}
@@ -637,26 +617,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
   },
-  // 18.1-02: Header actions container for Done + Undo buttons
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  // 18.1-02: Done button styles for header
-  doneButtonHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-  },
+  // 18.1-02: Done button disabled state (used on success screen bottom button)
   doneButtonDisabled: {
     opacity: 0.5,
-  },
-  doneButtonTextHeader: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   // 18.1: Undo button styles
   undoButton: {
