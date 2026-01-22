@@ -187,16 +187,17 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     .onStart(() => {
       'worklet';
       startX.value = translateX.value;
-      startY.value = translateY.value;
+      // startY not tracked - card follows fixed arc path based on X only (UAT-001)
       runOnJS(resetThreshold)();
     })
     .onUpdate((event) => {
       'worklet';
+      // Only track horizontal finger position - card follows fixed arc path (UAT-001)
+      // translateY is not tracked during gesture; arc effect is applied in cardStyle
       translateX.value = startX.value + event.translationX;
-      // Allow natural vertical movement but don't track for delete threshold
-      translateY.value = startY.value + event.translationY;
+      // translateY stays at 0 during gesture; the visual arc comes from arcY calculation in cardStyle
 
-      // Check if horizontal threshold is reached (no vertical threshold for delete)
+      // Check if horizontal threshold is reached
       const absX = Math.abs(translateX.value);
 
       if (absX > HORIZONTAL_THRESHOLD) {
@@ -258,10 +259,12 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       }
     });
 
-  // Animated card style with arc motion and rotation
+  // Animated card style with FIXED arc motion and rotation (UAT-001)
+  // Card follows a mathematically consistent arc path regardless of finger movement
   const cardStyle = useAnimatedStyle(() => {
-    // Arc motion: card curves downward as it moves horizontally
-    const arcY = Math.abs(translateX.value) * 0.3;
+    // Fixed arc formula: y = 0.4 * |x| creates consistent downward curve
+    // regardless of vertical finger position during gesture
+    const arcY = Math.abs(translateX.value) * 0.4;
 
     // Rotation based on horizontal movement (degrees)
     const rotation = translateX.value / 15;
@@ -269,6 +272,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     return {
       transform: [
         { translateX: translateX.value },
+        // translateY is 0 during gesture (fixed arc from arcY), only used in exit animations
         { translateY: translateY.value + arcY },
         { rotate: `${rotation}deg` },
       ],
