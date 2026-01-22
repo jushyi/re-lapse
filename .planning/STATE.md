@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18 of 18.4 (Reaction Notification Debouncing)
+Phase: 18 of 18.3 (Reaction Notification Debouncing)
 Plan: 2/2 + FIX complete
 Status: Phase complete (with fixes)
 Last activity: 2026-01-22 - Completed 18-FIX-PLAN.md (UAT issue fixes)
 
-Progress: █████████░ 86% (v1.5: 15/20 phases complete)
+Progress: █████████░ 88% (v1.5: 15/19 phases complete)
 
 ## Performance Metrics
 
@@ -87,7 +87,7 @@ None.
 - Phase 15.2 inserted after Phase 15.1: Camera UI & Darkroom Animation Overhaul (URGENT) - footer redesign, card stack button, bounce animation, rounded camera edges
 - Phase 15.3 inserted after Phase 15.2: ISS-001 - Add True 0.5x Ultra-Wide Zoom (URGENT) - implement true ultra-wide lens switching instead of digital zoom
 - Phase 16.1 inserted after Phase 16: UI Overhaul for Darkroom Bottom Sheet (URGENT) - redesign darkroom bottom sheet UI for improved visual polish
-- Phase 18.2 inserted after Phase 18.1: Rename App to Rewind (URGENT) - complete rebrand from "Lapse" to "Rewind" across all code and assets
+- Phase 18.2 (Rename App to Rewind) removed - deferred to future milestone
 - Phase 16.2 inserted after Phase 16.1: Fix 0.5x Ultra-Wide Zoom (URGENT) - 0.5x shows same as 1x, camera not switching properly
 - Phase 16.3 inserted after Phase 16.2: Fix React Native Firebase Warnings (URGENT) - resolve package.json exports errors and migrate deprecated namespaced API
 - Phase 17.1 inserted after Phase 17: Darkroom Animation Refinements (URGENT) - bottom-up open animation, fall-down close, inline success state

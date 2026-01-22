@@ -257,35 +257,15 @@ New behavior:
 - If darkroom closed mid-triage (app backgrounded, crash, etc.), session persists via AsyncStorage
 - Reopening darkroom restores the same batch with any previous local decisions intact
 
-#### Phase 18.2: Rename App to Rewind (INSERTED)
-
-**Goal**: Rename the entire app from "Lapse" to "Rewind" across all code, assets, and configuration
-**Depends on**: Phase 18.1
-**Research**: Unlikely (string replacement and asset updates)
-**Plans**: TBD
-
-Plans:
-- [ ] 18.2-01: TBD (run /gsd:plan-phase 18.2 to break down)
-
-**Details:**
-Complete rebrand from "Lapse" to "Rewind":
-- App display name in app.json/app.config.js
-- Bundle identifier updates (if needed)
-- All user-facing strings (splash, about, notifications)
-- Documentation (README, CLAUDE.md, project docs)
-- Firebase project references (if applicable)
-- Any "lapse" references in code comments, variable names, folder names
-- Deep link scheme (lapse:// → rewind://)
-
-#### Phase 18.3: Success Sound Effect on Triage Completion (INSERTED)
+#### Phase 18.2: Success Sound Effect on Triage Completion (INSERTED)
 
 **Goal**: Play a celebratory sound clip when user finishes triaging all photos (during success screen)
-**Depends on**: Phase 18.2
+**Depends on**: Phase 18.1
 **Research**: Unlikely (expo-av already available for audio playback)
 **Plans**: TBD
 
 Plans:
-- [ ] 18.3-01: TBD (run /gsd:plan-phase 18.3 to break down)
+- [ ] 18.2-01: TBD (run /gsd:plan-phase 18.2 to break down)
 
 **Details:**
 - Add satisfying audio feedback when all photos are triaged
@@ -294,15 +274,15 @@ Plans:
 - Consider: chime, whoosh, or subtle celebration sound
 - Ensure sound respects device silent mode settings
 
-#### Phase 18.4: Triage Animation Z-Index & Delete Suction Effect (INSERTED)
+#### Phase 18.3: Triage Animation Z-Index & Delete Suction Effect (INSERTED)
 
 **Goal**: Fix photo card animations rendering over triage buttons and add suction effect for delete action
-**Depends on**: Phase 18.3
+**Depends on**: Phase 18.2
 **Research**: Unlikely (React Native Reanimated z-index and animation patterns)
 **Plans**: TBD
 
 Plans:
-- [ ] 18.4-01: TBD (run /gsd:plan-phase 18.4 to break down)
+- [ ] 18.3-01: TBD (run /gsd:plan-phase 18.3 to break down)
 
 **Details:**
 Z-Index Fix:
@@ -407,6 +387,5 @@ Delete Suction Effect:
 | 17.2 Reveal Timing 0-5 Minutes | v1.5 | 1/1 | Complete | 2026-01-22 |
 | 18. Reaction Notification Debouncing | v1.5 | 2/2 + FIX | Complete | 2026-01-22 |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 0/? | Not started | - |
-| 18.2 Rename App to Rewind | v1.5 | 0/? | Not started | - |
-| 18.3 Success Sound Effect on Triage Completion | v1.5 | 0/? | Not started | - |
-| 18.4 Triage Animation Z-Index & Delete Suction | v1.5 | 0/? | Not started | - |
+| 18.2 Success Sound Effect on Triage Completion | v1.5 | 0/? | Not started | - |
+| 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 0/? | Not started | - |
