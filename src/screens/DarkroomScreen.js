@@ -1,10 +1,13 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
+  Easing,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,7 +17,67 @@ import { useAuth } from '../context/AuthContext';
 import { getDevelopingPhotos, revealPhotos, triagePhoto } from '../services/firebase/photoService';
 import { isDarkroomReadyToReveal, scheduleNextReveal } from '../services/firebase/darkroomService';
 import { SwipeablePhotoCard } from '../components';
+import { successNotification } from '../utils/haptics';
 import logger from '../utils/logger';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Inline success confetti configuration (fewer pieces than SuccessScreen)
+const CONFETTI_COUNT = 15;
+const CONFETTI_COLORS = ['#FF3B30', '#34C759', '#007AFF', '#FFCC00'];
+const ANIMATION_DURATION = 2000;
+const MAX_STAGGER_DELAY = 500;
+
+const ConfettiPiece = ({ index, color }) => {
+  const translateY = useRef(new Animated.Value(-50)).current;
+  const translateX = useRef(new Animated.Value(Math.random() * SCREEN_WIDTH)).current;
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const staggerDelay = Math.random() * MAX_STAGGER_DELAY;
+
+    // Animate Y position (fall down) and rotation together
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: SCREEN_HEIGHT + 50,
+        duration: ANIMATION_DURATION,
+        delay: staggerDelay,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotation, {
+        toValue: 360,
+        duration: ANIMATION_DURATION,
+        delay: staggerDelay,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const animatedStyle = {
+    transform: [
+      { translateX },
+      { translateY },
+      {
+        rotate: rotation.interpolate({
+          inputRange: [0, 360],
+          outputRange: ['0deg', '360deg'],
+        }),
+      },
+    ],
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiPiece,
+        { backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
+  );
+};
 
 const DarkroomScreen = () => {
   const { user } = useAuth();
@@ -22,7 +85,11 @@ const DarkroomScreen = () => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cascading, setCascading] = useState(false); // UAT-012: Track when cards are cascading
+  const [triageComplete, setTriageComplete] = useState(false); // Track triage completion for inline success
   const cardRef = useRef(null);
+  const successFadeAnim = useRef(new Animated.Value(0)).current;
+  const confettiGenerated = useRef(false);
+  const confettiPieces = useRef([]);
 
   // Load developing photos when screen comes into focus
   useFocusEffect(
@@ -131,16 +198,44 @@ const DarkroomScreen = () => {
       // Reset cascading state for next triage
       setCascading(false);
 
-      // Navigate to success screen if this was the last photo
+      // Show inline success state if this was the last photo
       if (isLastPhoto) {
-        logger.info('DarkroomScreen: Last photo triaged, navigating to success', { action });
+        logger.info('DarkroomScreen: Last photo triaged, showing inline success', { action });
+        // Delay to let the last card's exit animation complete
         setTimeout(() => {
-          navigation.navigate('Success');
-        }, 100);
+          setTriageComplete(true);
+          // Trigger success haptic
+          successNotification();
+          // Fade in the success state
+          Animated.timing(successFadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+          logger.info('DarkroomScreen: Inline success state shown');
+        }, 300);
       }
     } catch (error) {
       logger.error('Error triaging photo', error);
     }
+  };
+
+  // Generate confetti pieces when triage completes
+  useEffect(() => {
+    if (triageComplete && !confettiGenerated.current) {
+      confettiPieces.current = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+        id: i,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      }));
+      confettiGenerated.current = true;
+    }
+  }, [triageComplete]);
+
+  // Handle Done button press - navigate to Camera
+  const handleDonePress = () => {
+    logger.info('DarkroomScreen: User tapped Done button');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('MainTabs', { screen: 'Camera' });
   };
 
   // UAT-012: Callback when swipe exit animation starts (threshold crossed)
@@ -196,6 +291,39 @@ const DarkroomScreen = () => {
             <ActivityIndicator size="large" color="#FFFFFF" />
             <Text style={styles.loadingText}>Loading darkroom...</Text>
           </View>
+        </SafeAreaView>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Inline success state - shows after triage completes
+  if (triageComplete && photos.length === 0) {
+    return (
+      <GestureHandlerRootView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          {/* Confetti layer */}
+          <View style={styles.confettiContainer} pointerEvents="none">
+            {confettiPieces.current.map((piece) => (
+              <ConfettiPiece
+                key={piece.id}
+                index={piece.id}
+                color={piece.color}
+              />
+            ))}
+          </View>
+
+          {/* Success content with fade-in animation */}
+          <Animated.View style={[styles.successContent, { opacity: successFadeAnim }]}>
+            <Text style={styles.successTitle}>Photos saved!</Text>
+
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={handleDonePress}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </SafeAreaView>
       </GestureHandlerRootView>
     );
@@ -465,6 +593,40 @@ const styles = StyleSheet.create({
   journalButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // Inline success state styles
+  confettiContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  confettiPiece: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  successContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 32,
+  },
+  doneButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 24,
+  },
+  doneButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#FFFFFF',
   },
 });
