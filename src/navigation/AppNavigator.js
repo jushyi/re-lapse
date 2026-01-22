@@ -336,7 +336,7 @@ const AppNavigator = () => {
               component={DarkroomScreen}
               options={{
                 presentation: 'card',
-                animation: 'slide_from_right',
+                animation: 'slide_from_bottom',
                 gestureEnabled: false, // Disable back swipe to prevent accidental exit
               }}
             />
