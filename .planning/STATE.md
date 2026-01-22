@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17.1 of 18.2 (Darkroom Animation Refinements)
-Plan: 1 of 1 complete
-Status: Phase 17.1 complete, ready for Phase 17.2
-Last activity: 2026-01-22 - Completed 17.1-01-PLAN.md (bottom slide, chevron, inline success)
+Plan: 1 of 1 complete + FIX plan complete
+Status: Phase 17.1 complete with UAT fixes, ready for Phase 17.2
+Last activity: 2026-01-22 - Completed 17.1-01-FIX.md (3 UAT issues fixed)
 
 Progress: ████████░░ 79% (v1.5: 12/15 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 56 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 19 in v1.5)
+- Total plans completed: 57 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 20 in v1.5)
 - Average duration: 16 min
-- Total execution time: 11.8 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 3.3h v1.5)
+- Total execution time: 12.0 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 3.5h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: ████████░░ 79% (v1.5: 12/15 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.2 | 19 | 237 min |
+| v1.5 | 15-18.2 | 20 | 249 min |
 
 ## Accumulated Context
 
@@ -52,6 +52,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 17-FIX-6 | BUTTON_EXIT_DURATION 1200ms (3x swipe) | Button taps feel instant without lead-in time |
 | 17.1-01 | Inline success state instead of separate screen | Eliminates jarring navigation jump |
 | 17.1-01 | Sparkles instead of confetti | Subtle celebration effect per user feedback |
+| 17.1-01-FIX | pendingSuccess state for transition timing | Prevents empty state flash before success |
+| 17.1-01-FIX | Header-only swipe gesture | Avoids conflicts with photo triage gestures |
 
 ### Deferred Issues
 
@@ -86,5 +88,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 17.1-01-PLAN.md - Darkroom animation refinements (Phase 17.1 complete)
+Stopped at: Completed 17.1-01-FIX.md - UAT fixes for Phase 17.1 (Phase 17.1 fully complete)
 Resume file: None
