@@ -202,11 +202,12 @@ const DarkroomScreen = () => {
     }
   };
 
-  // Handle Done button press - navigate to Camera
+  // Handle Done button press - use goBack() to match chevron and header swipe animations (slide down)
+  // UAT-006: Changed from navigate() which slides right, to goBack() which respects the screen's open animation
   const handleDonePress = () => {
     logger.info('DarkroomScreen: User tapped Done button');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('MainTabs', { screen: 'Camera' });
+    navigation.goBack();
   };
 
   // UAT-012: Callback when swipe exit animation starts (threshold crossed)
