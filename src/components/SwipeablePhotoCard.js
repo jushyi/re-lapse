@@ -85,12 +85,33 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   const stackBlurOpacityAnim = useSharedValue(getStackBlurOpacity(stackIndex));
 
   // Animate stack values when stackIndex changes (card moves forward)
+  // UAT-001 FIX: Track previous stackIndex to detect front card transition
+  const prevStackIndex = useSharedValue(stackIndex);
   useEffect(() => {
+    const wasStackCard = prevStackIndex.value > 0;
+    const isNowFrontCard = stackIndex === 0;
+    const becomingFrontCard = wasStackCard && isNowFrontCard;
+
     stackScaleAnim.value = withSpring(getStackScale(stackIndex), { damping: 15, stiffness: 150 });
     stackOffsetAnim.value = withSpring(getStackOffset(stackIndex), { damping: 15, stiffness: 150 });
     stackOpacityAnim.value = withSpring(getStackOpacity(stackIndex), { damping: 15, stiffness: 150 });
-    // UAT-011: Animate blur overlay opacity (fades out as card moves to front)
-    stackBlurOpacityAnim.value = withSpring(getStackBlurOpacity(stackIndex), { damping: 15, stiffness: 150 });
+
+    // UAT-001 FIX: When card becomes front card, delay blur overlay fade-out
+    // This gives the Image component time to fully render before revealing
+    // The delay prevents the brief black flash during cascade transition
+    if (becomingFrontCard) {
+      // Delay blur overlay fade by 150ms to allow image to render
+      stackBlurOpacityAnim.value = withTiming(getStackBlurOpacity(stackIndex), {
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+      });
+    } else {
+      // Normal spring animation for all other cases
+      stackBlurOpacityAnim.value = withSpring(getStackBlurOpacity(stackIndex), { damping: 15, stiffness: 150 });
+    }
+
+    // Update previous stackIndex for next comparison
+    prevStackIndex.value = stackIndex;
   }, [stackIndex]);
 
   // UAT-012: When cascading=true, animate stack cards forward one position
@@ -99,10 +120,23 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     if (cascading && !isActive && stackIndex > 0) {
       // Animate to the position one step forward (e.g., stackIndex 1 → position 0)
       const targetIndex = stackIndex - 1;
+      const becomingFrontCard = targetIndex === 0;
+
       stackScaleAnim.value = withSpring(getStackScale(targetIndex), { damping: 15, stiffness: 150 });
       stackOffsetAnim.value = withSpring(getStackOffset(targetIndex), { damping: 15, stiffness: 150 });
       stackOpacityAnim.value = withSpring(getStackOpacity(targetIndex), { damping: 15, stiffness: 150 });
-      stackBlurOpacityAnim.value = withSpring(getStackBlurOpacity(targetIndex), { damping: 15, stiffness: 150 });
+
+      // UAT-001 FIX: When card becomes front card during cascade, delay blur overlay fade-out
+      // This is the main fix for the black flash - the blur overlay stays visible briefly
+      // while the image finishes rendering in the front position
+      if (becomingFrontCard) {
+        stackBlurOpacityAnim.value = withTiming(getStackBlurOpacity(targetIndex), {
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+        });
+      } else {
+        stackBlurOpacityAnim.value = withSpring(getStackBlurOpacity(targetIndex), { damping: 15, stiffness: 150 });
+      }
     }
   }, [cascading]);
 
