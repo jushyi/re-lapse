@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17 of 18.2 (Darkroom UX Polish)
-Plan: FIX complete (UAT issues resolved)
+Plan: FIX-2 complete (all UAT issues resolved)
 Status: Phase complete with all fixes verified
-Last activity: 2026-01-22 - Completed 17-FIX-PLAN.md (5 UAT issues fixed)
+Last activity: 2026-01-22 - Completed 17-FIX-2-PLAN.md (4 UAT issues fixed, 9 total)
 
 Progress: ████████░░ 77% (v1.5: 11/12 phases complete)
 
@@ -45,6 +45,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 17-02 | View-based icons for overlays | Cleaner look than emoji, consistent styling |
 | 17-FIX | Removed down-swipe delete gesture | Prevents accidental deletions during horizontal swipes |
 | 17-FIX | Fixed arc path formula (y = 0.4 * \|x\|) | Predictable card motion regardless of finger movement |
+| 17-FIX-2 | Stack offset -20/-40px for visible peek | Cards visibly peek from top at rest |
+| 17-FIX-2 | Animation duration 400ms | Balances visibility with responsiveness |
 
 ### Deferred Issues
 
@@ -76,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 17-FIX-PLAN.md - Fixed 5 UAT issues
+Stopped at: Completed 17-FIX-2-PLAN.md - Fixed 4 UAT issues (9 total for Phase 17)
 Resume file: None

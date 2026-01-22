@@ -1,14 +1,34 @@
 # UAT Issues: Phase 17 Darkroom UX Polish
 
 **Tested:** 2026-01-22
-**Source:** .planning/phases/17-darkroom-ux-polish/17-01-SUMMARY.md, 17-02-SUMMARY.md
+**Source:** .planning/phases/17-darkroom-ux-polish/17-01-SUMMARY.md, 17-02-SUMMARY.md, 17-FIX-SUMMARY.md
 **Tester:** User via /gsd:verify-work
 
 ## Open Issues
 
-None - all issues resolved in 17-FIX.
+None - all issues resolved.
 
 ## Resolved Issues
+
+### UAT-006: Stacked cards should peek from top at rest
+**Fixed:** 2026-01-22 in 17-FIX-2
+**Commit:** f2dbba9
+**Solution:** Increased stack offset/opacity for visible deck at rest - stackIndex 1: -20px offset, 0.96 scale, 0.85 opacity; stackIndex 2: -40px offset, 0.92 scale, 0.70 opacity.
+
+### UAT-007: Unwanted black border on photo cards
+**Fixed:** 2026-01-22 in 17-FIX-2
+**Commit:** f2dbba9
+**Solution:** Removed borderWidth and borderColor from cardContainer style.
+
+### UAT-008: Button-triggered animation too fast
+**Fixed:** 2026-01-22 in 17-FIX-2
+**Commit:** f2dbba9
+**Solution:** Increased EXIT_DURATION from 250ms to 400ms for more visible arc motion.
+
+### UAT-009: Next card appears with jump/flicker
+**Fixed:** 2026-01-22 in 17-FIX-2
+**Commit:** f2dbba9
+**Solution:** Added animated shared values (stackScaleAnim, stackOffsetAnim, stackOpacityAnim) with useEffect to smoothly animate when stackIndex changes.
 
 ### UAT-001: Fixed arc path for card swipes
 **Fixed:** 2026-01-22 in 17-FIX
