@@ -246,6 +246,7 @@ const DarkroomScreen = () => {
       {/* Swipeable Photo Card */}
       <View style={styles.photoCardContainer}>
         <SwipeablePhotoCard
+          key={currentPhoto.id}
           photo={currentPhoto}
           onSwipeLeft={handleArchiveSwipe}
           onSwipeRight={handleJournalSwipe}
