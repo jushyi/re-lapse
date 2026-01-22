@@ -472,7 +472,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     // UAT-014: Reduced border radius from 24 to 6 for subtler rounded corners
     borderRadius: 6,
-    backgroundColor: '#2C2C2E',
+    // UAT-012: Black background matches screen, prevents gray flash during cascade
+    backgroundColor: '#000000',
     overflow: 'hidden',
     // UAT-007: Black border removed per user request
     // iOS-style shadow for depth
@@ -485,9 +486,9 @@ const styles = StyleSheet.create({
   photoImage: {
     width: '100%',
     aspectRatio: 4 / 5,
-    // UAT-010: Background color matches card container to prevent gray flash
+    // UAT-010, UAT-012: Black background matches screen, prevents gray flash
     // during cascade animation if image needs brief moment to render
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#000000',
   },
   // UAT-011, UAT-013: Stack blur overlay for depth-of-field effect on background cards
   // z-index ensures overlay renders above the image
