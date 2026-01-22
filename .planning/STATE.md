@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18 of 18.3 (Reaction Notification Debouncing)
-Plan: 2/2 + FIX complete
-Status: Phase complete (with fixes)
-Last activity: 2026-01-22 - Completed 18-FIX-PLAN.md (UAT issue fixes)
+Phase: 18.1 of 18.3 (Batched Darkroom Triage with Undo)
+Plan: 1/2 complete
+Status: In progress
+Last activity: 2026-01-22 - Completed 18.1-01-PLAN.md (undo stack state and UI)
 
-Progress: █████████░ 88% (v1.5: 15/19 phases complete)
+Progress: █████████░ 89% (v1.5: 16/19 phases in progress)
 
 ## Performance Metrics
 
@@ -98,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 18-FIX-PLAN.md - Fixed UAT issues for Phase 18
+Stopped at: Completed 18.1-01-PLAN.md - Undo stack state and UI
 Resume file: None
