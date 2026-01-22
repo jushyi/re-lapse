@@ -36,8 +36,8 @@ async function revealUserPhotos(userId, now) {
     await batch.commit();
   }
 
-  // Calculate next reveal time (0-15 minutes from now)
-  const randomMinutes = Math.floor(Math.random() * 16); // 0-15 minutes
+  // Calculate next reveal time (0-5 minutes from now)
+  const randomMinutes = Math.floor(Math.random() * 6); // 0-5 minutes
   const nextRevealMs = now.toMillis() + (randomMinutes * 60 * 1000);
   const nextRevealAt = admin.firestore.Timestamp.fromMillis(nextRevealMs);
 
