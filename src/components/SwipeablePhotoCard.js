@@ -373,10 +373,14 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       ]}
     >
       {/* Photo Image */}
+      {/* UAT-010: Added fadeDuration={0} to prevent gray flash during cascade animation */}
+      {/* The stack cards already have images loaded, but Android's default Image fade-in */}
+      {/* causes a brief gray flash when the card moves to front position. */}
       <Image
         source={{ uri: photo.imageURL }}
         style={styles.photoImage}
         resizeMode="cover"
+        fadeDuration={0}
         onError={(error) =>
           logger.error('SwipeablePhotoCard: Image load error', {
             photoId: photo.id,
@@ -458,6 +462,9 @@ const styles = StyleSheet.create({
   photoImage: {
     width: '100%',
     aspectRatio: 4 / 5,
+    // UAT-010: Background color matches card container to prevent gray flash
+    // during cascade animation if image needs brief moment to render
+    backgroundColor: '#2C2C2E',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
