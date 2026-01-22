@@ -1,4 +1,4 @@
-import React, { useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,8 +26,8 @@ const HORIZONTAL_THRESHOLD = 100;
 // Delete overlay threshold (used for button-triggered animation overlay only)
 const DELETE_OVERLAY_THRESHOLD = 150;
 
-// Exit animation configuration
-const EXIT_DURATION = 250;
+// Exit animation configuration (UAT-008: increased from 250ms for more visible arc motion)
+const EXIT_DURATION = 400;
 
 /**
  * SwipeablePhotoCard - Flick-style swipeable card for photo triage
@@ -56,10 +56,29 @@ const EXIT_DURATION = 250;
 const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwipeDown, stackIndex = 0, isActive = true }, ref) => {
   const [thresholdTriggered, setThresholdTriggered] = useState(false);
 
-  // Animated values
+  // Animated values for gesture/front card
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
+
+  // Helper functions for stack styling (UAT-006, UAT-009)
+  // Cards peek from TOP (negative Y = above front card)
+  const getStackScale = (idx) => idx === 0 ? 1 : idx === 1 ? 0.96 : 0.92;
+  const getStackOffset = (idx) => idx === 0 ? 0 : idx === 1 ? -20 : -40; // Negative = above
+  const getStackOpacity = (idx) => idx === 0 ? 1 : idx === 1 ? 0.85 : 0.7;
+
+  // Animated values for smooth stack cascade animation (UAT-009)
+  // These animate when stackIndex changes (card moves forward in stack)
+  const stackScaleAnim = useSharedValue(getStackScale(stackIndex));
+  const stackOffsetAnim = useSharedValue(getStackOffset(stackIndex));
+  const stackOpacityAnim = useSharedValue(getStackOpacity(stackIndex));
+
+  // Animate stack values when stackIndex changes (card moves forward)
+  useEffect(() => {
+    stackScaleAnim.value = withSpring(getStackScale(stackIndex), { damping: 15, stiffness: 150 });
+    stackOffsetAnim.value = withSpring(getStackOffset(stackIndex), { damping: 15, stiffness: 150 });
+    stackOpacityAnim.value = withSpring(getStackOpacity(stackIndex), { damping: 15, stiffness: 150 });
+  }, [stackIndex]);
 
   // Track if action is in progress to prevent multiple triggers
   const actionInProgress = useSharedValue(false);
@@ -261,16 +280,9 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       }
     });
 
-  // Stack styling configuration (UAT-005)
-  // stackIndex 0 (front): Full size, full opacity
-  // stackIndex 1: Scale 0.95, offset up by -10px, opacity 0.7
-  // stackIndex 2: Scale 0.90, offset up by -20px, opacity 0.5
-  const stackScale = stackIndex === 0 ? 1 : stackIndex === 1 ? 0.95 : 0.9;
-  const stackOffset = stackIndex === 0 ? 0 : stackIndex === 1 ? -10 : -20;
-  const stackOpacity = stackIndex === 0 ? 1 : stackIndex === 1 ? 0.7 : 0.5;
-
-  // Animated card style with FIXED arc motion, rotation, and stack transforms (UAT-001, UAT-005)
+  // Animated card style with FIXED arc motion, rotation, and stack transforms (UAT-001, UAT-005, UAT-006, UAT-009)
   // Card follows a mathematically consistent arc path regardless of finger movement
+  // Stack cards use animated shared values that spring-animate when stackIndex changes
   const cardStyle = useAnimatedStyle(() => {
     // Fixed arc formula: y = 0.4 * |x| creates consistent downward curve
     // regardless of vertical finger position during gesture
@@ -280,7 +292,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     const rotation = isActive ? translateX.value / 15 : 0;
 
     // For front card: apply gesture transforms
-    // For stack cards: apply fixed stack styling with spring animation on mount
+    // For stack cards: use animated shared values (these spring-animate via useEffect on stackIndex change)
     if (isActive) {
       return {
         transform: [
@@ -292,15 +304,18 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         opacity: cardOpacity.value,
       };
     } else {
-      // Stack cards use withSpring for cascade animation when they move forward
+      // Stack cards animate smoothly when stackIndex changes (UAT-009)
+      // stackOffsetAnim animates from -40 → -20 → 0 (slides DOWN to front position)
+      // stackScaleAnim animates from 0.92 → 0.96 → 1.0 (grows to full size)
+      // stackOpacityAnim animates from 0.7 → 0.85 → 1.0 (brightens)
       return {
         transform: [
           { translateX: 0 },
-          { translateY: withSpring(stackOffset, { damping: 15, stiffness: 150 }) },
+          { translateY: stackOffsetAnim.value },
           { rotate: '0deg' },
-          { scale: withSpring(stackScale, { damping: 15, stiffness: 150 }) },
+          { scale: stackScaleAnim.value },
         ],
-        opacity: withSpring(stackOpacity, { damping: 15, stiffness: 150 }),
+        opacity: stackOpacityAnim.value,
       };
     }
   });
@@ -432,8 +447,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#2C2C2E',
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#000000',
+    // UAT-007: Black border removed per user request
     // iOS-style shadow for depth
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
