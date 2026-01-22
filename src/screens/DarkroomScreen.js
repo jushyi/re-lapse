@@ -388,6 +388,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 16,
     marginBottom: 16,
+    // UAT-012: Black background prevents gray flash during cascade animation
+    backgroundColor: '#000000',
   },
   triageButtonBar: {
     flexDirection: 'row',
