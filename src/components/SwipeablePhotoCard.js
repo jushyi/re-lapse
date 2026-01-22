@@ -66,9 +66,10 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   const getStackScale = (idx) => idx === 0 ? 1 : idx === 1 ? 0.96 : 0.92;
   const getStackOffset = (idx) => idx === 0 ? 0 : idx === 1 ? -20 : -40; // Negative = above
   const getStackOpacity = (idx) => idx === 0 ? 1 : idx === 1 ? 0.85 : 0.7;
-  // UAT-011: Blur overlay opacity for depth-of-field effect on stack cards
+  // UAT-011, UAT-013: Blur overlay opacity for depth-of-field effect on stack cards
   // Front card (0) = no overlay, stack cards have increasing blur intensity
-  const getStackBlurOpacity = (idx) => idx === 0 ? 0 : idx === 1 ? 0.15 : 0.3;
+  // Increased values for more visible depth effect (0.15→0.25, 0.30→0.45)
+  const getStackBlurOpacity = (idx) => idx === 0 ? 0 : idx === 1 ? 0.25 : 0.45;
 
   // Animated values for smooth stack cascade animation (UAT-009, UAT-011)
   // These animate when stackIndex changes (card moves forward in stack)
@@ -487,11 +488,13 @@ const styles = StyleSheet.create({
     // during cascade animation if image needs brief moment to render
     backgroundColor: '#2C2C2E',
   },
-  // UAT-011: Stack blur overlay for depth-of-field effect on background cards
+  // UAT-011, UAT-013: Stack blur overlay for depth-of-field effect on background cards
+  // z-index ensures overlay renders above the image
+  // borderRadius removed (container already has overflow:hidden)
   stackBlurOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000000',
-    borderRadius: 24,
+    zIndex: 1,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
