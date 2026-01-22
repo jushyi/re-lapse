@@ -214,7 +214,7 @@ const DarkroomScreen = () => {
               }}
               style={styles.backButton}
             >
-              <Text style={styles.backButtonText}>‹</Text>
+              <View style={styles.downChevron} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>Darkroom</Text>
@@ -250,7 +250,7 @@ const DarkroomScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Text style={styles.backButtonText}>‹</Text>
+          <View style={styles.downChevron} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Darkroom</Text>
@@ -373,10 +373,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 20,
   },
-  backButtonText: {
-    fontSize: 32,
-    fontWeight: '300',
-    color: '#FFFFFF',
+  downChevron: {
+    width: 12,
+    height: 12,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
     marginTop: -4,
   },
   headerCenter: {
