@@ -61,23 +61,30 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   const translateY = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
 
-  // Helper functions for stack styling (UAT-006, UAT-009)
+  // Helper functions for stack styling (UAT-006, UAT-009, UAT-011)
   // Cards peek from TOP (negative Y = above front card)
   const getStackScale = (idx) => idx === 0 ? 1 : idx === 1 ? 0.96 : 0.92;
   const getStackOffset = (idx) => idx === 0 ? 0 : idx === 1 ? -20 : -40; // Negative = above
   const getStackOpacity = (idx) => idx === 0 ? 1 : idx === 1 ? 0.85 : 0.7;
+  // UAT-011: Blur overlay opacity for depth-of-field effect on stack cards
+  // Front card (0) = no overlay, stack cards have increasing blur intensity
+  const getStackBlurOpacity = (idx) => idx === 0 ? 0 : idx === 1 ? 0.15 : 0.3;
 
-  // Animated values for smooth stack cascade animation (UAT-009)
+  // Animated values for smooth stack cascade animation (UAT-009, UAT-011)
   // These animate when stackIndex changes (card moves forward in stack)
   const stackScaleAnim = useSharedValue(getStackScale(stackIndex));
   const stackOffsetAnim = useSharedValue(getStackOffset(stackIndex));
   const stackOpacityAnim = useSharedValue(getStackOpacity(stackIndex));
+  // UAT-011: Animated blur overlay opacity (fades out as card moves to front)
+  const stackBlurOpacityAnim = useSharedValue(getStackBlurOpacity(stackIndex));
 
   // Animate stack values when stackIndex changes (card moves forward)
   useEffect(() => {
     stackScaleAnim.value = withSpring(getStackScale(stackIndex), { damping: 15, stiffness: 150 });
     stackOffsetAnim.value = withSpring(getStackOffset(stackIndex), { damping: 15, stiffness: 150 });
     stackOpacityAnim.value = withSpring(getStackOpacity(stackIndex), { damping: 15, stiffness: 150 });
+    // UAT-011: Animate blur overlay opacity (fades out as card moves to front)
+    stackBlurOpacityAnim.value = withSpring(getStackBlurOpacity(stackIndex), { damping: 15, stiffness: 150 });
   }, [stackIndex]);
 
   // Track if action is in progress to prevent multiple triggers
@@ -353,6 +360,14 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     };
   });
 
+  // UAT-011: Stack blur overlay - creates depth-of-field effect on background cards
+  // Semi-transparent dark overlay that fades out as card moves to front position
+  const stackBlurOverlayStyle = useAnimatedStyle(() => {
+    return {
+      opacity: stackBlurOpacityAnim.value,
+    };
+  });
+
   if (!photo || !photo.imageURL) {
     logger.warn('SwipeablePhotoCard: Missing photo or imageURL', { photo });
     return null;
@@ -393,6 +408,12 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
           })
         }
       />
+
+      {/* UAT-011: Stack blur overlay - depth-of-field effect on background cards */}
+      {/* Semi-transparent dark overlay that fades out during cascade animation */}
+      {!isActive && (
+        <Animated.View style={[styles.stackBlurOverlay, stackBlurOverlayStyle]} />
+      )}
 
       {/* Archive Overlay (Left swipe) - only show on active card */}
       {isActive && (
@@ -465,6 +486,12 @@ const styles = StyleSheet.create({
     // UAT-010: Background color matches card container to prevent gray flash
     // during cascade animation if image needs brief moment to render
     backgroundColor: '#2C2C2E',
+  },
+  // UAT-011: Stack blur overlay for depth-of-field effect on background cards
+  stackBlurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+    borderRadius: 24,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
