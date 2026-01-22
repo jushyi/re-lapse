@@ -44,4 +44,5 @@ yarn-error.*
 # claude files
 /.claude/
 # Claude Code temp files
-tmpclaude-*-cwd
+tmpclaude-*
+nul
