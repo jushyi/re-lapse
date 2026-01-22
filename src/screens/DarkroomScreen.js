@@ -268,7 +268,7 @@ const DarkroomScreen = () => {
 
   if (loading) {
     return (
-      <GestureHandlerRootView style={styles.container}>
+      <GestureHandlerRootView style={styles.gestureRootView}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FFFFFF" />
@@ -284,7 +284,7 @@ const DarkroomScreen = () => {
   // UAT-002: Polished UI - emoji text, bottom button with checkmark, fade-in animation
   if ((triageComplete || pendingSuccess) && photos.length === 0) {
     return (
-      <GestureHandlerRootView style={styles.container}>
+      <GestureHandlerRootView style={styles.gestureRootView}>
         <ReAnimated.View style={[styles.successContainer, screenAnimatedStyle]}>
           <SafeAreaView style={styles.successContainer} edges={['top', 'bottom']}>
             {/* UAT-003/UAT-004: Header with swipe-down-to-close gesture (moves entire screen) */}
@@ -331,7 +331,7 @@ const DarkroomScreen = () => {
 
   if (photos.length === 0) {
     return (
-      <GestureHandlerRootView style={styles.container}>
+      <GestureHandlerRootView style={styles.gestureRootView}>
         <ReAnimated.View style={[styles.container, screenAnimatedStyle]}>
           <SafeAreaView style={styles.container}>
             {/* UAT-003/UAT-004: Header with swipe-down-to-close gesture (moves entire screen) */}
@@ -371,7 +371,7 @@ const DarkroomScreen = () => {
   logger.debug('Current photo', { photoId: currentPhoto?.id, hasImageURL: !!currentPhoto?.imageURL });
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={styles.gestureRootView}>
       <ReAnimated.View style={[styles.container, screenAnimatedStyle]}>
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         {/* UAT-003/UAT-004: Header with swipe-down-to-close gesture (moves entire screen) */}
@@ -459,6 +459,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  // UAT-005: Transparent background for gesture handler so no second background shows during swipe
+  gestureRootView: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
