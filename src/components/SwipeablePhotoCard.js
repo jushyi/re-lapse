@@ -49,9 +49,11 @@ const EXIT_DURATION = 250;
  * @param {function} onSwipeLeft - Callback when Archive action triggered (left swipe or button)
  * @param {function} onSwipeRight - Callback when Journal action triggered (right swipe or button)
  * @param {function} onSwipeDown - Callback when Delete action triggered (button only)
+ * @param {number} stackIndex - Position in the stack (0=front, 1=behind, 2=furthest back)
+ * @param {boolean} isActive - Whether this card is swipeable (only front card)
  * @param {ref} ref - Ref for imperative methods (triggerArchive, triggerJournal, triggerDelete)
  */
-const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }, ref) => {
+const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwipeDown, stackIndex = 0, isActive = true }, ref) => {
   const [thresholdTriggered, setThresholdTriggered] = useState(false);
 
   // Animated values
@@ -259,25 +261,48 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       }
     });
 
-  // Animated card style with FIXED arc motion and rotation (UAT-001)
+  // Stack styling configuration (UAT-005)
+  // stackIndex 0 (front): Full size, full opacity
+  // stackIndex 1: Scale 0.95, offset up by -10px, opacity 0.7
+  // stackIndex 2: Scale 0.90, offset up by -20px, opacity 0.5
+  const stackScale = stackIndex === 0 ? 1 : stackIndex === 1 ? 0.95 : 0.9;
+  const stackOffset = stackIndex === 0 ? 0 : stackIndex === 1 ? -10 : -20;
+  const stackOpacity = stackIndex === 0 ? 1 : stackIndex === 1 ? 0.7 : 0.5;
+
+  // Animated card style with FIXED arc motion, rotation, and stack transforms (UAT-001, UAT-005)
   // Card follows a mathematically consistent arc path regardless of finger movement
   const cardStyle = useAnimatedStyle(() => {
     // Fixed arc formula: y = 0.4 * |x| creates consistent downward curve
     // regardless of vertical finger position during gesture
     const arcY = Math.abs(translateX.value) * 0.4;
 
-    // Rotation based on horizontal movement (degrees)
-    const rotation = translateX.value / 15;
+    // Rotation based on horizontal movement (degrees) - only for front card
+    const rotation = isActive ? translateX.value / 15 : 0;
 
-    return {
-      transform: [
-        { translateX: translateX.value },
-        // translateY is 0 during gesture (fixed arc from arcY), only used in exit animations
-        { translateY: translateY.value + arcY },
-        { rotate: `${rotation}deg` },
-      ],
-      opacity: cardOpacity.value,
-    };
+    // For front card: apply gesture transforms
+    // For stack cards: apply fixed stack styling with spring animation on mount
+    if (isActive) {
+      return {
+        transform: [
+          { translateX: translateX.value },
+          { translateY: translateY.value + arcY },
+          { rotate: `${rotation}deg` },
+          { scale: 1 },
+        ],
+        opacity: cardOpacity.value,
+      };
+    } else {
+      // Stack cards use withSpring for cascade animation when they move forward
+      return {
+        transform: [
+          { translateX: 0 },
+          { translateY: withSpring(stackOffset, { damping: 15, stiffness: 150 }) },
+          { rotate: '0deg' },
+          { scale: withSpring(stackScale, { damping: 15, stiffness: 150 }) },
+        ],
+        opacity: withSpring(stackOpacity, { damping: 15, stiffness: 150 }),
+      };
+    }
   });
 
   // Archive overlay (left swipe) - gray with box icon
@@ -318,28 +343,40 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     return null;
   }
 
-  return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.cardContainer, cardStyle]}>
-        {/* Photo Image */}
-        <Image
-          source={{ uri: photo.imageURL }}
-          style={styles.photoImage}
-          resizeMode="cover"
-          onError={(error) =>
-            logger.error('SwipeablePhotoCard: Image load error', {
-              photoId: photo.id,
-              error: error.nativeEvent.error,
-            })
-          }
-          onLoad={() =>
-            logger.debug('SwipeablePhotoCard: Image loaded successfully', {
-              photoId: photo.id,
-            })
-          }
-        />
+  // Stack z-index: front card has highest z (3 - stackIndex)
+  const zIndex = 3 - stackIndex;
 
-        {/* Archive Overlay (Left swipe) */}
+  // Card content (shared between active and stack cards)
+  const cardContent = (
+    <Animated.View
+      style={[
+        styles.cardContainer,
+        cardStyle,
+        { zIndex },
+        // Stack cards have no pointer events (UAT-005)
+        !isActive && { pointerEvents: 'none' },
+      ]}
+    >
+      {/* Photo Image */}
+      <Image
+        source={{ uri: photo.imageURL }}
+        style={styles.photoImage}
+        resizeMode="cover"
+        onError={(error) =>
+          logger.error('SwipeablePhotoCard: Image load error', {
+            photoId: photo.id,
+            error: error.nativeEvent.error,
+          })
+        }
+        onLoad={() =>
+          logger.debug('SwipeablePhotoCard: Image loaded successfully', {
+            photoId: photo.id,
+          })
+        }
+      />
+
+      {/* Archive Overlay (Left swipe) - only show on active card */}
+      {isActive && (
         <Animated.View style={[styles.overlay, styles.archiveOverlay, archiveOverlayStyle]}>
           <View style={styles.iconContainer}>
             <View style={styles.boxIcon}>
@@ -348,8 +385,10 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
           </View>
           <Text style={styles.overlayText}>Archive</Text>
         </Animated.View>
+      )}
 
-        {/* Journal Overlay (Right swipe) */}
+      {/* Journal Overlay (Right swipe) - only show on active card */}
+      {isActive && (
         <Animated.View style={[styles.overlay, styles.journalOverlay, journalOverlayStyle]}>
           <View style={styles.iconContainer}>
             <View style={styles.checkmarkCircle}>
@@ -358,8 +397,10 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
           </View>
           <Text style={styles.overlayText}>Journal</Text>
         </Animated.View>
+      )}
 
-        {/* Delete Overlay (Down swipe) */}
+      {/* Delete Overlay (button-triggered) - only show on active card */}
+      {isActive && (
         <Animated.View style={[styles.overlay, styles.deleteOverlay, deleteOverlayStyle]}>
           <View style={styles.iconContainer}>
             <View style={styles.xIcon}>
@@ -369,13 +410,23 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
           </View>
           <Text style={styles.overlayText}>Delete</Text>
         </Animated.View>
-      </Animated.View>
-    </GestureDetector>
+      )}
+    </Animated.View>
   );
-};
+
+  // Only wrap in GestureDetector for active (swipeable) card
+  if (isActive) {
+    return <GestureDetector gesture={panGesture}>{cardContent}</GestureDetector>;
+  }
+
+  // Stack cards (not swipeable) - render directly
+  return cardContent;
+});
 
 const styles = StyleSheet.create({
   cardContainer: {
+    // Absolute positioning for stacking cards on top of each other (UAT-005)
+    position: 'absolute',
     width: SCREEN_WIDTH * 0.92,
     alignSelf: 'center',
     borderRadius: 24,
@@ -475,8 +526,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-});
-
 });
 
 export default SwipeablePhotoCard;

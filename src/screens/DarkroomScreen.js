@@ -244,16 +244,27 @@ const DarkroomScreen = () => {
         <View style={styles.headerPlaceholder} />
       </View>
 
-      {/* Swipeable Photo Card */}
+      {/* Stacked Photo Cards (UAT-005) - render up to 3 cards */}
       <View style={styles.photoCardContainer}>
-        <SwipeablePhotoCard
-          ref={cardRef}
-          key={currentPhoto.id}
-          photo={currentPhoto}
-          onSwipeLeft={handleArchiveSwipe}
-          onSwipeRight={handleJournalSwipe}
-          onSwipeDown={handleDeleteSwipe}
-        />
+        {/* Render stack in reverse order so front card renders last (on top) */}
+        {photos.slice(0, 3).reverse().map((photo, reverseIndex) => {
+          // Convert reverse index back to stack index (0=front, 1=behind, 2=furthest)
+          const stackIndex = 2 - reverseIndex - (3 - Math.min(photos.length, 3));
+          const isActive = stackIndex === 0;
+
+          return (
+            <SwipeablePhotoCard
+              ref={isActive ? cardRef : undefined}
+              key={photo.id}
+              photo={photo}
+              stackIndex={stackIndex}
+              isActive={isActive}
+              onSwipeLeft={isActive ? handleArchiveSwipe : undefined}
+              onSwipeRight={isActive ? handleJournalSwipe : undefined}
+              onSwipeDown={isActive ? handleDeleteSwipe : undefined}
+            />
+          );
+        })}
       </View>
 
       {/* Triage Button Bar */}
