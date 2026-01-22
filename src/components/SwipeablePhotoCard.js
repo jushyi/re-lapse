@@ -23,7 +23,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Thresholds for action triggers
 const HORIZONTAL_THRESHOLD = 100;
-const VERTICAL_THRESHOLD = 150;
+// VERTICAL_THRESHOLD removed - down-swipe delete disabled (UAT-002)
 
 // Exit animation configuration
 const EXIT_DURATION = 250;
@@ -37,16 +37,18 @@ const EXIT_DURATION = 250;
  * - On-card overlays: Color overlays with icons fade in during swipe
  * - Three-stage haptic feedback: threshold, release, completion
  * - Spring-back animation when threshold not met
+ * - Imperative methods for button-triggered animations
  *
  * Swipe directions:
  * - Left swipe → Archive (gray overlay, box icon)
  * - Right swipe → Journal (green overlay, checkmark icon)
- * - Down swipe → Delete (red overlay, X icon)
+ * - Delete via button only (down-swipe disabled to prevent accidental deletions)
  *
  * @param {object} photo - Photo object to display
- * @param {function} onSwipeLeft - Callback when Archive action triggered (left swipe)
- * @param {function} onSwipeRight - Callback when Journal action triggered (right swipe)
- * @param {function} onSwipeDown - Callback when Delete action triggered (down swipe)
+ * @param {function} onSwipeLeft - Callback when Archive action triggered (left swipe or button)
+ * @param {function} onSwipeRight - Callback when Journal action triggered (right swipe or button)
+ * @param {function} onSwipeDown - Callback when Delete action triggered (button only)
+ * @param {ref} ref - Ref for imperative methods (triggerArchive, triggerJournal, triggerDelete)
  */
 const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }) => {
   const [thresholdTriggered, setThresholdTriggered] = useState(false);
@@ -133,13 +135,13 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }) =
     .onUpdate((event) => {
       'worklet';
       translateX.value = startX.value + event.translationX;
+      // Allow natural vertical movement but don't track for delete threshold
       translateY.value = startY.value + event.translationY;
 
-      // Check if threshold is reached
+      // Check if horizontal threshold is reached (no vertical threshold for delete)
       const absX = Math.abs(translateX.value);
-      const absY = translateY.value;
 
-      if (absX > HORIZONTAL_THRESHOLD || absY > VERTICAL_THRESHOLD) {
+      if (absX > HORIZONTAL_THRESHOLD) {
         runOnJS(markThresholdTriggered)();
       }
     })
@@ -148,14 +150,13 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }) =
       if (actionInProgress.value) return;
 
       const velocityX = event.velocityX;
-      const velocityY = event.velocityY;
 
-      // Determine action based on position and velocity
+      // Determine action based on horizontal position and velocity only
+      // Down-swipe delete gesture REMOVED to prevent accidental deletions (UAT-002)
       const isLeftSwipe = translateX.value < -HORIZONTAL_THRESHOLD || velocityX < -500;
       const isRightSwipe = translateX.value > HORIZONTAL_THRESHOLD || velocityX > 500;
-      const isDownSwipe = translateY.value > VERTICAL_THRESHOLD || velocityY > 500;
 
-      if (isLeftSwipe && !isDownSwipe) {
+      if (isLeftSwipe) {
         // Archive (left swipe) - arc to bottom-left
         actionInProgress.value = true;
         translateX.value = withTiming(-SCREEN_WIDTH * 1.5, {
@@ -170,7 +171,7 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }) =
           'worklet';
           runOnJS(handleArchive)();
         });
-      } else if (isRightSwipe && !isDownSwipe) {
+      } else if (isRightSwipe) {
         // Journal (right swipe) - arc to bottom-right
         actionInProgress.value = true;
         translateX.value = withTiming(SCREEN_WIDTH * 1.5, {
@@ -184,17 +185,6 @@ const SwipeablePhotoCard = ({ photo, onSwipeLeft, onSwipeRight, onSwipeDown }) =
         cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
           'worklet';
           runOnJS(handleJournal)();
-        });
-      } else if (isDownSwipe) {
-        // Delete (down swipe) - drop straight down
-        actionInProgress.value = true;
-        translateY.value = withTiming(SCREEN_HEIGHT, {
-          duration: EXIT_DURATION,
-          easing: Easing.out(Easing.cubic),
-        });
-        cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
-          'worklet';
-          runOnJS(handleDelete)();
         });
       } else {
         // Spring back to center
