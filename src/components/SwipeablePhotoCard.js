@@ -155,6 +155,8 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   }, [photo?.id, onSwipeDown, triggerWarningHaptic, triggerHeavyHaptic]);
 
   // Imperative methods for button-triggered animations (UAT-003)
+  // UAT-012: Removed opacity fade - card stays opaque while flying off screen
+  // This prevents blocking the view of cards behind during exit animation
   useImperativeHandle(ref, () => ({
     // Trigger archive animation (same as left swipe)
     triggerArchive: () => {
@@ -162,17 +164,17 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       logger.info('SwipeablePhotoCard: triggerArchive called', { photoId: photo?.id });
       actionInProgress.value = true;
       // Animate to archive position (arc to bottom-left)
+      // Card stays opaque - flies off screen without fading
       translateX.value = withTiming(-SCREEN_WIDTH * 1.5, {
         duration: EXIT_DURATION,
         easing: Easing.out(Easing.cubic),
+      }, () => {
+        'worklet';
+        runOnJS(handleArchive)();
       });
       translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
         duration: EXIT_DURATION,
         easing: Easing.out(Easing.cubic),
-      });
-      cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
-        'worklet';
-        runOnJS(handleArchive)();
       });
     },
     // Trigger journal animation (same as right swipe)
@@ -181,17 +183,17 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       logger.info('SwipeablePhotoCard: triggerJournal called', { photoId: photo?.id });
       actionInProgress.value = true;
       // Animate to journal position (arc to bottom-right)
+      // Card stays opaque - flies off screen without fading
       translateX.value = withTiming(SCREEN_WIDTH * 1.5, {
         duration: EXIT_DURATION,
         easing: Easing.out(Easing.cubic),
+      }, () => {
+        'worklet';
+        runOnJS(handleJournal)();
       });
       translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
         duration: EXIT_DURATION,
         easing: Easing.out(Easing.cubic),
-      });
-      cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
-        'worklet';
-        runOnJS(handleJournal)();
       });
     },
     // Trigger delete animation (drop straight down)
@@ -200,16 +202,16 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       logger.info('SwipeablePhotoCard: triggerDelete called', { photoId: photo?.id });
       actionInProgress.value = true;
       // Animate to delete position (drop down)
+      // Card stays opaque - flies off screen without fading
       translateY.value = withTiming(SCREEN_HEIGHT, {
         duration: EXIT_DURATION,
         easing: Easing.out(Easing.cubic),
-      });
-      cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
+      }, () => {
         'worklet';
         runOnJS(handleDelete)();
       });
     },
-  }), [photo?.id, actionInProgress, translateX, translateY, cardOpacity, handleArchive, handleJournal, handleDelete]);
+  }), [photo?.id, actionInProgress, translateX, translateY, handleArchive, handleJournal, handleDelete]);
 
   // Pan gesture using new Gesture API
   const panGesture = Gesture.Pan()
@@ -246,33 +248,33 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
 
       if (isLeftSwipe) {
         // Archive (left swipe) - arc to bottom-left
+        // UAT-012: Card stays opaque - flies off screen without fading
         actionInProgress.value = true;
         translateX.value = withTiming(-SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
+        }, () => {
+          'worklet';
+          runOnJS(handleArchive)();
         });
         translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
         });
-        cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
-          'worklet';
-          runOnJS(handleArchive)();
-        });
       } else if (isRightSwipe) {
         // Journal (right swipe) - arc to bottom-right
+        // UAT-012: Card stays opaque - flies off screen without fading
         actionInProgress.value = true;
         translateX.value = withTiming(SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
+        }, () => {
+          'worklet';
+          runOnJS(handleJournal)();
         });
         translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
-        });
-        cardOpacity.value = withTiming(0, { duration: EXIT_DURATION }, () => {
-          'worklet';
-          runOnJS(handleJournal)();
         });
       } else {
         // Spring back to center
