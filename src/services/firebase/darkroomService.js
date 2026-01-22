@@ -225,12 +225,12 @@ export const ensureDarkroomInitialized = async (userId) => {
 };
 
 /**
- * Calculate random reveal time (0-15 minutes from now)
+ * Calculate random reveal time (0-5 minutes from now)
  * @returns {Timestamp} - Next reveal timestamp
  */
 const calculateNextRevealTime = () => {
   const now = new Date();
-  const randomMinutes = Math.random() * 15; // Random between 0-15 minutes
+  const randomMinutes = Math.random() * 5; // Random between 0-5 minutes
   const revealTime = new Date(now.getTime() + randomMinutes * 60 * 1000);
   return Timestamp.fromDate(revealTime);
 };
