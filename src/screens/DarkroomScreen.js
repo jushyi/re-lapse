@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
-  Easing,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,60 +21,70 @@ import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Inline success confetti configuration (fewer pieces than SuccessScreen)
-const CONFETTI_COUNT = 15;
-const CONFETTI_COLORS = ['#FF3B30', '#34C759', '#007AFF', '#FFCC00'];
-const ANIMATION_DURATION = 2000;
-const MAX_STAGGER_DELAY = 500;
+// Inline success sparkle configuration (subtle twinkling effect)
+const SPARKLE_COUNT = 8;
 
-const ConfettiPiece = ({ index, color }) => {
-  const translateY = useRef(new Animated.Value(-50)).current;
-  const translateX = useRef(new Animated.Value(Math.random() * SCREEN_WIDTH)).current;
-  const rotation = useRef(new Animated.Value(0)).current;
+const SparkleParticle = ({ index }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  // Random position within center area
+  const left = useRef(SCREEN_WIDTH * 0.2 + Math.random() * SCREEN_WIDTH * 0.6).current;
+  const top = useRef(SCREEN_HEIGHT * 0.25 + Math.random() * SCREEN_HEIGHT * 0.3).current;
 
   useEffect(() => {
-    const staggerDelay = Math.random() * MAX_STAGGER_DELAY;
+    const delay = index * 150; // Stagger sparkle appearances
 
-    // Animate Y position (fall down) and rotation together
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: SCREEN_HEIGHT + 50,
-        duration: ANIMATION_DURATION,
-        delay: staggerDelay,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotation, {
-        toValue: 360,
-        duration: ANIMATION_DURATION,
-        delay: staggerDelay,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Twinkle animation: fade in, pulse, fade out, repeat
+    const twinkle = () => {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.delay(200),
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0.3,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 0.6,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.delay(300),
+      ]).start(() => twinkle());
+    };
+
+    const timer = setTimeout(twinkle, delay);
+    return () => clearTimeout(timer);
   }, []);
 
-  const animatedStyle = {
-    transform: [
-      { translateX },
-      { translateY },
-      {
-        rotate: rotation.interpolate({
-          inputRange: [0, 360],
-          outputRange: ['0deg', '360deg'],
-        }),
-      },
-    ],
-  };
-
   return (
-    <Animated.View
+    <Animated.Text
       style={[
-        styles.confettiPiece,
-        { backgroundColor: color },
-        animatedStyle,
+        styles.sparkleParticle,
+        {
+          left,
+          top,
+          opacity,
+          transform: [{ scale }],
+        },
       ]}
-    />
+    >
+      ✨
+    </Animated.Text>
   );
 };
 
@@ -87,9 +96,6 @@ const DarkroomScreen = () => {
   const [cascading, setCascading] = useState(false); // UAT-012: Track when cards are cascading
   const [triageComplete, setTriageComplete] = useState(false); // Track triage completion for inline success
   const cardRef = useRef(null);
-  const successFadeAnim = useRef(new Animated.Value(0)).current;
-  const confettiGenerated = useRef(false);
-  const confettiPieces = useRef([]);
 
   // Load developing photos when screen comes into focus
   useFocusEffect(
@@ -206,12 +212,6 @@ const DarkroomScreen = () => {
           setTriageComplete(true);
           // Trigger success haptic
           successNotification();
-          // Fade in the success state
-          Animated.timing(successFadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }).start();
           logger.info('DarkroomScreen: Inline success state shown');
         }, 300);
       }
@@ -219,17 +219,6 @@ const DarkroomScreen = () => {
       logger.error('Error triaging photo', error);
     }
   };
-
-  // Generate confetti pieces when triage completes
-  useEffect(() => {
-    if (triageComplete && !confettiGenerated.current) {
-      confettiPieces.current = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
-        id: i,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-      }));
-      confettiGenerated.current = true;
-    }
-  }, [triageComplete]);
 
   // Handle Done button press - navigate to Camera
   const handleDonePress = () => {
@@ -296,25 +285,39 @@ const DarkroomScreen = () => {
     );
   }
 
-  // Inline success state - shows after triage completes
+  // Inline success state - shows after triage completes (same structure as empty state)
   if (triageComplete && photos.length === 0) {
     return (
       <GestureHandlerRootView style={styles.container}>
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-          {/* Confetti layer */}
-          <View style={styles.confettiContainer} pointerEvents="none">
-            {confettiPieces.current.map((piece) => (
-              <ConfettiPiece
-                key={piece.id}
-                index={piece.id}
-                color={piece.color}
-              />
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => {
+                logger.info('DarkroomScreen: User tapped back button (success state)');
+                navigation.goBack();
+              }}
+              style={styles.backButton}
+            >
+              <View style={styles.downChevron} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Darkroom</Text>
+              <Text style={styles.headerSubtitle}>All done!</Text>
+            </View>
+            <View style={styles.headerPlaceholder} />
+          </View>
+
+          {/* Sparkles layer */}
+          <View style={styles.sparkleContainer} pointerEvents="none">
+            {Array.from({ length: SPARKLE_COUNT }, (_, i) => (
+              <SparkleParticle key={i} index={i} />
             ))}
           </View>
 
-          {/* Success content with fade-in animation */}
-          <Animated.View style={[styles.successContent, { opacity: successFadeAnim }]}>
-            <Text style={styles.successTitle}>Photos saved!</Text>
+          {/* Success content in empty state position */}
+          <View style={styles.emptyContainer}>
+            <Text style={styles.successTitle}>Hooray!</Text>
 
             <TouchableOpacity
               style={styles.doneButton}
@@ -323,7 +326,7 @@ const DarkroomScreen = () => {
             >
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         </SafeAreaView>
       </GestureHandlerRootView>
     );
@@ -596,24 +599,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   // Inline success state styles
-  confettiContainer: {
+  sparkleContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
-  confettiPiece: {
+  sparkleParticle: {
     position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  successContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
+    fontSize: 24,
   },
   successTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 32,
