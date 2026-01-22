@@ -188,6 +188,7 @@ Plans:
 - [x] 17.1-01: Bottom slide animation, down chevron, inline success - completed 2026-01-22
 - [x] 17.1-01-FIX: UAT fixes (empty flash, success polish, header swipe) - completed 2026-01-22
 - [x] 17.1-01-FIX-2: UAT-004 fix (header swipe moves entire screen) - completed 2026-01-22
+- [x] 17.1-01-FIX-3: UAT-005/UAT-006 fix (transparent gesture root, goBack for Done) - completed 2026-01-22
 
 **Details:**
 Animation Changes:
