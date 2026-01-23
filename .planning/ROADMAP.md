@@ -265,22 +265,22 @@ Plans:
 - Smooth cascade animation with isTransitioningToFront flag for proper animation-to-gesture handoff
 - Fade-in animation for new cards entering visible stack (300ms)
 
-#### Phase 18.2: Success Sound Effect on Triage Completion (INSERTED)
+#### Phase 18.2: Success Sound Effect on Triage Completion (INSERTED) - Complete
 
 **Goal**: Play a celebratory sound clip when user finishes triaging all photos (during success screen)
 **Depends on**: Phase 18.1
 **Research**: Unlikely (expo-av already available for audio playback)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 18.2-01: TBD (run /gsd:plan-phase 18.2 to break down)
+- [x] 18.2-01: Install expo-av and integrate success sound - completed 2026-01-23
 
-**Details:**
-- Add satisfying audio feedback when all photos are triaged
-- Sound plays during the inline success state (sparkles animation)
-- Use expo-av for audio playback
-- Consider: chime, whoosh, or subtle celebration sound
-- Ensure sound respects device silent mode settings
+**Delivered:**
+- expo-av ~16.0.8 installed for audio playback
+- soundUtils.js with playSuccessSound function
+- Success sound plays in sync with sparkles animation
+- Sound respects iOS silent mode by default
+- Auto-unload pattern prevents memory leaks
 
 #### Phase 18.3: Triage Animation Z-Index & Delete Suction Effect (INSERTED)
 
@@ -427,7 +427,7 @@ Plans:
 | 17.2 Reveal Timing 0-5 Minutes | v1.5 | 1/1 | Complete | 2026-01-22 |
 | 18. Reaction Notification Debouncing | v1.5 | 2/2 + FIX | Complete | 2026-01-22 |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 2/2 + 6 FIX | Complete | 2026-01-23 |
-| 18.2 Success Sound Effect on Triage Completion | v1.5 | 0/? | Not started | - |
+| 18.2 Success Sound Effect on Triage Completion | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 0/? | Not started | - |
 | 18.4 Triage Animation Arc Adjustment | v1.5 | 0/? | Not started | - |
 | 18.5 Camera Default Launch Screen | v1.5 | 0/? | Not started | - |
