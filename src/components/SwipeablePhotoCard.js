@@ -104,6 +104,12 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   // The cascade animation was being interrupted by stackIndex useEffect, causing mid-flight snaps
   const prevStackIndex = useSharedValue(stackIndex);
 
+  // UAT-006 FIX: Track whether card is transitioning to front position
+  // When a card becomes isActive=true, the cardStyle switches from using stackOffsetAnim to translateX/Y
+  // We need to continue using stackOffsetAnim during the transition animation, not switch immediately
+  // This shared value is 1 during transition, 0 when complete
+  const isTransitioningToFront = useSharedValue(0);
+
   useEffect(() => {
     // UAT-006 DEBUG: Log ALL useEffect invocations to understand timing
     console.log('[CASCADE DEBUG] stackIndex useEffect FIRED', {
@@ -137,11 +143,23 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       easing: Easing.out(Easing.cubic),
     };
 
+    // Total animation time including delay
+    const totalDuration = movingToFront ? CASCADE_DELAY_MS + 350 : 350;
+
     if (movingToFront) {
+      // UAT-006 FIX: Mark as transitioning so cardStyle continues using stackOffsetAnim
+      isTransitioningToFront.value = 1;
+      console.log('[CASCADE DEBUG] isTransitioningToFront set to 1');
+
       // Card becoming front - add delay to let exiting card clear
       stackScaleAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackScale(stackIndex), config));
       stackOffsetAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackOffset(stackIndex), config));
-      stackOpacityAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackOpacity(stackIndex), config));
+      stackOpacityAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackOpacity(stackIndex), config, () => {
+        'worklet';
+        // Animation complete - clear transition flag
+        isTransitioningToFront.value = 0;
+        console.log('[CASCADE DEBUG] Transition animation complete, isTransitioningToFront set to 0');
+      }));
     } else {
       // Other transitions - animate immediately
       stackScaleAnim.value = withTiming(getStackScale(stackIndex), config);
@@ -432,20 +450,14 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     // Rotation based on horizontal movement (degrees) - only for front card
     const rotation = isActive ? translateX.value / 15 : 0;
 
-    // For front card: apply gesture transforms
-    // For stack cards: use animated shared values (these spring-animate via useEffect on stackIndex change)
-    if (isActive) {
-      return {
-        transform: [
-          { translateX: translateX.value },
-          { translateY: translateY.value + arcY },
-          { rotate: `${rotation}deg` },
-          { scale: 1 },
-        ],
-        opacity: cardOpacity.value,
-      };
-    } else {
-      // Stack cards animate smoothly when stackIndex changes (UAT-009)
+    // UAT-006 FIX: When card is transitioning to front position, continue using stack animation
+    // The problem was: when isActive becomes true, cardStyle switched to translateX/Y immediately
+    // but the cascade animation was running on stackOffsetAnim - so the animation was ignored
+    // Now we check isTransitioningToFront and continue using stack values until animation completes
+    const useStackAnimation = isTransitioningToFront.value === 1 || !isActive;
+
+    if (useStackAnimation) {
+      // Stack cards OR front card still transitioning from stack position
       // stackOffsetAnim animates from -40 → -20 → 0 (slides DOWN to front position)
       // stackScaleAnim animates from 0.92 → 0.96 → 1.0 (grows to full size)
       // stackOpacityAnim animates from 0.7 → 0.85 → 1.0 (brightens)
@@ -457,6 +469,17 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
           { scale: stackScaleAnim.value },
         ],
         opacity: stackOpacityAnim.value,
+      };
+    } else {
+      // Front card (not transitioning) - apply gesture transforms
+      return {
+        transform: [
+          { translateX: translateX.value },
+          { translateY: translateY.value + arcY },
+          { rotate: `${rotation}deg` },
+          { scale: 1 },
+        ],
+        opacity: cardOpacity.value,
       };
     }
   });
