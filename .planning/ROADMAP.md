@@ -153,12 +153,12 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 **Depends on**: Previous milestone complete
 **Research**: Unlikely (established patterns)
 **Plans**: 2
-**Status**: In progress (1/2 plans complete)
+**Status**: Complete
 
 Plans:
 
 - [x] 19-01: Tooling Infrastructure (ESLint, Prettier, Husky, lint-staged) - completed 2026-01-23
-- [ ] 19-02: Codebase Formatting
+- [x] 19-02: Codebase Formatting - completed 2026-01-23
 
 #### Phase 20: Debug Cleanup
 
@@ -276,7 +276,7 @@ Plans:
 
 ---
 
-| 19. Linting and Prettier Setup | v1.6 | 1/2 | In progress | - |
+| 19. Linting and Prettier Setup | v1.6 | 2/2 | Complete | 2026-01-23 |
 | 20. Debug Cleanup | v1.6 | 0/? | Not started | - |
 | 21. Global Constants and Design System | v1.6 | 0/? | Not started | - |
 | 22. Environment and Configuration | v1.6 | 0/? | Not started | - |
