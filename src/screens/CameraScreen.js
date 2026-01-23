@@ -250,6 +250,15 @@ const CameraScreen = () => {
     logger.info('CameraScreen: selectedLens changed', { selectedLens });
   }, [selectedLens]);
 
+  // Set the correct lens when availableLenses becomes available (iOS only)
+  // This ensures the camera uses the standard wide-angle lens (1x) on launch, not ultra-wide
+  useEffect(() => {
+    if (Platform.OS === 'ios' && wideAngleLens && !selectedLens && facing === 'back') {
+      logger.info('CameraScreen: Setting initial lens to wide-angle on mount', { wideAngleLens });
+      setSelectedLens(wideAngleLens);
+    }
+  }, [wideAngleLens, selectedLens, facing]);
+
   // Handle permission request
   if (!permission) {
     return (
