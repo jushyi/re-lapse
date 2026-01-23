@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 18.1 of 18.4 (Batched Darkroom Triage with Undo)
-Plan: 2/2 + 2 FIX complete
+Plan: 2/2 + 3 FIX complete
 Status: Phase complete
-Last activity: 2026-01-23 - Completed 18.1-FIX-2-PLAN.md (UAT-002 black flash fix)
+Last activity: 2026-01-23 - Completed 18.1-FIX-3-PLAN.md (UAT-003 expo-image migration)
 
 Progress: █████████░ 88% (v1.5: 16/20 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 28 in v1.5)
+- Total plans completed: 66 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 29 in v1.5)
 - Average duration: 16 min
-- Total execution time: 12.9 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 4.4h v1.5)
+- Total execution time: 13.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 4.6h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: █████████░ 88% (v1.5: 16/20 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.4 | 28 | 301 min |
+| v1.5 | 15-18.4 | 29 | 313 min |
 
 ## Accumulated Context
 
@@ -66,6 +66,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 18.1-02 | Ionicons for Undo button | Native look, no count display |
 | 18.1-FIX-2 | Hidden state tracking vs array mutation | Prevents React re-renders that cause black flash |
 | 18.1-FIX-2 | cascadeHandledTransition flag | Prevents double-animation during cascade |
+| 18.1-FIX-3 | expo-image instead of RN Image | Native caching + 200ms transition eliminates black flash |
+| 18.1-FIX-3 | Remove blur overlay workaround | expo-image transition prop handles this automatically |
 
 ### Deferred Issues
 
@@ -102,5 +104,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 18.1-FIX-2-PLAN.md - UAT-002 black flash resolved
+Stopped at: Completed 18.1-FIX-3-PLAN.md - UAT-003 expo-image migration (requires dev build rebuild)
 Resume file: None
