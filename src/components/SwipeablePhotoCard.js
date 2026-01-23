@@ -28,8 +28,8 @@ const HORIZONTAL_THRESHOLD = 100;
 const DELETE_OVERLAY_THRESHOLD = 150;
 
 // Exit animation configuration (UAT-008: increased from 250ms for more visible arc motion)
-// 18.4: Slowed to 0.75 speed (533ms) for better exponential arc visibility
-const EXIT_DURATION = 533;
+// 18.4: Slowed to 800ms for smooth exponential arc visibility
+const EXIT_DURATION = 800;
 
 // UAT-016: Button-triggered animations use slower duration for satisfying pace
 // Swipe gestures have natural lead-in time from drag, but button taps are instant
