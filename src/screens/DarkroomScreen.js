@@ -19,6 +19,7 @@ import { getDevelopingPhotos, revealPhotos, triagePhoto, batchTriagePhotos } fro
 import { isDarkroomReadyToReveal, scheduleNextReveal } from '../services/firebase/darkroomService';
 import { SwipeablePhotoCard } from '../components';
 import { successNotification } from '../utils/haptics';
+import { playSuccessSound } from '../utils/soundUtils';
 import logger from '../utils/logger';
 
 const DarkroomScreen = () => {
@@ -354,6 +355,9 @@ const DarkroomScreen = () => {
         duration: 350,
         useNativeDriver: true,
       }).start();
+
+      // Play success sound in sync with animation
+      playSuccessSound();
     }
   }, [visiblePhotos.length, undoStack.length, successFadeAnim]);
 
