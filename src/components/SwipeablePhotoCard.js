@@ -103,10 +103,31 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   const isTransitioningToFront = useSharedValue(0);
 
   useEffect(() => {
+    // UAT-006 DEBUG: Log ALL useEffect invocations to understand timing
+    console.log('[CASCADE DEBUG] stackIndex useEffect FIRED', {
+      photoId: photo?.id?.substring(0, 8),
+      stackIndex,
+      prevStackIndex: prevStackIndex.value,
+      currentScaleValue: stackScaleAnim.value,
+      currentOffsetValue: stackOffsetAnim.value,
+      currentOpacityValue: stackOpacityAnim.value,
+      targetScale: getStackScale(stackIndex),
+      targetOffset: getStackOffset(stackIndex),
+      targetOpacity: getStackOpacity(stackIndex),
+    });
+
     // Only animate if stackIndex actually changed
-    if (prevStackIndex.value === stackIndex) return;
+    if (prevStackIndex.value === stackIndex) {
+      console.log('[CASCADE DEBUG] SKIPPING - prevStackIndex matches stackIndex');
+      return;
+    }
 
     const movingToFront = stackIndex === 0 && prevStackIndex.value > 0;
+    console.log('[CASCADE DEBUG] ANIMATING', {
+      movingToFront,
+      from: prevStackIndex.value,
+      to: stackIndex,
+    });
 
     // Use timing animation for predictable, smooth motion
     const config = {
@@ -114,9 +135,13 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       easing: Easing.out(Easing.cubic),
     };
 
+    // Total animation time including delay
+    const totalDuration = movingToFront ? CASCADE_DELAY_MS + 350 : 350;
+
     if (movingToFront) {
       // UAT-006 FIX: Mark as transitioning so cardStyle continues using stackOffsetAnim
       isTransitioningToFront.value = 1;
+      console.log('[CASCADE DEBUG] isTransitioningToFront set to 1');
 
       // Card becoming front - add delay to let exiting card clear
       stackScaleAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackScale(stackIndex), config));
@@ -125,6 +150,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         'worklet';
         // Animation complete - clear transition flag
         isTransitioningToFront.value = 0;
+        console.log('[CASCADE DEBUG] Transition animation complete, isTransitioningToFront set to 0');
       }));
     } else {
       // Other transitions - animate immediately
@@ -134,6 +160,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     }
 
     prevStackIndex.value = stackIndex;
+    console.log('[CASCADE DEBUG] Animation started, prevStackIndex updated to', stackIndex);
   }, [stackIndex]);
 
   // UAT-004 FIX: Fade-in animation for newly visible cards entering the stack
