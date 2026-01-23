@@ -183,20 +183,24 @@ const DarkroomScreen = () => {
         logger.info('DarkroomScreen: Last photo triaged, pendingSuccess set', { action });
       }
 
-      // 18.1-FIX-2: Hide photo immediately - cascade animation handles smooth transition
-      // The handleTriage callback is already called AFTER exit animation completes (400ms)
-      // By this point, the cascade animation has moved stack cards to their new positions
-      setHiddenPhotoIds(prev => {
-        const newHidden = new Set(prev);
-        newHidden.add(photoId);
-        logger.debug('DarkroomScreen: Photo hidden', {
-          photoId,
-          hiddenCount: newHidden.size,
-          remainingVisible: photos.length - newHidden.size,
-          isLastPhoto,
+      // 18.6: Only hide photo if not already hidden by onExitClearance
+      // The early clearance callback hides the photo at ~60% exit to trigger cascade
+      // This ensures we don't double-hide if clearance already fired
+      if (!hiddenPhotoIds.has(photoId)) {
+        setHiddenPhotoIds(prev => {
+          const newHidden = new Set(prev);
+          newHidden.add(photoId);
+          logger.debug('DarkroomScreen: Photo hidden (from handleTriage)', {
+            photoId,
+            hiddenCount: newHidden.size,
+            remainingVisible: photos.length - newHidden.size,
+            isLastPhoto,
+          });
+          return newHidden;
         });
-        return newHidden;
-      });
+      } else {
+        logger.debug('DarkroomScreen: Photo already hidden by clearance callback', { photoId });
+      }
 
       // UAT-005 FIX: Removed cascading state reset - stackIndex change handles animation
 
@@ -260,6 +264,22 @@ const DarkroomScreen = () => {
   // UAT-005 FIX: Removed handleSwipeStart - cascade animation now driven by stackIndex changes
   // When a card is hidden (removed from visible array), remaining cards get new stackIndex values
   // The stackIndex useEffect handles animation automatically - no separate trigger needed
+
+  // 18.6: Handle early exit clearance - hides photo to trigger cascade while card still visible
+  // This is called at ~60% exit progress, before the exit animation completes
+  // The handleTriage callback still fires at exit completion for undo stack and success state
+  const handleExitClearance = useCallback((photoId) => {
+    logger.debug('DarkroomScreen: Exit clearance reached, triggering early cascade', { photoId });
+
+    // Only hide if not already hidden (prevent double-hide)
+    if (!hiddenPhotoIds.has(photoId)) {
+      setHiddenPhotoIds(prev => {
+        const newHidden = new Set(prev);
+        newHidden.add(photoId);
+        return newHidden;
+      });
+    }
+  }, [hiddenPhotoIds]);
 
   // Swipe handlers for SwipeablePhotoCard
   const handleArchiveSwipe = async () => {
@@ -600,6 +620,7 @@ const DarkroomScreen = () => {
               onSwipeRight={isActive ? handleJournalSwipe : undefined}
               onSwipeDown={isActive ? handleDeleteSwipe : undefined}
               onDeleteComplete={isActive ? handleDeletePulse : undefined}
+              onExitClearance={isActive ? () => handleExitClearance(photo.id) : undefined}
             />
           );
         })}

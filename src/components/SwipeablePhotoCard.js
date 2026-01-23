@@ -40,11 +40,10 @@ const BUTTON_EXIT_DURATION = 800;
 // 18.6: Reduced to 0ms since onExitClearance now triggers cascade early
 const CASCADE_DELAY_MS = 0;
 
-// 18.6: Clearance delay - time at which card clears visual overlap with stack
-// At ~60% of exit, card has moved one card width (clears overlap with stack)
-// This is when we fire onExitClearance to trigger cascade animation early
-const SWIPE_CLEARANCE_DELAY = Math.round(EXIT_DURATION * 0.6); // ~480ms for 800ms exit
-const BUTTON_CLEARANCE_DELAY = Math.round(BUTTON_EXIT_DURATION * 0.6); // ~480ms for buttons
+// 18.6: Clearance delay - time before cascade animation triggers
+// 100ms gives instant feel while allowing exit animation to start
+const SWIPE_CLEARANCE_DELAY = 100;
+const BUTTON_CLEARANCE_DELAY = 100;
 
 // UAT-004 FIX: Fade-in duration for new cards entering the visible stack
 const STACK_ENTRY_FADE_DURATION = 300;
@@ -262,6 +261,15 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     setThresholdTriggered(false);
   }, []);
 
+  // 18.6: Schedule clearance callback with delay (called via runOnJS from worklet)
+  const scheduleClearanceCallback = useCallback((delay) => {
+    if (onExitClearance) {
+      setTimeout(() => {
+        onExitClearance();
+      }, delay);
+    }
+  }, [onExitClearance]);
+
   // Mark threshold as triggered
   const markThresholdTriggered = useCallback(() => {
     if (!thresholdTriggered) {
@@ -436,11 +444,8 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         // UAT-005 FIX: Removed notifySwipeStart - cascade happens on stackIndex change
         actionInProgress.value = true;
         // 18.6: Fire clearance callback early to trigger cascade while card still visible
-        if (onExitClearance) {
-          setTimeout(() => {
-            onExitClearance();
-          }, SWIPE_CLEARANCE_DELAY);
-        }
+        // Must use runOnJS since we're in a worklet context
+        runOnJS(scheduleClearanceCallback)(SWIPE_CLEARANCE_DELAY);
         translateX.value = withTiming(-SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
@@ -457,11 +462,8 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         // UAT-005 FIX: Removed notifySwipeStart - cascade happens on stackIndex change
         actionInProgress.value = true;
         // 18.6: Fire clearance callback early to trigger cascade while card still visible
-        if (onExitClearance) {
-          setTimeout(() => {
-            onExitClearance();
-          }, SWIPE_CLEARANCE_DELAY);
-        }
+        // Must use runOnJS since we're in a worklet context
+        runOnJS(scheduleClearanceCallback)(SWIPE_CLEARANCE_DELAY);
         translateX.value = withTiming(SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,
           easing: Easing.out(Easing.cubic),
