@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18.5 of 18.6 (Camera Default Launch Screen)
+Phase: 18.6 of 18.6 (Triage Animation Timing Optimization)
 Plan: 1/1 complete
-Status: Phase complete
-Last activity: 2026-01-23 - Completed 18.5-01-PLAN.md (Camera as default launch)
+Status: Milestone complete
+Last activity: 2026-01-23 - Completed 18.6-01-PLAN.md (Early cascade trigger)
 
-Progress: █████████░ 91% (v1.5: 20/22 phases complete)
+Progress: ██████████ 100% (v1.5: 22/22 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 36 in v1.5)
+- Total plans completed: 74 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5)
 - Average duration: 16 min
-- Total execution time: 14.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.6h v1.5)
+- Total execution time: 14.3 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: █████████░ 91% (v1.5: 20/22 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.6 | 36 | 379 min |
+| v1.5 | 15-18.6 | 37 | 390 min |
 
 ## Accumulated Context
 
@@ -83,6 +83,7 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 18.4-01 | Linear rotation preserved | User preferred original tilt feel over exponential |
 | 18.4-01 | EXIT_DURATION 800ms | Slower animation for smooth arc visibility |
 | 18.5-01 | initialRouteName="Camera" | Aligns with capture-first philosophy |
+| 18.6-01 | 100ms clearance delay for cascade | Instant, fluid triage feel without perceptible gap |
 
 ### Deferred Issues
 
@@ -98,6 +99,7 @@ None.
 - **v1.2** Phone Authentication: 3 phases, 8 plans - shipped 2026-01-19
 - **v1.3** Firebase SDK Consolidation: 2 phases, 4 plans - shipped 2026-01-19
 - **v1.4** Production Ready: 8 phases, 17 plans - shipped 2026-01-20
+- **v1.5** Camera Performance & UX Polish: 22 phases, 37 plans - shipped 2026-01-23
 
 ### Roadmap Evolution
 
@@ -121,5 +123,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 18.5-01-PLAN.md - Camera as default launch
+Stopped at: Completed 18.6-01-PLAN.md - v1.5 milestone complete
 Resume file: None

@@ -329,27 +329,21 @@ Plans:
 - App launches directly to Camera tab instead of Feed
 - Aligns with capture-first philosophy
 
-#### Phase 18.6: Triage Animation Timing Optimization (INSERTED)
+#### Phase 18.6: Triage Animation Timing Optimization (INSERTED) - Complete
 
 **Goal**: Eliminate delay between card exit and next card animation - make triage feel instant and fluid
 **Depends on**: Phase 18.5
 **Research**: Unlikely (React Native Reanimated timing and callback patterns)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 18.6-01: TBD (run /gsd:plan-phase 18.6 to break down)
+- [x] 18.6-01: Early cascade trigger via onExitClearance callback - completed 2026-01-23
 
-**Details:**
-Animation Timing Issue:
-- Current behavior: For both swipe and button triage, there's a noticeable delay after the card exits before the next card animates to front
-- Card is fully off screen, but there's a pause before the cascade animation begins
-- This makes triage feel sluggish despite animation speeds being acceptable
-
-Desired Behavior:
-- Animation speed should stay the same (no faster exit)
-- Next card animation should trigger as soon as exiting card clears, or even overlap slightly
-- Consider triggering cascade animation when exiting card reaches ~80% of exit distance
-- Smooth, fluid feeling where cards seamlessly transition without perceptible gaps
+**Delivered:**
+- onExitClearance callback prop fires at 100ms into exit animation
+- Cascade animation starts while exiting card still visible
+- No perceptible gap between card exit and cascade
+- Fluid triage flow like flipping through a deck of cards
 
 ## Completed Milestones
 
@@ -446,4 +440,4 @@ Desired Behavior:
 | 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.4 Triage Animation Arc Adjustment | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.5 Camera Default Launch Screen | v1.5 | 1/1 | Complete | 2026-01-23 |
-| 18.6 Triage Animation Timing Optimization | v1.5 | 0/? | Not started | - |
+| 18.6 Triage Animation Timing Optimization | v1.5 | 1/1 | Complete | 2026-01-23 |
