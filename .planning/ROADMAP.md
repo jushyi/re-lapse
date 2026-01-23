@@ -177,11 +177,12 @@ Plans:
 **Goal**: Extract and centralize colors, typography, spacing, layout, timing, and config values into src/constants/
 **Depends on**: Phase 20
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 1
+**Status**: Complete
 
 Plans:
 
-- [ ] 21-01: TBD
+- [x] 21-01: Design System Constants Infrastructure - completed 2026-01-23
 
 #### Phase 22: Environment and Configuration
 
@@ -279,7 +280,7 @@ Plans:
 
 | 19. Linting and Prettier Setup | v1.6 | 2/2 | Complete | 2026-01-23 |
 | 20. Debug Cleanup | v1.6 | 1/1 | Complete | 2026-01-23 |
-| 21. Global Constants and Design System | v1.6 | 0/? | Not started | - |
+| 21. Global Constants and Design System | v1.6 | 1/1 | Complete | 2026-01-23 |
 | 22. Environment and Configuration | v1.6 | 0/? | Not started | - |
 | 23. Firestore Security Rules Audit | v1.6 | 0/? | Not started | - |
 | 24. Cloud Functions Validation | v1.6 | 0/? | Not started | - |
