@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const logger = require('./logger');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -29,23 +30,24 @@ function formatReactionSummary(reactions) {
  * @returns {Promise<object>} - Result of reveal operation
  */
 async function revealUserPhotos(userId, now) {
-  console.log(`revealUserPhotos: Processing user ${userId}`);
+  logger.info(`revealUserPhotos: Processing user ${userId}`);
 
   // Query developing photos for this user
-  const photosSnapshot = await admin.firestore()
+  const photosSnapshot = await admin
+    .firestore()
     .collection('photos')
     .where('userId', '==', userId)
     .where('status', '==', 'developing')
     .get();
 
   if (photosSnapshot.empty) {
-    console.log(`revealUserPhotos: No developing photos for user ${userId}`);
+    logger.info(`revealUserPhotos: No developing photos for user ${userId}`);
   } else {
-    console.log(`revealUserPhotos: Revealing ${photosSnapshot.size} photos for user ${userId}`);
+    logger.info(`revealUserPhotos: Revealing ${photosSnapshot.size} photos for user ${userId}`);
 
     // Update all photos to revealed
     const batch = admin.firestore().batch();
-    photosSnapshot.docs.forEach((doc) => {
+    photosSnapshot.docs.forEach(doc => {
       batch.update(doc.ref, {
         status: 'revealed',
         revealedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -56,7 +58,7 @@ async function revealUserPhotos(userId, now) {
 
   // Calculate next reveal time (0-5 minutes from now)
   const randomMinutes = Math.floor(Math.random() * 6); // 0-5 minutes
-  const nextRevealMs = now.toMillis() + (randomMinutes * 60 * 1000);
+  const nextRevealMs = now.toMillis() + randomMinutes * 60 * 1000;
   const nextRevealAt = admin.firestore.Timestamp.fromMillis(nextRevealMs);
 
   // Update darkroom with new reveal time
@@ -66,7 +68,9 @@ async function revealUserPhotos(userId, now) {
     lastRevealedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  console.log(`revealUserPhotos: User ${userId} - ${photosSnapshot.size} photos revealed, next reveal at ${nextRevealAt.toDate()}`);
+  logger.info(
+    `revealUserPhotos: User ${userId} - ${photosSnapshot.size} photos revealed, next reveal at ${nextRevealAt.toDate()}`
+  );
 
   return {
     userId,
@@ -83,32 +87,35 @@ async function revealUserPhotos(userId, now) {
  */
 exports.processDarkroomReveals = functions.pubsub
   .schedule('every 2 minutes')
-  .onRun(async (context) => {
+  .onRun(async context => {
     try {
       const now = admin.firestore.Timestamp.now();
-      console.log('processDarkroomReveals: Starting scheduled reveal check at', now.toDate());
+      logger.info('processDarkroomReveals: Starting scheduled reveal check at', now.toDate());
 
       // Query all darkrooms where nextRevealAt has passed
-      const darkroomsSnapshot = await admin.firestore()
+      const darkroomsSnapshot = await admin
+        .firestore()
         .collection('darkrooms')
         .where('nextRevealAt', '<=', now)
         .get();
 
       if (darkroomsSnapshot.empty) {
-        console.log('processDarkroomReveals: No darkrooms ready to reveal');
+        logger.info('processDarkroomReveals: No darkrooms ready to reveal');
         return null;
       }
 
-      console.log(`processDarkroomReveals: Found ${darkroomsSnapshot.size} darkrooms ready to reveal`);
+      logger.info(
+        `processDarkroomReveals: Found ${darkroomsSnapshot.size} darkrooms ready to reveal`
+      );
 
       // Process each darkroom
       const results = await Promise.all(
-        darkroomsSnapshot.docs.map(async (darkroomDoc) => {
+        darkroomsSnapshot.docs.map(async darkroomDoc => {
           const userId = darkroomDoc.id;
           try {
             return await revealUserPhotos(userId, now);
           } catch (error) {
-            console.error(`processDarkroomReveals: Error for user ${userId}:`, error);
+            logger.error(`processDarkroomReveals: Error for user ${userId}:`, error);
             return { userId, success: false, error: error.message };
           }
         })
@@ -116,11 +123,17 @@ exports.processDarkroomReveals = functions.pubsub
 
       const successCount = results.filter(r => r.success).length;
       const revealedCount = results.reduce((sum, r) => sum + (r.photosRevealed || 0), 0);
-      console.log(`processDarkroomReveals: Completed. ${successCount}/${darkroomsSnapshot.size} users processed, ${revealedCount} photos revealed`);
+      logger.info(
+        `processDarkroomReveals: Completed. ${successCount}/${darkroomsSnapshot.size} users processed, ${revealedCount} photos revealed`
+      );
 
-      return { processed: darkroomsSnapshot.size, successful: successCount, photosRevealed: revealedCount };
+      return {
+        processed: darkroomsSnapshot.size,
+        successful: successCount,
+        photosRevealed: revealedCount,
+      };
     } catch (error) {
-      console.error('processDarkroomReveals: Fatal error:', error);
+      logger.error('processDarkroomReveals: Fatal error:', error);
       return null;
     }
   });
@@ -137,7 +150,7 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
   try {
     // Expo push tokens start with "ExponentPushToken["
     if (!fcmToken || !fcmToken.startsWith('ExponentPushToken[')) {
-      console.error('Invalid Expo Push Token:', fcmToken);
+      logger.error('sendPushNotification: Invalid Expo Push Token:', fcmToken);
       return { success: false, error: 'Invalid token format' };
     }
 
@@ -157,7 +170,7 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Accept-Encoding': 'gzip, deflate',
         'Content-Type': 'application/json',
       },
@@ -165,11 +178,11 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
     });
 
     const responseData = await response.json();
-    console.log('Expo push notification sent:', responseData);
+    logger.debug('sendPushNotification: Expo push notification sent:', responseData);
 
     return { success: true, data: responseData };
   } catch (error) {
-    console.error('Error sending push notification:', error);
+    logger.error('sendPushNotification: Error sending push notification:', error);
     return { success: false, error: error.message };
   }
 }
@@ -195,14 +208,14 @@ exports.sendPhotoRevealNotification = functions.firestore
       const wasRevealed = lastRevealedAtAfter > lastRevealedAtBefore;
 
       if (!wasRevealed) {
-        console.log('sendPhotoRevealNotification: No new reveal, skipping notification');
+        logger.debug('sendPhotoRevealNotification: No new reveal, skipping notification');
         return null;
       }
 
       // Check if we already notified for this batch (lastNotifiedAt >= lastRevealedAt)
       const lastNotifiedAt = after.lastNotifiedAt?.toMillis() || 0;
       if (lastNotifiedAt >= lastRevealedAtAfter) {
-        console.log('sendPhotoRevealNotification: Already notified for this batch, skipping');
+        logger.debug('sendPhotoRevealNotification: Already notified for this batch, skipping');
         return null;
       }
 
@@ -212,14 +225,15 @@ exports.sendPhotoRevealNotification = functions.firestore
       const batchStartTime = lastRevealedAtAfter - toleranceMs;
       const batchEndTime = lastRevealedAtAfter + toleranceMs;
 
-      const photosSnapshot = await admin.firestore()
+      const photosSnapshot = await admin
+        .firestore()
         .collection('photos')
         .where('userId', '==', userId)
         .where('status', '==', 'revealed')
         .get();
 
       // Filter photos by revealedAt timestamp within the batch window
-      const photosInBatch = photosSnapshot.docs.filter((doc) => {
+      const photosInBatch = photosSnapshot.docs.filter(doc => {
         const revealedAt = doc.data().revealedAt?.toMillis() || 0;
         return revealedAt >= batchStartTime && revealedAt <= batchEndTime;
       });
@@ -227,7 +241,9 @@ exports.sendPhotoRevealNotification = functions.firestore
       const photosRevealed = photosInBatch.length;
 
       if (photosRevealed === 0) {
-        console.log('sendPhotoRevealNotification: No photos revealed in this batch, skipping notification');
+        logger.debug(
+          'sendPhotoRevealNotification: No photos revealed in this batch, skipping notification'
+        );
         // Still update lastNotifiedAt to prevent future checks for this batch
         await admin.firestore().collection('darkrooms').doc(userId).update({
           lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -238,7 +254,7 @@ exports.sendPhotoRevealNotification = functions.firestore
       // Get user's FCM token
       const userDoc = await admin.firestore().collection('users').doc(userId).get();
       if (!userDoc.exists) {
-        console.error('sendPhotoRevealNotification: User not found:', userId);
+        logger.error('sendPhotoRevealNotification: User not found:', userId);
         return null;
       }
 
@@ -246,39 +262,35 @@ exports.sendPhotoRevealNotification = functions.firestore
       const fcmToken = userData.fcmToken;
 
       if (!fcmToken) {
-        console.log('sendPhotoRevealNotification: User has no FCM token, skipping:', userId);
+        logger.debug('sendPhotoRevealNotification: User has no FCM token, skipping:', userId);
         return null;
       }
 
       // Send notification with reveal data
       const title = '📸 Photos Ready!';
-      const body = photosRevealed === 1
-        ? 'Your photo is ready to view in the darkroom'
-        : `${photosRevealed} photos are ready to view in the darkroom`;
+      const body =
+        photosRevealed === 1
+          ? 'Your photo is ready to view in the darkroom'
+          : `${photosRevealed} photos are ready to view in the darkroom`;
 
-      const result = await sendPushNotification(
-        fcmToken,
-        title,
-        body,
-        {
-          type: 'photo_reveal',
-          revealedCount: String(photosRevealed),
-          revealAll: 'true',
-        }
-      );
+      const result = await sendPushNotification(fcmToken, title, body, {
+        type: 'photo_reveal',
+        revealedCount: String(photosRevealed),
+        revealAll: 'true',
+      });
 
       // Update lastNotifiedAt AFTER successfully sending notification
       await admin.firestore().collection('darkrooms').doc(userId).update({
         lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      console.log('sendPhotoRevealNotification: Notification sent to', userId, {
+      logger.debug('sendPhotoRevealNotification: Notification sent to', userId, {
         photosRevealed,
         result,
       });
       return result;
     } catch (error) {
-      console.error('sendPhotoRevealNotification: Error:', error);
+      logger.error('sendPhotoRevealNotification: Error:', error);
       return null;
     }
   });
@@ -296,23 +308,21 @@ exports.sendFriendRequestNotification = functions.firestore
 
       // Only send notification for pending friend requests
       if (friendshipData.status !== 'pending') {
-        console.log('Friendship not pending, skipping notification');
+        logger.debug(
+          'sendFriendRequestNotification: Friendship not pending, skipping notification'
+        );
         return null;
       }
 
       const requestedBy = friendshipData.requestedBy;
-      const recipientId = friendshipData.user1Id === requestedBy
-        ? friendshipData.user2Id
-        : friendshipData.user1Id;
+      const recipientId =
+        friendshipData.user1Id === requestedBy ? friendshipData.user2Id : friendshipData.user1Id;
 
       // Get recipient's FCM token
-      const recipientDoc = await admin.firestore()
-        .collection('users')
-        .doc(recipientId)
-        .get();
+      const recipientDoc = await admin.firestore().collection('users').doc(recipientId).get();
 
       if (!recipientDoc.exists) {
-        console.error('Recipient not found:', recipientId);
+        logger.error('sendFriendRequestNotification: Recipient not found:', recipientId);
         return null;
       }
 
@@ -320,15 +330,15 @@ exports.sendFriendRequestNotification = functions.firestore
       const fcmToken = recipientData.fcmToken;
 
       if (!fcmToken) {
-        console.log('Recipient has no FCM token, skipping notification:', recipientId);
+        logger.debug(
+          'sendFriendRequestNotification: Recipient has no FCM token, skipping:',
+          recipientId
+        );
         return null;
       }
 
       // Get sender's display name
-      const senderDoc = await admin.firestore()
-        .collection('users')
-        .doc(requestedBy)
-        .get();
+      const senderDoc = await admin.firestore().collection('users').doc(requestedBy).get();
 
       const senderName = senderDoc.exists
         ? senderDoc.data().displayName || senderDoc.data().username
@@ -338,20 +348,15 @@ exports.sendFriendRequestNotification = functions.firestore
       const title = '👋 Friend Request';
       const body = `${senderName} sent you a friend request`;
 
-      const result = await sendPushNotification(
-        fcmToken,
-        title,
-        body,
-        {
-          type: 'friend_request',
-          friendshipId: friendshipId,
-        }
-      );
+      const result = await sendPushNotification(fcmToken, title, body, {
+        type: 'friend_request',
+        friendshipId: friendshipId,
+      });
 
-      console.log('Friend request notification sent to:', recipientId, result);
+      logger.debug('sendFriendRequestNotification: Notification sent to:', recipientId, result);
       return result;
     } catch (error) {
-      console.error('Error in sendFriendRequestNotification:', error);
+      logger.error('sendFriendRequestNotification: Error:', error);
       return null;
     }
   });
@@ -363,25 +368,33 @@ exports.sendFriendRequestNotification = functions.firestore
 async function sendBatchedReactionNotification(pendingKey) {
   const pending = pendingReactions[pendingKey];
   if (!pending) {
-    console.log('sendBatchedReactionNotification: No pending entry found for', pendingKey);
+    logger.debug('sendBatchedReactionNotification: No pending entry found for', pendingKey);
     return;
   }
 
-  const { reactions, photoOwnerId, fcmToken, reactorName, reactorId, reactorProfilePhotoURL, photoId } = pending;
+  const {
+    reactions,
+    photoOwnerId,
+    fcmToken,
+    reactorName,
+    reactorId,
+    reactorProfilePhotoURL,
+    photoId,
+  } = pending;
 
   // Delete pending entry immediately to prevent duplicate sends
   delete pendingReactions[pendingKey];
 
   const reactionSummary = formatReactionSummary(reactions);
   if (!reactionSummary) {
-    console.log('sendBatchedReactionNotification: No reactions to send for', pendingKey);
+    logger.debug('sendBatchedReactionNotification: No reactions to send for', pendingKey);
     return;
   }
 
   const title = '❤️ New Reaction';
   const body = `${reactorName} reacted ${reactionSummary} to your photo`;
 
-  console.log('sendBatchedReactionNotification: Sending batched notification', {
+  logger.debug('sendBatchedReactionNotification: Sending batched notification', {
     pendingKey,
     reactorName,
     reactions,
@@ -389,31 +402,29 @@ async function sendBatchedReactionNotification(pendingKey) {
   });
 
   // Send push notification
-  const result = await sendPushNotification(
-    fcmToken,
-    title,
-    body,
-    {
-      type: 'reaction',
-      photoId: photoId,
-    }
-  );
-
-  // Write to notifications collection for in-app display
-  await admin.firestore().collection('notifications').add({
-    recipientId: photoOwnerId,
+  const result = await sendPushNotification(fcmToken, title, body, {
     type: 'reaction',
-    senderId: reactorId,
-    senderName: reactorName,
-    senderProfilePhotoURL: reactorProfilePhotoURL || null,
     photoId: photoId,
-    reactions: reactions,
-    message: body,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    read: false,
   });
 
-  console.log('sendBatchedReactionNotification: Notification sent and stored', {
+  // Write to notifications collection for in-app display
+  await admin
+    .firestore()
+    .collection('notifications')
+    .add({
+      recipientId: photoOwnerId,
+      type: 'reaction',
+      senderId: reactorId,
+      senderName: reactorName,
+      senderProfilePhotoURL: reactorProfilePhotoURL || null,
+      photoId: photoId,
+      reactions: reactions,
+      message: body,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      read: false,
+    });
+
+  logger.debug('sendBatchedReactionNotification: Notification sent and stored', {
     pendingKey,
     result,
   });
@@ -438,7 +449,7 @@ exports.sendReactionNotification = functions.firestore
 
       // Check if reactions were added (reactionCount increased)
       if (!after.reactionCount || after.reactionCount <= (before.reactionCount || 0)) {
-        console.log('sendReactionNotification: No new reactions, skipping');
+        logger.debug('sendReactionNotification: No new reactions, skipping');
         return null;
       }
 
@@ -475,14 +486,14 @@ exports.sendReactionNotification = functions.firestore
 
       // If no reactor found or reactor is the owner, skip
       if (!reactorId || reactorId === photoOwnerId) {
-        console.log('sendReactionNotification: No valid reactor found, skipping');
+        logger.debug('sendReactionNotification: No valid reactor found, skipping');
         return null;
       }
 
       // Generate unique key for this photo+reactor combination
       const pendingKey = `${photoId}_${reactorId}`;
 
-      console.log('sendReactionNotification: Processing reaction update', {
+      logger.debug('sendReactionNotification: Processing reaction update', {
         photoId,
         reactorId,
         reactionDiff,
@@ -501,7 +512,7 @@ exports.sendReactionNotification = functions.firestore
             (pendingReactions[pendingKey].reactions[emoji] || 0) + count;
         }
 
-        console.log('sendReactionNotification: Extended debounce window', {
+        logger.debug('sendReactionNotification: Extended debounce window', {
           pendingKey,
           mergedReactions: pendingReactions[pendingKey].reactions,
         });
@@ -517,13 +528,10 @@ exports.sendReactionNotification = functions.firestore
 
       // New pending entry - fetch user data
       // Get photo owner's FCM token
-      const ownerDoc = await admin.firestore()
-        .collection('users')
-        .doc(photoOwnerId)
-        .get();
+      const ownerDoc = await admin.firestore().collection('users').doc(photoOwnerId).get();
 
       if (!ownerDoc.exists) {
-        console.error('sendReactionNotification: Photo owner not found:', photoOwnerId);
+        logger.error('sendReactionNotification: Photo owner not found:', photoOwnerId);
         return null;
       }
 
@@ -531,15 +539,15 @@ exports.sendReactionNotification = functions.firestore
       const fcmToken = ownerData.fcmToken;
 
       if (!fcmToken) {
-        console.log('sendReactionNotification: Photo owner has no FCM token, skipping:', photoOwnerId);
+        logger.debug(
+          'sendReactionNotification: Photo owner has no FCM token, skipping:',
+          photoOwnerId
+        );
         return null;
       }
 
       // Get reactor's display name and profile photo
-      const reactorDoc = await admin.firestore()
-        .collection('users')
-        .doc(reactorId)
-        .get();
+      const reactorDoc = await admin.firestore().collection('users').doc(reactorId).get();
 
       const reactorData = reactorDoc.exists ? reactorDoc.data() : {};
       const reactorName = reactorData.displayName || reactorData.username || 'Someone';
@@ -560,7 +568,7 @@ exports.sendReactionNotification = functions.firestore
         ),
       };
 
-      console.log('sendReactionNotification: Started new debounce window', {
+      logger.debug('sendReactionNotification: Started new debounce window', {
         pendingKey,
         reactions: reactionDiff,
         debounceMs: REACTION_DEBOUNCE_MS,
@@ -568,7 +576,7 @@ exports.sendReactionNotification = functions.firestore
 
       return null;
     } catch (error) {
-      console.error('sendReactionNotification: Error:', error);
+      logger.error('sendReactionNotification: Error:', error);
       return null;
     }
   });
