@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18.3 of 18.6 (Triage Animation Z-Index & Delete Suction)
+Phase: 18.4 of 18.6 (Triage Animation Arc Adjustment)
 Plan: 1/1 complete
 Status: Phase complete
-Last activity: 2026-01-23 - Completed 18.3-01-PLAN.md (z-index fix + delete suction)
+Last activity: 2026-01-23 - Completed 18.4-01-PLAN.md (exponential arc curve)
 
-Progress: █████████░ 86% (v1.5: 18/22 phases complete)
+Progress: █████████░ 86% (v1.5: 19/22 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 34 in v1.5)
+- Total plans completed: 72 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 35 in v1.5)
 - Average duration: 16 min
-- Total execution time: 14.0 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.5h v1.5)
+- Total execution time: 14.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.6h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: █████████░ 86% (v1.5: 18/22 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.6 | 34 | 368 min |
+| v1.5 | 15-18.6 | 35 | 376 min |
 
 ## Accumulated Context
 
@@ -79,6 +79,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 18.3-01 | Callback on cardScale not translateX | translateX was 0→0 (instant), cardScale is 1→0.1 (actual animation) |
 | 18.3-01 | actionInProgress override in cardStyle | Ensures delete suction works even during card transition |
 | 18.3-01 | Easing.in(cubic) for suction | Accelerating "pulled in" feel instead of decelerating |
+| 18.4-01 | Exponential power curve (x^2.5) for arc | Cards start flat, accelerate downward as they exit |
+| 18.4-01 | Linear rotation preserved | User preferred original tilt feel over exponential |
+| 18.4-01 | EXIT_DURATION 800ms | Slower animation for smooth arc visibility |
 
 ### Deferred Issues
 
@@ -117,5 +120,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 18.3-01-PLAN.md - Z-index fix + delete suction
+Stopped at: Completed 18.4-01-PLAN.md - Exponential arc curve
 Resume file: None

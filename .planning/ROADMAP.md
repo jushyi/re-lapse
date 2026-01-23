@@ -298,22 +298,21 @@ Plans:
 - Easing.in(cubic) for accelerating "pulled in" feel
 - Delete button pulses (scale 1→1.15→1) when card arrives
 
-#### Phase 18.4: Triage Animation Arc Adjustment (INSERTED)
+#### Phase 18.4: Triage Animation Arc Adjustment (INSERTED) - Complete
 
 **Goal**: Reduce downward arc and rotation on Journal/Archive triage animations so cards move more sideways and never overlap triage buttons
 **Depends on**: Phase 18.3
 **Research**: Unlikely (React Native Reanimated animation adjustments)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 18.4-01: TBD (run /gsd:plan-phase 18.4 to break down)
+- [x] 18.4-01: Exponential arc curve + 800ms duration - completed 2026-01-23
 
-**Details:**
-Animation Adjustments for Journal/Archive:
-- Current behavior: cards arc downward too much during triage exit
-- New behavior: less rotation, more horizontal/sideways movement
-- Cards must never visually overlap with the triage buttons during animation
-- Maintain satisfying feel while keeping animations contained above button bar
+**Delivered:**
+- Exponential power curve (x^2.5) for arc path - cards start flat, accelerate downward
+- Linear rotation preserved for natural tilt feel
+- EXIT_DURATION increased to 800ms for smooth arc visibility
+- Physics-based momentum feel instead of immediate dive
 
 #### Phase 18.5: Camera Default Launch Screen (INSERTED)
 
@@ -445,6 +444,6 @@ Desired Behavior:
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 2/2 + 6 FIX | Complete | 2026-01-23 |
 | 18.2 Success Sound Effect on Triage Completion | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 1/1 | Complete | 2026-01-23 |
-| 18.4 Triage Animation Arc Adjustment | v1.5 | 0/? | Not started | - |
+| 18.4 Triage Animation Arc Adjustment | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.5 Camera Default Launch Screen | v1.5 | 0/? | Not started | - |
 | 18.6 Triage Animation Timing Optimization | v1.5 | 0/? | Not started | - |
