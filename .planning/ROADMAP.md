@@ -10,7 +10,7 @@ This roadmap transforms the Camera and Darkroom experience from two separate tab
 - ✅ **v1.2 Phone Authentication** - [archive](milestones/v1.2-ROADMAP.md) (Phases 6-8, shipped 2026-01-19)
 - ✅ **v1.3 Firebase SDK Consolidation** - [archive](milestones/v1.3-ROADMAP.md) (Phases 9-10, shipped 2026-01-19)
 - ✅ **v1.4 Production Ready** - [archive](milestones/v1.4-ROADMAP.md) (Phases 11-14, shipped 2026-01-20)
-- 🚧 **v1.5 Camera Performance & UX Polish** - Phases 15-18 (in progress)
+- 🚧 **v1.5 Camera Performance & UX Polish** - Phases 15-18.6 (in progress)
 
 ### 🚧 v1.5 Camera Performance & UX Polish (In Progress)
 
@@ -282,27 +282,21 @@ Plans:
 - Sound respects iOS silent mode by default
 - Auto-unload pattern prevents memory leaks
 
-#### Phase 18.3: Triage Animation Z-Index & Delete Suction Effect (INSERTED)
+#### Phase 18.3: Triage Animation Z-Index & Delete Suction Effect (INSERTED) - Complete
 
 **Goal**: Fix photo card animations rendering over triage buttons and add suction effect for delete action
 **Depends on**: Phase 18.2
 **Research**: Unlikely (React Native Reanimated z-index and animation patterns)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 18.3-01: TBD (run /gsd:plan-phase 18.3 to break down)
+- [x] 18.3-01: Z-index fix and delete suction animation - completed 2026-01-23
 
-**Details:**
-Z-Index Fix:
-- Photo card triage animations currently render on top of the triage buttons
-- Cards should animate behind the button bar, not over it
-- Ensure proper z-index layering during all animation states
-
-Delete Suction Effect:
-- Current delete animation: card falls straight down off screen
-- New behavior: card should get "sucked into" the delete button
-- Animation should scale down and move toward delete button position
-- Creates satisfying visual feedback that the photo is being deleted
+**Delivered:**
+- zIndex: 10 on triageButtonBar ensures cards animate behind buttons
+- Delete suction animation: card shrinks (1→0.1) and moves toward button
+- Easing.in(cubic) for accelerating "pulled in" feel
+- Delete button pulses (scale 1→1.15→1) when card arrives
 
 #### Phase 18.4: Triage Animation Arc Adjustment (INSERTED)
 
@@ -335,6 +329,28 @@ Plans:
 - Change the app's initial route to Camera screen instead of Feed
 - Ensures users land on the camera-first experience on app launch
 - Aligns with the app's core philosophy of capture-first UX
+
+#### Phase 18.6: Triage Animation Timing Optimization (INSERTED)
+
+**Goal**: Eliminate delay between card exit and next card animation - make triage feel instant and fluid
+**Depends on**: Phase 18.5
+**Research**: Unlikely (React Native Reanimated timing and callback patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 18.6-01: TBD (run /gsd:plan-phase 18.6 to break down)
+
+**Details:**
+Animation Timing Issue:
+- Current behavior: For both swipe and button triage, there's a noticeable delay after the card exits before the next card animates to front
+- Card is fully off screen, but there's a pause before the cascade animation begins
+- This makes triage feel sluggish despite animation speeds being acceptable
+
+Desired Behavior:
+- Animation speed should stay the same (no faster exit)
+- Next card animation should trigger as soon as exiting card clears, or even overlap slightly
+- Consider triggering cascade animation when exiting card reaches ~80% of exit distance
+- Smooth, fluid feeling where cards seamlessly transition without perceptible gaps
 
 ## Completed Milestones
 
@@ -428,6 +444,7 @@ Plans:
 | 18. Reaction Notification Debouncing | v1.5 | 2/2 + FIX | Complete | 2026-01-22 |
 | 18.1 Batched Darkroom Triage with Undo | v1.5 | 2/2 + 6 FIX | Complete | 2026-01-23 |
 | 18.2 Success Sound Effect on Triage Completion | v1.5 | 1/1 | Complete | 2026-01-23 |
-| 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 0/? | Not started | - |
+| 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 1/1 | Complete | 2026-01-23 |
 | 18.4 Triage Animation Arc Adjustment | v1.5 | 0/? | Not started | - |
 | 18.5 Camera Default Launch Screen | v1.5 | 0/? | Not started | - |
+| 18.6 Triage Animation Timing Optimization | v1.5 | 0/? | Not started | - |
