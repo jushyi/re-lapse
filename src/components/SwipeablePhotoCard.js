@@ -35,12 +35,7 @@ const EXIT_DURATION = 400;
 // 1200ms (3x EXIT_DURATION) gives button animations similar perceived pace to swipes
 const BUTTON_EXIT_DURATION = 1200;
 
-// UAT-004 FIX: Smoother spring config for cascade animation
-// Lower stiffness (100 vs 150) = more gradual transition, less snap
-// Higher damping (18 vs 15) = less bounce, more settling feel
-const CASCADE_SPRING_CONFIG = { damping: 18, stiffness: 100 };
-
-// UAT-004 FIX: Delay for front card transition gives exiting card time to clear
+// UAT-005 FIX: Delay for front card transition gives exiting card time to clear
 const CASCADE_DELAY_MS = 100;
 
 // UAT-004 FIX: Fade-in duration for new cards entering the visible stack
@@ -70,7 +65,7 @@ const STACK_ENTRY_FADE_DURATION = 300;
  * @param {boolean} isActive - Whether this card is swipeable (only front card)
  * @param {ref} ref - Ref for imperative methods (triggerArchive, triggerJournal, triggerDelete)
  */
-const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwipeDown, onSwipeStart, stackIndex = 0, isActive = true, cascading = false, enterFrom = null, isNewlyVisible = false }, ref) => {
+const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwipeDown, stackIndex = 0, isActive = true, enterFrom = null, isNewlyVisible = false }, ref) => {
   const [thresholdTriggered, setThresholdTriggered] = useState(false);
 
   // Animated values for gesture/front card
@@ -96,59 +91,37 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
   const stackOffsetAnim = useSharedValue(getStackOffset(stackIndex));
   const stackOpacityAnim = useSharedValue(initialOpacity);
 
-  // Animate stack values when stackIndex changes (card moves forward)
-  // 18.1-FIX-2: Track if cascade already animated this transition
+  // UAT-005 FIX: Consolidated animation - stackIndex useEffect is the SINGLE source of truth
+  // Removed dual-animation approach (cascading useEffect + stackIndex useEffect) that caused race condition
+  // The cascade animation was being interrupted by stackIndex useEffect, causing mid-flight snaps
   const prevStackIndex = useSharedValue(stackIndex);
-  const cascadeHandledTransition = useSharedValue(false);
+
   useEffect(() => {
-    // 18.1-FIX-2: If cascade already handled this transition, skip redundant animation
-    // This prevents the double-animation that causes black flash
-    if (cascadeHandledTransition.value) {
-      logger.debug('SwipeablePhotoCard: Skipping stackIndex animation (cascade handled)', {
-        photoId: photo?.id,
-        stackIndex,
-      });
-      cascadeHandledTransition.value = false;
-      prevStackIndex.value = stackIndex;
-      return;
+    // Only animate if stackIndex actually changed
+    if (prevStackIndex.value === stackIndex) return;
+
+    const movingToFront = stackIndex === 0 && prevStackIndex.value > 0;
+
+    // Use timing animation for predictable, smooth motion
+    const config = {
+      duration: 350,
+      easing: Easing.out(Easing.cubic),
+    };
+
+    if (movingToFront) {
+      // Card becoming front - add delay to let exiting card clear
+      stackScaleAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackScale(stackIndex), config));
+      stackOffsetAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackOffset(stackIndex), config));
+      stackOpacityAnim.value = withDelay(CASCADE_DELAY_MS, withTiming(getStackOpacity(stackIndex), config));
+    } else {
+      // Other transitions - animate immediately
+      stackScaleAnim.value = withTiming(getStackScale(stackIndex), config);
+      stackOffsetAnim.value = withTiming(getStackOffset(stackIndex), config);
+      stackOpacityAnim.value = withTiming(getStackOpacity(stackIndex), config);
     }
 
-    // UAT-004 FIX: Use smoother spring config for gradual settling
-    stackScaleAnim.value = withSpring(getStackScale(stackIndex), CASCADE_SPRING_CONFIG);
-    stackOffsetAnim.value = withSpring(getStackOffset(stackIndex), CASCADE_SPRING_CONFIG);
-    stackOpacityAnim.value = withSpring(getStackOpacity(stackIndex), CASCADE_SPRING_CONFIG);
-
-    // Update previous stackIndex for next comparison
     prevStackIndex.value = stackIndex;
   }, [stackIndex]);
-
-  // UAT-012: When cascading=true, animate stack cards forward one position
-  // This happens DURING the front card's exit animation, not after
-  // UAT-004 FIX: Added delay for front card (targetIndex=0) to let exiting card clear
-  useEffect(() => {
-    if (cascading && !isActive && stackIndex > 0) {
-      // Animate to the position one step forward (e.g., stackIndex 1 → position 0)
-      const targetIndex = stackIndex - 1;
-
-      // 18.1-FIX-2: Mark that cascade handled this transition
-      // This prevents the stackIndex-change useEffect from re-animating
-      cascadeHandledTransition.value = true;
-
-      // UAT-004 FIX: Add slight delay when transitioning to front position
-      // This gives the exiting card time to clear, creating a smooth settling feel
-      if (targetIndex === 0) {
-        // Card becoming the new front - add delay for smooth settling
-        stackScaleAnim.value = withDelay(CASCADE_DELAY_MS, withSpring(getStackScale(targetIndex), CASCADE_SPRING_CONFIG));
-        stackOffsetAnim.value = withDelay(CASCADE_DELAY_MS, withSpring(getStackOffset(targetIndex), CASCADE_SPRING_CONFIG));
-        stackOpacityAnim.value = withDelay(CASCADE_DELAY_MS, withSpring(getStackOpacity(targetIndex), CASCADE_SPRING_CONFIG));
-      } else {
-        // Back cards animate immediately with smoother spring
-        stackScaleAnim.value = withSpring(getStackScale(targetIndex), CASCADE_SPRING_CONFIG);
-        stackOffsetAnim.value = withSpring(getStackOffset(targetIndex), CASCADE_SPRING_CONFIG);
-        stackOpacityAnim.value = withSpring(getStackOpacity(targetIndex), CASCADE_SPRING_CONFIG);
-      }
-    }
-  }, [cascading]);
 
   // UAT-004 FIX: Fade-in animation for newly visible cards entering the stack
   // When a card first enters the visible stack (position 2), fade in smoothly
@@ -248,12 +221,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     }
   }, [thresholdTriggered, triggerLightHaptic, photo?.id]);
 
-  // UAT-012: Notify parent when swipe starts (triggers cascade animation)
-  const notifySwipeStart = useCallback(() => {
-    if (onSwipeStart) {
-      onSwipeStart();
-    }
-  }, [onSwipeStart]);
+  // UAT-005 FIX: Removed notifySwipeStart - cascade animation now driven by stackIndex changes
 
   // Action handlers
   const handleArchive = useCallback(async () => {
@@ -381,9 +349,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
 
       if (isLeftSwipe) {
         // Archive (left swipe) - arc to bottom-left
-        // UAT-012: Card stays opaque - flies off screen without fading
-        // Notify parent to start cascade animation on stack cards
-        runOnJS(notifySwipeStart)();
+        // UAT-005 FIX: Removed notifySwipeStart - cascade happens on stackIndex change
         actionInProgress.value = true;
         translateX.value = withTiming(-SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,
@@ -398,9 +364,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         });
       } else if (isRightSwipe) {
         // Journal (right swipe) - arc to bottom-right
-        // UAT-012: Card stays opaque - flies off screen without fading
-        // Notify parent to start cascade animation on stack cards
-        runOnJS(notifySwipeStart)();
+        // UAT-005 FIX: Removed notifySwipeStart - cascade happens on stackIndex change
         actionInProgress.value = true;
         translateX.value = withTiming(SCREEN_WIDTH * 1.5, {
           duration: EXIT_DURATION,

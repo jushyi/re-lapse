@@ -26,7 +26,8 @@ const DarkroomScreen = () => {
   const navigation = useNavigation();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cascading, setCascading] = useState(false); // UAT-012: Track when cards are cascading
+  // UAT-005 FIX: Removed cascading state - animation now controlled solely by stackIndex changes
+  // This eliminates the race condition between cascading and stackIndex useEffects
   const [triageComplete, setTriageComplete] = useState(false); // Track triage completion for inline success
   const [pendingSuccess, setPendingSuccess] = useState(false); // UAT-001: Track when last photo triage is in progress
   // 18.1: Undo stack for batched triage - stores decisions locally until Done is tapped
@@ -194,8 +195,7 @@ const DarkroomScreen = () => {
         return newHidden;
       });
 
-      // Reset cascading state for next triage
-      setCascading(false);
+      // UAT-005 FIX: Removed cascading state reset - stackIndex change handles animation
 
       // 18.1: Show success state when all photos triaged but DON'T trigger success haptic
       // Haptic feedback will be triggered when user taps Done (batch save in Plan 2)
@@ -254,11 +254,9 @@ const DarkroomScreen = () => {
     navigation.goBack();
   };
 
-  // UAT-012: Callback when swipe exit animation starts (threshold crossed)
-  // This triggers cascade animation on stack cards immediately
-  const handleSwipeStart = () => {
-    setCascading(true);
-  };
+  // UAT-005 FIX: Removed handleSwipeStart - cascade animation now driven by stackIndex changes
+  // When a card is hidden (removed from visible array), remaining cards get new stackIndex values
+  // The stackIndex useEffect handles animation automatically - no separate trigger needed
 
   // Swipe handlers for SwipeablePhotoCard
   const handleArchiveSwipe = async () => {
@@ -277,25 +275,22 @@ const DarkroomScreen = () => {
   };
 
   // Button handlers - trigger card animations then let callback handle triage (UAT-003)
-  // UAT-012: Set cascading=true immediately to start stack animation during exit
+  // UAT-005 FIX: Removed setCascading - animation now driven by stackIndex changes when card is hidden
   const handleArchiveButton = () => {
     logger.info('DarkroomScreen: User tapped archive button', { photoId: currentPhoto?.id });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCascading(true); // Start cascade animation immediately
     cardRef.current?.triggerArchive();
   };
 
   const handleDeleteButton = () => {
     logger.info('DarkroomScreen: User tapped delete button', { photoId: currentPhoto?.id });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCascading(true); // Start cascade animation immediately
     cardRef.current?.triggerDelete();
   };
 
   const handleJournalButton = () => {
     logger.info('DarkroomScreen: User tapped journal button', { photoId: currentPhoto?.id });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCascading(true); // Start cascade animation immediately
     cardRef.current?.triggerJournal();
   };
 
@@ -576,10 +571,8 @@ const DarkroomScreen = () => {
               photo={photo}
               stackIndex={stackIndex}
               isActive={isActive}
-              cascading={cascading}
               isNewlyVisible={isNewlyVisible}
               enterFrom={isActive && undoingPhoto?.photo.id === photo.id ? undoingPhoto.enterFrom : null}
-              onSwipeStart={isActive ? handleSwipeStart : undefined}
               onSwipeLeft={isActive ? handleArchiveSwipe : undefined}
               onSwipeRight={isActive ? handleJournalSwipe : undefined}
               onSwipeDown={isActive ? handleDeleteSwipe : undefined}
