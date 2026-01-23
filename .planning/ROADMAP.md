@@ -242,7 +242,7 @@ Plans:
 **Goal**: Batch triage decisions locally until user confirms, with undo capability and session persistence
 **Depends on**: Phase 18
 **Research**: Unlikely (React Native state management and AsyncStorage patterns)
-**Plans**: 2/2 + 5 FIX complete
+**Plans**: 2/2 + 6 FIX complete
 
 Plans:
 - [x] 18.1-01: Undo stack state and UI - completed 2026-01-22
@@ -252,6 +252,7 @@ Plans:
 - [x] 18.1-FIX-3: UAT-003 expo-image migration for black flash - completed 2026-01-23
 - [x] 18.1-FIX-4: UAT-004 card cascade animation fix - completed 2026-01-23
 - [x] 18.1-FIX-5: UAT-005 cascade animation race condition fix - completed 2026-01-23
+- [x] 18.1-FIX-6: UAT-006 cascade animation snap fix - completed 2026-01-23
 
 **Delivered:**
 - Undo stack state management for local triage decisions
@@ -261,7 +262,7 @@ Plans:
 - Ionicons undo button with clean "Undo" text
 - Fixed black flash after cascade animation (hidden state tracking + cascade transition flag)
 - expo-image migration with native caching and 200ms transitions
-- Smooth cascade animation with single animation trigger (timing-based, 350ms)
+- Smooth cascade animation with isTransitioningToFront flag for proper animation-to-gesture handoff
 - Fade-in animation for new cards entering visible stack (300ms)
 
 #### Phase 18.2: Success Sound Effect on Triage Completion (INSERTED)
@@ -425,7 +426,7 @@ Plans:
 | 17.1 Darkroom Animation Refinements | v1.5 | 1/1 | Complete | 2026-01-22 |
 | 17.2 Reveal Timing 0-5 Minutes | v1.5 | 1/1 | Complete | 2026-01-22 |
 | 18. Reaction Notification Debouncing | v1.5 | 2/2 + FIX | Complete | 2026-01-22 |
-| 18.1 Batched Darkroom Triage with Undo | v1.5 | 2/2 + 5 FIX | Complete | 2026-01-23 |
+| 18.1 Batched Darkroom Triage with Undo | v1.5 | 2/2 + 6 FIX | Complete | 2026-01-23 |
 | 18.2 Success Sound Effect on Triage Completion | v1.5 | 0/? | Not started | - |
 | 18.3 Triage Animation Z-Index & Delete Suction | v1.5 | 0/? | Not started | - |
 | 18.4 Triage Animation Arc Adjustment | v1.5 | 0/? | Not started | - |

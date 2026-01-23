@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 18.1 of 18.5 (Batched Darkroom Triage with Undo)
-Plan: 2/2 + 5 FIX complete
+Plan: 2/2 + 6 FIX complete
 Status: Phase complete
-Last activity: 2026-01-23 - Completed 18.1-FIX-5-PLAN.md (UAT-005 cascade animation race condition fix)
+Last activity: 2026-01-23 - Completed 18.1-FIX-6-PLAN.md (UAT-006 cascade animation snap fix)
 
 Progress: █████████░ 85% (v1.5: 16/21 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 68 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 31 in v1.5)
+- Total plans completed: 69 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 32 in v1.5)
 - Average duration: 16 min
-- Total execution time: 13.5 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 4.9h v1.5)
+- Total execution time: 13.7 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.1h v1.5)
 
 **By Milestone:**
 
@@ -31,7 +31,7 @@ Progress: █████████░ 85% (v1.5: 16/21 phases complete)
 | v1.2 | 6-8 | 8 | 2.1 hours |
 | v1.3 | 9-10 | 4 | 42 min |
 | v1.4 | 11-14 | 17 | 136 min |
-| v1.5 | 15-18.5 | 31 | 336 min |
+| v1.5 | 15-18.5 | 32 | 348 min |
 
 ## Accumulated Context
 
@@ -73,6 +73,7 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 18.1-FIX-4 | 300ms fade-in for new stack cards | New back cards appear smoothly instead of abruptly |
 | 18.1-FIX-5 | Single stackIndex useEffect for animation | Eliminates race condition between cascading and stackIndex useEffects |
 | 18.1-FIX-5 | Timing over spring animation (350ms) | Predictable cascade motion without mid-flight interruptions |
+| 18.1-FIX-6 | isTransitioningToFront flag for cardStyle | Keeps using stackOffsetAnim during transition before switching to gesture transforms |
 
 ### Deferred Issues
 
@@ -110,5 +111,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 18.1-FIX-5-PLAN.md - UAT-005 cascade animation race condition fix
+Stopped at: Completed 18.1-FIX-6-PLAN.md - UAT-006 cascade animation snap fix
 Resume file: None
