@@ -465,11 +465,16 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     // Rotation based on horizontal movement (degrees) - only for front card
     const rotation = isActive ? translateX.value / 15 : 0;
 
+    // 18.3 FIX: If actionInProgress, always use gesture transforms (for delete suction)
+    // This ensures delete animation works even if card was still transitioning to front
+    const actionActive = actionInProgress.value;
+
     // UAT-006 FIX: When card is transitioning to front position, continue using stack animation
     // The problem was: when isActive becomes true, cardStyle switched to translateX/Y immediately
     // but the cascade animation was running on stackOffsetAnim - so the animation was ignored
     // Now we check isTransitioningToFront and continue using stack values until animation completes
-    const useStackAnimation = isTransitioningToFront.value === 1 || !isActive;
+    // 18.3 FIX: But if action is in progress (delete suction), use gesture transforms immediately
+    const useStackAnimation = !actionActive && (isTransitioningToFront.value === 1 || !isActive);
 
     if (useStackAnimation) {
       // Stack cards OR front card still transitioning from stack position
@@ -486,7 +491,7 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
         opacity: stackOpacityAnim.value,
       };
     } else {
-      // Front card (not transitioning) - apply gesture transforms
+      // Front card (not transitioning) OR action in progress - apply gesture transforms
       // 18.3: Include cardScale for delete suction animation
       return {
         transform: [
