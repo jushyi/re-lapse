@@ -28,7 +28,8 @@ const HORIZONTAL_THRESHOLD = 100;
 const DELETE_OVERLAY_THRESHOLD = 150;
 
 // Exit animation configuration (UAT-008: increased from 250ms for more visible arc motion)
-const EXIT_DURATION = 400;
+// 18.4: Slowed to 0.75 speed (533ms) for better exponential arc visibility
+const EXIT_DURATION = 533;
 
 // UAT-016: Button-triggered animations use slower duration for satisfying pace
 // Swipe gestures have natural lead-in time from drag, but button taps are instant
@@ -468,12 +469,9 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
     const curveProgress = Math.pow(normalizedX, 2.5); // Exponent 2.5 = gradual start, accelerating end
     const arcY = (SCREEN_HEIGHT * 0.5) * curveProgress;
 
-    // 18.4: Rotation follows same exponential curve - starts upright, rotates more as card accelerates
-    // Max rotation 25° at full exit (similar to previous ~25° at SCREEN_WIDTH * 1.5 / 15)
-    const maxRotation = 25;
-    const rotationAmount = maxRotation * curveProgress;
-    // Apply direction (positive for right swipe, negative for left) - only for front card
-    const rotation = isActive ? (translateX.value > 0 ? rotationAmount : -rotationAmount) : 0;
+    // Rotation based on horizontal movement (degrees) - original linear formula
+    // 18.4: Keep linear rotation for natural feel, only arc path uses exponential curve
+    const rotation = isActive ? translateX.value / 15 : 0;
 
     // 18.3 FIX: If actionInProgress, always use gesture transforms (for delete suction)
     // This ensures delete animation works even if card was still transitioning to front
