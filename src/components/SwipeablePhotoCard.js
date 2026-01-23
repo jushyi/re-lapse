@@ -350,9 +350,17 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       const SUCTION_DURATION = 450;
 
       // Card shrinks to 10% size as it gets "sucked in"
+      // Put the completion callback on scale animation since it always changes (1 → 0.1)
       cardScale.value = withTiming(0.1, {
         duration: SUCTION_DURATION,
         easing: Easing.in(Easing.cubic), // Accelerates into target
+      }, () => {
+        'worklet';
+        // Signal delete button to pulse, then trigger delete callback
+        if (onDeleteComplete) {
+          runOnJS(onDeleteComplete)();
+        }
+        runOnJS(handleDelete)();
       });
 
       // Card moves down toward delete button (bottom center of screen)
@@ -366,13 +374,6 @@ const SwipeablePhotoCard = forwardRef(({ photo, onSwipeLeft, onSwipeRight, onSwi
       translateX.value = withTiming(0, {
         duration: SUCTION_DURATION,
         easing: Easing.in(Easing.cubic),
-      }, () => {
-        'worklet';
-        // Signal delete button to pulse, then trigger delete callback
-        if (onDeleteComplete) {
-          runOnJS(onDeleteComplete)();
-        }
-        runOnJS(handleDelete)();
       });
     },
   }), [photo?.id, actionInProgress, isButtonDelete, translateX, translateY, cardScale, handleArchive, handleJournal, handleDelete, onDeleteComplete]);
