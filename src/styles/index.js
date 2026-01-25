@@ -19,3 +19,4 @@
 
 // Style exports will be added as style files are created
 export { styles as swipeablePhotoCardStyles } from './SwipeablePhotoCard.styles';
+export { styles as cameraScreenStyles } from './CameraScreen.styles';
