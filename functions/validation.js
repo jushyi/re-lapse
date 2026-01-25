@@ -66,6 +66,18 @@ const UserDocSchema = z.object({
 });
 
 // =============================================================================
+// REQUEST SCHEMAS (for callable functions)
+// =============================================================================
+
+/**
+ * Signed URL request schema
+ * Used for validating getSignedPhotoUrl callable function requests
+ */
+const SignedUrlRequestSchema = z.object({
+  photoPath: z.string().min(1),
+});
+
+// =============================================================================
 // VALIDATION HELPER
 // =============================================================================
 
@@ -99,11 +111,14 @@ function validateOrNull(schema, data, context) {
 // =============================================================================
 
 module.exports = {
-  // Schemas
+  // Document Schemas
   DarkroomDocSchema,
   PhotoDocSchema,
   FriendshipDocSchema,
   UserDocSchema,
+
+  // Request Schemas
+  SignedUrlRequestSchema,
 
   // Helper
   validateOrNull,

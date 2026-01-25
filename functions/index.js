@@ -7,7 +7,10 @@ const {
   PhotoDocSchema,
   FriendshipDocSchema,
   UserDocSchema,
+  SignedUrlRequestSchema,
 } = require('./validation');
+const { getStorage } = require('firebase-admin/storage');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -646,3 +649,66 @@ exports.sendReactionNotification = functions.firestore
       return null;
     }
   });
+
+/**
+ * Cloud Function: Generate a signed URL for secure photo access
+ * Callable function that requires authentication
+ *
+ * Uses v4 signing with 24-hour expiration. Even if a URL leaks,
+ * it becomes invalid after 24 hours.
+ */
+exports.getSignedPhotoUrl = onCall(async request => {
+  const userId = request.auth?.uid;
+
+  // Guard: Require authentication
+  if (!userId) {
+    logger.warn('getSignedPhotoUrl: Unauthenticated request rejected');
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  // Validate request data
+  const validationResult = SignedUrlRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    logger.warn('getSignedPhotoUrl: Invalid request data', {
+      errors: validationResult.error.errors,
+      userId,
+    });
+    throw new HttpsError('invalid-argument', 'Invalid request: photoPath is required');
+  }
+
+  const { photoPath } = validationResult.data;
+  logger.info('getSignedPhotoUrl: Generating signed URL', { userId, photoPath });
+
+  try {
+    const bucket = getStorage().bucket();
+    const file = bucket.file(photoPath);
+
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      logger.warn('getSignedPhotoUrl: File not found', { photoPath, userId });
+      throw new HttpsError('not-found', 'Photo not found');
+    }
+
+    // Generate signed URL with 24-hour expiration
+    const [url] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    logger.info('getSignedPhotoUrl: Signed URL generated', { userId, photoPath });
+    return { url };
+  } catch (error) {
+    // Re-throw HttpsErrors as-is
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    logger.error('getSignedPhotoUrl: Failed to generate signed URL', {
+      error: error.message,
+      userId,
+      photoPath,
+    });
+    throw new HttpsError('internal', 'Failed to generate signed URL');
+  }
+});
