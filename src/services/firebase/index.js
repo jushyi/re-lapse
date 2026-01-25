@@ -34,3 +34,6 @@ export {
   onAuthStateChanged as phoneAuthOnAuthStateChanged,
   getPhoneAuthErrorMessage,
 } from './phoneAuthService';
+
+// Export Signed URL service functions (for secure photo access)
+export { getSignedPhotoUrl, convertToSignedUrl } from './signedUrlService';
