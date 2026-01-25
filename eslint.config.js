@@ -38,4 +38,27 @@ module.exports = defineConfig([
       'import/namespace': 'off',
     },
   },
+
+  // Jest test files - add Jest globals
+  {
+    files: ['__tests__/**/*.js', '__tests__/**/*.jsx'],
+    languageOptions: {
+      globals: {
+        jest: 'readonly',
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        global: 'writable',
+      },
+    },
+    rules: {
+      // Allow duplicate keys in test factories (they're computed for user ID sorting)
+      'no-dupe-keys': 'off',
+    },
+  },
 ]);
