@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 21.3 of 30 (App Crashes When Inputting Phone Number)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 - Completed 21.3-01-PLAN.md
+Plan: 1 of 1 in current phase + FIX
+Status: Phase complete (UAT-001 resolved)
+Last activity: 2026-01-24 - Completed 21.3-01-FIX.md
 
 Progress: ██░░░░░░░░ ~20%
 
@@ -94,6 +94,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 21.2-01       | Development environment for active development       | Production env var can be added later when ready                                     |
 | 21.3-01       | useRef for non-serializable ConfirmationResult       | Avoids iOS serialization crash in navigation params                                  |
 | 21.3-01       | React Context for cross-screen sharing               | Cleaner than navigation params, no serialization                                     |
+| 21.3-01-FIX   | New iOS OAuth client for com.spoodsjs.oly            | Old client was for wrong bundle ID (com.lapseclone.app)                              |
+| 21.3-01-FIX   | REVERSED_CLIENT_ID in URL schemes                    | Required for Firebase Phone Auth reCAPTCHA callback                                  |
 
 ### Deferred Issues
 
@@ -123,5 +125,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 21.3-01-PLAN.md (Phone Crash Fix)
+Stopped at: Completed 21.3-01-FIX.md (Phone Crash UAT-001 Resolved)
 Resume file: None
