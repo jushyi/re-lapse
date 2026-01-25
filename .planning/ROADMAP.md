@@ -311,7 +311,7 @@ Plans:
 Plans:
 
 - [x] 28-01: Infrastructure + SwipeablePhotoCard refactoring - completed 2026-01-25
-- [ ] 28-02: CameraScreen refactoring
+- [x] 28-02: CameraScreen refactoring - completed 2026-01-25
 - [ ] 28-03: DarkroomScreen refactoring
 - [ ] 28-04: Remaining components refactoring
 
@@ -340,5 +340,5 @@ Plans:
 | 25. Authentication and Data Security | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 26. Privacy Features | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 27. Test Suite Setup | v1.6 | 4/4 | Complete | 2026-01-25 |
-| 28. Code Refactoring | v1.6 | 1/4 | In progress | - |
+| 28. Code Refactoring | v1.6 | 2/4 | In progress | - |
 | 29. Documentation | v1.6 | 0/? | Not started | - |

@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 28 of 30 (Code Refactoring)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-25 - Completed 28-01-PLAN.md (Infrastructure + SwipeablePhotoCard)
+Last activity: 2026-01-25 - Completed 28-02-PLAN.md (CameraScreen refactoring)
 
-Progress: ██████░░░░ ~62%
+Progress: ██████░░░░ ~63%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 93 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 19 in v1.6)
+- Total plans completed: 94 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 20 in v1.6)
 - Average duration: 16 min
-- Total execution time: 18 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 3.7h v1.6)
+- Total execution time: 18.2 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 3.9h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: ██████░░░░ ~62%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-28   | 19    | 244 min        |
+| v1.6      | 19-28   | 20    | 256 min        |
 
 ## Accumulated Context
 
@@ -120,6 +120,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 27-04         | File-level Firestore mocks for integration tests      | jest.setup.js mocks incompatible with modular API import pattern                     |
 | 28-01         | Hook handles useImperativeHandle internally           | Cleaner forwardRef pattern than passing ref through props                            |
 | 28-01         | Constants kept in hook file                           | Component-specific values (thresholds, durations) not global design tokens           |
+| 28-02         | Single useCamera hook vs multiple focused hooks       | Camera logic is cohesive; single hook is clearer at a glance                         |
+| 28-02         | Layout constants duplicated in hook and styles        | Both need FOOTER_HEIGHT, TAB_BAR_HEIGHT for calculations/positioning                 |
 
 ### Deferred Issues
 
@@ -149,5 +151,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 28-01-PLAN.md (Infrastructure + SwipeablePhotoCard) - Plan 1 of 4 in Phase 28
+Stopped at: Completed 28-02-PLAN.md (CameraScreen refactoring) - Plan 2 of 4 in Phase 28
 Resume file: None
