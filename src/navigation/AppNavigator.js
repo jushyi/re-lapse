@@ -237,17 +237,13 @@ const linking = {
               DeleteAccount: 'profile/delete-account',
             },
           },
-          Friends: {
-            screens: {
-              FriendsList: 'friends',
-              UserSearch: 'friends/search',
-              FriendRequests: 'friends/requests',
-            },
-          },
         },
       },
       Darkroom: 'darkroom',
       Notifications: 'notifications',
+      FriendsList: 'friends',
+      UserSearch: 'friends/search',
+      FriendRequests: 'friends/requests',
       PhoneInput: 'phone-input',
       Verification: 'verification',
       ProfileSetup: 'profile-setup',
@@ -355,6 +351,30 @@ const AppNavigator = () => {
                   presentation: 'card',
                   animation: 'slide_from_right',
                   headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="FriendsList"
+                component={FriendsListScreen}
+                options={{
+                  presentation: 'card',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen
+                name="UserSearch"
+                component={UserSearchScreen}
+                options={{
+                  presentation: 'card',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen
+                name="FriendRequests"
+                component={FriendRequestsScreen}
+                options={{
+                  presentation: 'card',
+                  animation: 'slide_from_right',
                 }}
               />
             </>
