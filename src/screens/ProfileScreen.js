@@ -15,6 +15,7 @@ import { Button } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { getFirestore, collection, query, where, getDocs } from '@react-native-firebase/firestore';
 import { getFriendUserIds } from '../services/firebase/friendshipService';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 // Initialize Firestore
@@ -78,7 +79,7 @@ const ProfileScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000000" />
+          <ActivityIndicator size="large" color={colors.text.primary} />
           <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
       </SafeAreaView>
@@ -98,7 +99,7 @@ const ProfileScreen = () => {
             }}
             style={styles.settingsButton}
           >
-            <Ionicons name="settings-outline" size={24} color="#000000" />
+            <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
@@ -162,7 +163,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,
@@ -171,12 +172,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background.primary,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: colors.text.secondary,
   },
   header: {
     flexDirection: 'row',
@@ -184,9 +185,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.subtle,
   },
   headerSpacer: {
     width: 40,
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.primary,
   },
   settingsButton: {
     padding: 8,
@@ -202,13 +203,13 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: 32,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
   },
   profilePhoto: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.background.tertiary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -220,11 +221,12 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 20,
     fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   bio: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.text.secondary,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -239,17 +241,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: colors.text.primary,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: colors.text.secondary,
     marginTop: 4,
   },
   comingSoonSection: {
     alignItems: 'center',
     paddingVertical: 40,
     paddingHorizontal: 32,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
     marginTop: 16,
     marginHorizontal: 16,
     borderRadius: 12,
@@ -261,12 +264,12 @@ const styles = StyleSheet.create({
   comingSoonTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   comingSoonText: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
   },
