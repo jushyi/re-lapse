@@ -113,7 +113,7 @@ Plans:
 - [x] 30-01: Design Tokens - Rewind brand palette with purple/pink gradients
 - [x] 30-02: Brand Assets - Cassette tape icon, splash screen, favicon
 - [x] 30-03: App Configuration - app.json identity, Oly references removed
-- [ ] 30-04: TBD
+- [x] 30-04: Animated Splash Rebrand - Purple blades on dark background with blur-to-focus effect
 - [ ] 30-05: TBD
 
 #### Phase 31: Personalization Scaffolding
@@ -233,7 +233,7 @@ Plans:
 | 18.4 Triage Animation Arc Adjustment           | v0.5      | 1/1            | Complete    | 2026-01-23 |
 | 18.5 Camera Default Launch Screen              | v0.5      | 1/1            | Complete    | 2026-01-23 |
 | 18.6 Triage Animation Timing Optimization      | v0.5      | 1/1            | Complete    | 2026-01-23 |
-| 30. Rewind Rebrand                             | v0.7      | 3/5            | In progress | -          |
+| 30. Rewind Rebrand                             | v0.7      | 4/5            | In progress | -          |
 | 31. Personalization Scaffolding                | v0.7      | 0/?            | Not started | -          |
 | 32. Navigation Restructure                     | v0.7      | 0/?            | Not started | -          |
 | 33. Feed Header & Notifications                | v0.7      | 0/?            | Not started | -          |
