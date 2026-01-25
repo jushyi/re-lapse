@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 27 of 30 (Test Suite Setup)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 27-03-PLAN.md (Unit Tests for Social Features)
+Plan: 4 of 4 in current phase
+Status: Complete
+Last activity: 2026-01-25 - Completed 27-04-PLAN.md (Integration Tests)
 
-Progress: █████░░░░░ ~55%
+Progress: ██████░░░░ ~60%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 91 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 17 in v1.6)
+- Total plans completed: 92 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 18 in v1.6)
 - Average duration: 16 min
-- Total execution time: 17.4 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 3.1h v1.6)
+- Total execution time: 17.8 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 3.5h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: █████░░░░░ ~55%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-27   | 17    | 207 min        |
+| v1.6      | 19-27   | 18    | 232 min        |
 
 ## Accumulated Context
 
@@ -116,6 +116,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 27-01         | Global exports for mock function assertions           | Allows tests to configure and assert on mock calls                                   |
 | 27-03         | Pure function tests without mocks                     | generateFriendshipId tested directly for simplicity                                  |
 | 27-03         | photoState === 'journal' filter verified              | Critical test to prevent past 'journaled' bug from recurring                         |
+| 27-04         | Pure logic tests for or() query functions             | Complex or() query mocking breaks chains; unit tests cover query logic               |
+| 27-04         | File-level Firestore mocks for integration tests      | jest.setup.js mocks incompatible with modular API import pattern                     |
 
 ### Deferred Issues
 
@@ -145,5 +147,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 27-03-PLAN.md (Unit Tests for Social Features)
+Stopped at: Completed 27-04-PLAN.md (Integration Tests) - Phase 27 complete
 Resume file: None
