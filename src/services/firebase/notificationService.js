@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { getFirestore, doc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { secureStorage, STORAGE_KEYS } from '../secureStorageService';
 
 // Initialize Firestore once at module level
 const db = getFirestore();
@@ -118,7 +119,7 @@ export const getNotificationToken = async () => {
 };
 
 /**
- * Store notification token in user's Firestore document
+ * Store notification token in user's Firestore document and locally in SecureStore
  * @param {string} userId - User ID
  * @param {string} token - FCM/Expo push token
  * @returns {Promise<{success: boolean, error?: string}>}
@@ -132,11 +133,54 @@ export const storeNotificationToken = async (userId, token) => {
       updatedAt: serverTimestamp(),
     });
 
-    logger.info('Notification token stored for user', { userId });
+    logger.info('Notification token stored in Firestore', { userId });
+
+    // Also store locally in SecureStore for offline access and logout cleanup
+    const localStored = await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, token);
+    if (localStored) {
+      logger.info('Notification token stored in SecureStore', { userId });
+    } else {
+      logger.warn('Failed to store notification token in SecureStore', { userId });
+    }
+
     return { success: true };
   } catch (error) {
     logger.error('Error storing notification token', { error: error.message });
     return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get notification token from local SecureStore
+ * Useful for checking if token exists without network call
+ * @returns {Promise<string|null>} Token or null if not found
+ */
+export const getLocalNotificationToken = async () => {
+  try {
+    const token = await secureStorage.getItem(STORAGE_KEYS.FCM_TOKEN);
+    logger.debug('getLocalNotificationToken: Retrieved token', {
+      hasToken: !!token,
+    });
+    return token;
+  } catch (error) {
+    logger.error('Error getting local notification token', { error: error.message });
+    return null;
+  }
+};
+
+/**
+ * Clear notification token from local SecureStore
+ * Used during logout cleanup
+ * @returns {Promise<boolean>} Success status
+ */
+export const clearLocalNotificationToken = async () => {
+  try {
+    const result = await secureStorage.deleteItem(STORAGE_KEYS.FCM_TOKEN);
+    logger.debug('clearLocalNotificationToken: Token cleared', { success: result });
+    return result;
+  } catch (error) {
+    logger.error('Error clearing local notification token', { error: error.message });
+    return false;
   }
 };
 
