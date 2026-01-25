@@ -712,3 +712,100 @@ exports.getSignedPhotoUrl = onCall(async request => {
     throw new HttpsError('internal', 'Failed to generate signed URL');
   }
 });
+
+/**
+ * Delete user account and all associated data
+ * Called after user re-authenticates via phone verification
+ * Order: Storage files -> Photos -> Friendships -> Darkroom -> User -> Auth
+ *
+ * IMPORTANT: Auth user must be deleted LAST to maintain permissions during cleanup
+ */
+exports.deleteUserAccount = onCall({ cors: true }, async request => {
+  // Require authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated to delete account');
+  }
+
+  const userId = request.auth.uid;
+  logger.info('deleteUserAccount: Starting deletion', { userId });
+
+  try {
+    const db = admin.firestore();
+    const bucket = getStorage().bucket();
+
+    // Step 1: Get all user's photos and delete Storage files
+    const photosSnapshot = await db.collection('photos').where('userId', '==', userId).get();
+    logger.info('deleteUserAccount: Found photos to delete', { count: photosSnapshot.size });
+
+    for (const doc of photosSnapshot.docs) {
+      const photoData = doc.data();
+      if (photoData.imageURL) {
+        try {
+          // Extract path from Firebase Storage URL
+          const decodedUrl = decodeURIComponent(photoData.imageURL);
+          const pathMatch = decodedUrl.match(/\/o\/(.+?)\?/);
+          if (pathMatch) {
+            await bucket.file(pathMatch[1]).delete();
+            logger.debug('deleteUserAccount: Deleted storage file', { path: pathMatch[1] });
+          }
+        } catch (storageError) {
+          // Log but continue - file may already be deleted
+          logger.warn('deleteUserAccount: Storage file deletion failed', {
+            error: storageError.message,
+          });
+        }
+      }
+    }
+
+    // Step 2: Delete all photos from Firestore (batch, max 500)
+    const photoBatch = db.batch();
+    photosSnapshot.docs.forEach(doc => photoBatch.delete(doc.ref));
+    if (photosSnapshot.size > 0) {
+      await photoBatch.commit();
+      logger.info('deleteUserAccount: Deleted photo documents', { count: photosSnapshot.size });
+    }
+
+    // Step 3: Delete friendships where user is user1Id
+    const friendships1 = await db.collection('friendships').where('user1Id', '==', userId).get();
+    const friendship1Batch = db.batch();
+    friendships1.docs.forEach(doc => friendship1Batch.delete(doc.ref));
+    if (friendships1.size > 0) {
+      await friendship1Batch.commit();
+      logger.info('deleteUserAccount: Deleted friendships (user1)', { count: friendships1.size });
+    }
+
+    // Step 4: Delete friendships where user is user2Id
+    const friendships2 = await db.collection('friendships').where('user2Id', '==', userId).get();
+    const friendship2Batch = db.batch();
+    friendships2.docs.forEach(doc => friendship2Batch.delete(doc.ref));
+    if (friendships2.size > 0) {
+      await friendship2Batch.commit();
+      logger.info('deleteUserAccount: Deleted friendships (user2)', { count: friendships2.size });
+    }
+
+    // Step 5: Delete darkroom document
+    const darkroomRef = db.doc(`darkrooms/${userId}`);
+    const darkroomDoc = await darkroomRef.get();
+    if (darkroomDoc.exists) {
+      await darkroomRef.delete();
+      logger.info('deleteUserAccount: Deleted darkroom document');
+    }
+
+    // Step 6: Delete user document
+    const userRef = db.doc(`users/${userId}`);
+    const userDoc = await userRef.get();
+    if (userDoc.exists) {
+      await userRef.delete();
+      logger.info('deleteUserAccount: Deleted user document');
+    }
+
+    // Step 7: Delete Firebase Auth user (LAST - after all data cleanup)
+    await admin.auth().deleteUser(userId);
+    logger.info('deleteUserAccount: Deleted auth user, account deletion complete', { userId });
+
+    return { success: true };
+  } catch (error) {
+    logger.error('deleteUserAccount: Failed', { userId, error: error.message });
+    throw new HttpsError('internal', 'Account deletion failed: ' + error.message);
+  }
+});
