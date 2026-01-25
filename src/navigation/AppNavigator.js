@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
+import { PhoneAuthProvider } from '../context/PhoneAuthContext';
 import { getDevelopingPhotoCount } from '../services/firebase/photoService';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
@@ -319,10 +320,12 @@ const AppNavigator = () => {
       >
         {!isAuthenticated ? (
           // Auth Stack - Phone-only authentication
-          <>
+          // Wrapped in PhoneAuthProvider to share confirmation ref between screens
+          // This prevents serialization crash when passing Firebase ConfirmationResult
+          <PhoneAuthProvider>
             <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
             <Stack.Screen name="Verification" component={VerificationScreen} />
-          </>
+          </PhoneAuthProvider>
         ) : needsProfileSetup ? (
           // Profile Setup - User logged in but needs to complete profile
           <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />

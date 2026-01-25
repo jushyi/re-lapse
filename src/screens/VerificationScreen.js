@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
 import { verifyCode } from '../services/firebase/phoneAuthService';
 import { formatPhoneWithCountry } from '../utils/phoneUtils';
+import { usePhoneAuth } from '../context/PhoneAuthContext';
 import logger from '../utils/logger';
 
 /**
@@ -21,7 +22,18 @@ import logger from '../utils/logger';
  * Uses confirmation object from React Native Firebase
  */
 const VerificationScreen = ({ navigation, route }) => {
-  const { confirmation, phoneNumber, e164 } = route.params || {};
+  // Get phone number and e164 from navigation params (safe to serialize)
+  const { phoneNumber, e164 } = route.params || {};
+
+  // Get confirmation from context ref (NOT from navigation params)
+  // Firebase ConfirmationResult contains functions that cannot be serialized
+  const { confirmationRef } = usePhoneAuth();
+  const confirmation = confirmationRef.current;
+
+  logger.debug('VerificationScreen: Reading confirmation from context ref', {
+    hasConfirmation: !!confirmation,
+    phoneNumber,
+  });
 
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
