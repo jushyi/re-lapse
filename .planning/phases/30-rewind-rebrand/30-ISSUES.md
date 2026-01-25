@@ -10,6 +10,24 @@ None.
 
 ## Resolved Issues
 
+### UAT-004: Feed header still shows "Lapse" instead of "Rewind"
+
+**Discovered:** 2026-01-25
+**Resolved:** 2026-01-25
+**Phase/Plan:** 30-03 → Fixed in 30-FIX-3
+**Severity:** Minor
+**Feature:** Feed screen header
+**Description:** Multiple screens still had "Lapse" text instead of "Rewind" branding
+
+**Resolution:**
+Fixed 3 files to replace Lapse → Rewind:
+
+- FeedScreen.js: header title
+- CameraScreen.js: permission request text
+- UserSearchScreen.js: empty state text
+
+**Commit:** 496febc
+
 ### UAT-003: Dark theme not applied to Feed, Profile, Friends, Auth screens
 
 **Discovered:** 2026-01-25
