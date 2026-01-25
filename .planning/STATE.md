@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 
 ## Current Position
 
-Phase: 24 of 30 (Cloud Functions Validation)
+Phase: 25 of 30 (Authentication and Data Security)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-24 - Completed 24-01-PLAN.md
+Last activity: 2026-01-25 - Completed 25-01-PLAN.md
 
-Progress: ████░░░░░░ ~33%
+Progress: █████░░░░░ ~37%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 84 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 10 in v1.6)
+- Total plans completed: 85 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 11 in v1.6)
 - Average duration: 16 min
-- Total execution time: 15.8 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 1.5h v1.6)
+- Total execution time: 16.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 1.8h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: ████░░░░░░ ~33%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-24   | 10    | 99 min         |
+| v1.6      | 19-25   | 11    | 117 min        |
 
 ## Accumulated Context
 
@@ -102,6 +102,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 23-01         | Split photo update into owner/non-owner cases         | Clearer separation of permissions, self-reaction prevention                          |
 | 24-01         | z.any() for Firestore Timestamps                      | Timestamps don't serialize cleanly to JSON                                           |
 | 24-01         | Guard clauses with null returns                       | Background triggers should never throw                                               |
+| 25-01         | AFTER_FIRST_UNLOCK for SecureStore                    | Non-deprecated keychainAccessible constant                                           |
+| 25-01         | Skip messaging().deleteToken()                        | Project uses expo-notifications, focus on server-side cleanup                        |
+| 25-01         | Firestore FCM cleanup before auth.signOut()           | User loses write permission after signing out                                        |
 
 ### Deferred Issues
 
@@ -130,6 +133,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-Stopped at: Completed 24-01-PLAN.md (Cloud Functions Validation)
+Last session: 2026-01-25
+Stopped at: Completed 25-01-PLAN.md (Authentication and Data Security)
 Resume file: None
