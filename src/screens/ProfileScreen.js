@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { getFirestore, collection, query, where, getDocs } from '@react-native-firebase/firestore';
@@ -11,6 +21,7 @@ import logger from '../utils/logger';
 const db = getFirestore();
 
 const ProfileScreen = () => {
+  const navigation = useNavigation();
   const { signOut, user, userProfile } = useAuth();
   const [stats, setStats] = useState({ posts: 0, friends: 0, reactions: 0 });
   const [loading, setLoading] = useState(true);
@@ -78,7 +89,17 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content}>
         <View style={styles.header}>
+          <View style={styles.headerSpacer} />
           <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity
+            onPress={() => {
+              logger.debug('ProfileScreen: Settings button pressed');
+              navigation.navigate('Settings');
+            }}
+            style={styles.settingsButton}
+          >
+            <Ionicons name="settings-outline" size={24} color="#000000" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.profileSection}>
@@ -158,17 +179,25 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   header: {
-    paddingHorizontal: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
-    alignItems: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
+  },
+  settingsButton: {
+    padding: 8,
   },
   profileSection: {
     alignItems: 'center',
