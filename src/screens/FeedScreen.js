@@ -27,6 +27,7 @@ import PhotoDetailModal from '../components/PhotoDetailModal';
 import { FriendStoryCard, StoriesViewerModal } from '../components';
 import { toggleReaction, getFriendStoriesData } from '../services/firebase/feedService';
 import { useAuth } from '../context/AuthContext';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const db = getFirestore();
@@ -245,7 +246,7 @@ const FeedScreen = () => {
 
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#000000" />
+        <ActivityIndicator size="small" color={colors.text.primary} />
         <Text style={styles.footerText}>Loading more...</Text>
       </View>
     );
@@ -346,7 +347,7 @@ const FeedScreen = () => {
           onPress={() => navigation.navigate('Notifications')}
           style={styles.notificationButton}
         >
-          <Ionicons name="heart-outline" size={24} color="#000000" />
+          <Ionicons name="heart-outline" size={24} color={colors.text.primary} />
           {hasNewNotifications && <View style={styles.notificationDot} />}
         </TouchableOpacity>
       </View>
@@ -367,7 +368,11 @@ const FeedScreen = () => {
           contentContainerStyle={styles.feedList}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#000000" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.text.primary}
+            />
           }
           onEndReached={loadMorePhotos}
           onEndReachedThreshold={0.5}
@@ -400,7 +405,7 @@ const FeedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -408,14 +413,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.text.primary,
   },
   notificationButton: {
     padding: 8,
@@ -444,7 +449,7 @@ const styles = StyleSheet.create({
   footerText: {
     marginLeft: 12,
     fontSize: 14,
-    color: '#666666',
+    color: colors.text.secondary,
   },
   emptyContainer: {
     flex: 1,
@@ -460,18 +465,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   emptyButton: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.brand.purple,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -495,18 +500,18 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.brand.purple,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
