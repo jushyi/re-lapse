@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 27 of 30 (Test Suite Setup)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-25 - Completed 27-02-PLAN.md (Unit Tests for Core Services)
+Last activity: 2026-01-25 - Completed 27-03-PLAN.md (Unit Tests for Social Features)
 
-Progress: █████░░░░░ ~50%
+Progress: █████░░░░░ ~55%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 90 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 16 in v1.6)
+- Total plans completed: 91 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 17 in v1.6)
 - Average duration: 16 min
-- Total execution time: 17.2 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 2.9h v1.6)
+- Total execution time: 17.4 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 3.1h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: █████░░░░░ ~50%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-27   | 16    | 195 min        |
+| v1.6      | 19-27   | 17    | 207 min        |
 
 ## Accumulated Context
 
@@ -114,6 +114,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 27-01         | jest-expo preset for Expo projects                    | Handles Expo-specific transforms and mocks automatically                             |
 | 27-01         | Mock functions defined OUTSIDE jest.mock()            | Prevents "undefined" errors when using mockResolvedValue                             |
 | 27-01         | Global exports for mock function assertions           | Allows tests to configure and assert on mock calls                                   |
+| 27-03         | Pure function tests without mocks                     | generateFriendshipId tested directly for simplicity                                  |
+| 27-03         | photoState === 'journal' filter verified              | Critical test to prevent past 'journaled' bug from recurring                         |
 
 ### Deferred Issues
 
@@ -143,5 +145,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 27-02-PLAN.md (Unit Tests for Core Services)
+Stopped at: Completed 27-03-PLAN.md (Unit Tests for Social Features)
 Resume file: None
