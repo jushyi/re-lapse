@@ -148,7 +148,7 @@ Plans:
 
 Plans:
 
-- [ ] 33-01: TBD
+- [x] 33-01: ActivityScreen with MaterialTopTabNavigator, navigation wiring from feed
 
 #### Phase 34: Feed Card Redesign
 
@@ -237,7 +237,7 @@ Plans:
 | 30. Rewind Rebrand                             | v0.7      | 5/5            | Complete    | 2026-01-25 |
 | 31. Personalization Scaffolding                | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 32. Navigation Restructure                     | v0.7      | 1/1            | Complete    | 2026-01-25 |
-| 33. Feed Header & Notifications                | v0.7      | 0/?            | Not started | -          |
+| 33. Feed Header & Notifications                | v0.7      | 1/?            | In progress | -          |
 | 34. Feed Card Redesign                         | v0.7      | 0/?            | Not started | -          |
 | 35. Stories Redesign                           | v0.7      | 0/?            | Not started | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
