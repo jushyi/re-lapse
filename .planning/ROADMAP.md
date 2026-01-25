@@ -122,11 +122,11 @@ Plans:
 **Goal**: Theme context/infrastructure for users to change color palettes (future feature prep)
 **Depends on**: Phase 30
 **Research**: Unlikely (React Context patterns)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 31-01: TBD
+- [x] 31-01: ThemeContext infrastructure with preset palettes and AsyncStorage persistence
 
 #### Phase 32: Navigation Restructure
 
@@ -235,7 +235,7 @@ Plans:
 | 18.5 Camera Default Launch Screen              | v0.5      | 1/1            | Complete    | 2026-01-23 |
 | 18.6 Triage Animation Timing Optimization      | v0.5      | 1/1            | Complete    | 2026-01-23 |
 | 30. Rewind Rebrand                             | v0.7      | 5/5            | Complete    | 2026-01-25 |
-| 31. Personalization Scaffolding                | v0.7      | 0/?            | Not started | -          |
+| 31. Personalization Scaffolding                | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 32. Navigation Restructure                     | v0.7      | 0/?            | Not started | -          |
 | 33. Feed Header & Notifications                | v0.7      | 0/?            | Not started | -          |
 | 34. Feed Card Redesign                         | v0.7      | 0/?            | Not started | -          |
