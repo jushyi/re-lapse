@@ -4,30 +4,41 @@
  * Creates a memorable launch experience with 6 aperture blades
  * opening to reveal the app, matching the Rewind icon design.
  *
- * Animation: Blades start covering the screen (closed aperture)
- * and scale/rotate outward to reveal the app behind.
+ * Animation sequence:
+ * 1. Shutter opens (blades scale/rotate outward)
+ * 2. Blur-to-focus effect (lens finding clarity)
+ * 3. Fade out to main app
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
   withDelay,
   runOnJS,
   Easing,
   interpolate,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { colors } from '../constants/colors';
+import { animations } from '../constants/animations';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Match the brand colors from the icon
-const APERTURE_COLOR = '#FF6B6B'; // Coral
-const BACKGROUND_COLOR = '#FAFAFA'; // Off-white (matches splash background)
+// Use design tokens for brand colors
+const APERTURE_COLOR = colors.brand.purple; // '#8B5CF6'
+const BACKGROUND_COLOR = colors.background.primary; // '#0F0F0F'
 
-// Animation timing
-const ANIMATION_DURATION = 800; // ms
-const FADE_OUT_DURATION = 300; // ms after shutter opens
+// Animation timing from design tokens
+const ANIMATION_DURATION = animations.STARTUP?.SHUTTER_DURATION || 800;
+const BLUR_DELAY = animations.STARTUP?.BLUR_DELAY || 200;
+const BLUR_DURATION = animations.STARTUP?.BLUR_DURATION || 600;
+const FADE_OUT_DURATION = animations.STARTUP?.FADE_OUT_DURATION || 300;
+
+// Create animated BlurView component
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 // Number of aperture blades (matches icon design)
 const NUM_BLADES = 6;
@@ -91,17 +102,30 @@ const ApertureBlade = ({ index, openProgress }) => {
 const AnimatedSplash = ({ onAnimationComplete }) => {
   const openProgress = useSharedValue(0);
   const opacity = useSharedValue(1);
+  const blurIntensity = useSharedValue(80);
+  const [showBlur, setShowBlur] = useState(true);
 
   useEffect(() => {
-    // Start the shutter opening animation
+    // 1. Start the shutter opening animation
     openProgress.value = withTiming(1, {
       duration: ANIMATION_DURATION,
       easing: Easing.out(Easing.cubic),
     });
 
-    // After opening, fade out the entire overlay
+    // 2. After shutter opens, animate blur from 80 → 0 (lens finding focus)
+    blurIntensity.value = withDelay(
+      ANIMATION_DURATION + BLUR_DELAY,
+      withTiming(0, { duration: BLUR_DURATION }, finished => {
+        if (finished) {
+          runOnJS(setShowBlur)(false);
+        }
+      })
+    );
+
+    // 3. After blur clears, fade out the entire overlay
+    const totalDelay = ANIMATION_DURATION + BLUR_DELAY + BLUR_DURATION;
     opacity.value = withDelay(
-      ANIMATION_DURATION,
+      totalDelay,
       withTiming(0, { duration: FADE_OUT_DURATION }, finished => {
         if (finished && onAnimationComplete) {
           runOnJS(onAnimationComplete)();
@@ -114,6 +138,10 @@ const AnimatedSplash = ({ onAnimationComplete }) => {
     opacity: opacity.value,
   }));
 
+  const blurAnimatedProps = useAnimatedProps(() => ({
+    intensity: blurIntensity.value,
+  }));
+
   return (
     <Animated.View style={[styles.container, containerStyle]}>
       <View style={styles.background}>
@@ -122,6 +150,15 @@ const AnimatedSplash = ({ onAnimationComplete }) => {
             <ApertureBlade key={index} index={index} openProgress={openProgress} />
           ))}
         </View>
+        {/* Blur overlay - animates from blurry to clear after shutter opens */}
+        {showBlur && (
+          <AnimatedBlurView
+            style={StyleSheet.absoluteFill}
+            tint="dark"
+            experimentalBlurMethod="blur"
+            animatedProps={blurAnimatedProps}
+          />
+        )}
       </View>
     </Animated.View>
   );
