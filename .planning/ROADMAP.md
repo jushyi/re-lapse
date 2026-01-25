@@ -296,7 +296,9 @@ Plans:
 Plans:
 
 - [x] 27-01: Jest test infrastructure and Firebase mocking - completed 2026-01-25
-- [ ] 27-02: TBD (Service tests)
+- [x] 27-02: Unit tests for core services (phoneAuthService, photoService, darkroomService) - completed 2026-01-25
+- [ ] 27-03: TBD
+- [ ] 27-04: TBD
 
 #### Phase 28: Code Refactoring
 
@@ -333,6 +335,6 @@ Plans:
 | 24. Cloud Functions Validation | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 25. Authentication and Data Security | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 26. Privacy Features | v1.6 | 2/2 | Complete | 2026-01-25 |
-| 27. Test Suite Setup | v1.6 | 1/? | In progress | - |
+| 27. Test Suite Setup | v1.6 | 2/4 | In progress | - |
 | 28. Code Refactoring | v1.6 | 0/? | Not started | - |
 | 29. Documentation | v1.6 | 0/? | Not started | - |
