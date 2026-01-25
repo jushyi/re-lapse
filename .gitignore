@@ -47,3 +47,9 @@ yarn-error.*
 tmpclaude-*
 nul
 CLAUDE.md
+
+# Firebase config files (never commit)
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+google-services.json
+**/google-services.json
