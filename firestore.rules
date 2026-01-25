@@ -54,9 +54,18 @@ service cloud.firestore {
     }
 
     // Helper function to ensure immutable photo fields are not changed
-    // Protects userId, capturedAt, imageURL from modification
+    // Protects userId, capturedAt from ALL modification
+    // Protects imageURL from modification AFTER it's set (allows initial setting from empty)
     function immutablePhotoFieldsUnchanged() {
-      return request.resource.data.diff(resource.data).unchangedKeys().hasAll(['userId', 'capturedAt', 'imageURL']);
+      let immutableAlways = request.resource.data
+        .diff(resource.data)
+        .unchangedKeys()
+        .hasAll(['userId', 'capturedAt']);
+      // imageURL can be changed only if current value is empty (initial set after Storage upload)
+      let imageURLProtected =
+        resource.data.imageURL == '' ||
+        request.resource.data.diff(resource.data).unchangedKeys().hasAny(['imageURL']);
+      return immutableAlways && imageURLProtected;
     }
 
     // =============================================================================
