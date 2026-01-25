@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 26 of 30 (Privacy Features)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 26-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 26-02-PLAN.md
 
-Progress: █████░░░░░ ~40%
+Progress: █████░░░░░ ~45%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 87 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 13 in v1.6)
+- Total plans completed: 88 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 14 in v1.6)
 - Average duration: 16 min
-- Total execution time: 16.5 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 2.2h v1.6)
+- Total execution time: 16.9 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 2.6h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: █████░░░░░ ~40%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-26   | 13    | 140 min        |
+| v1.6      | 19-26   | 14    | 165 min        |
 
 ## Accumulated Context
 
@@ -108,6 +108,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 25-02         | v4 signing for Cloud Storage URLs                     | Current standard, max 7 days expiration                                              |
 | 25-02         | 24-hour signed URL expiration                         | Balances security with user experience                                               |
 | 25-02         | Callable function requires authentication             | No anonymous access to signed URLs                                                   |
+| 26-02         | Delete auth user LAST                                 | Maintains permissions during cascade deletion                                        |
+| 26-02         | Two friendship queries for deletion                   | Deterministic ID means user can be user1Id OR user2Id                                |
+| 26-02         | PhoneAuthProvider always wraps entire app             | Needed for re-authentication when user is already logged in                          |
 
 ### Deferred Issues
 
@@ -137,5 +140,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 26-01-PLAN.md (Settings and Legal Screens)
+Stopped at: Completed 26-02-PLAN.md (Account Deletion with Re-Authentication)
 Resume file: None

@@ -278,12 +278,12 @@ Plans:
 **Depends on**: Phase 25
 **Research**: Complete
 **Plans**: 2
-**Status**: In progress
+**Status**: Complete
 
 Plans:
 
 - [x] 26-01: Settings screen and legal content screens - completed 2026-01-25
-- [ ] 26-02: Account deletion flow with re-authentication
+- [x] 26-02: Account deletion flow with re-authentication - completed 2026-01-25
 
 #### Phase 27: Test Suite Setup
 
@@ -330,7 +330,7 @@ Plans:
 | 23. Firestore Security Rules Audit | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 24. Cloud Functions Validation | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 25. Authentication and Data Security | v1.6 | 2/2 | Complete | 2026-01-25 |
-| 26. Privacy Features | v1.6 | 1/2 | In progress | - |
+| 26. Privacy Features | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 27. Test Suite Setup | v1.6 | 0/? | Not started | - |
 | 28. Code Refactoring | v1.6 | 0/? | Not started | - |
 | 29. Documentation | v1.6 | 0/? | Not started | - |
