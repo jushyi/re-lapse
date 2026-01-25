@@ -35,23 +35,6 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 /**
- * Friends Stack Navigator (FriendsList, UserSearch, FriendRequests)
- */
-const FriendsStackNavigator = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="FriendsList" component={FriendsListScreen} />
-      <Stack.Screen name="UserSearch" component={UserSearchScreen} />
-      <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} />
-    </Stack.Navigator>
-  );
-};
-
-/**
  * Profile Stack Navigator (Profile, Settings, PrivacyPolicy, TermsOfService, DeleteAccount)
  */
 const ProfileStackNavigator = () => {
@@ -71,7 +54,7 @@ const ProfileStackNavigator = () => {
 };
 
 /**
- * Main Tab Navigator (Feed, Camera, Friends, Darkroom, Profile)
+ * Main Tab Navigator (Feed, Camera, Profile) - 3-tab layout
  */
 const MainTabNavigator = () => {
   const { user } = useAuth();
@@ -124,13 +107,6 @@ const MainTabNavigator = () => {
         component={CameraScreen}
         options={{
           tabBarIcon: ({ color }) => <CameraIcon color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Friends"
-        component={FriendsStackNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <FriendsIcon color={color} />,
         }}
       />
       <Tab.Screen
@@ -190,21 +166,6 @@ const CameraIcon = ({ color }) => (
       strokeLinejoin="round"
     />
     <Circle cx="12" cy="13.5" r="3.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-  </Svg>
-);
-
-// Friends Icon - Two people side by side
-const FriendsIcon = ({ color }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <Circle cx="17" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <Path
-      d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <Path d="M16 20c0-3.5 2.5-6 6-6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
   </Svg>
 );
 
