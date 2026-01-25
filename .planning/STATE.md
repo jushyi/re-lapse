@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 
 ## Current Position
 
-Phase: 26 of 30 (Privacy Features)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 26-02-PLAN.md
+Phase: 27 of 30 (Test Suite Setup)
+Plan: 1 of TBD in current phase
+Status: Plan 27-01 complete
+Last activity: 2026-01-25 - Completed 27-01-PLAN.md (Jest Test Infrastructure)
 
-Progress: █████░░░░░ ~45%
+Progress: █████░░░░░ ~50%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 88 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 14 in v1.6)
+- Total plans completed: 89 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 15 in v1.6)
 - Average duration: 16 min
-- Total execution time: 16.9 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 2.6h v1.6)
+- Total execution time: 17.2 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 2.9h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: █████░░░░░ ~45%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-26   | 14    | 165 min        |
+| v1.6      | 19-27   | 15    | 180 min        |
 
 ## Accumulated Context
 
@@ -111,6 +111,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 26-02         | Delete auth user LAST                                 | Maintains permissions during cascade deletion                                        |
 | 26-02         | Two friendship queries for deletion                   | Deterministic ID means user can be user1Id OR user2Id                                |
 | 26-02         | PhoneAuthProvider always wraps entire app             | Needed for re-authentication when user is already logged in                          |
+| 27-01         | jest-expo preset for Expo projects                    | Handles Expo-specific transforms and mocks automatically                             |
+| 27-01         | Mock functions defined OUTSIDE jest.mock()            | Prevents "undefined" errors when using mockResolvedValue                             |
+| 27-01         | Global exports for mock function assertions           | Allows tests to configure and assert on mock calls                                   |
 
 ### Deferred Issues
 
@@ -140,5 +143,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 26-02-PLAN.md (Account Deletion with Re-Authentication)
+Stopped at: Completed 27-01-PLAN.md (Jest Test Infrastructure Setup)
 Resume file: None

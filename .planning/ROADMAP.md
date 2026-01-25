@@ -289,12 +289,14 @@ Plans:
 
 **Goal**: Configure Jest with mocks, write tests for auth, photo lifecycle, friendships, reactions
 **Depends on**: Phase 26
-**Research**: Unlikely (established patterns)
-**Plans**: TBD
+**Research**: Complete
+**Plans**: TBD (1+ complete)
+**Status**: In progress
 
 Plans:
 
-- [ ] 27-01: TBD
+- [x] 27-01: Jest test infrastructure and Firebase mocking - completed 2026-01-25
+- [ ] 27-02: TBD (Service tests)
 
 #### Phase 28: Code Refactoring
 
@@ -331,6 +333,6 @@ Plans:
 | 24. Cloud Functions Validation | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 25. Authentication and Data Security | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 26. Privacy Features | v1.6 | 2/2 | Complete | 2026-01-25 |
-| 27. Test Suite Setup | v1.6 | 0/? | Not started | - |
+| 27. Test Suite Setup | v1.6 | 1/? | In progress | - |
 | 28. Code Refactoring | v1.6 | 0/? | Not started | - |
 | 29. Documentation | v1.6 | 0/? | Not started | - |
