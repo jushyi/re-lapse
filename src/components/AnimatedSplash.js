@@ -2,7 +2,7 @@
  * AnimatedSplash - Camera shutter opening animation
  *
  * Creates a memorable launch experience with 6 aperture blades
- * opening to reveal the app, matching the Oly icon design.
+ * opening to reveal the app, matching the Rewind icon design.
  *
  * Animation: Blades start covering the screen (closed aperture)
  * and scale/rotate outward to reveal the app behind.
