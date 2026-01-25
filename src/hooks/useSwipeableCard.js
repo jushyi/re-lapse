@@ -60,10 +60,26 @@ const STACK_ENTRY_FADE_DURATION = 300;
 // 18.1-02: Entry animation duration for undo
 const ENTRY_DURATION = 400;
 
-// Helper functions for stack styling (UAT-006, UAT-009, UAT-011)
-// Cards peek from TOP (negative Y = above front card)
+/**
+ * Get scale factor for card at given stack position.
+ * @param {number} idx - Stack index (0=front, 1=behind, 2=furthest back)
+ * @returns {number} Scale factor (1, 0.96, or 0.92)
+ */
 const getStackScale = idx => (idx === 0 ? 1 : idx === 1 ? 0.96 : 0.92);
-const getStackOffset = idx => (idx === 0 ? 0 : idx === 1 ? -20 : -40); // Negative = above
+
+/**
+ * Get Y offset for card at given stack position.
+ * Negative values mean cards peek from top (above front card).
+ * @param {number} idx - Stack index (0=front, 1=behind, 2=furthest back)
+ * @returns {number} Y offset in pixels (0, -20, or -40)
+ */
+const getStackOffset = idx => (idx === 0 ? 0 : idx === 1 ? -20 : -40);
+
+/**
+ * Get opacity for card at given stack position.
+ * @param {number} idx - Stack index (0=front, 1=behind, 2=furthest back)
+ * @returns {number} Opacity value (1, 0.85, or 0.7)
+ */
 const getStackOpacity = idx => (idx === 0 ? 1 : idx === 1 ? 0.85 : 0.7);
 
 /**
@@ -313,7 +329,11 @@ const useSwipeableCard = ({
   useImperativeHandle(
     ref,
     () => ({
-      // Trigger archive animation (same as left swipe but slower for button)
+      /**
+       * Trigger archive animation (left exit with arc).
+       * Called when user taps the archive button.
+       * @returns {void}
+       */
       triggerArchive: () => {
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerArchive called', { photoId: photo?.id });
@@ -341,7 +361,11 @@ const useSwipeableCard = ({
           easing: Easing.out(Easing.cubic),
         });
       },
-      // Trigger journal animation (same as right swipe but slower for button)
+      /**
+       * Trigger journal animation (right exit with arc).
+       * Called when user taps the journal button.
+       * @returns {void}
+       */
       triggerJournal: () => {
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerJournal called', { photoId: photo?.id });
@@ -369,7 +393,11 @@ const useSwipeableCard = ({
           easing: Easing.out(Easing.cubic),
         });
       },
-      // Trigger delete animation (vacuum suction toward delete button)
+      /**
+       * Trigger delete animation (suction effect toward delete button).
+       * Card shrinks while moving toward button position.
+       * @returns {void}
+       */
       triggerDelete: () => {
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerDelete called', { photoId: photo?.id });

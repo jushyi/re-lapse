@@ -158,7 +158,13 @@ const useDarkroom = () => {
     }
   };
 
-  // Handle triage action (archive, journal, delete)
+  /**
+   * Handle triage action for a photo.
+   * Pushes decision to undo stack and hides the photo.
+   * @param {string} photoId - ID of the photo to triage
+   * @param {string} action - Triage action ('archive', 'journal', or 'delete')
+   * @returns {Promise<void>}
+   */
   const handleTriage = async (photoId, action) => {
     try {
       logger.debug('useDarkroom: Starting triage', {
@@ -227,7 +233,11 @@ const useDarkroom = () => {
     }
   };
 
-  // Handle Done button - batch save all decisions to Firestore and close
+  /**
+   * Handle Done button press.
+   * Batch saves all triage decisions to Firestore and closes the darkroom.
+   * @returns {Promise<void>}
+   */
   const handleDone = async () => {
     if (saving) return;
 
@@ -267,7 +277,12 @@ const useDarkroom = () => {
     navigation.goBack();
   };
 
-  // Handle early exit clearance - hides photo to trigger cascade while card still visible
+  /**
+   * Handle early exit clearance.
+   * Hides photo immediately to trigger cascade animation while card is still exiting.
+   * @param {string} photoId - ID of the photo that has cleared
+   * @returns {void}
+   */
   const handleExitClearance = useCallback(
     photoId => {
       logger.debug('useDarkroom: Exit clearance reached, triggering early cascade', { photoId });
@@ -283,26 +298,41 @@ const useDarkroom = () => {
     [hiddenPhotoIds]
   );
 
-  // Swipe handlers for SwipeablePhotoCard
+  /**
+   * Handle left swipe to archive current photo.
+   * @returns {Promise<void>}
+   */
   const handleArchiveSwipe = useCallback(async () => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User swiped left to archive photo', { photoId: currentPhoto.id });
     await handleTriage(currentPhoto.id, 'archive');
   }, [currentPhoto, handleTriage]);
 
+  /**
+   * Handle right swipe to journal current photo.
+   * @returns {Promise<void>}
+   */
   const handleJournalSwipe = useCallback(async () => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User swiped right to journal photo', { photoId: currentPhoto.id });
     await handleTriage(currentPhoto.id, 'journal');
   }, [currentPhoto, handleTriage]);
 
+  /**
+   * Handle delete action for current photo.
+   * @returns {Promise<void>}
+   */
   const handleDeleteSwipe = useCallback(async () => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User swiped down to delete photo', { photoId: currentPhoto.id });
     await handleTriage(currentPhoto.id, 'delete');
   }, [currentPhoto, handleTriage]);
 
-  // Button handlers - trigger card animations
+  /**
+   * Handle archive button press.
+   * Triggers card archive animation.
+   * @returns {void}
+   */
   const handleArchiveButton = useCallback(() => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User tapped archive button', { photoId: currentPhoto.id });
@@ -310,6 +340,11 @@ const useDarkroom = () => {
     cardRef.current?.triggerArchive();
   }, [currentPhoto]);
 
+  /**
+   * Handle delete button press.
+   * Triggers card delete suction animation.
+   * @returns {void}
+   */
   const handleDeleteButton = useCallback(() => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User tapped delete button', { photoId: currentPhoto.id });
@@ -317,6 +352,11 @@ const useDarkroom = () => {
     cardRef.current?.triggerDelete();
   }, [currentPhoto]);
 
+  /**
+   * Handle journal button press.
+   * Triggers card journal animation.
+   * @returns {void}
+   */
   const handleJournalButton = useCallback(() => {
     if (!currentPhoto) return;
     logger.info('useDarkroom: User tapped journal button', { photoId: currentPhoto.id });
@@ -324,7 +364,11 @@ const useDarkroom = () => {
     cardRef.current?.triggerJournal();
   }, [currentPhoto]);
 
-  // Delete button pulse animation
+  /**
+   * Trigger delete button pulse animation.
+   * Visual feedback when delete suction animation completes.
+   * @returns {void}
+   */
   const handleDeletePulse = useCallback(() => {
     Animated.sequence([
       Animated.timing(deleteButtonScale, {
@@ -340,7 +384,11 @@ const useDarkroom = () => {
     ]).start();
   }, [deleteButtonScale]);
 
-  // Handle Undo button - restore last decision from undo stack
+  /**
+   * Handle undo button press.
+   * Restores the last triaged photo with entry animation.
+   * @returns {void}
+   */
   const handleUndo = useCallback(() => {
     if (undoStack.length === 0 || undoingPhoto) return;
 

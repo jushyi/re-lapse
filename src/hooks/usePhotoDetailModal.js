@@ -172,7 +172,11 @@ export const usePhotoDetailModal = ({
     ]).start();
   }, [translateY, opacity]);
 
-  // Pan responder for swipe down to close
+  /**
+   * Pan responder for swipe-down-to-close gesture.
+   * Excludes footer area (bottom 100px) to allow emoji taps.
+   * Dismisses modal when swiped 1/3 of screen height or with velocity > 0.5.
+   */
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: evt => {
