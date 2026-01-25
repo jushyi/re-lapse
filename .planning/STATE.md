@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 25 of 30 (Authentication and Data Security)
-Plan: 1 of 1 in current phase
+Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-01-25 - Completed 25-01-PLAN.md
+Last activity: 2026-01-25 - Completed 25-02-PLAN.md
 
-Progress: █████░░░░░ ~37%
+Progress: █████░░░░░ ~38%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 85 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 11 in v1.6)
+- Total plans completed: 86 (8 in v1.1 + 8 in v1.2 + 4 in v1.3 + 17 in v1.4 + 37 in v1.5 + 12 in v1.6)
 - Average duration: 16 min
-- Total execution time: 16.1 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 1.8h v1.6)
+- Total execution time: 16.2 hours (4.3h v1.1 + 2.1h v1.2 + 0.7h v1.3 + 1.4h v1.4 + 5.8h v1.5 + 1.9h v1.6)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: █████░░░░░ ~37%
 | v1.3      | 9-10    | 4     | 42 min         |
 | v1.4      | 11-14   | 17    | 136 min        |
 | v1.5      | 15-18.6 | 37    | 390 min        |
-| v1.6      | 19-25   | 11    | 117 min        |
+| v1.6      | 19-25   | 12    | 125 min        |
 
 ## Accumulated Context
 
@@ -105,6 +105,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 25-01         | AFTER_FIRST_UNLOCK for SecureStore                    | Non-deprecated keychainAccessible constant                                           |
 | 25-01         | Skip messaging().deleteToken()                        | Project uses expo-notifications, focus on server-side cleanup                        |
 | 25-01         | Firestore FCM cleanup before auth.signOut()           | User loses write permission after signing out                                        |
+| 25-02         | v4 signing for Cloud Storage URLs                     | Current standard, max 7 days expiration                                              |
+| 25-02         | 24-hour signed URL expiration                         | Balances security with user experience                                               |
+| 25-02         | Callable function requires authentication             | No anonymous access to signed URLs                                                   |
 
 ### Deferred Issues
 
@@ -134,5 +137,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 25-01-PLAN.md (Authentication and Data Security)
+Stopped at: Completed 25-02-PLAN.md (Signed Photo URLs)
 Resume file: None

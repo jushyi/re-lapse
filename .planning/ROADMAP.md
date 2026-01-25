@@ -264,12 +264,13 @@ Plans:
 **Goal**: Implement SecureStore for sensitive data, signed URLs for photos, secure logout
 **Depends on**: Phase 24
 **Research**: Complete
-**Plans**: 1
+**Plans**: 2
 **Status**: Complete
 
 Plans:
 
 - [x] 25-01: SecureStore service and comprehensive secure logout - completed 2026-01-25
+- [x] 25-02: Signed Photo URLs Cloud Function and client service - completed 2026-01-25
 
 #### Phase 26: Privacy Features
 
@@ -327,7 +328,7 @@ Plans:
 | 22. Environment and Configuration | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 23. Firestore Security Rules Audit | v1.6 | 1/1 | Complete | 2026-01-24 |
 | 24. Cloud Functions Validation | v1.6 | 1/1 | Complete | 2026-01-24 |
-| 25. Authentication and Data Security | v1.6 | 1/1 | Complete | 2026-01-25 |
+| 25. Authentication and Data Security | v1.6 | 2/2 | Complete | 2026-01-25 |
 | 26. Privacy Features | v1.6 | 0/? | Not started | - |
 | 27. Test Suite Setup | v1.6 | 0/? | Not started | - |
 | 28. Code Refactoring | v1.6 | 0/? | Not started | - |
