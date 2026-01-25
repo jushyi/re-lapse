@@ -1,3 +1,18 @@
+/**
+ * Photo Service
+ *
+ * Manages photo CRUD operations and lifecycle transitions. Photos flow through
+ * statuses: developing -> revealed -> triaged (with photoState: journal/archive).
+ *
+ * Key functions:
+ * - createPhoto: Create photo document and upload to Storage
+ * - getUserPhotos: Get all photos for a user
+ * - getDevelopingPhotos: Get developing/revealed photos for darkroom
+ * - revealPhotos: Batch reveal all developing photos
+ * - triagePhoto: Journal, archive, or delete a photo
+ * - batchTriagePhotos: Batch triage multiple photos
+ */
+
 import {
   getFirestore,
   collection,
@@ -16,7 +31,6 @@ import { uploadPhoto, deletePhoto } from './storageService';
 import { ensureDarkroomInitialized } from './darkroomService';
 import logger from '../../utils/logger';
 
-// Initialize Firestore once at module level
 const db = getFirestore();
 
 /**
@@ -54,7 +68,7 @@ export const createPhoto = async (userId, photoUri) => {
     if (!uploadResult.success) {
       logger.warn('PhotoService.createPhoto: Upload failed, rolling back', {
         photoId,
-        error: uploadResult.error
+        error: uploadResult.error,
       });
       // If upload fails, delete the document
       await deleteDoc(photoRef);
@@ -70,7 +84,7 @@ export const createPhoto = async (userId, photoUri) => {
     logger.info('PhotoService.createPhoto: Photo created successfully', {
       photoId,
       userId,
-      size: uploadResult.size
+      size: uploadResult.size,
     });
 
     // Ensure darkroom has valid timing for this new photo
@@ -79,7 +93,7 @@ export const createPhoto = async (userId, photoUri) => {
     logger.info('PhotoService.createPhoto: ensureDarkroomInitialized result', {
       userId,
       photoId,
-      darkroomResult
+      darkroomResult,
     });
 
     return {
@@ -108,7 +122,7 @@ const getCurrentMonth = () => {
  * @param {string} userId - User ID
  * @returns {Promise} - Array of photo documents
  */
-export const getUserPhotos = async (userId) => {
+export const getUserPhotos = async userId => {
   logger.debug('PhotoService.getUserPhotos: Starting', { userId });
 
   try {
@@ -126,7 +140,7 @@ export const getUserPhotos = async (userId) => {
 
     logger.info('PhotoService.getUserPhotos: Retrieved photos', {
       userId,
-      count: photos.length
+      count: photos.length,
     });
 
     return { success: true, photos };
@@ -141,7 +155,7 @@ export const getUserPhotos = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<number>} - Count of developing photos
  */
-export const getDevelopingPhotoCount = async (userId) => {
+export const getDevelopingPhotoCount = async userId => {
   logger.debug('PhotoService.getDevelopingPhotoCount: Starting', { userId });
 
   try {
@@ -156,14 +170,14 @@ export const getDevelopingPhotoCount = async (userId) => {
 
     logger.info('PhotoService.getDevelopingPhotoCount: Retrieved count', {
       userId,
-      count
+      count,
     });
 
     return count;
   } catch (error) {
     logger.error('PhotoService.getDevelopingPhotoCount: Failed', {
       userId,
-      error: error.message
+      error: error.message,
     });
     return 0;
   }
@@ -174,7 +188,7 @@ export const getDevelopingPhotoCount = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise<object>} - { totalCount, developingCount, revealedCount }
  */
-export const getDarkroomCounts = async (userId) => {
+export const getDarkroomCounts = async userId => {
   logger.debug('PhotoService.getDarkroomCounts: Starting', { userId });
 
   try {
@@ -214,7 +228,7 @@ export const getDarkroomCounts = async (userId) => {
   } catch (error) {
     logger.error('PhotoService.getDarkroomCounts: Failed', {
       userId,
-      error: error.message
+      error: error.message,
     });
     return { totalCount: 0, developingCount: 0, revealedCount: 0 };
   }
@@ -225,7 +239,7 @@ export const getDarkroomCounts = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise} - Array of developing photo documents
  */
-export const getDevelopingPhotos = async (userId) => {
+export const getDevelopingPhotos = async userId => {
   logger.debug('PhotoService.getDevelopingPhotos: Starting', { userId });
 
   try {
@@ -264,7 +278,7 @@ export const getDevelopingPhotos = async (userId) => {
 
     logger.debug('PhotoService.getDevelopingPhotos: Query results', {
       developingCount: developingPhotos.length,
-      revealedCount: revealedPhotos.length
+      revealedCount: revealedPhotos.length,
     });
 
     // Combine and sort by capturedAt in JavaScript (client-side sorting)
@@ -274,14 +288,14 @@ export const getDevelopingPhotos = async (userId) => {
 
     logger.info('PhotoService.getDevelopingPhotos: Retrieved photos', {
       userId,
-      totalCount: allPhotos.length
+      totalCount: allPhotos.length,
     });
 
     return { success: true, photos: allPhotos };
   } catch (error) {
     logger.error('PhotoService.getDevelopingPhotos: Failed', {
       userId,
-      error: error.message
+      error: error.message,
     });
     return { success: false, error: error.message };
   }
@@ -292,7 +306,7 @@ export const getDevelopingPhotos = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise}
  */
-export const revealPhotos = async (userId) => {
+export const revealPhotos = async userId => {
   try {
     // Get ALL developing photos for this user
     const developingQuery = query(
@@ -423,7 +437,7 @@ export const removeReaction = async (photoId, userId) => {
  * @param {Array} decisions - Array of { photoId, action } objects
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export const batchTriagePhotos = async (decisions) => {
+export const batchTriagePhotos = async decisions => {
   try {
     logger.debug('PhotoService.batchTriagePhotos: Starting batch', { count: decisions.length });
 

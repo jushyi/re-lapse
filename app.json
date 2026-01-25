@@ -14,19 +14,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.spoodsjs.oly",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
         "aps-environment": "development"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": [
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["remote-notification"],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.958995611148-k8nl243l2h21n9sh0ugss4ad6qbldk7a"
+              "com.googleusercontent.apps.958995611148-52u8fcfk424tf5pg4saqrf5iju9a9dvj"
             ]
           }
         ]
@@ -41,10 +38,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ],
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
       "package": "com.oly.app"
     },
     "web": {

@@ -1,7 +1,18 @@
+/**
+ * User Service
+ *
+ * Manages user profile data and daily photo limits. Tracks photo counts
+ * per day with automatic reset at midnight.
+ *
+ * Key functions:
+ * - getDailyPhotoCount: Get user's daily photo count
+ * - incrementDailyPhotoCount: Increment daily count after capture
+ * - checkDailyLimit: Check if user can take more photos (36/day limit)
+ */
+
 import { getFirestore, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
-// Initialize Firestore once at module level
 const db = getFirestore();
 
 /**
@@ -21,7 +32,7 @@ const getTodayDate = () => {
  * @param {string} userId - User ID
  * @returns {Promise} - Daily photo count
  */
-export const getDailyPhotoCount = async (userId) => {
+export const getDailyPhotoCount = async userId => {
   try {
     const userRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userRef);
@@ -54,7 +65,7 @@ export const getDailyPhotoCount = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise}
  */
-export const incrementDailyPhotoCount = async (userId) => {
+export const incrementDailyPhotoCount = async userId => {
   try {
     const userRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userRef);
@@ -92,7 +103,7 @@ export const incrementDailyPhotoCount = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Promise} - { canTakePhoto, remainingShots }
  */
-export const checkDailyLimit = async (userId) => {
+export const checkDailyLimit = async userId => {
   try {
     const result = await getDailyPhotoCount(userId);
 

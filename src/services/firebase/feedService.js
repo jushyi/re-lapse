@@ -1,8 +1,32 @@
-import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot } from '@react-native-firebase/firestore';
+/**
+ * Feed Service
+ *
+ * Handles feed queries and reaction management. Fetches journaled photos
+ * from friends, provides real-time subscriptions, and manages emoji reactions.
+ *
+ * Key functions:
+ * - getFeedPhotos: Fetch paginated feed with friend filtering
+ * - subscribeFeedPhotos: Real-time feed listener
+ * - getPhotoById: Fetch single photo with user data
+ * - toggleReaction: Add/increment emoji reactions
+ * - getFriendStoriesData: Get friend stories for Stories UI
+ */
+
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 import { getFriendUserIds } from './friendshipService';
 
-// Initialize Firestore once at module level
 const db = getFirestore();
 
 /**
@@ -15,7 +39,12 @@ const db = getFirestore();
  * @param {string} currentUserId - Current user ID (to include own photos)
  * @returns {Promise} - Feed photos array and last document
  */
-export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserIds = null, currentUserId = null) => {
+export const getFeedPhotos = async (
+  limitCount = 20,
+  lastDoc = null,
+  friendUserIds = null,
+  currentUserId = null
+) => {
   try {
     // Simplified query: Only filter by photoState = 'journal'
     // Status will be implicitly 'triaged' since only triaged photos have photoState
@@ -25,7 +54,7 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
 
     // Fetch all photos with user data
     const allPhotos = await Promise.all(
-      snapshot.docs.map(async (photoDoc) => {
+      snapshot.docs.map(async photoDoc => {
         const photoData = photoDoc.data();
 
         // Fetch user data for each photo
@@ -66,9 +95,7 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
     const paginatedPhotos = sortedPhotos.slice(startIndex, endIndex);
 
     // Create pagination marker
-    const lastVisible = paginatedPhotos.length > 0
-      ? { paginationIndex: endIndex - 1 }
-      : null;
+    const lastVisible = paginatedPhotos.length > 0 ? { paginationIndex: endIndex - 1 } : null;
 
     return {
       success: true,
@@ -92,15 +119,20 @@ export const getFeedPhotos = async (limitCount = 20, lastDoc = null, friendUserI
  * @param {string} currentUserId - Current user ID (to include own photos)
  * @returns {function} - Unsubscribe function
  */
-export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = null, currentUserId = null) => {
+export const subscribeFeedPhotos = (
+  callback,
+  limitCount = 20,
+  friendUserIds = null,
+  currentUserId = null
+) => {
   try {
     // Set up real-time listener
     const q = query(collection(db, 'photos'), where('photoState', '==', 'journal'));
     const unsubscribe = onSnapshot(
       q,
-      async (snapshot) => {
+      async snapshot => {
         const allPhotos = await Promise.all(
-          snapshot.docs.map(async (photoDoc) => {
+          snapshot.docs.map(async photoDoc => {
             const photoData = photoDoc.data();
 
             // Fetch user data for each photo
@@ -108,43 +140,43 @@ export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = n
             const userDocSnap = await getDoc(userDocRef);
             const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-              return {
-                id: photoDoc.id,
-                ...photoData,
-                user: {
-                  uid: photoData.userId,
-                  username: userData.username || 'unknown',
-                  displayName: userData.displayName || 'Unknown User',
-                  profilePhotoURL: userData.profilePhotoURL || null,
-                },
-              };
-            })
-          );
+            return {
+              id: photoDoc.id,
+              ...photoData,
+              user: {
+                uid: photoData.userId,
+                username: userData.username || 'unknown',
+                displayName: userData.displayName || 'Unknown User',
+                profilePhotoURL: userData.profilePhotoURL || null,
+              },
+            };
+          })
+        );
 
-          // Filter by friends + current user if friendUserIds provided
-          let filteredPhotos = allPhotos;
-          if (friendUserIds !== null && currentUserId) {
-            const allowedUserIds = [...friendUserIds, currentUserId];
-            filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
-          }
-
-          // Sort by capturedAt in descending order (newest first)
-          const sortedPhotos = filteredPhotos.sort((a, b) => {
-            const aTime = a.capturedAt?.seconds || 0;
-            const bTime = b.capturedAt?.seconds || 0;
-            return bTime - aTime;
-          });
-
-          // Limit to requested count
-          const limitedPhotos = sortedPhotos.slice(0, limitCount);
-
-          callback({ success: true, photos: limitedPhotos });
-        },
-        (error) => {
-          logger.error('Error in feed subscription', error);
-          callback({ success: false, error: error.message, photos: [] });
+        // Filter by friends + current user if friendUserIds provided
+        let filteredPhotos = allPhotos;
+        if (friendUserIds !== null && currentUserId) {
+          const allowedUserIds = [...friendUserIds, currentUserId];
+          filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
         }
-      );
+
+        // Sort by capturedAt in descending order (newest first)
+        const sortedPhotos = filteredPhotos.sort((a, b) => {
+          const aTime = a.capturedAt?.seconds || 0;
+          const bTime = b.capturedAt?.seconds || 0;
+          return bTime - aTime;
+        });
+
+        // Limit to requested count
+        const limitedPhotos = sortedPhotos.slice(0, limitCount);
+
+        callback({ success: true, photos: limitedPhotos });
+      },
+      error => {
+        logger.error('Error in feed subscription', error);
+        callback({ success: false, error: error.message, photos: [] });
+      }
+    );
 
     return unsubscribe;
   } catch (error) {
@@ -160,7 +192,7 @@ export const subscribeFeedPhotos = (callback, limitCount = 20, friendUserIds = n
  * @param {string} photoId - Photo document ID
  * @returns {Promise} - Photo data with user info
  */
-export const getPhotoById = async (photoId) => {
+export const getPhotoById = async photoId => {
   try {
     const photoRef = doc(db, 'photos', photoId);
     const photoDocSnap = await getDoc(photoRef);
@@ -202,7 +234,7 @@ export const getPhotoById = async (photoId) => {
  * @param {string} userId - User ID
  * @returns {Promise} - Array of user's photos
  */
-export const getUserFeedPhotos = async (userId) => {
+export const getUserFeedPhotos = async userId => {
   try {
     // Query for all triaged photos (journaled + archived)
     const q = query(
@@ -218,7 +250,7 @@ export const getUserFeedPhotos = async (userId) => {
     const userDocSnap = await getDoc(userDocRef);
     const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-    const photos = snapshot.docs.map((photoDoc) => ({
+    const photos = snapshot.docs.map(photoDoc => ({
       id: photoDoc.id,
       ...photoDoc.data(),
       user: {
@@ -253,10 +285,7 @@ export const getFeedStats = async () => {
       where('status', '==', 'triaged'),
       where('photoState', '==', 'archived')
     );
-    const developingQuery = query(
-      collection(db, 'photos'),
-      where('status', '==', 'developing')
-    );
+    const developingQuery = query(collection(db, 'photos'), where('status', '==', 'developing'));
 
     const [journaledSnapshot, archivedSnapshot, developingSnapshot] = await Promise.all([
       getDocs(journaledQuery),
@@ -313,9 +342,9 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
 
     // Calculate total reaction count
     let totalCount = 0;
-    Object.values(reactions).forEach((userReactions) => {
+    Object.values(reactions).forEach(userReactions => {
       if (typeof userReactions === 'object') {
-        Object.values(userReactions).forEach((count) => {
+        Object.values(userReactions).forEach(count => {
           totalCount += count;
         });
       }
@@ -366,7 +395,7 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
     });
 
     // Map to photo objects
-    const photos = snapshot.docs.map((photoDoc) => ({
+    const photos = snapshot.docs.map(photoDoc => ({
       id: photoDoc.id,
       ...photoDoc.data(),
     }));
@@ -404,7 +433,7 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
  * @param {string} currentUserId - Current user's ID
  * @returns {Promise<{success: boolean, friendStories?: Array, error?: string}>}
  */
-export const getFriendStoriesData = async (currentUserId) => {
+export const getFriendStoriesData = async currentUserId => {
   logger.debug('feedService.getFriendStoriesData: Starting', { currentUserId });
 
   try {
@@ -433,7 +462,7 @@ export const getFriendStoriesData = async (currentUserId) => {
     }
 
     // Step 2: Fetch user profile and photos for each friend in parallel
-    const friendDataPromises = friendUserIds.map(async (friendId) => {
+    const friendDataPromises = friendUserIds.map(async friendId => {
       // Fetch user profile
       const userDocRef = doc(db, 'users', friendId);
       const userDocSnap = await getDoc(userDocRef);
@@ -477,7 +506,7 @@ export const getFriendStoriesData = async (currentUserId) => {
     const friendDataResults = await Promise.all(friendDataPromises);
 
     // Step 3: Filter out friends with zero photos
-    const friendsWithPhotos = friendDataResults.filter((friend) => friend.hasPhotos);
+    const friendsWithPhotos = friendDataResults.filter(friend => friend.hasPhotos);
 
     logger.debug('feedService.getFriendStoriesData: Filtered friends', {
       totalFriends: friendDataResults.length,

@@ -7,13 +7,21 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "prepare": "husky",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,json}\" \"*.{js,json}\"",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-firebase/app": "^23.8.2",
     "@react-native-firebase/auth": "^23.8.2",
     "@react-native-firebase/firestore": "^23.8.2",
+    "@react-native-firebase/functions": "^23.8.2",
     "@react-native-firebase/storage": "^23.8.2",
     "@react-navigation/bottom-tabs": "^7.9.0",
     "@react-navigation/native": "^7.1.26",
@@ -48,8 +56,27 @@
   "private": true,
   "devDependencies": {
     "babel-preset-expo": "^54.0.9",
+    "eslint": "^9.39.2",
+    "eslint-config-expo": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "firestore-jest-mock": "^0.26.0",
+    "husky": "^9.1.7",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.16",
+    "lint-staged": "^16.2.7",
     "patch-package": "^8.0.1",
+    "prettier": "^3.8.1",
     "react-native-dotenv": "^3.4.11",
     "sharp": "^0.34.5"
+  },
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }

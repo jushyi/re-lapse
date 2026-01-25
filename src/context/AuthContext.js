@@ -1,8 +1,21 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 // Use React Native Firebase for auth and firestore (required for phone auth)
-import { getAuth, onAuthStateChanged as firebaseOnAuthStateChanged } from '@react-native-firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import {
+  getAuth,
+  onAuthStateChanged as firebaseOnAuthStateChanged,
+} from '@react-native-firebase/auth';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+} from '@react-native-firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
+import { clearLocalNotificationToken } from '../services/firebase/notificationService';
+import { secureStorage } from '../services/secureStorageService';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -25,7 +38,7 @@ const createUserDocumentNative = async (userId, userData) => {
   }
 };
 
-const getUserDocumentNative = async (userId) => {
+const getUserDocumentNative = async userId => {
   try {
     logger.debug('getUserDocumentNative: Fetching user document', { userId });
     const userRef = doc(db, 'users', userId);
@@ -35,13 +48,13 @@ const getUserDocumentNative = async (userId) => {
     logger.debug('getUserDocumentNative: Document fetched', {
       userId,
       exists: docExists,
-      hasData: !!userDoc.data()
+      hasData: !!userDoc.data(),
     });
     if (docExists) {
       const data = userDoc.data();
       logger.debug('getUserDocumentNative: User found', {
         userId,
-        profileSetupCompleted: data?.profileSetupCompleted
+        profileSetupCompleted: data?.profileSetupCompleted,
       });
       return { success: true, data: { id: userDoc.id, ...data } };
     }
@@ -55,7 +68,10 @@ const getUserDocumentNative = async (userId) => {
 
 const updateUserDocumentNative = async (userId, updateData) => {
   try {
-    logger.debug('updateUserDocumentNative: Updating user document', { userId, fields: Object.keys(updateData) });
+    logger.debug('updateUserDocumentNative: Updating user document', {
+      userId,
+      fields: Object.keys(updateData),
+    });
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       ...updateData,
@@ -90,10 +106,10 @@ export const AuthProvider = ({ children }) => {
     logger.debug('AuthContext: Setting up auth state listener');
 
     const auth = getAuth();
-    const unsubscribe = firebaseOnAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = firebaseOnAuthStateChanged(auth, async firebaseUser => {
       logger.debug('AuthContext: Auth state changed', {
         hasUser: !!firebaseUser,
-        userId: firebaseUser?.uid
+        userId: firebaseUser?.uid,
       });
 
       if (firebaseUser) {
@@ -104,18 +120,18 @@ export const AuthProvider = ({ children }) => {
 
         // Fetch user profile from Firestore using native SDK (shares auth state with RN Firebase Auth)
         logger.debug('AuthContext: Fetching user profile from Firestore (native)', {
-          userId: firebaseUser.uid
+          userId: firebaseUser.uid,
         });
         const profileResult = await getUserDocumentNative(firebaseUser.uid);
         logger.debug('AuthContext: getUserDocumentNative result', {
           success: profileResult.success,
           hasData: !!profileResult.data,
-          error: profileResult.error
+          error: profileResult.error,
         });
         if (profileResult.success) {
           logger.info('AuthContext: User profile loaded - checking profileSetupCompleted', {
             profileSetupCompleted: profileResult.data?.profileSetupCompleted,
-            willShowProfileSetup: profileResult.data?.profileSetupCompleted === false
+            willShowProfileSetup: profileResult.data?.profileSetupCompleted === false,
           });
           setUserProfile(profileResult.data);
         } else {
@@ -138,19 +154,19 @@ export const AuthProvider = ({ children }) => {
             const newProfile = { ...userDoc, createdAt: new Date() };
             logger.info('AuthContext: New user profile created - setting userProfile', {
               profileSetupCompleted: newProfile.profileSetupCompleted,
-              willShowProfileSetup: newProfile.profileSetupCompleted === false
+              willShowProfileSetup: newProfile.profileSetupCompleted === false,
             });
             setUserProfile(newProfile);
           } else {
             // Even if Firestore write fails, use the local userDoc
             // so user can still proceed to ProfileSetup
             logger.error('AuthContext: Failed to create user document in Firestore', {
-              error: createResult.error
+              error: createResult.error,
             });
             const fallbackProfile = { ...userDoc, createdAt: new Date() };
             logger.info('AuthContext: Using fallback profile - setting userProfile', {
               profileSetupCompleted: fallbackProfile.profileSetupCompleted,
-              willShowProfileSetup: fallbackProfile.profileSetupCompleted === false
+              willShowProfileSetup: fallbackProfile.profileSetupCompleted === false,
             });
             setUserProfile(fallbackProfile);
           }
@@ -170,15 +186,74 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signOut = async () => {
-    logger.info('AuthContext: Sign out requested');
+    logger.info('AuthContext: Sign out requested - starting comprehensive cleanup');
     try {
       setLoading(true);
-      // Use React Native Firebase signOut
+      const userId = user?.uid;
+
+      // Step 1: Clear FCM token from Firestore FIRST (while still authenticated)
+      // This MUST happen before auth.signOut() - user loses write permission after
+      if (userId) {
+        try {
+          logger.debug('AuthContext: Clearing FCM token from Firestore', { userId });
+          const userRef = doc(db, 'users', userId);
+          await updateDoc(userRef, {
+            fcmToken: null,
+            updatedAt: serverTimestamp(),
+          });
+          logger.info('AuthContext: FCM token cleared from Firestore');
+        } catch (fcmError) {
+          // Non-fatal - continue with logout even if this fails
+          logger.warn('AuthContext: Failed to clear FCM token from Firestore', {
+            error: fcmError.message,
+          });
+        }
+      }
+
+      // Step 2: Delete local FCM token from messaging SDK
+      // Note: @react-native-firebase/messaging not installed in this project
+      // The notification service uses expo-notifications instead
+      // Per research: "Don't rely on token regeneration; focus on server-side cleanup"
+      // Step 2 is handled via clearLocalNotificationToken below
+      logger.debug('AuthContext: Skipping messaging().deleteToken() - using expo-notifications');
+
+      // Step 3: Clear SecureStore items (FCM token stored locally)
+      try {
+        await secureStorage.clearAll();
+        logger.info('AuthContext: SecureStore cleared');
+      } catch (secureStoreError) {
+        logger.warn('AuthContext: Failed to clear SecureStore', {
+          error: secureStoreError.message,
+        });
+      }
+
+      // Step 4: Clear local notification token reference
+      try {
+        await clearLocalNotificationToken();
+        logger.info('AuthContext: Local notification token cleared');
+      } catch (tokenError) {
+        logger.warn('AuthContext: Failed to clear local notification token', {
+          error: tokenError.message,
+        });
+      }
+
+      // Step 5: Clear AsyncStorage (non-sensitive cached data like upload queue)
+      try {
+        await AsyncStorage.clear();
+        logger.info('AuthContext: AsyncStorage cleared');
+      } catch (asyncStorageError) {
+        logger.warn('AuthContext: Failed to clear AsyncStorage', {
+          error: asyncStorageError.message,
+        });
+      }
+
+      // Step 6: Sign out from Firebase Auth (LAST - after all cleanup)
       const auth = getAuth();
       await auth.signOut();
+
       setUser(null);
       setUserProfile(null);
-      logger.info('AuthContext: Sign out successful');
+      logger.info('AuthContext: Sign out successful - all cleanup complete');
       return { success: true };
     } catch (error) {
       logger.error('AuthContext: Sign out failed', { error: error.message });
@@ -188,7 +263,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUserProfile = (updatedProfile) => {
+  const updateUserProfile = updatedProfile => {
     setUserProfile(updatedProfile);
   };
 

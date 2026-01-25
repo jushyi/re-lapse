@@ -1,11 +1,25 @@
+/**
+ * Notification Service
+ *
+ * Handles push notification permissions, token management, and notification
+ * handling. Uses Expo Push Notifications with Firebase Cloud Functions.
+ *
+ * Key functions:
+ * - initializeNotifications: Set up notification channels
+ * - requestNotificationPermission: Request iOS notification permissions
+ * - getNotificationToken: Get Expo push token
+ * - storeNotificationToken: Save token to Firestore and SecureStore
+ * - handleNotificationTapped: Extract deep link data from tap
+ */
+
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { getFirestore, doc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { secureStorage, STORAGE_KEYS } from '../secureStorageService';
 
-// Initialize Firestore once at module level
 const db = getFirestore();
 
 /**
@@ -90,9 +104,7 @@ export const getNotificationToken = async () => {
 
     // Get Expo project ID from app config
     const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ||
-      Constants.easConfig?.projectId ||
-      undefined;
+      Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId || undefined;
 
     // Get Expo push token
     // For Expo Go: projectId may be undefined (works without it in some cases)
@@ -120,7 +132,7 @@ export const getNotificationToken = async () => {
 };
 
 /**
- * Store notification token in user's Firestore document
+ * Store notification token in user's Firestore document and locally in SecureStore
  * @param {string} userId - User ID
  * @param {string} token - FCM/Expo push token
  * @returns {Promise<{success: boolean, error?: string}>}
@@ -134,7 +146,16 @@ export const storeNotificationToken = async (userId, token) => {
       updatedAt: serverTimestamp(),
     });
 
-    logger.info('Notification token stored for user', { userId });
+    logger.info('Notification token stored in Firestore', { userId });
+
+    // Also store locally in SecureStore for offline access and logout cleanup
+    const localStored = await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, token);
+    if (localStored) {
+      logger.info('Notification token stored in SecureStore', { userId });
+    } else {
+      logger.warn('Failed to store notification token in SecureStore', { userId });
+    }
+
     return { success: true };
   } catch (error) {
     logger.error('Error storing notification token', { error: error.message });
@@ -143,10 +164,44 @@ export const storeNotificationToken = async (userId, token) => {
 };
 
 /**
+ * Get notification token from local SecureStore
+ * Useful for checking if token exists without network call
+ * @returns {Promise<string|null>} Token or null if not found
+ */
+export const getLocalNotificationToken = async () => {
+  try {
+    const token = await secureStorage.getItem(STORAGE_KEYS.FCM_TOKEN);
+    logger.debug('getLocalNotificationToken: Retrieved token', {
+      hasToken: !!token,
+    });
+    return token;
+  } catch (error) {
+    logger.error('Error getting local notification token', { error: error.message });
+    return null;
+  }
+};
+
+/**
+ * Clear notification token from local SecureStore
+ * Used during logout cleanup
+ * @returns {Promise<boolean>} Success status
+ */
+export const clearLocalNotificationToken = async () => {
+  try {
+    const result = await secureStorage.deleteItem(STORAGE_KEYS.FCM_TOKEN);
+    logger.debug('clearLocalNotificationToken: Token cleared', { success: result });
+    return result;
+  } catch (error) {
+    logger.error('Error clearing local notification token', { error: error.message });
+    return false;
+  }
+};
+
+/**
  * Handle notification received while app is in foreground
  * @param {object} notification - Notification object from expo-notifications
  */
-export const handleNotificationReceived = (notification) => {
+export const handleNotificationReceived = notification => {
   try {
     logger.debug('Notification received in foreground', {
       title: notification.request.content.title,
@@ -167,7 +222,7 @@ export const handleNotificationReceived = (notification) => {
  * @param {object} notification - Notification object from expo-notifications
  * @returns {object} - Navigation data {type, screen, params}
  */
-export const handleNotificationTapped = (notification) => {
+export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
     const { type, photoId, friendshipId, revealAll, revealedCount } = data || {};

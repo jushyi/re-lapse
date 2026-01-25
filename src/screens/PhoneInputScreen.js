@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '../components';
 import { sendVerificationCode } from '../services/firebase/phoneAuthService';
 import { formatAsUserTypes } from '../utils/phoneUtils';
+import { usePhoneAuth } from '../context/PhoneAuthContext';
 import logger from '../utils/logger';
 
 /**
@@ -51,6 +52,10 @@ const PhoneInputScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
+  // Get confirmationRef from context to store Firebase ConfirmationResult
+  // Using ref instead of navigation params prevents serialization crash on iOS
+  const { confirmationRef } = usePhoneAuth();
+
   // Shake animation for error feedback
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -66,7 +71,7 @@ const PhoneInputScreen = ({ navigation }) => {
   const handleSendCode = async () => {
     logger.info('PhoneInputScreen: Send code pressed', {
       phoneNumberLength: phoneNumber.length,
-      country: selectedCountry.country
+      country: selectedCountry.country,
     });
 
     // Clear previous error
@@ -82,19 +87,22 @@ const PhoneInputScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const result = await sendVerificationCode(
-        phoneNumber,
-        selectedCountry.country
-      );
+      const result = await sendVerificationCode(phoneNumber, selectedCountry.country);
 
       if (result.success) {
         logger.info('PhoneInputScreen: Code sent, navigating to verification', {
-          formattedNumber: result.formattedNumber
+          formattedNumber: result.formattedNumber,
         });
 
-        // Navigate to verification screen with confirmation object
+        // Store confirmation in ref (not serialized) to avoid iOS crash
+        // Firebase ConfirmationResult contains functions that cannot be serialized
+        confirmationRef.current = result.confirmation;
+        logger.debug('PhoneInputScreen: Stored confirmation in context ref', {
+          hasConfirmation: !!confirmationRef.current,
+        });
+
+        // Navigate to verification screen WITHOUT confirmation object
         navigation.navigate('Verification', {
-          confirmation: result.confirmation,
           phoneNumber: result.formattedNumber,
           e164: result.e164,
         });
@@ -112,7 +120,7 @@ const PhoneInputScreen = ({ navigation }) => {
     }
   };
 
-  const handleCountrySelect = (country) => {
+  const handleCountrySelect = country => {
     logger.debug('PhoneInputScreen: Country selected', { country: country.country });
     setSelectedCountry(country);
     setShowCountryPicker(false);
@@ -125,7 +133,7 @@ const PhoneInputScreen = ({ navigation }) => {
     }
   };
 
-  const handlePhoneChange = (text) => {
+  const handlePhoneChange = text => {
     // Remove any non-numeric characters except for formatting
     const cleaned = text.replace(/[^0-9]/g, '');
     setPhoneNumber(cleaned);
@@ -143,10 +151,7 @@ const PhoneInputScreen = ({ navigation }) => {
   };
 
   const renderCountryItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.countryItem}
-      onPress={() => handleCountrySelect(item)}
-    >
+    <TouchableOpacity style={styles.countryItem} onPress={() => handleCountrySelect(item)}>
       <Text style={styles.countryFlag}>{item.flag}</Text>
       <Text style={styles.countryName}>{item.name}</Text>
       <Text style={styles.countryCode}>{item.code}</Text>
@@ -167,7 +172,7 @@ const PhoneInputScreen = ({ navigation }) => {
             <Text style={styles.logo}>LAPSE</Text>
             <Text style={styles.subtitle}>Enter your phone number</Text>
             <Text style={styles.description}>
-              We'll send you a verification code to confirm your number.
+              We&apos;ll send you a verification code to confirm your number.
             </Text>
 
             <View style={styles.form}>
@@ -186,10 +191,7 @@ const PhoneInputScreen = ({ navigation }) => {
 
               {/* Phone Number Input */}
               <Animated.View
-                style={[
-                  styles.phoneInputContainer,
-                  { transform: [{ translateX: shakeAnim }] }
-                ]}
+                style={[styles.phoneInputContainer, { transform: [{ translateX: shakeAnim }] }]}
               >
                 <View style={styles.countryCodeDisplay}>
                   <Text style={styles.countryCodeText}>{selectedCountry.code}</Text>
@@ -250,7 +252,7 @@ const PhoneInputScreen = ({ navigation }) => {
             <FlatList
               data={COUNTRY_CODES}
               renderItem={renderCountryItem}
-              keyExtractor={(item) => `${item.country}-${item.code}`}
+              keyExtractor={item => `${item.country}-${item.code}`}
               style={styles.countryList}
             />
           </View>

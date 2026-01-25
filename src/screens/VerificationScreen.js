@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components';
 import { verifyCode } from '../services/firebase/phoneAuthService';
 import { formatPhoneWithCountry } from '../utils/phoneUtils';
+import { usePhoneAuth } from '../context/PhoneAuthContext';
 import logger from '../utils/logger';
 
 /**
@@ -21,7 +22,18 @@ import logger from '../utils/logger';
  * Uses confirmation object from React Native Firebase
  */
 const VerificationScreen = ({ navigation, route }) => {
-  const { confirmation, phoneNumber, e164 } = route.params || {};
+  // Get phone number and e164 from navigation params (safe to serialize)
+  const { phoneNumber, e164 } = route.params || {};
+
+  // Get confirmation from context ref (NOT from navigation params)
+  // Firebase ConfirmationResult contains functions that cannot be serialized
+  const { confirmationRef } = usePhoneAuth();
+  const confirmation = confirmationRef.current;
+
+  logger.debug('VerificationScreen: Reading confirmation from context ref', {
+    hasConfirmation: !!confirmation,
+    phoneNumber,
+  });
 
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +57,7 @@ const VerificationScreen = ({ navigation, route }) => {
   useEffect(() => {
     logger.debug('VerificationScreen: Mounted', {
       hasConfirmation: !!confirmation,
-      phoneNumber
+      phoneNumber,
     });
 
     // Focus the input after a brief delay for smooth animation
@@ -61,7 +73,7 @@ const VerificationScreen = ({ navigation, route }) => {
     if (resendTimer <= 0) return;
 
     const interval = setInterval(() => {
-      setResendTimer((prev) => {
+      setResendTimer(prev => {
         if (prev <= 1) {
           clearInterval(interval);
           return 0;
@@ -78,7 +90,7 @@ const VerificationScreen = ({ navigation, route }) => {
     if (retryDelay <= 0) return;
 
     const interval = setInterval(() => {
-      setRetryDelay((prev) => {
+      setRetryDelay(prev => {
         if (prev <= 1) {
           clearInterval(interval);
           return 0;
@@ -121,7 +133,7 @@ const VerificationScreen = ({ navigation, route }) => {
 
       if (result.success) {
         logger.info('VerificationScreen: Verification successful', {
-          userId: result.user?.uid
+          userId: result.user?.uid,
         });
 
         // Auth state listener in AuthContext will handle navigation
@@ -157,7 +169,7 @@ const VerificationScreen = ({ navigation, route }) => {
     navigation.goBack();
   };
 
-  const handleCodeChange = (text) => {
+  const handleCodeChange = text => {
     // Only allow digits, max 6 characters
     const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
     setCode(cleaned);
@@ -183,19 +195,14 @@ const VerificationScreen = ({ navigation, route }) => {
 
           {/* Title */}
           <Text style={styles.title}>Verify your number</Text>
-          <Text style={styles.subtitle}>
-            Enter the 6-digit code sent to
-          </Text>
+          <Text style={styles.subtitle}>Enter the 6-digit code sent to</Text>
           <Text style={styles.phoneNumber}>
             {e164 ? formatPhoneWithCountry(e164) : phoneNumber || 'your phone'}
           </Text>
 
           {/* Code Input */}
           <Animated.View
-            style={[
-              styles.codeInputContainer,
-              { transform: [{ translateX: shakeAnim }] }
-            ]}
+            style={[styles.codeInputContainer, { transform: [{ translateX: shakeAnim }] }]}
           >
             <TextInput
               ref={inputRef}
@@ -216,11 +223,7 @@ const VerificationScreen = ({ navigation, route }) => {
           {error ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
-              {retryDelay > 0 && (
-                <Text style={styles.retryDelayText}>
-                  Retry in {retryDelay}s
-                </Text>
-              )}
+              {retryDelay > 0 && <Text style={styles.retryDelayText}>Retry in {retryDelay}s</Text>}
             </View>
           ) : null}
 
@@ -236,21 +239,15 @@ const VerificationScreen = ({ navigation, route }) => {
           )}
 
           {/* Loading indicator */}
-          {loading && (
-            <Text style={styles.loadingText}>Verifying...</Text>
-          )}
+          {loading && <Text style={styles.loadingText}>Verifying...</Text>}
 
           {/* Resend Code */}
           <View style={styles.resendContainer}>
             {resendTimer > 0 ? (
-              <Text style={styles.resendTimerText}>
-                Resend code in {resendTimer}s
-              </Text>
+              <Text style={styles.resendTimerText}>Resend code in {resendTimer}s</Text>
             ) : (
               <TouchableOpacity onPress={handleResend} disabled={loading}>
-                <Text style={styles.resendButton}>
-                  Didn't receive the code? Resend
-                </Text>
+                <Text style={styles.resendButton}>Didn&apos;t receive the code? Resend</Text>
               </TouchableOpacity>
             )}
           </View>

@@ -1,5 +1,10 @@
 rules_version = '2';
-// Force redeploy: 2026-01-19
+// Hardened: 2026-01-24 - Phase 23 Security Audit
+// Changes:
+//   - Self-reaction prevention (request.auth.uid != resource.data.userId)
+//   - Immutable field protection on photos (userId, capturedAt, imageURL)
+//   - Friendship accept restricted to recipient only
+//   - Notification update restricted to read/readAt fields only
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -42,6 +47,27 @@ service cloud.firestore {
       return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1;
     }
 
+    // Helper function to check if only reaction fields are being changed
+    // Used for non-owner reaction updates
+    function onlyChangesReactionFields() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'reactionCount']);
+    }
+
+    // Helper function to ensure immutable photo fields are not changed
+    // Protects userId, capturedAt from ALL modification
+    // Protects imageURL from modification AFTER it's set (allows initial setting from empty)
+    function immutablePhotoFieldsUnchanged() {
+      let immutableAlways = request.resource.data
+        .diff(resource.data)
+        .unchangedKeys()
+        .hasAll(['userId', 'capturedAt']);
+      // imageURL can be changed only if current value is empty (initial set after Storage upload)
+      let imageURLProtected =
+        resource.data.imageURL == '' ||
+        request.resource.data.diff(resource.data).unchangedKeys().hasAny(['imageURL']);
+      return immutableAlways && imageURLProtected;
+    }
+
     // =============================================================================
     // USERS COLLECTION
     // =============================================================================
@@ -80,9 +106,16 @@ service cloud.firestore {
                        (request.resource.data.photoState == null ||
                         request.resource.data.photoState in ['journal', 'archive']);
 
-      // Update: Only owner can update their photos
-      allow update: if isOwner(resource.data.userId) &&
-                       request.resource.data.userId == resource.data.userId; // Prevent userId change
+      // Update: Split into owner updates and non-owner reaction updates
+      // Case 1: Owner can update their photos (except immutable fields)
+      // Case 2: Non-owners can ONLY add reactions (prevents self-reactions)
+      allow update: if
+        // Owner updates: full access except immutable fields
+        (isOwner(resource.data.userId) && immutablePhotoFieldsUnchanged()) ||
+        // Non-owner reaction updates: must not be photo owner, can only change reaction fields
+        (isAuthenticated() &&
+         request.auth.uid != resource.data.userId &&
+         onlyChangesReactionFields());
 
       // Delete: Only owner can delete their photos
       allow delete: if isOwner(resource.data.userId);
@@ -123,13 +156,12 @@ service cloud.firestore {
                        request.resource.data.status == 'pending' &&
                        request.resource.data.keys().hasAll(['user1Id', 'user2Id', 'status', 'requestedBy', 'createdAt']);
 
-      // Update: Users can accept/decline requests they received
+      // Update: Only recipient (not requester) can accept, and only status/acceptedAt fields can change
+      // Security: Prevents requester from accepting their own request
+      // Security: Restricts field changes to prevent data tampering
       allow update: if isFriendshipMember(resource.data) &&
-                       // User can only accept requests sent TO them
-                       (request.resource.data.status == 'accepted' &&
-                        resource.data.requestedBy != request.auth.uid) ||
-                       // Or update other friendship data if they're a member
-                       isFriendshipMember(request.resource.data);
+                       resource.data.requestedBy != request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt']);
 
       // Delete: Users can delete friendships they're part of (unfriend/cancel request)
       allow delete: if isFriendshipMember(resource.data);
@@ -150,10 +182,11 @@ service cloud.firestore {
       // Users cannot create notifications directly
       allow create: if false;
 
-      // Users can update their own notifications (e.g., mark as read)
+      // Users can update their own notifications (only mark as read)
+      // Security: Restricts updates to read/readAt fields only, preventing content modification
       allow update: if isAuthenticated() &&
                        resource.data.recipientId == request.auth.uid &&
-                       request.resource.data.recipientId == resource.data.recipientId;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
 
       // Users can delete their own notifications
       allow delete: if isAuthenticated() &&
