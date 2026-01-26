@@ -7,6 +7,7 @@
  * - Profile header
  * - Inline horizontal emoji picker in footer
  * - Multiple reactions per user with counts
+ * - Stories mode: progress bar, tap navigation, multi-photo
  */
 import React from 'react';
 import {
@@ -15,30 +16,54 @@ import {
   Modal,
   Image,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   ScrollView,
   StatusBar,
   Animated,
 } from 'react-native';
 import { getTimeAgo } from '../utils/timeUtils';
-import { usePhotoDetailModal, REACTION_EMOJIS } from '../hooks/usePhotoDetailModal';
+import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
 import { styles } from '../styles/PhotoDetailModal.styles';
 
 /**
  * PhotoDetailModal Component
  *
+ * @param {string} mode - View mode: 'feed' (default) or 'stories'
  * @param {boolean} visible - Modal visibility state
- * @param {object} photo - Photo object with user data and reactions
+ * @param {object} photo - Photo object with user data and reactions (feed mode)
+ * @param {array} photos - Array of photos (stories mode)
+ * @param {number} initialIndex - Starting photo index (stories mode)
+ * @param {function} onPhotoChange - Callback when photo changes (stories mode)
  * @param {function} onClose - Callback to close modal
  * @param {function} onReactionToggle - Callback when emoji is toggled (emoji, currentCount)
  * @param {string} currentUserId - Current user's ID
  */
-const PhotoDetailModal = ({ visible, photo, onClose, onReactionToggle, currentUserId }) => {
+const PhotoDetailModal = ({
+  mode = 'feed',
+  visible,
+  photo,
+  photos = [],
+  initialIndex = 0,
+  onPhotoChange,
+  onClose,
+  onReactionToggle,
+  currentUserId,
+}) => {
   const {
+    // Mode
+    showProgressBar,
+
     // Photo data
+    currentPhoto,
     imageURL,
     capturedAt,
     displayName,
     profilePhotoURL,
+
+    // Stories navigation
+    currentIndex,
+    totalPhotos,
+    handleTapNavigation,
 
     // Animation
     translateY,
@@ -50,9 +75,21 @@ const PhotoDetailModal = ({ visible, photo, onClose, onReactionToggle, currentUs
     orderedEmojis,
     getUserReactionCount,
     handleEmojiPress,
-  } = usePhotoDetailModal({ photo, visible, onClose, onReactionToggle, currentUserId });
+  } = usePhotoDetailModal({
+    mode,
+    photo,
+    photos,
+    initialIndex,
+    onPhotoChange,
+    visible,
+    onClose,
+    onReactionToggle,
+    currentUserId,
+  });
 
-  if (!photo) return null;
+  // In feed mode, check photo prop; in stories mode, check currentPhoto
+  if (mode === 'feed' && !photo) return null;
+  if (mode === 'stories' && !currentPhoto) return null;
 
   return (
     <Modal
@@ -74,18 +111,43 @@ const PhotoDetailModal = ({ visible, photo, onClose, onReactionToggle, currentUs
             },
           ]}
         >
+          {/* Progress bar - stories mode only */}
+          {showProgressBar && totalPhotos > 0 && (
+            <View style={styles.progressBarContainer}>
+              {Array.from({ length: totalPhotos }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressSegment,
+                    index <= currentIndex
+                      ? styles.progressSegmentActive
+                      : styles.progressSegmentInactive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
           {/* Header with close button */}
-          <View style={styles.header}>
+          <View style={[styles.header, showProgressBar && styles.headerStoriesMode]}>
             <View style={styles.headerSpacer} />
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Photo */}
-          <View style={styles.photoScrollView}>
-            <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
-          </View>
+          {/* Photo - with tap navigation in stories mode */}
+          {mode === 'stories' ? (
+            <TouchableWithoutFeedback onPress={handleTapNavigation}>
+              <View style={styles.photoScrollView}>
+                <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
+              </View>
+            </TouchableWithoutFeedback>
+          ) : (
+            <View style={styles.photoScrollView}>
+              <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
+            </View>
+          )}
 
           {/* Profile photo - overlapping top left of photo */}
           <View style={styles.profilePicContainer}>

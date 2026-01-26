@@ -16,6 +16,24 @@ export const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
   },
+  // Progress bar for stories mode
+  progressBarContainer: {
+    flexDirection: 'row',
+    paddingTop: (StatusBar.currentHeight || 54) + 8,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  progressSegment: {
+    flex: 1,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  progressSegmentActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  progressSegmentInactive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -23,6 +41,10 @@ export const styles = StyleSheet.create({
     paddingTop: (StatusBar.currentHeight || 44) + 10,
     paddingHorizontal: 16,
     backgroundColor: 'transparent',
+  },
+  // Reduced header padding in stories mode (progress bar has its own padding)
+  headerStoriesMode: {
+    paddingTop: 12,
   },
   headerSpacer: {
     flex: 1,
