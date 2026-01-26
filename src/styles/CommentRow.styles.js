@@ -94,7 +94,7 @@ export const styles = StyleSheet.create({
   dot: {
     fontSize: 12,
     color: colors.text.tertiary,
-    marginHorizontal: 6,
+    marginHorizontal: 4, // UAT-024 fix: reduced from 6 for tighter spacing
   },
   timestamp: {
     fontSize: 12,
