@@ -94,7 +94,7 @@ export const styles = StyleSheet.create({
   dot: {
     fontSize: 12,
     color: colors.text.tertiary,
-    marginHorizontal: 2, // UAT-031 fix: reduced from 4 for even tighter spacing
+    marginHorizontal: 0, // UAT-031 fix: removed margin entirely (replyButton has paddingRight: 8)
   },
   timestamp: {
     fontSize: 12,
