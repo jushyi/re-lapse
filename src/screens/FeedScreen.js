@@ -61,7 +61,10 @@ const FeedScreen = () => {
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
   // View tracking state
-  const { isViewed, markAsViewed } = useViewedStories();
+  const { isViewed, markAsViewed, markPhotosAsViewed, getFirstUnviewedIndex } = useViewedStories();
+
+  // Track initial index for stories modal
+  const [storiesInitialIndex, setStoriesInitialIndex] = useState(0);
 
   /**
    * Refresh feed and stories when screen comes into focus
@@ -147,27 +150,43 @@ const FeedScreen = () => {
 
   /**
    * Handle opening stories for a friend
+   * Starts at the first unviewed photo, or beginning if all viewed
    */
   const handleOpenStories = friend => {
+    // Calculate starting index based on viewed photos
+    const startIndex = getFirstUnviewedIndex(friend.topPhotos || []);
+
     logger.info('FeedScreen: Opening stories viewer', {
       friendId: friend.userId,
       displayName: friend.displayName,
+      startIndex,
+      photoCount: friend.topPhotos?.length || 0,
     });
+
+    setStoriesInitialIndex(startIndex);
     setSelectedFriend(friend);
     setStoriesModalVisible(true);
   };
 
   /**
    * Handle closing stories viewer
-   * Marks the friend as viewed when closing
+   * Marks the friend and all their photos as viewed when closing
    */
   const handleCloseStories = () => {
     logger.debug('FeedScreen: Closing stories viewer');
     if (selectedFriend) {
+      // Mark friend as viewed
       markAsViewed(selectedFriend.userId);
+
+      // Mark all photos as viewed so next time we start from beginning
+      const photoIds = (selectedFriend.topPhotos || []).map(p => p.id);
+      if (photoIds.length > 0) {
+        markPhotosAsViewed(photoIds);
+      }
     }
     setStoriesModalVisible(false);
     setSelectedFriend(null);
+    setStoriesInitialIndex(0);
   };
 
   /**
@@ -420,6 +439,7 @@ const FeedScreen = () => {
         visible={storiesModalVisible}
         onClose={handleCloseStories}
         friend={selectedFriend}
+        initialIndex={storiesInitialIndex}
       />
     </SafeAreaView>
   );
