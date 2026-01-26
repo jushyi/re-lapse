@@ -387,12 +387,12 @@ const FeedScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Stories Row */}
-      {renderStoriesRow()}
-
       {/* Content */}
       {loading ? (
-        <FeedLoadingSkeleton count={3} />
+        <>
+          {renderStoriesRow()}
+          <FeedLoadingSkeleton count={3} />
+        </>
       ) : error ? (
         renderErrorState()
       ) : (
@@ -412,11 +412,14 @@ const FeedScreen = () => {
           onEndReached={loadMorePhotos}
           onEndReachedThreshold={0.5}
           ListHeaderComponent={
-            photos.length > 0 ? (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>🔥 Hot</Text>
-              </View>
-            ) : null
+            <>
+              {renderStoriesRow()}
+              {photos.length > 0 && (
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>🔥 Hot</Text>
+                </View>
+              )}
+            </>
           }
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyState}
