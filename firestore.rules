@@ -156,11 +156,13 @@ service cloud.firestore {
                          request.resource.data.likeCount == 0 &&
                          request.resource.data.keys().hasAll(['userId', 'text', 'likeCount', 'createdAt']);
 
-        // Only comment author can update their comment (for editing - future feature)
-        // Can only change text field
+        // Comment updates: author can edit text, any authenticated user can update likeCount
+        // Case 1: Comment author editing text
+        // Case 2: Any user updating likeCount (for like/unlike operations)
         allow update: if isAuthenticated() &&
-                         resource.data.userId == request.auth.uid &&
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text']);
+                         ((resource.data.userId == request.auth.uid &&
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
+                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount']));
 
         // Comment author OR photo owner can delete
         allow delete: if isAuthenticated() &&
