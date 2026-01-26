@@ -4,8 +4,10 @@ import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
 
 /**
- * Feed photo card component
- * Displays a single photo in the feed with user info and reactions
+ * Feed photo card component - Polaroid Design
+ *
+ * Displays a single photo in the feed styled like a Polaroid photograph
+ * with iconic white frame, thick bottom edge, and user info like handwriting.
  *
  * @param {object} photo - Photo object with user data
  * @param {function} onPress - Callback when card is tapped
@@ -13,7 +15,7 @@ import { styles } from '../styles/FeedPhotoCard.styles';
 const FeedPhotoCard = ({ photo, onPress }) => {
   const { imageURL, capturedAt, reactions = {}, reactionCount = 0, user = {} } = photo;
 
-  const { username, displayName, profilePhotoURL } = user;
+  const { displayName } = user;
 
   /**
    * Get top 3 reactions with counts
@@ -47,57 +49,39 @@ const FeedPhotoCard = ({ photo, onPress }) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
-      {/* Profile section */}
-      <View style={styles.profileSection}>
-        {/* Profile photo */}
-        <View style={styles.profilePicContainer}>
-          {profilePhotoURL ? (
-            <Image source={{ uri: profilePhotoURL }} style={styles.profilePic} />
-          ) : (
-            <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-              <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
-            </View>
-          )}
+      {/* Inner frame with Polaroid proportions */}
+      <View style={styles.frameInner}>
+        {/* Photo - square with crisp edges */}
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
         </View>
+      </View>
 
-        {/* User info */}
-        <View style={styles.profileInfo}>
+      {/* Bottom info section - like handwriting on Polaroid */}
+      <View style={styles.polaroidBottom}>
+        <View style={styles.userInfo}>
           <Text style={styles.displayName} numberOfLines={1}>
-            {displayName || 'Unknown User'}
+            {displayName || 'Unknown'}
           </Text>
-          <Text style={styles.username} numberOfLines={1}>
-            @{username || 'unknown'}
-          </Text>
+          <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
         </View>
 
-        {/* Timestamp */}
-        <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
+        {/* Reactions (if present) */}
+        {reactionCount > 0 && (
+          <View style={styles.reactions}>
+            {topReactions.map((reaction, index) => (
+              <View key={index} style={styles.reactionItem}>
+                <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
+                <Text style={styles.reactionCount}>{reaction.count}</Text>
+              </View>
+            ))}
+            {reactionCount > 3 && <Text style={styles.moreReactions}>+{reactionCount - 3}</Text>}
+          </View>
+        )}
+
+        {/* Prompt if no reactions */}
+        {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
       </View>
-
-      {/* Photo */}
-      <View style={styles.photoContainer}>
-        <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
-      </View>
-
-      {/* Reaction bar */}
-      {reactionCount > 0 && (
-        <View style={styles.reactionBar}>
-          {topReactions.map((reaction, index) => (
-            <View key={index} style={styles.reactionItem}>
-              <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
-              <Text style={styles.reactionCount}>{reaction.count}</Text>
-            </View>
-          ))}
-          {reactionCount > 3 && <Text style={styles.moreReactions}>+{reactionCount - 3} more</Text>}
-        </View>
-      )}
-
-      {/* Empty reaction bar if no reactions */}
-      {reactionCount === 0 && (
-        <View style={styles.reactionBar}>
-          <Text style={styles.noReactions}>Be the first to react</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 };

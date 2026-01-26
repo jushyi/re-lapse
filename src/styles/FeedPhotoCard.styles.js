@@ -1,106 +1,123 @@
 /**
- * FeedPhotoCard styles
+ * FeedPhotoCard styles - Polaroid Design
  *
- * Styles for the feed photo card component that displays
- * a single photo in the feed with user info and reactions.
+ * Polaroid-style photo cards with iconic white frame
+ * and thick bottom edge for user info (like handwriting).
  */
 import { StyleSheet, Dimensions } from 'react-native';
+import { colors } from '../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_PADDING = 16;
-const PHOTO_SIZE = SCREEN_WIDTH - CARD_PADDING * 2;
+const CARD_MARGIN = 16;
+const FRAME_PADDING_HORIZONTAL = 10;
+const FRAME_PADDING_TOP = 10;
+const FRAME_PADDING_BOTTOM = 50; // Thick bottom for user info (Polaroid signature)
 
 export const styles = StyleSheet.create({
+  // Polaroid frame container
   card: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 16,
-    borderRadius: 12,
+    backgroundColor: colors.polaroid.cream,
+    marginHorizontal: CARD_MARGIN,
+    marginBottom: 20,
+    borderRadius: 4, // Polaroids have slight rounded corners
     overflow: 'hidden',
+    // "Laying on table" shadow effect
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+
+  // Inner frame with Polaroid proportions
+  frameInner: {
+    paddingTop: FRAME_PADDING_TOP,
+    paddingHorizontal: FRAME_PADDING_HORIZONTAL,
+    paddingBottom: FRAME_PADDING_BOTTOM,
   },
-  profilePicContainer: {
-    marginRight: 12,
-  },
-  profilePic: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  profilePicPlaceholder: {
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profilePicText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  displayName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  username: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  timestamp: {
-    fontSize: 12,
-    color: '#999999',
-    marginLeft: 8,
-  },
+
+  // Photo container - square with crisp edges
   photoContainer: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#1A1A1A', // Dark placeholder while loading
+    // No border radius - Polaroid photos have crisp edges
   },
+
   photo: {
     width: '100%',
     height: '100%',
   },
-  reactionBar: {
+
+  // Bottom info section (inside thick bottom padding)
+  polaroidBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: FRAME_PADDING_BOTTOM,
+    paddingHorizontal: FRAME_PADDING_HORIZONTAL + 2,
+    paddingTop: 8,
+    paddingBottom: 8,
+    justifyContent: 'center',
+  },
+
+  // User info row
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 40,
+    justifyContent: 'space-between',
   },
+
+  // Display name - handwriting feel
+  displayName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.polaroid.text,
+    flex: 1,
+  },
+
+  // Timestamp
+  timestamp: {
+    fontSize: 12,
+    color: colors.polaroid.textSecondary,
+    marginLeft: 8,
+  },
+
+  // Reactions row (if present)
+  reactions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+
   reactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
+
   reactionEmoji: {
-    fontSize: 16,
-    marginRight: 4,
-  },
-  reactionCount: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
+    marginRight: 2,
   },
+
+  reactionCount: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.polaroid.textSecondary,
+  },
+
   moreReactions: {
-    fontSize: 12,
-    color: '#666666',
-    marginLeft: 4,
+    fontSize: 11,
+    color: colors.polaroid.textSecondary,
+    marginLeft: 2,
   },
+
   noReactions: {
-    fontSize: 12,
-    color: '#999999',
+    fontSize: 11,
+    color: colors.polaroid.textSecondary,
     fontStyle: 'italic',
+    marginTop: 2,
   },
 });
