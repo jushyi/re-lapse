@@ -195,7 +195,7 @@ Plans:
 
 - [x] 35-01: Polaroid story cards with blurred thumbnails and gradient glow
 - [x] 35-02: View state tracking and stories sorting (unviewed first)
-- [ ] 35-03: Hot highlights feed filter (engagement-based curation)
+- [x] 35-03: Hot highlights feed filter (engagement-based curation)
 
 #### Phase 36: Comments Feature
 
@@ -266,7 +266,7 @@ Plans:
 | 34. Feed Card Redesign                         | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 34.1 Instagram-Style Feed Cards (INSERTED)     | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 34.2 Feed & Stories UI Refinements (INSERTED)  | v0.7      | 0/1            | Planned     | -          |
-| 35. Stories Redesign                           | v0.7      | 2/3            | In progress | -          |
+| 35. Stories Redesign                           | v0.7      | 3/3            | Complete    | 2026-01-25 |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 

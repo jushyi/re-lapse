@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 35 of 37 (Stories Redesign)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 35-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 35-03-PLAN.md
 
-Progress: ██████░░░░ 64%
+Progress: ██████░░░░ 67%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 113 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 13 in v0.7)
+- Total plans completed: 114 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 14 in v0.7)
 - Average duration: 16 min
-- Total execution time: 19.9 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 67m v0.7)
+- Total execution time: 20.1 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 79m v0.7)
 
 **By Milestone:**
 
@@ -146,6 +146,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 34.1-01       | Edge-to-edge photos (no card margins)                 | Instagram-style modern aesthetic, photos dominate                                    |
 | 35-02         | 24-hour expiry for viewed state                       | Daily reset so users see friend stories again                                        |
 | 35-02         | Mark as viewed on modal close (not open)              | Ensures user actually viewed content before marking                                  |
+| 35-03         | MIN_REACTIONS_FOR_HOT = 2 for hot feed                | Low threshold for MVP, can increase as engagement grows                              |
+| 35-03         | Stories open to first unviewed photo                  | User-requested UX improvement for resume position                                    |
+| 35-03         | Mark all photos viewed on stories close               | Simpler UX - next open always starts fresh from beginning                            |
 
 ### Deferred Issues
 
@@ -174,9 +177,10 @@ None.
 - Version scheme changed from v1.x to v0.x (v1.0 reserved for TestFlight release)
 - Milestone v0.7 created: Rewind rebrand & feed overhaul, 8 phases (Phase 30-37)
 - Phase 34.1 inserted after Phase 34: Instagram-style full-width feed cards (URGENT) - replaces Polaroid design
+- Phase 34.2 inserted after Phase 34.1: Feed & Stories UI Refinements (URGENT) - stories scroll behavior, card redesign with profile overlay
 
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 35-02-PLAN.md (view state tracking)
+Stopped at: Completed 35-03-PLAN.md (hot highlights filter)
 Resume file: None
