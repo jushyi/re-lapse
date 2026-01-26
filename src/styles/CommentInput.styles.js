@@ -43,11 +43,11 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingBottom: Platform.OS === 'ios' ? 12 : 8,
   },
-  // Text input wrapper
+  // Text input wrapper (UAT-018 fix: alignItems center for placeholder centering)
   inputWrapper: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     backgroundColor: colors.background.tertiary,
     borderRadius: 20,
     paddingHorizontal: 16,
@@ -62,6 +62,7 @@ export const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 0,
     maxHeight: 80,
+    textAlignVertical: 'center', // UAT-018 fix: center placeholder vertically (Android)
   },
   // Image picker button
   imageButton: {
