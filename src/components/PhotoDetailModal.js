@@ -273,8 +273,19 @@ const PhotoDetailModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Photo - with tap navigation in stories mode, touchable in feed mode for swipe gesture */}
-          <TouchableWithoutFeedback onPress={mode === 'stories' ? handleTapNavigation : undefined}>
+          {/* Photo - tap navigation only in stories mode (UAT-014 fix: no TouchableWithoutFeedback in feed mode) */}
+          {mode === 'stories' ? (
+            <TouchableWithoutFeedback onPress={handleTapNavigation}>
+              <View style={styles.photoScrollView}>
+                <Image
+                  source={{ uri: imageURL }}
+                  style={styles.photo}
+                  contentFit="cover"
+                  transition={0}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          ) : (
             <View style={styles.photoScrollView}>
               <Image
                 source={{ uri: imageURL }}
@@ -283,7 +294,7 @@ const PhotoDetailModal = ({
                 transition={0}
               />
             </View>
-          </TouchableWithoutFeedback>
+          )}
 
           {/* Profile photo - overlapping top left of photo */}
           <View style={styles.profilePicContainer}>
