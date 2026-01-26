@@ -84,7 +84,7 @@ export const styles = StyleSheet.create({
   },
   replyButton: {
     paddingVertical: 2,
-    paddingRight: 8,
+    paddingRight: 4,
   },
   replyButtonText: {
     fontSize: 12,
@@ -99,6 +99,7 @@ export const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: colors.text.tertiary,
+    paddingLeft: 4,
   },
   // Heart icon on right
   heartContainer: {

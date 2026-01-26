@@ -101,7 +101,7 @@ export const styles = StyleSheet.create({
     left: 22, // UAT-027 fix: shifted 6px right (was 16)
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   displayName: {
     fontSize: 16,
