@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   Animated,
   ActivityIndicator,
@@ -52,23 +51,42 @@ const CommentsBottomSheet = ({
   onCommentAdded,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const sheetTranslateY = useRef(new Animated.Value(0)).current; // UAT-021 fix: sheet position for keyboard
   const inputRef = useRef(null);
   const insets = useSafeAreaInsets(); // UAT-010 fix: safe area for bottom input
   const [keyboardVisible, setKeyboardVisible] = useState(false); // UAT-013 fix: keyboard state
 
-  // Track keyboard visibility to adjust layout (UAT-013 fix)
+  // Track keyboard visibility and animate sheet up (UAT-021 fix)
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    const showSub = Keyboard.addListener(showEvent, event => {
+      const keyboardHeight = event.endCoordinates.height;
+      setKeyboardVisible(true);
+      // Animate sheet up above keyboard (UAT-021 fix)
+      Animated.timing(sheetTranslateY, {
+        toValue: -keyboardHeight,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      // Animate sheet back to original position (UAT-021 fix)
+      Animated.timing(sheetTranslateY, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
 
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [sheetTranslateY]);
 
   // Use comments hook for state management
   const {
@@ -312,22 +330,11 @@ const CommentsBottomSheet = ({
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        {/* KeyboardAvoidingView for keyboard handling (UAT-013 fix: dynamic maxHeight) */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={[
-            styles.keyboardAvoidContainer,
-            keyboardVisible && { maxHeight: undefined, flex: 1 },
-          ]}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 20}
-        >
-          {/* Animated sheet (UAT-017 fix: expand when keyboard visible) */}
+        {/* Sheet container - no KeyboardAvoidingView needed with translateY approach (UAT-021 fix) */}
+        <View style={styles.keyboardAvoidContainer}>
+          {/* Animated sheet (UAT-021 fix: moves UP when keyboard visible via sheetTranslateY) */}
           <Animated.View
-            style={[
-              styles.sheet,
-              { transform: [{ translateY }] },
-              keyboardVisible && { maxHeight: undefined, flex: 1 },
-            ]}
+            style={[styles.sheet, { transform: [{ translateY }, { translateY: sheetTranslateY }] }]}
           >
             {/* Handle bar */}
             <View style={styles.handleBarContainer}>
@@ -380,7 +387,7 @@ const CommentsBottomSheet = ({
               />
             </View>
           </Animated.View>
-        </KeyboardAvoidingView>
+        </View>
       </View>
     </Modal>
   );
