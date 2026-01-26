@@ -69,12 +69,12 @@ export const styles = StyleSheet.create({
     paddingLeft: 8,
     paddingVertical: 2,
   },
-  // Send button (UAT-025 fix: 40x40 to match input minHeight)
+  // Send button (UAT-032 fix: 44x44 to match inputWrapper visual height with padding)
   sendButton: {
     marginLeft: 8,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.brand.purple,
     justifyContent: 'center',
     alignItems: 'center',
