@@ -17,14 +17,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   // Progress bar for stories mode - positioned above footer
-  progressBarScrollView: {
-    flexGrow: 0, // Prevent ScrollView from expanding
-  },
+  // Matches footer horizontal padding (16px) so edges align
   progressBarContainer: {
     flexDirection: 'row',
     paddingBottom: 8,
-    paddingHorizontal: 24,
-    gap: 4,
+    paddingHorizontal: 16,
+    gap: 2,
   },
   progressSegment: {
     // Width is now calculated dynamically in component based on total photos
