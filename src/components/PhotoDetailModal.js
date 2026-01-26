@@ -311,8 +311,10 @@ const PhotoDetailModal = ({
             )}
           </View>
 
-          {/* User info - bottom left of photo */}
-          <View style={styles.userInfoOverlay}>
+          {/* User info - bottom left of photo (UAT-019 fix: dynamic bottom position) */}
+          <View
+            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 140 : 100 }]}
+          >
             <Text style={styles.displayName} numberOfLines={1}>
               {displayName || 'Unknown User'}
             </Text>

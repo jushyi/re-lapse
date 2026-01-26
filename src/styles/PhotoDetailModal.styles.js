@@ -97,7 +97,7 @@ export const styles = StyleSheet.create({
   },
   userInfoOverlay: {
     position: 'absolute',
-    bottom: 140, // UAT-004 fix: Increased from 108 to give space for comment preview
+    // bottom: dynamic via inline style (UAT-019 fix: 140 with comments, 100 without)
     left: 16, // UAT-011 fix: align with comment preview (was 24)
     flexDirection: 'row',
     alignItems: 'center',
@@ -119,12 +119,12 @@ export const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   // Comment preview container - below user info (UAT-004 fix: absolute positioning)
+  // UAT-011 fix: removed paddingBottom for better alignment with username
   commentPreviewContainer: {
     position: 'absolute',
     bottom: 100, // Below userInfoOverlay, above footer
     left: 16,
     right: 16,
-    paddingBottom: 8,
   },
   footer: {
     flexDirection: 'row',
