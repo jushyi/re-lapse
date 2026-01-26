@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -33,9 +34,16 @@ import logger from '../utils/logger';
 
 const db = getFirestore();
 
+// Layout constants
+const HEADER_HEIGHT = 68; // paddingVertical: 16 × 2 + title height
+const TAB_BAR_HEIGHT = 88; // iOS tab bar with safe area
+
 const FeedScreen = () => {
   const { user } = useAuth();
   const navigation = useNavigation();
+
+  // Animated scroll value for header hide/show
+  const scrollY = useRef(new Animated.Value(0)).current;
   const {
     photos,
     loading,
@@ -456,10 +464,24 @@ const FeedScreen = () => {
     );
   };
 
+  // Header transform based on scroll position
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT],
+    outputRange: [0, -HEADER_HEIGHT],
+    extrapolate: 'clamp',
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Animated Header - hides on scroll */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            transform: [{ translateY: headerTranslateY }],
+          },
+        ]}
+      >
         <Text style={styles.headerTitle}>Rewind</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('Activity')}
@@ -468,7 +490,7 @@ const FeedScreen = () => {
           <Ionicons name="heart-outline" size={24} color={colors.text.primary} />
           {hasNewNotifications && <View style={styles.notificationDot} />}
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Content */}
       {loading ? (
@@ -485,6 +507,10 @@ const FeedScreen = () => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.feedList}
           showsVerticalScrollIndicator={false}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -544,14 +570,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000', // Pure black to match stories section
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    backgroundColor: '#000000',
   },
   headerTitle: {
     fontSize: 24,
@@ -572,7 +601,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30', // iOS red
   },
   feedList: {
-    paddingBottom: 24,
+    paddingTop: HEADER_HEIGHT,
+    paddingBottom: TAB_BAR_HEIGHT + 24,
   },
   sectionHeader: {
     paddingHorizontal: 16,
