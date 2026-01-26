@@ -20,9 +20,9 @@ Progress: ██████░░░░ 64%
 
 **Velocity:**
 
-- Total plans completed: 112 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 12 in v0.7)
+- Total plans completed: 113 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 13 in v0.7)
 - Average duration: 16 min
-- Total execution time: 19.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 61m v0.7)
+- Total execution time: 19.9 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 67m v0.7)
 
 **By Milestone:**
 
@@ -144,6 +144,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 35-01         | Reuse brand.gradient.developing for glow              | DRY principle, consistent with darkroom reveal colors                                |
 | 34.1-01       | Pure black background (#000000) for feed              | Match stories section, seamless visual consistency                                   |
 | 34.1-01       | Edge-to-edge photos (no card margins)                 | Instagram-style modern aesthetic, photos dominate                                    |
+| 35-02         | 24-hour expiry for viewed state                       | Daily reset so users see friend stories again                                        |
+| 35-02         | Mark as viewed on modal close (not open)              | Ensures user actually viewed content before marking                                  |
 
 ### Deferred Issues
 
@@ -176,5 +178,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 34.1-01-PLAN.md (Phase 34.1 complete)
+Stopped at: Completed 35-02-PLAN.md (view state tracking)
 Resume file: None
