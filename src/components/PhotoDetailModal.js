@@ -311,9 +311,9 @@ const PhotoDetailModal = ({
             )}
           </View>
 
-          {/* User info - bottom left of photo (UAT-022/UAT-023 fix: adjusted spacing) */}
+          {/* User info - bottom left of photo (UAT-022/UAT-023/UAT-033 fix: adjusted spacing) */}
           <View
-            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 130 : 102 }]}
+            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 130 : 110 }]}
           >
             <Text style={styles.displayName} numberOfLines={1}>
               {displayName || 'Unknown User'}
