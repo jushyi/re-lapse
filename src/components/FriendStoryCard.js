@@ -22,10 +22,10 @@ import logger from '../utils/logger';
  * @param {boolean} isViewed - Whether the story has been viewed (default false)
  */
 const FriendStoryCard = ({ friend, onPress, isFirst = false, isViewed = false }) => {
-  const { userId, displayName, profilePhotoURL, topPhotos, hasPhotos } = friend;
+  const { userId, displayName, profilePhotoURL, topPhotos, thumbnailURL, hasPhotos } = friend;
 
-  // Get first photo URL for thumbnail
-  const thumbnailUrl = topPhotos?.[0]?.imageURL || null;
+  // Use thumbnailURL (most recent photo) if available, fallback to first photo in array
+  const thumbnailUrl = thumbnailURL || topPhotos?.[0]?.imageURL || null;
 
   /**
    * Handle card press
