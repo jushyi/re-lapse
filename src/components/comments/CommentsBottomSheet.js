@@ -109,10 +109,10 @@ const CommentsBottomSheet = ({
     const showSub = Keyboard.addListener(showEvent, event => {
       const keyboardHeight = event.endCoordinates.height;
       setKeyboardVisible(true);
-      // UAT-029 fix: Only move up 60% of keyboard height to reduce excess gap
-      // Full keyboardHeight was too much - sheet bottom is already 40% from screen bottom
+      // UAT-029 fix: Move up 80% of keyboard height - clears suggestions bar while reducing excess gap
+      // 60% didn't clear iOS suggestions bar, 100% had too much gap above keyboard
       Animated.timing(sheetTranslateY, {
-        toValue: -(keyboardHeight * 0.6),
+        toValue: -(keyboardHeight * 0.8),
         duration: 250,
         useNativeDriver: true,
       }).start();
