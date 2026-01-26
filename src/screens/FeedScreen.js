@@ -780,8 +780,6 @@ const styles = StyleSheet.create({
   // Stories row styles
   storiesContainer: {
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1A1A1A',
     backgroundColor: '#000000',
   },
   storiesScrollContent: {
