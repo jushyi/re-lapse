@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 35 of 37 (Stories Redesign)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-25 - Completed 35-01-PLAN.md
+Last activity: 2026-01-25 - Completed 35-02-PLAN.md
 
-Progress: ██████░░░░ 62%
+Progress: ██████░░░░ 64%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 111 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 11 in v0.7)
+- Total plans completed: 112 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 12 in v0.7)
 - Average duration: 16 min
-- Total execution time: 19.7 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 55m v0.7)
+- Total execution time: 19.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 61m v0.7)
 
 **By Milestone:**
 
@@ -142,6 +142,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 35-01         | blurRadius={20} for photo blur                        | React Native built-in, no expo-blur dependency needed                                |
 | 35-01         | Dark frame (#2A2A2A) for story cards                  | Blends with dark theme, contrasts with gradient glow                                 |
 | 35-01         | Reuse brand.gradient.developing for glow              | DRY principle, consistent with darkroom reveal colors                                |
+| 34.1-01       | Pure black background (#000000) for feed              | Match stories section, seamless visual consistency                                   |
+| 34.1-01       | Edge-to-edge photos (no card margins)                 | Instagram-style modern aesthetic, photos dominate                                    |
 
 ### Deferred Issues
 
@@ -169,9 +171,10 @@ None.
 - 4 phases inserted during v0.6: 21.1, 21.2, 21.3 (security/auth fixes), 28.1 (Firestore rules fix)
 - Version scheme changed from v1.x to v0.x (v1.0 reserved for TestFlight release)
 - Milestone v0.7 created: Rewind rebrand & feed overhaul, 8 phases (Phase 30-37)
+- Phase 34.1 inserted after Phase 34: Instagram-style full-width feed cards (URGENT) - replaces Polaroid design
 
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 35-01-PLAN.md (Polaroid story cards)
+Stopped at: Completed 34.1-01-PLAN.md (Phase 34.1 complete)
 Resume file: None
