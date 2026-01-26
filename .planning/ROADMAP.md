@@ -173,6 +173,17 @@ Plans:
 
 - [x] 34.1-01: Edge-to-edge feed cards with profile photo row
 
+#### Phase 34.2: Feed & Stories UI Refinements (INSERTED)
+
+**Goal**: Stories row hides on scroll (moves with feed), story cards show just photo (no Polaroid outline), profile photo overlaps bottom of card with name floating below
+**Depends on**: Phase 34.1
+**Research**: Unlikely (UI refinement)
+**Plans**: 1
+
+Plans:
+
+- [ ] 34.2-01: Scrollable stories, simplified cards, overlapping profile photos
+
 #### Phase 35: Stories Redesign
 
 **Goal**: Complete visual and interaction overhaul of stories row
@@ -254,6 +265,7 @@ Plans:
 | 33. Feed Header & Notifications                | v0.7      | 2/2            | Complete    | 2026-01-25 |
 | 34. Feed Card Redesign                         | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 34.1 Instagram-Style Feed Cards (INSERTED)     | v0.7      | 1/1            | Complete    | 2026-01-25 |
+| 34.2 Feed & Stories UI Refinements (INSERTED)  | v0.7      | 0/1            | Planned     | -          |
 | 35. Stories Redesign                           | v0.7      | 2/3            | In progress | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
