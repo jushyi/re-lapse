@@ -247,11 +247,11 @@ Plans:
 **Goal**: Align progress bar and emoji footer widths to match photo view, remove "Feed" header for seamless stories→cards transition
 **Depends on**: Phase 35.4
 **Research**: Unlikely (UI polish)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 35.5-01: TBD
+- [x] 35.5-01: Edge-to-edge progress bar/footer, remove Feed header and stories border
 
 #### Phase 36: Comments Feature
 
@@ -327,7 +327,7 @@ Plans:
 | 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.3 Stories Performance & View State Fix      | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
-| 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 0/?            | Not started | -          |
+| 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 1/1            | Complete    | 2026-01-26 |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 
