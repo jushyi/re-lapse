@@ -156,11 +156,11 @@ Plans:
 **Goal**: Complete overhaul of card layout, interaction patterns, loading/transitions
 **Depends on**: Phase 33
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 34-01: TBD
+- [x] 34-01: Polaroid frame styling - cream color, thick bottom border, user info
 
 #### Phase 35: Stories Redesign
 
@@ -239,7 +239,7 @@ Plans:
 | 31. Personalization Scaffolding                | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 32. Navigation Restructure                     | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 33. Feed Header & Notifications                | v0.7      | 2/2            | Complete    | 2026-01-25 |
-| 34. Feed Card Redesign                         | v0.7      | 0/?            | Not started | -          |
+| 34. Feed Card Redesign                         | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35. Stories Redesign                           | v0.7      | 0/?            | Not started | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
