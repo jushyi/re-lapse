@@ -262,7 +262,15 @@ const CommentsBottomSheet = ({
       logger.info('CommentsBottomSheet: Deleting comment', {
         commentId: comment?.id,
       });
-      await deleteComment(comment.id);
+      const result = await deleteComment(comment.id);
+
+      if (result.success) {
+        // Success haptic feedback
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        // Error haptic feedback
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     },
     [deleteComment]
   );

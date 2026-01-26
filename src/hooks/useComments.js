@@ -138,6 +138,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
 
   /**
    * Delete a comment
+   * Optimistic UI removal with Firestore sync
    *
    * @param {string} commentId - Comment ID to delete
    * @returns {Promise<{success: boolean, error?: string}>}
@@ -155,19 +156,39 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
         currentUserId,
       });
 
+      // Store original comments for potential revert
+      const originalComments = [...comments];
+
+      // Optimistic removal: remove comment and its replies from UI
+      setComments(prev => {
+        // Find if this is a parent comment with replies
+        const commentToDelete = prev.find(c => c.id === commentId);
+        const isParent = commentToDelete && !commentToDelete.parentId;
+
+        if (isParent) {
+          // Remove parent and all replies to this parent
+          return prev.filter(c => c.id !== commentId && c.parentId !== commentId);
+        } else {
+          // Just remove this single comment
+          return prev.filter(c => c.id !== commentId);
+        }
+      });
+
       const result = await deleteComment(photoId, commentId, currentUserId);
 
       if (result.success) {
         logger.info('useComments.deleteComment: Success', { commentId });
       } else {
-        logger.error('useComments.deleteComment: Failed', {
+        logger.error('useComments.deleteComment: Failed, reverting', {
           error: result.error,
         });
+        // Revert on failure
+        setComments(originalComments);
       }
 
       return result;
     },
-    [photoId, currentUserId]
+    [photoId, currentUserId, comments]
   );
 
   /**
