@@ -13,6 +13,8 @@ import {
   subscribeToComments,
   addComment,
   deleteComment,
+  toggleCommentLike,
+  getUserLikesForComments,
 } from '../services/firebase/commentService';
 import logger from '../utils/logger';
 
@@ -29,6 +31,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
   const unsubscribeRef = useRef(null);
 
   logger.debug('useComments: Hook initialized', {
@@ -52,7 +55,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     setError(null);
 
     // Subscribe to comments
-    unsubscribeRef.current = subscribeToComments(photoId, result => {
+    unsubscribeRef.current = subscribeToComments(photoId, async result => {
       logger.debug('useComments: Subscription callback', {
         photoId,
         success: result.success,
@@ -60,8 +63,16 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
       });
 
       if (result.success) {
-        setComments(result.comments || []);
+        const newComments = result.comments || [];
+        setComments(newComments);
         setError(null);
+
+        // Fetch user likes for all comments (including replies)
+        if (currentUserId && newComments.length > 0) {
+          const commentIds = newComments.map(c => c.id);
+          const likes = await getUserLikesForComments(photoId, commentIds, currentUserId);
+          setUserLikes(likes);
+        }
       } else {
         logger.error('useComments: Subscription error', { error: result.error });
         setError(result.error);
@@ -160,6 +171,87 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   );
 
   /**
+   * Toggle like on a comment
+   * Optimistic UI update with Firestore sync
+   *
+   * @param {string} commentId - Comment ID to like/unlike
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  const handleToggleLike = useCallback(
+    async commentId => {
+      if (!photoId || !currentUserId || !commentId) {
+        logger.warn('useComments.toggleLike: Missing required fields');
+        return { success: false, error: 'Missing required fields' };
+      }
+
+      const wasLiked = userLikes[commentId] || false;
+
+      logger.info('useComments.toggleLike: Toggling', {
+        photoId,
+        commentId,
+        wasLiked,
+      });
+
+      // Optimistic update for userLikes state
+      setUserLikes(prev => ({
+        ...prev,
+        [commentId]: !wasLiked,
+      }));
+
+      // Optimistic update for comment likeCount
+      setComments(prev =>
+        prev.map(c =>
+          c.id === commentId ? { ...c, likeCount: (c.likeCount || 0) + (wasLiked ? -1 : 1) } : c
+        )
+      );
+
+      // Sync to Firestore
+      const result = await toggleCommentLike(photoId, commentId, currentUserId);
+
+      if (!result.success) {
+        logger.error('useComments.toggleLike: Failed, reverting', {
+          error: result.error,
+        });
+
+        // Revert on failure
+        setUserLikes(prev => ({
+          ...prev,
+          [commentId]: wasLiked,
+        }));
+
+        setComments(prev =>
+          prev.map(c =>
+            c.id === commentId ? { ...c, likeCount: (c.likeCount || 0) + (wasLiked ? 1 : -1) } : c
+          )
+        );
+
+        return { success: false, error: result.error };
+      }
+
+      logger.info('useComments.toggleLike: Success', {
+        commentId,
+        newLikedState: !wasLiked,
+      });
+
+      return { success: true };
+    },
+    [photoId, currentUserId, userLikes]
+  );
+
+  /**
+   * Check if user has liked a comment
+   *
+   * @param {string} commentId - Comment ID to check
+   * @returns {boolean}
+   */
+  const isLikedByUser = useCallback(
+    commentId => {
+      return userLikes[commentId] || false;
+    },
+    [userLikes]
+  );
+
+  /**
    * Set reply target
    *
    * @param {object|null} comment - Comment to reply to, or null to cancel
@@ -247,14 +339,17 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     loading,
     error,
     replyingTo,
+    userLikes,
     // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
+    toggleLike: handleToggleLike,
     setReplyingTo: handleSetReplyingTo,
     cancelReply: handleCancelReply,
     // Utilities
     canDeleteComment,
     isOwnerComment,
+    isLikedByUser,
   };
 };
 

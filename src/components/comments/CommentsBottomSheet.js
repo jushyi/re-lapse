@@ -142,10 +142,12 @@ const CommentsBottomSheet = ({
     replyingTo,
     addComment,
     deleteComment,
+    toggleLike,
     setReplyingTo,
     cancelReply,
     canDeleteComment,
     isOwnerComment,
+    isLikedByUser,
   } = useComments(photoId, currentUserId, photoOwnerId);
 
   logger.debug('CommentsBottomSheet: Render', {
@@ -266,15 +268,18 @@ const CommentsBottomSheet = ({
   );
 
   /**
-   * Handle like comment (placeholder for Plan 04)
+   * Handle like comment
    */
-  const handleLike = useCallback(comment => {
-    logger.debug('CommentsBottomSheet: Like comment (placeholder)', {
-      commentId: comment?.id,
-    });
-    // TODO: Implement in Plan 04
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
+  const handleLike = useCallback(
+    async comment => {
+      logger.info('CommentsBottomSheet: Like comment', {
+        commentId: comment?.id,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await toggleLike(comment.id);
+    },
+    [toggleLike]
+  );
 
   /**
    * Render individual comment row
@@ -295,7 +300,7 @@ const CommentsBottomSheet = ({
             onDelete={handleDelete}
             isOwnerComment={isOwner}
             canDelete={canDelete}
-            isLiked={false} // TODO: Implement in Plan 04
+            isLiked={isLikedByUser(comment.id)}
           />
 
           {/* Replies (nested under parent) */}
@@ -309,14 +314,14 @@ const CommentsBottomSheet = ({
                 onDelete={handleDelete}
                 isOwnerComment={isOwnerComment(reply)}
                 canDelete={canDeleteComment(reply)}
-                isLiked={false} // TODO: Implement in Plan 04
+                isLiked={isLikedByUser(reply.id)}
               />
             </View>
           ))}
         </View>
       );
     },
-    [handleReply, handleLike, handleDelete, isOwnerComment, canDeleteComment]
+    [handleReply, handleLike, handleDelete, isOwnerComment, canDeleteComment, isLikedByUser]
   );
 
   /**

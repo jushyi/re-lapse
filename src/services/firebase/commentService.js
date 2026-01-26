@@ -33,6 +33,7 @@ import {
   addDoc,
   deleteDoc,
   updateDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -554,5 +555,155 @@ export const getPreviewComments = async (photoId, photoOwnerId) => {
       error: error.message,
     });
     return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Check if user has liked a comment
+ * Uses deterministic like ID for direct lookup without query
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} commentId - Comment document ID
+ * @param {string} userId - User ID to check
+ * @returns {Promise<boolean>} True if user has liked the comment
+ */
+export const hasUserLikedComment = async (photoId, commentId, userId) => {
+  logger.debug('commentService.hasUserLikedComment: Checking', {
+    photoId,
+    commentId,
+    userId,
+  });
+
+  try {
+    const likeId = `${photoId}_${commentId}_${userId}`;
+    const likeRef = doc(db, 'photos', photoId, 'comments', commentId, 'likes', likeId);
+    const likeDoc = await getDoc(likeRef);
+
+    const liked = likeDoc.exists();
+    logger.debug('commentService.hasUserLikedComment: Result', { liked });
+
+    return liked;
+  } catch (error) {
+    logger.error('commentService.hasUserLikedComment: Failed', {
+      photoId,
+      commentId,
+      userId,
+      error: error.message,
+    });
+    return false;
+  }
+};
+
+/**
+ * Toggle like on a comment
+ * Creates or removes like document and updates comment's likeCount
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} commentId - Comment document ID
+ * @param {string} userId - User ID liking/unliking
+ * @returns {Promise<{success: boolean, liked?: boolean, error?: string}>}
+ */
+export const toggleCommentLike = async (photoId, commentId, userId) => {
+  logger.debug('commentService.toggleCommentLike: Starting', {
+    photoId,
+    commentId,
+    userId,
+  });
+
+  try {
+    if (!photoId || !commentId || !userId) {
+      logger.warn('commentService.toggleCommentLike: Missing required fields');
+      return { success: false, error: 'Missing required fields' };
+    }
+
+    const likeId = `${photoId}_${commentId}_${userId}`;
+    const likeRef = doc(db, 'photos', photoId, 'comments', commentId, 'likes', likeId);
+    const commentRef = doc(db, 'photos', photoId, 'comments', commentId);
+
+    const likeDoc = await getDoc(likeRef);
+
+    if (likeDoc.exists()) {
+      // Unlike: delete like doc, decrement count
+      await deleteDoc(likeRef);
+      await updateDoc(commentRef, { likeCount: increment(-1) });
+
+      logger.info('commentService.toggleCommentLike: Unliked', {
+        photoId,
+        commentId,
+        userId,
+      });
+
+      return { success: true, liked: false };
+    } else {
+      // Like: create like doc, increment count
+      await setDoc(likeRef, {
+        userId,
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(commentRef, { likeCount: increment(1) });
+
+      logger.info('commentService.toggleCommentLike: Liked', {
+        photoId,
+        commentId,
+        userId,
+      });
+
+      return { success: true, liked: true };
+    }
+  } catch (error) {
+    logger.error('commentService.toggleCommentLike: Failed', {
+      photoId,
+      commentId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get user's likes for multiple comments (batch check)
+ * Used to populate isLiked state for all visible comments
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {Array<string>} commentIds - Array of comment IDs to check
+ * @param {string} userId - User ID to check likes for
+ * @returns {Promise<Object>} Map of { [commentId]: boolean }
+ */
+export const getUserLikesForComments = async (photoId, commentIds, userId) => {
+  logger.debug('commentService.getUserLikesForComments: Starting', {
+    photoId,
+    commentCount: commentIds?.length,
+    userId,
+  });
+
+  try {
+    if (!photoId || !userId || !commentIds || commentIds.length === 0) {
+      logger.debug('commentService.getUserLikesForComments: No comments to check');
+      return {};
+    }
+
+    const likes = {};
+
+    await Promise.all(
+      commentIds.map(async commentId => {
+        likes[commentId] = await hasUserLikedComment(photoId, commentId, userId);
+      })
+    );
+
+    logger.info('commentService.getUserLikesForComments: Complete', {
+      photoId,
+      checkedCount: commentIds.length,
+      likedCount: Object.values(likes).filter(Boolean).length,
+    });
+
+    return likes;
+  } catch (error) {
+    logger.error('commentService.getUserLikesForComments: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return {};
   }
 };
