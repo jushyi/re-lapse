@@ -272,7 +272,7 @@ Plans:
 - [x] 36-03-FIX-5: UAT Round 6 fixes (feed swipe-to-close, border radius, user info position, dot spacing)
 - [x] 36-04: Comment likes and delete functionality
 - [x] 36-05: Comment threading replies
-- [ ] 36-06: Feed card comment preview
+- [x] 36-06: Comment notifications & media comments (images, GIFs)
 
 #### Phase 37: Profile Placeholder
 
@@ -360,7 +360,7 @@ Plans:
 | 35.3 Stories Performance & View State Fix      | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
 | 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 1/1            | Complete    | 2026-01-26 |
-| 36. Comments Feature                           | v0.7      | 5/6 + 5 FIX    | In progress | -          |
+| 36. Comments Feature                           | v0.7      | 6/6 + 5 FIX    | Complete    | 2026-01-26 |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 | 37.1 Darkroom Visual Feedback (INSERTED)       | v0.7      | 0/?            | Not started | -          |
 | 37.2 Stories Flash & Feed Skeleton (INSERTED)  | v0.7      | 0/?            | Not started | -          |
