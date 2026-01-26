@@ -217,7 +217,7 @@ Plans:
 
 Plans:
 
-- [ ] 35.2-01: Black header with scroll-hide behavior, bottom content inset for tab bar
+- [x] 35.2-01: Black header with scroll-hide behavior, bottom content inset for tab bar
 
 #### Phase 36: Comments Feature
 
@@ -290,7 +290,7 @@ Plans:
 | 34.2 Feed & Stories UI Refinements (INSERTED)  | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35. Stories Redesign                           | v0.7      | 3/3            | Complete    | 2026-01-25 |
 | 35.1 Unified Photo Modal (INSERTED)            | v0.7      | 1/1            | Complete    | 2026-01-25 |
-| 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 0/1            | Not started | -          |
+| 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 

@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 35.1 of 38 (Unified Photo Modal)
+Phase: 35.2 of 38 (Feed Header & Bottom Padding)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-25 - Completed 35.1-01-PLAN.md
+Last activity: 2026-01-25 - Completed 35.2-01-PLAN.md
 
-Progress: ██████░░░░ 70%
+Progress: ███████░░░ 72%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 116 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 16 in v0.7)
+- Total plans completed: 117 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 17 in v0.7)
 - Average duration: 16 min
-- Total execution time: 20.6 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 109m v0.7)
+- Total execution time: 20.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 117m v0.7)
 
 **By Milestone:**
 
@@ -153,6 +153,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 34.2-01       | Feed cards retain horizontal infoRow layout           | User preferred original format over overlapping profile design                       |
 | 34.2-01       | Flexbox centering for overlapping elements            | Percentage-based centering was off; flexbox (left:0, right:0) is more reliable       |
 | 35.1-01       | Single PhotoDetailModal with mode prop                | Reduces code duplication vs maintaining two separate modal components                |
+| 35.2-01       | HEADER_HEIGHT = 68, TAB_BAR_HEIGHT = 88               | Based on padding and iOS safe area calculations                                      |
+| 35.2-01       | clamp extrapolation for header animation              | Prevents header from moving beyond bounds on bounce scroll                           |
+| 35.2-01       | Progress bar at bottom of modal                       | Natural info hierarchy: user info → progress → reactions                             |
 
 ### Deferred Issues
 
@@ -188,5 +191,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 35.1-01-PLAN.md (unified photo modal)
+Stopped at: Completed 35.2-01-PLAN.md (feed header & bottom padding)
 Resume file: None
