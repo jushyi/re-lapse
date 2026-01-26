@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 34.2 of 37 (Feed & Stories UI Refinements)
+Phase: 35.1 of 38 (Unified Photo Modal)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-25 - Completed 34.2-01-PLAN.md
+Last activity: 2026-01-25 - Completed 35.1-01-PLAN.md
 
-Progress: ██████░░░░ 68%
+Progress: ██████░░░░ 70%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 115 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 15 in v0.7)
+- Total plans completed: 116 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 16 in v0.7)
 - Average duration: 16 min
-- Total execution time: 20.4 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 97m v0.7)
+- Total execution time: 20.6 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 109m v0.7)
 
 **By Milestone:**
 
@@ -152,6 +152,7 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 34.2-01       | Story cards 88x130 rectangular with profile at bottom | User wanted bigger, more rectangular cards like Instagram stories                    |
 | 34.2-01       | Feed cards retain horizontal infoRow layout           | User preferred original format over overlapping profile design                       |
 | 34.2-01       | Flexbox centering for overlapping elements            | Percentage-based centering was off; flexbox (left:0, right:0) is more reliable       |
+| 35.1-01       | Single PhotoDetailModal with mode prop                | Reduces code duplication vs maintaining two separate modal components                |
 
 ### Deferred Issues
 
@@ -181,9 +182,11 @@ None.
 - Milestone v0.7 created: Rewind rebrand & feed overhaul, 8 phases (Phase 30-37)
 - Phase 34.1 inserted after Phase 34: Instagram-style full-width feed cards (URGENT) - replaces Polaroid design
 - Phase 34.2 inserted after Phase 34.1: Feed & Stories UI Refinements (URGENT) - stories scroll behavior, card redesign with profile overlay
+- Phase 35.1 inserted after Phase 35: Unified Photo Modal (URGENT) - identical appearance for stories/feed, story segments only in stories mode, feed photos don't trigger viewed
+- Phase 35.2 inserted after Phase 35.1: Feed Header & Bottom Padding (URGENT) - black header, scroll-hide behavior, bottom padding for tab bar
 
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 34.2-01-PLAN.md (feed & stories UI refinements)
+Stopped at: Completed 35.1-01-PLAN.md (unified photo modal)
 Resume file: None

@@ -197,6 +197,28 @@ Plans:
 - [x] 35-02: View state tracking and stories sorting (unviewed first)
 - [x] 35-03: Hot highlights feed filter (engagement-based curation)
 
+#### Phase 35.1: Unified Photo Modal (INSERTED)
+
+**Goal**: Combine stories modal and feed modal into single identical-looking component. Story segments only appear when viewing stories. Feed photos do NOT trigger viewed state.
+**Depends on**: Phase 35
+**Research**: Unlikely (refactoring existing components)
+**Plans**: 1
+
+Plans:
+
+- [x] 35.1-01: Merge PhotoDetailModal and stories viewer with conditional story segments (feed vs stories mode)
+
+#### Phase 35.2: Feed Header & Bottom Padding (INSERTED)
+
+**Goal**: Black header bar matching feed background, header hides on scroll, add bottom padding so nav bar doesn't clip last feed card's info section
+**Depends on**: Phase 35.1
+**Research**: Unlikely (UI polish)
+**Plans**: 1
+
+Plans:
+
+- [ ] 35.2-01: Black header with scroll-hide behavior, bottom content inset for tab bar
+
 #### Phase 36: Comments Feature
 
 **Goal**: Bottom sheet for photo comments (new social feature)
@@ -267,6 +289,8 @@ Plans:
 | 34.1 Instagram-Style Feed Cards (INSERTED)     | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 34.2 Feed & Stories UI Refinements (INSERTED)  | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35. Stories Redesign                           | v0.7      | 3/3            | Complete    | 2026-01-25 |
+| 35.1 Unified Photo Modal (INSERTED)            | v0.7      | 1/1            | Complete    | 2026-01-25 |
+| 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 0/1            | Not started | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 
