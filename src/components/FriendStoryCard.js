@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 /**
- * FriendStoryCard component - Simple blurred photo thumbnail
+ * FriendStoryCard component - Rectangular story card with profile photo
  *
- * Displays a friend's story as a compact blurred photo with
- * gradient border for unviewed stories.
+ * Displays a friend's story as a tall rectangular blurred photo with
+ * gradient border for unviewed stories and profile photo at the bottom.
  *
  * @param {object} friend - Friend data object
  * @param {string} friend.userId - Friend's user ID
@@ -21,7 +22,7 @@ import logger from '../utils/logger';
  * @param {boolean} isViewed - Whether the story has been viewed (default false)
  */
 const FriendStoryCard = ({ friend, onPress, isFirst = false, isViewed = false }) => {
-  const { userId, displayName, topPhotos, hasPhotos } = friend;
+  const { userId, displayName, profilePhotoURL, topPhotos, hasPhotos } = friend;
 
   // Get first photo URL for thumbnail
   const thumbnailUrl = topPhotos?.[0]?.imageURL || null;
@@ -63,27 +64,47 @@ const FriendStoryCard = ({ friend, onPress, isFirst = false, isViewed = false })
     </View>
   );
 
+  /**
+   * Render profile photo at bottom of card
+   */
+  const renderProfilePhoto = () => (
+    <View style={styles.profileContainer}>
+      {profilePhotoURL ? (
+        <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+      ) : (
+        <View style={styles.profilePlaceholder}>
+          <Ionicons name="person" size={18} color={colors.text.secondary} />
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <TouchableOpacity
       style={[styles.container, isFirst && styles.firstContainer]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      {/* Gradient border for unviewed stories, subtle border for viewed */}
-      {hasPhotos && !isViewed ? (
-        <LinearGradient
-          colors={colors.brand.gradient.developing}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientBorder}
-        >
-          {renderPhotoContent()}
-        </LinearGradient>
-      ) : (
-        <View style={[styles.viewedBorder, !hasPhotos && styles.noBorder]}>
-          {renderPhotoContent()}
-        </View>
-      )}
+      {/* Card with gradient or viewed border */}
+      <View style={styles.cardWrapper}>
+        {hasPhotos && !isViewed ? (
+          <LinearGradient
+            colors={colors.brand.gradient.developing}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientBorder}
+          >
+            {renderPhotoContent()}
+          </LinearGradient>
+        ) : (
+          <View style={[styles.viewedBorder, !hasPhotos && styles.noBorder]}>
+            {renderPhotoContent()}
+          </View>
+        )}
+
+        {/* Profile photo overlapping bottom of card */}
+        {renderProfilePhoto()}
+      </View>
 
       {/* Display name below card */}
       <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
@@ -93,41 +114,45 @@ const FriendStoryCard = ({ friend, onPress, isFirst = false, isViewed = false })
   );
 };
 
-// Compact square card dimensions (no Polaroid frame)
-const PHOTO_SIZE = 68;
+// Rectangular card dimensions (taller than wide, like Instagram stories)
+const PHOTO_WIDTH = 88;
+const PHOTO_HEIGHT = 130;
 const BORDER_WIDTH = 3;
+const PROFILE_SIZE = 32;
 
 const styles = StyleSheet.create({
   container: {
-    width: PHOTO_SIZE + BORDER_WIDTH * 2 + 8, // Photo + border + padding
+    width: PHOTO_WIDTH + BORDER_WIDTH * 2 + 8,
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   firstContainer: {
     marginLeft: 0,
   },
+  cardWrapper: {
+    position: 'relative',
+    marginBottom: PROFILE_SIZE / 2 + 4, // Space for overlapping profile + gap
+  },
   gradientBorder: {
-    width: PHOTO_SIZE + BORDER_WIDTH * 2,
-    height: PHOTO_SIZE + BORDER_WIDTH * 2,
-    borderRadius: 12,
+    width: PHOTO_WIDTH + BORDER_WIDTH * 2,
+    height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
+    borderRadius: 14,
     padding: BORDER_WIDTH,
-    marginBottom: 6,
   },
   viewedBorder: {
-    width: PHOTO_SIZE + BORDER_WIDTH * 2,
-    height: PHOTO_SIZE + BORDER_WIDTH * 2,
-    borderRadius: 12,
+    width: PHOTO_WIDTH + BORDER_WIDTH * 2,
+    height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
+    borderRadius: 14,
     padding: BORDER_WIDTH,
     borderWidth: 2,
     borderColor: colors.storyCard.glowViewed,
-    marginBottom: 6,
   },
   noBorder: {
     borderColor: 'transparent',
   },
   photoContainer: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
   },
@@ -142,15 +167,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
   },
   placeholderInitial: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '600',
     color: colors.text.secondary,
   },
+  profileContainer: {
+    position: 'absolute',
+    bottom: -PROFILE_SIZE / 2,
+    left: '50%',
+    marginLeft: -PROFILE_SIZE / 2,
+    width: PROFILE_SIZE,
+    height: PROFILE_SIZE,
+    borderRadius: PROFILE_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.background.primary,
+    backgroundColor: colors.background.tertiary,
+    overflow: 'hidden',
+  },
+  profilePhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  profilePlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.tertiary,
+  },
   name: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.storyCard.textName,
     textAlign: 'center',
-    maxWidth: PHOTO_SIZE + BORDER_WIDTH * 2,
+    maxWidth: PHOTO_WIDTH + BORDER_WIDTH * 2,
+    fontWeight: '500',
   },
 });
 
