@@ -14,6 +14,8 @@ import { colors } from '../constants/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6;
+// Minimum height for empty state (UAT-008 fix) - ~50% screen
+export const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 export const styles = StyleSheet.create({
   // Modal overlay
@@ -35,6 +37,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    minHeight: MIN_SHEET_HEIGHT, // UAT-008 fix: consistent height even when empty
     maxHeight: SHEET_HEIGHT,
     overflow: 'hidden',
   },
@@ -80,12 +83,13 @@ export const styles = StyleSheet.create({
   commentsListContent: {
     paddingBottom: 8,
   },
-  // Empty state
+  // Empty state - centered with minimum height (UAT-008 fix)
   emptyContainer: {
     flex: 1,
+    minHeight: MIN_SHEET_HEIGHT * 0.5, // Half of sheet min height for content area
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
   emptyText: {
     fontSize: 16,

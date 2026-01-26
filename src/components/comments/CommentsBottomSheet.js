@@ -76,6 +76,7 @@ const CommentsBottomSheet = ({
 
   /**
    * Animate sheet on visibility change
+   * Auto-focus input after animation completes
    */
   useEffect(() => {
     if (visible) {
@@ -85,7 +86,12 @@ const CommentsBottomSheet = ({
         useNativeDriver: true,
         damping: 20,
         stiffness: 100,
-      }).start();
+      }).start(() => {
+        // Auto-focus input after sheet animation completes (UAT-007 fix)
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      });
 
       logger.info('CommentsBottomSheet: Opened', { photoId });
     } else {
@@ -118,6 +124,7 @@ const CommentsBottomSheet = ({
 
   /**
    * Handle comment submit
+   * Note: Sheet stays open after submit (UAT-003 fix) to allow continued interaction
    */
   const handleSubmitComment = useCallback(
     async (text, mediaUrl, mediaType) => {
@@ -134,10 +141,15 @@ const CommentsBottomSheet = ({
           commentId: result.commentId,
         });
 
-        // Trigger callback
+        // Trigger callback (but don't close sheet - UAT-003 fix)
         if (onCommentAdded) {
           onCommentAdded();
         }
+
+        // Refocus input to allow adding more comments
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
       } else {
         logger.error('CommentsBottomSheet: Failed to add comment', {
           error: result.error,
