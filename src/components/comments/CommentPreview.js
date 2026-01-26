@@ -8,7 +8,7 @@
  * - Owner comment prioritized as caption
  * - Bold username inline with comment text
  * - Truncation for long comments
- * - Single comment display with 4-second rotation (UAT-012)
+ * - Single comment display with 2-second rotation (UAT-012, UAT-015)
  * - Smooth fade animation between comments
  * - "View all X comments" link when more exist
  */
@@ -23,12 +23,19 @@ import { colors } from '../../constants/colors';
  * @param {number} totalCount - Total comment count
  * @param {function} onPress - Callback when pressed (opens full comments)
  * @param {boolean} compact - Compact mode for feed cards (1 line per comment)
+ * @param {boolean} showViewAll - Show "View all X comments" link (default: true)
  */
-const CommentPreview = ({ comments = [], totalCount = 0, onPress, compact = false }) => {
+const CommentPreview = ({
+  comments = [],
+  totalCount = 0,
+  onPress,
+  compact = false,
+  showViewAll = true,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Rotate comments every 4 seconds with fade animation (UAT-012)
+  // Rotate comments every 2 seconds with fade animation (UAT-012, UAT-015)
   useEffect(() => {
     if (!comments || comments.length <= 1) return;
 
@@ -48,7 +55,7 @@ const CommentPreview = ({ comments = [], totalCount = 0, onPress, compact = fals
           useNativeDriver: true,
         }).start();
       });
-    }, 4000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [comments?.length, fadeAnim]);
@@ -83,8 +90,10 @@ const CommentPreview = ({ comments = [], totalCount = 0, onPress, compact = fals
         </View>
       </Animated.View>
 
-      {/* View all comments link */}
-      {hasMoreComments && <Text style={styles.viewAllText}>View all {totalCount} comments</Text>}
+      {/* View all comments link - only shown when showViewAll is true (UAT-016) */}
+      {showViewAll && hasMoreComments && (
+        <Text style={styles.viewAllText}>View all {totalCount} comments</Text>
+      )}
     </TouchableOpacity>
   );
 };
