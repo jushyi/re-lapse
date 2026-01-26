@@ -21,6 +21,7 @@ import {
   Animated,
   ActivityIndicator,
   Keyboard,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,9 +53,51 @@ const CommentsBottomSheet = ({
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const sheetTranslateY = useRef(new Animated.Value(0)).current; // UAT-021 fix: sheet position for keyboard
+  const swipeY = useRef(new Animated.Value(0)).current; // UAT-020 fix: swipe gesture tracking
   const inputRef = useRef(null);
   const insets = useSafeAreaInsets(); // UAT-010 fix: safe area for bottom input
   const [keyboardVisible, setKeyboardVisible] = useState(false); // UAT-013 fix: keyboard state
+
+  /**
+   * PanResponder for swipe-to-close on handle bar (UAT-020 fix)
+   */
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Respond to downward swipes
+        return gestureState.dy > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          // Update swipeY to follow finger
+          swipeY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // Close if dragged down >1/4 of sheet or fast swipe
+        if (gestureState.dy > SHEET_HEIGHT * 0.25 || gestureState.vy > 0.5) {
+          // Animate out and close
+          Animated.timing(swipeY, {
+            toValue: SHEET_HEIGHT,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            swipeY.setValue(0);
+            if (onClose) {
+              onClose();
+            }
+          });
+        } else {
+          // Spring back
+          Animated.spring(swipeY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // Track keyboard visibility and animate sheet up (UAT-021 fix)
   useEffect(() => {
@@ -333,11 +376,21 @@ const CommentsBottomSheet = ({
         {/* Sheet container - no KeyboardAvoidingView needed with translateY approach (UAT-021 fix) */}
         <View style={styles.keyboardAvoidContainer}>
           {/* Animated sheet (UAT-021 fix: moves UP when keyboard visible via sheetTranslateY) */}
+          {/* UAT-020 fix: swipeY added for swipe-to-close gesture */}
           <Animated.View
-            style={[styles.sheet, { transform: [{ translateY }, { translateY: sheetTranslateY }] }]}
+            style={[
+              styles.sheet,
+              {
+                transform: [
+                  { translateY },
+                  { translateY: sheetTranslateY },
+                  { translateY: swipeY },
+                ],
+              },
+            ]}
           >
-            {/* Handle bar */}
-            <View style={styles.handleBarContainer}>
+            {/* Handle bar - swipe-to-close gesture (UAT-020 fix) */}
+            <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
               <View style={styles.handleBar} />
             </View>
 
