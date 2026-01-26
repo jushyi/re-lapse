@@ -67,6 +67,7 @@ const PhotoDetailModal = ({
   currentUserId,
   onRequestNextFriend,
   hasNextFriend = false,
+  initialShowComments = false,
 }) => {
   // Cube transition animation for friend-to-friend
   const cubeRotation = useRef(new Animated.Value(0)).current;
@@ -80,13 +81,14 @@ const PhotoDetailModal = ({
   const progressScrollRef = useRef(null);
 
   // Reset cube rotation and comments when modal opens or friend changes
+  // Honor initialShowComments prop to open comments sheet immediately (UAT-005 fix)
   useEffect(() => {
     if (visible) {
       cubeRotation.setValue(0);
       setIsTransitioning(false);
-      setShowComments(false);
+      setShowComments(initialShowComments);
     }
-  }, [visible, photos]);
+  }, [visible, photos, initialShowComments]);
 
   /**
    * Handle friend-to-friend transition with cube animation

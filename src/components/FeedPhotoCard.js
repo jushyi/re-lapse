@@ -15,8 +15,9 @@ import { getPreviewComments } from '../services/firebase/commentService';
  *
  * @param {object} photo - Photo object with user data
  * @param {function} onPress - Callback when card is tapped
+ * @param {function} onCommentPress - Callback when comment preview is tapped (opens modal with comments sheet)
  */
-const FeedPhotoCard = ({ photo, onPress }) => {
+const FeedPhotoCard = ({ photo, onPress, onCommentPress }) => {
   const {
     id,
     imageURL,
@@ -119,13 +120,13 @@ const FeedPhotoCard = ({ photo, onPress }) => {
       {/* Prompt if no reactions */}
       {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
 
-      {/* Comment preview */}
+      {/* Comment preview - tapping opens modal with comments sheet (UAT-005 fix) */}
       {previewComments.length > 0 && (
         <View style={styles.commentPreview}>
           <CommentPreview
             comments={previewComments}
             totalCount={commentCount}
-            onPress={onPress}
+            onPress={onCommentPress || onPress}
             compact
           />
         </View>

@@ -58,6 +58,7 @@ const FeedScreen = () => {
   // Modal state
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [initialShowComments, setInitialShowComments] = useState(false);
 
   // Stories state
   const [friendStories, setFriendStories] = useState([]);
@@ -311,6 +312,16 @@ const FeedScreen = () => {
    */
   const handlePhotoPress = photo => {
     setSelectedPhoto(photo);
+    setInitialShowComments(false);
+    setShowPhotoModal(true);
+  };
+
+  /**
+   * Handle comment press on feed card - Opens modal with comments sheet visible (UAT-005 fix)
+   */
+  const handleCommentPress = photo => {
+    setSelectedPhoto(photo);
+    setInitialShowComments(true);
     setShowPhotoModal(true);
   };
 
@@ -320,6 +331,7 @@ const FeedScreen = () => {
   const handleClosePhotoModal = () => {
     setShowPhotoModal(false);
     setSelectedPhoto(null);
+    setInitialShowComments(false);
   };
 
   /**
@@ -450,7 +462,11 @@ const FeedScreen = () => {
    * Render single feed item
    */
   const renderFeedItem = ({ item }) => (
-    <FeedPhotoCard photo={item} onPress={() => handlePhotoPress(item)} />
+    <FeedPhotoCard
+      photo={item}
+      onPress={() => handlePhotoPress(item)}
+      onCommentPress={() => handleCommentPress(item)}
+    />
   );
 
   /**
@@ -638,6 +654,7 @@ const FeedScreen = () => {
           onClose={handleClosePhotoModal}
           onReactionToggle={handleReactionToggle}
           currentUserId={user?.uid}
+          initialShowComments={initialShowComments}
         />
       )}
 
