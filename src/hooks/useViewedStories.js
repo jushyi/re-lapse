@@ -1,24 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  loadViewedPhotos,
+  markPhotosAsViewedInFirestore,
+} from '../services/firebase/viewedStoriesService';
+import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 
-const STORAGE_KEY = '@viewed_stories';
-const PHOTOS_STORAGE_KEY = '@viewed_story_photos';
-const EXPIRY_HOURS = 24; // Reset viewed state after 24 hours
-
 /**
- * Hook for managing viewed stories state with AsyncStorage persistence
+ * Hook for managing viewed stories state with Firestore persistence
  *
  * Features:
- * - Persists viewed state to AsyncStorage (both friend and photo level)
- * - 24-hour expiry for viewed state
+ * - Persists viewed state to Firestore per-user (users/{userId}/viewedPhotos/{photoId})
+ * - 24-hour expiry for viewed state (filtered on query)
  * - Loading state for initial hydration
  * - Get first unviewed photo index for starting position
  * - Uses ref for immediate sync access (avoids React state async issues)
+ * - Account switching loads correct user's viewed state
  *
- * @returns {Object} { isViewed, markAsViewed, markPhotosAsViewed, getFirstUnviewedIndex, loading }
+ * @returns {Object} { isViewed, markAsViewed, markPhotosAsViewed, getFirstUnviewedIndex, hasViewedAllPhotos, loading }
  */
 export const useViewedStories = () => {
+  const { user } = useAuth();
+  const userId = user?.uid;
+
   const [viewedFriends, setViewedFriends] = useState(new Set());
   const [viewedPhotos, setViewedPhotos] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -27,102 +31,95 @@ export const useViewedStories = () => {
   const viewedPhotosRef = useRef(new Set());
 
   /**
-   * Load viewed state from AsyncStorage on mount
+   * Load viewed state from Firestore on mount or user change
    */
-  const loadViewedState = async () => {
-    try {
-      const now = Date.now();
-      const expiryMs = EXPIRY_HOURS * 60 * 60 * 1000;
-
-      // Load viewed friends
-      const storedFriends = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedFriends) {
-        const data = JSON.parse(storedFriends);
-        const valid = Object.entries(data)
-          .filter(([, timestamp]) => now - timestamp < expiryMs)
-          .map(([friendId]) => friendId);
-        setViewedFriends(new Set(valid));
-        logger.debug('useViewedStories: Loaded viewed friends', { count: valid.length });
-      }
-
-      // Load viewed photos
-      const storedPhotos = await AsyncStorage.getItem(PHOTOS_STORAGE_KEY);
-      if (storedPhotos) {
-        const data = JSON.parse(storedPhotos);
-        const valid = Object.entries(data)
-          .filter(([, timestamp]) => now - timestamp < expiryMs)
-          .map(([photoId]) => photoId);
-        const validSet = new Set(valid);
-        setViewedPhotos(validSet);
-        viewedPhotosRef.current = validSet; // Sync ref
-        logger.debug('useViewedStories: Loaded viewed photos', { count: valid.length });
-      }
-    } catch (error) {
-      logger.error('useViewedStories: Failed to load', { error: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load viewed state on mount
   useEffect(() => {
+    const loadViewedState = async () => {
+      if (!userId) {
+        logger.debug('useViewedStories: No userId, clearing viewed state');
+        setViewedPhotos(new Set());
+        setViewedFriends(new Set());
+        viewedPhotosRef.current = new Set();
+        setLoading(false);
+        return;
+      }
+
+      try {
+        logger.debug('useViewedStories: Loading viewed photos from Firestore', { userId });
+        setLoading(true);
+
+        const result = await loadViewedPhotos(userId);
+        if (result.success && result.photoIds) {
+          setViewedPhotos(result.photoIds);
+          viewedPhotosRef.current = result.photoIds;
+          logger.info('useViewedStories: Loaded viewed photos', { count: result.photoIds.size });
+        } else {
+          logger.warn('useViewedStories: Failed to load viewed photos', { error: result.error });
+          // Start with empty set on error
+          setViewedPhotos(new Set());
+          viewedPhotosRef.current = new Set();
+        }
+      } catch (error) {
+        logger.error('useViewedStories: Error loading viewed state', { error: error.message });
+        setViewedPhotos(new Set());
+        viewedPhotosRef.current = new Set();
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadViewedState();
-  }, []);
+  }, [userId]);
 
   /**
    * Mark a friend's stories as viewed
-   * Updates local state immediately, then persists to AsyncStorage
+   * Updates local state immediately (no Firestore persistence for friend-level viewing)
+   * Friend viewed state is derived from photo viewed state
    *
    * @param {string} friendId - Friend's user ID to mark as viewed
    */
   const markAsViewed = useCallback(async friendId => {
-    try {
-      // Update local state immediately
-      setViewedFriends(prev => new Set([...prev, friendId]));
-
-      // Persist to AsyncStorage
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      const data = stored ? JSON.parse(stored) : {};
-      data[friendId] = Date.now();
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-      logger.info('useViewedStories: Marked as viewed', { friendId });
-    } catch (error) {
-      logger.error('useViewedStories: Failed to mark as viewed', { error: error.message });
-    }
+    // Update local state immediately
+    setViewedFriends(prev => new Set([...prev, friendId]));
+    logger.info('useViewedStories: Marked friend as viewed', { friendId });
   }, []);
 
   /**
    * Mark photos as viewed when navigating through stories
-   * Call this after viewing photos in the stories modal
+   * Persists to Firestore for per-user storage
    *
    * @param {Array<string>} photoIds - Array of photo IDs to mark as viewed
    */
-  const markPhotosAsViewed = useCallback(async photoIds => {
-    if (!photoIds || photoIds.length === 0) return;
+  const markPhotosAsViewed = useCallback(
+    async photoIds => {
+      if (!photoIds || photoIds.length === 0) return;
+      if (!userId) {
+        logger.warn('useViewedStories: Cannot mark photos without userId');
+        return;
+      }
 
-    try {
-      // Update ref immediately (sync) for instant access in getFirstUnviewedIndex
-      const newSet = new Set([...viewedPhotosRef.current, ...photoIds]);
-      viewedPhotosRef.current = newSet;
+      try {
+        // Update ref immediately (sync) for instant access in getFirstUnviewedIndex
+        const newSet = new Set([...viewedPhotosRef.current, ...photoIds]);
+        viewedPhotosRef.current = newSet;
 
-      // Update local state (async, triggers re-renders)
-      setViewedPhotos(newSet);
+        // Update local state (async, triggers re-renders)
+        setViewedPhotos(newSet);
 
-      // Persist to AsyncStorage
-      const stored = await AsyncStorage.getItem(PHOTOS_STORAGE_KEY);
-      const data = stored ? JSON.parse(stored) : {};
-      const now = Date.now();
-      photoIds.forEach(photoId => {
-        data[photoId] = now;
-      });
-      await AsyncStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(data));
+        // Persist to Firestore in background
+        const result = await markPhotosAsViewedInFirestore(userId, photoIds);
+        if (!result.success) {
+          logger.warn('useViewedStories: Failed to persist to Firestore', { error: result.error });
+          // Local state is still updated, so functionality works
+        }
 
-      logger.debug('useViewedStories: Marked photos as viewed', { count: photoIds.length });
-    } catch (error) {
-      logger.error('useViewedStories: Failed to mark photos as viewed', { error: error.message });
-    }
-  }, []);
+        logger.debug('useViewedStories: Marked photos as viewed', { count: photoIds.length });
+      } catch (error) {
+        logger.error('useViewedStories: Failed to mark photos as viewed', { error: error.message });
+      }
+    },
+    [userId]
+  );
 
   /**
    * Get the index of the first unviewed photo in an array

@@ -83,6 +83,13 @@ service cloud.firestore {
 
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
+
+      // Viewed Photos subcollection - tracks which story photos user has viewed
+      // Data structure: users/{userId}/viewedPhotos/{photoId} { viewedAt: timestamp }
+      match /viewedPhotos/{photoId} {
+        // Users can only read/write their own viewed photos
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // =============================================================================
