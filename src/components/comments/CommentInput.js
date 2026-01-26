@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
 import { uploadCommentImage } from '../../services/firebase/storageService';
+import { openGifPicker, useGifSelection } from './GifPicker';
 import { styles } from '../../styles/CommentInput.styles';
 
 /**
@@ -47,6 +48,26 @@ const CommentInput = forwardRef(
     const [selectedMedia, setSelectedMedia] = useState(null); // { uri, type: 'image' | 'gif' }
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef(null);
+
+    /**
+     * Handle GIF selection from Giphy dialog
+     */
+    const handleGifSelected = useCallback(gifUrl => {
+      logger.info('CommentInput: GIF selected', { urlLength: gifUrl?.length });
+      setSelectedMedia({ uri: gifUrl, type: 'gif' });
+    }, []);
+
+    // Set up Giphy selection listener
+    useGifSelection(handleGifSelected);
+
+    /**
+     * Handle GIF picker button press
+     */
+    const handleGifPick = useCallback(() => {
+      logger.info('CommentInput: GIF picker pressed');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      openGifPicker();
+    }, []);
 
     // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
@@ -269,6 +290,17 @@ const CommentInput = forwardRef(
                 size={22}
                 color={isUploading ? colors.text.tertiary : colors.text.secondary}
               />
+            </TouchableOpacity>
+
+            {/* GIF Picker Button */}
+            <TouchableOpacity
+              style={styles.gifButton}
+              onPress={handleGifPick}
+              disabled={isUploading}
+            >
+              <Text style={[styles.gifButtonText, isUploading && styles.gifButtonTextDisabled]}>
+                GIF
+              </Text>
             </TouchableOpacity>
           </View>
 

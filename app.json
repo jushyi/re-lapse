@@ -66,7 +66,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "./plugins/withFirebaseFix"
+      "./plugins/withFirebaseFix",
+      "@giphy/react-native-sdk"
     ],
     "owner": "spoodsjs",
     "extra": {

@@ -69,6 +69,19 @@ export const styles = StyleSheet.create({
     paddingLeft: 8,
     paddingVertical: 2,
   },
+  // GIF picker button
+  gifButton: {
+    paddingLeft: 8,
+    paddingVertical: 2,
+  },
+  gifButtonText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: colors.text.secondary,
+  },
+  gifButtonTextDisabled: {
+    color: colors.text.tertiary,
+  },
   // Send button (UAT-032 fix: 44x44 to match inputWrapper visual height with padding)
   sendButton: {
     marginLeft: 8,
