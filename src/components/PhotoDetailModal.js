@@ -21,11 +21,14 @@ import {
   StatusBar,
   Animated,
   Dimensions,
-} from 'react-native'; // After this, we scroll
+} from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { getTimeAgo } from '../utils/timeUtils';
 import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
 import { styles } from '../styles/PhotoDetailModal.styles';
+import CommentsBottomSheet from './comments/CommentsBottomSheet';
+import { colors } from '../constants/colors';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
 const PROGRESS_BAR_HORIZONTAL_PADDING = 8;
@@ -67,14 +70,18 @@ const PhotoDetailModal = ({
   const cubeRotation = useRef(new Animated.Value(0)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Comments state
+  const [showComments, setShowComments] = useState(false);
+
   // Progress bar scroll ref for auto-scrolling
   const progressScrollRef = useRef(null);
 
-  // Reset cube rotation when modal opens or friend changes
+  // Reset cube rotation and comments when modal opens or friend changes
   useEffect(() => {
     if (visible) {
       cubeRotation.setValue(0);
       setIsTransitioning(false);
+      setShowComments(false);
     }
   }, [visible, photos]);
 
@@ -294,12 +301,28 @@ const PhotoDetailModal = ({
             </ScrollView>
           )}
 
-          {/* Footer - Tappable Emoji Pills */}
+          {/* Footer - Comment Input + Emoji Pills */}
           <View style={styles.footer}>
+            {/* Comment input trigger - left side */}
+            <TouchableOpacity
+              style={styles.commentInputTrigger}
+              onPress={() => setShowComments(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
+              <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                {currentPhoto?.commentCount > 0
+                  ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
+                  : 'Add a comment...'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Emoji pills - right side */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.emojiPickerContainer}
+              style={styles.emojiPickerScrollView}
             >
               {orderedEmojis.map(emoji => {
                 const totalCount = groupedReactions[emoji] || 0;
@@ -322,6 +345,15 @@ const PhotoDetailModal = ({
           </View>
         </Animated.View>
       </Animated.View>
+
+      {/* Comments Bottom Sheet */}
+      <CommentsBottomSheet
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+        photoId={currentPhoto?.id}
+        photoOwnerId={currentPhoto?.userId}
+        currentUserId={currentUserId}
+      />
     </Modal>
   );
 };

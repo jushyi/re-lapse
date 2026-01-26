@@ -119,35 +119,60 @@ export const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingTop: 0,
+    paddingTop: 4,
     paddingBottom: 32,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    gap: 8,
+  },
+  // Comment input trigger - left side of footer
+  commentInputTrigger: {
+    flex: 0.45,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
+  },
+  commentInputTriggerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#888888',
+  },
+  // Emoji pills scroll view - right side of footer
+  emojiPickerScrollView: {
+    flex: 0.55,
   },
   emojiPickerContainer: {
-    gap: 12,
+    gap: 8,
     paddingVertical: 4,
   },
   emojiPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3A3A3A',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: '#555555',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#4A4A4A',
   },
   emojiPillSelected: {
     // No visual change for selected state
   },
   emojiPillEmoji: {
-    fontSize: 20,
+    fontSize: 16,
   },
   emojiPillCount: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
 });
