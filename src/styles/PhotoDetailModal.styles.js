@@ -118,6 +118,11 @@ export const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  // Comment preview container - below user info
+  commentPreviewContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

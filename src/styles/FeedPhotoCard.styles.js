@@ -111,4 +111,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 12,
   },
+
+  // Comment preview section
+  commentPreview: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
 });

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
 import { colors } from '../constants/colors';
+import CommentPreview from './comments/CommentPreview';
+import { getPreviewComments } from '../services/firebase/commentService';
 
 /**
  * Feed photo card component - Instagram-Style Design
@@ -15,9 +17,34 @@ import { colors } from '../constants/colors';
  * @param {function} onPress - Callback when card is tapped
  */
 const FeedPhotoCard = ({ photo, onPress }) => {
-  const { imageURL, capturedAt, reactions = {}, reactionCount = 0, user = {} } = photo;
+  const {
+    id,
+    imageURL,
+    capturedAt,
+    reactions = {},
+    reactionCount = 0,
+    commentCount = 0,
+    userId,
+    user = {},
+  } = photo;
 
   const { displayName, profilePhotoURL } = user;
+
+  // Preview comments state
+  const [previewComments, setPreviewComments] = useState([]);
+
+  // Fetch preview comments
+  useEffect(() => {
+    const fetchPreview = async () => {
+      if (!id) return;
+      const result = await getPreviewComments(id, userId);
+      if (result.success) {
+        setPreviewComments(result.previewComments || []);
+      }
+    };
+
+    fetchPreview();
+  }, [id, userId, commentCount]);
 
   /**
    * Get top 3 reactions with counts
@@ -91,6 +118,18 @@ const FeedPhotoCard = ({ photo, onPress }) => {
 
       {/* Prompt if no reactions */}
       {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
+
+      {/* Comment preview */}
+      {previewComments.length > 0 && (
+        <View style={styles.commentPreview}>
+          <CommentPreview
+            comments={previewComments}
+            totalCount={commentCount}
+            onPress={onPress}
+            compact
+          />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
