@@ -405,7 +405,7 @@ const FeedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#000000', // Pure black to match stories section
   },
   header: {
     flexDirection: 'row',
@@ -436,7 +436,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30', // iOS red
   },
   feedList: {
-    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
   },

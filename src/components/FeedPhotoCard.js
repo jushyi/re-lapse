@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
+import { colors } from '../constants/colors';
 
 /**
- * Feed photo card component - Polaroid Design
+ * Feed photo card component - Instagram-Style Design
  *
- * Displays a single photo in the feed styled like a Polaroid photograph
- * with iconic white frame, thick bottom edge, and user info like handwriting.
+ * Full-width photos with user info row below.
+ * Modern, clean aesthetic with dark theme.
  *
  * @param {object} photo - Photo object with user data
  * @param {function} onPress - Callback when card is tapped
@@ -15,11 +17,11 @@ import { styles } from '../styles/FeedPhotoCard.styles';
 const FeedPhotoCard = ({ photo, onPress }) => {
   const { imageURL, capturedAt, reactions = {}, reactionCount = 0, user = {} } = photo;
 
-  const { displayName } = user;
+  const { displayName, profilePhotoURL } = user;
 
   /**
    * Get top 3 reactions with counts
-   * New data structure: reactions[userId][emoji] = count
+   * Data structure: reactions[userId][emoji] = count
    */
   const getTopReactions = () => {
     if (!reactions || Object.keys(reactions).length === 0) return [];
@@ -27,7 +29,7 @@ const FeedPhotoCard = ({ photo, onPress }) => {
     // Aggregate emoji counts across all users
     const emojiCounts = {};
     Object.values(reactions).forEach(userReactions => {
-      // userReactions is now an object: { '😂': 2, '❤️': 1 }
+      // userReactions is an object: { '😂': 2, '❤️': 1 }
       if (typeof userReactions === 'object') {
         Object.entries(userReactions).forEach(([emoji, count]) => {
           if (!emojiCounts[emoji]) {
@@ -49,39 +51,46 @@ const FeedPhotoCard = ({ photo, onPress }) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
-      {/* Inner frame with Polaroid proportions */}
-      <View style={styles.frameInner}>
-        {/* Photo - square with crisp edges */}
-        <View style={styles.photoContainer}>
-          <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
-        </View>
+      {/* Photo - full width with rounded top corners */}
+      <View style={styles.photoContainer}>
+        <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
       </View>
 
-      {/* Bottom info section - like handwriting on Polaroid */}
-      <View style={styles.polaroidBottom}>
-        <View style={styles.userInfo}>
+      {/* User info row - profile photo + name + timestamp */}
+      <View style={styles.infoRow}>
+        {/* Profile photo or fallback icon */}
+        {profilePhotoURL ? (
+          <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+        ) : (
+          <View style={styles.profilePhotoFallback}>
+            <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
+          </View>
+        )}
+
+        {/* Name and timestamp */}
+        <View style={styles.textContainer}>
           <Text style={styles.displayName} numberOfLines={1}>
             {displayName || 'Unknown'}
           </Text>
           <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
         </View>
-
-        {/* Reactions (if present) */}
-        {reactionCount > 0 && (
-          <View style={styles.reactions}>
-            {topReactions.map((reaction, index) => (
-              <View key={index} style={styles.reactionItem}>
-                <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
-                <Text style={styles.reactionCount}>{reaction.count}</Text>
-              </View>
-            ))}
-            {reactionCount > 3 && <Text style={styles.moreReactions}>+{reactionCount - 3}</Text>}
-          </View>
-        )}
-
-        {/* Prompt if no reactions */}
-        {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
       </View>
+
+      {/* Reactions row (if present) */}
+      {reactionCount > 0 && (
+        <View style={styles.reactions}>
+          {topReactions.map((reaction, index) => (
+            <View key={index} style={styles.reactionItem}>
+              <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
+              <Text style={styles.reactionCount}>{reaction.count}</Text>
+            </View>
+          ))}
+          {reactionCount > 3 && <Text style={styles.moreReactions}>+{reactionCount - 3}</Text>}
+        </View>
+      )}
+
+      {/* Prompt if no reactions */}
+      {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
     </TouchableOpacity>
   );
 };
