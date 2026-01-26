@@ -258,11 +258,16 @@ Plans:
 **Goal**: Bottom sheet for photo comments (new social feature)
 **Depends on**: Phase 35
 **Research**: Unlikely (Firestore patterns established)
-**Plans**: TBD
+**Plans**: 6
 
 Plans:
 
-- [ ] 36-01: TBD
+- [x] 36-01: Comment service layer with CRUD operations and Firestore rules
+- [ ] 36-02: Comments UI components
+- [ ] 36-03: Comments bottom sheet integration
+- [ ] 36-04: Comment likes feature
+- [ ] 36-05: Comment input with media
+- [ ] 36-06: Feed card comment preview
 
 #### Phase 37: Profile Placeholder
 
@@ -274,6 +279,17 @@ Plans:
 Plans:
 
 - [ ] 37-01: TBD
+
+#### Phase 37.1: Darkroom Visual Feedback (INSERTED)
+
+**Goal**: Color gradient on camera darkroom button indicating readiness state (pink→purple developing, purple→pink ready), plus swipe-to-reveal gesture replacing press-and-hold on darkroom bottom sheet
+**Depends on**: Phase 37
+**Research**: Unlikely (UI enhancement)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 37.1-01: TBD
 
 ## Progress
 
@@ -328,8 +344,9 @@ Plans:
 | 35.3 Stories Performance & View State Fix      | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
 | 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 1/1            | Complete    | 2026-01-26 |
-| 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
+| 36. Comments Feature                           | v0.7      | 1/6            | In progress | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
+| 37.1 Darkroom Visual Feedback (INSERTED)       | v0.7      | 0/?            | Not started | -          |
 
 <details>
 <summary>✅ v0.6 Code Quality, Security & Documentation (Phases 19-29) - SHIPPED 2026-01-25</summary>
