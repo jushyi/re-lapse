@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
 
@@ -14,6 +14,7 @@ const EXPIRY_HOURS = 24; // Reset viewed state after 24 hours
  * - 24-hour expiry for viewed state
  * - Loading state for initial hydration
  * - Get first unviewed photo index for starting position
+ * - Uses ref for immediate sync access (avoids React state async issues)
  *
  * @returns {Object} { isViewed, markAsViewed, markPhotosAsViewed, getFirstUnviewedIndex, loading }
  */
@@ -21,6 +22,9 @@ export const useViewedStories = () => {
   const [viewedFriends, setViewedFriends] = useState(new Set());
   const [viewedPhotos, setViewedPhotos] = useState(new Set());
   const [loading, setLoading] = useState(true);
+
+  // Ref for immediate sync access to viewed photos (bypasses React state async)
+  const viewedPhotosRef = useRef(new Set());
 
   /**
    * Load viewed state from AsyncStorage on mount
@@ -48,7 +52,9 @@ export const useViewedStories = () => {
         const valid = Object.entries(data)
           .filter(([, timestamp]) => now - timestamp < expiryMs)
           .map(([photoId]) => photoId);
-        setViewedPhotos(new Set(valid));
+        const validSet = new Set(valid);
+        setViewedPhotos(validSet);
+        viewedPhotosRef.current = validSet; // Sync ref
         logger.debug('useViewedStories: Loaded viewed photos', { count: valid.length });
       }
     } catch (error) {
@@ -96,8 +102,12 @@ export const useViewedStories = () => {
     if (!photoIds || photoIds.length === 0) return;
 
     try {
-      // Update local state immediately
-      setViewedPhotos(prev => new Set([...prev, ...photoIds]));
+      // Update ref immediately (sync) for instant access in getFirstUnviewedIndex
+      const newSet = new Set([...viewedPhotosRef.current, ...photoIds]);
+      viewedPhotosRef.current = newSet;
+
+      // Update local state (async, triggers re-renders)
+      setViewedPhotos(newSet);
 
       // Persist to AsyncStorage
       const stored = await AsyncStorage.getItem(PHOTOS_STORAGE_KEY);
@@ -117,30 +127,31 @@ export const useViewedStories = () => {
   /**
    * Get the index of the first unviewed photo in an array
    * Returns 0 if all photos are viewed (start from beginning)
+   * Uses ref for immediate sync access (avoids React state async issues)
    *
    * @param {Array<object>} photos - Array of photo objects with id property
    * @returns {number} Index of first unviewed photo, or 0 if all viewed
    */
-  const getFirstUnviewedIndex = useCallback(
-    photos => {
-      if (!photos || photos.length === 0) return 0;
+  const getFirstUnviewedIndex = useCallback(photos => {
+    if (!photos || photos.length === 0) return 0;
 
-      const firstUnviewedIdx = photos.findIndex(photo => !viewedPhotos.has(photo.id));
+    // Use ref for immediate access (sync) instead of state (async)
+    const viewed = viewedPhotosRef.current;
+    const firstUnviewedIdx = photos.findIndex(photo => !viewed.has(photo.id));
 
-      // If all are viewed, start from beginning
-      if (firstUnviewedIdx === -1) {
-        logger.debug('useViewedStories: All photos viewed, starting from 0');
-        return 0;
-      }
+    // If all are viewed, start from beginning
+    if (firstUnviewedIdx === -1) {
+      logger.debug('useViewedStories: All photos viewed, starting from 0');
+      return 0;
+    }
 
-      logger.debug('useViewedStories: First unviewed photo', {
-        index: firstUnviewedIdx,
-        total: photos.length,
-      });
-      return firstUnviewedIdx;
-    },
-    [viewedPhotos]
-  );
+    logger.debug('useViewedStories: First unviewed photo', {
+      index: firstUnviewedIdx,
+      total: photos.length,
+      viewedCount: viewed.size,
+    });
+    return firstUnviewedIdx;
+  }, []);
 
   /**
    * Check if a friend's stories have been viewed
@@ -157,16 +168,16 @@ export const useViewedStories = () => {
 
   /**
    * Check if all photos in an array have been viewed
+   * Uses ref for immediate sync access (avoids React state async issues)
    * @param {Array<object>} photos - Array of photo objects with id property
    * @returns {boolean} True if ALL photos have been viewed
    */
-  const hasViewedAllPhotos = useCallback(
-    photos => {
-      if (!photos || photos.length === 0) return false;
-      return photos.every(photo => viewedPhotos.has(photo.id));
-    },
-    [viewedPhotos]
-  );
+  const hasViewedAllPhotos = useCallback(photos => {
+    if (!photos || photos.length === 0) return false;
+    // Use ref for immediate access (sync) instead of state (async)
+    const viewed = viewedPhotosRef.current;
+    return photos.every(photo => viewed.has(photo.id));
+  }, []);
 
   return {
     isViewed,

@@ -191,18 +191,39 @@ const FeedScreen = () => {
 
   /**
    * Handle closing stories viewer
-   * Marks the friend and all their photos as viewed when closing
+   * Only marks photos up to current position as viewed
+   * Only marks friend as viewed (gray ring) when ALL photos are viewed
    */
   const handleCloseStories = () => {
     logger.debug('FeedScreen: Closing stories viewer');
     if (selectedFriend) {
-      // Mark friend as viewed
-      markAsViewed(selectedFriend.userId);
+      const allPhotos = selectedFriend.topPhotos || [];
+      const isAtEnd = storiesCurrentIndex >= allPhotos.length - 1;
 
-      // Mark all photos as viewed so next time we start from beginning
-      const photoIds = (selectedFriend.topPhotos || []).map(p => p.id);
-      if (photoIds.length > 0) {
-        markPhotosAsViewed(photoIds);
+      if (isAtEnd) {
+        // User viewed all photos - mark friend as viewed (gray ring) and all photos
+        markAsViewed(selectedFriend.userId);
+        const photoIds = allPhotos.map(p => p.id);
+        if (photoIds.length > 0) {
+          markPhotosAsViewed(photoIds);
+        }
+        logger.info('FeedScreen: All photos viewed - marking all as viewed', {
+          friendId: selectedFriend.userId,
+          photoCount: photoIds.length,
+        });
+      } else {
+        // User closed mid-story - only mark photos up to current index as viewed
+        // Don't mark friend as viewed (ring stays gradient)
+        const viewedPhotoIds = allPhotos.slice(0, storiesCurrentIndex + 1).map(p => p.id);
+        if (viewedPhotoIds.length > 0) {
+          markPhotosAsViewed(viewedPhotoIds);
+        }
+        logger.info('FeedScreen: Partial view - marking photos up to current index', {
+          friendId: selectedFriend.userId,
+          currentIndex: storiesCurrentIndex,
+          markedCount: viewedPhotoIds.length,
+          totalCount: allPhotos.length,
+        });
       }
     }
     setStoriesModalVisible(false);
