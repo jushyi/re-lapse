@@ -45,7 +45,7 @@ const FeedScreen = () => {
     loadMorePhotos,
     refreshFeed,
     updatePhotoInState,
-  } = useFeedPhotos(true); // Enable real-time updates
+  } = useFeedPhotos(true, true); // realTimeUpdates=true, hotOnly=true
 
   // Modal state
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -261,21 +261,19 @@ const FeedScreen = () => {
   };
 
   /**
-   * Render empty state
+   * Render empty state for hot highlights
    */
   const renderEmptyState = () => {
     if (loading) return null;
 
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>📸</Text>
-        <Text style={styles.emptyTitle}>No photos yet</Text>
+        <Text style={styles.emptyIcon}>🔥</Text>
+        <Text style={styles.emptyTitle}>No hot photos yet</Text>
         <Text style={styles.emptyText}>
-          Start taking photos or add friends to see their photos here
+          Popular photos from your friends will appear here.{'\n'}
+          Tap the stories above to see all their photos!
         </Text>
-        <TouchableOpacity style={styles.emptyButton}>
-          <Text style={styles.emptyButtonText}>Take a Photo</Text>
-        </TouchableOpacity>
       </View>
     );
   };
@@ -394,6 +392,13 @@ const FeedScreen = () => {
           }
           onEndReached={loadMorePhotos}
           onEndReachedThreshold={0.5}
+          ListHeaderComponent={
+            photos.length > 0 ? (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>🔥 Hot</Text>
+              </View>
+            ) : null
+          }
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyState}
         />
@@ -454,8 +459,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30', // iOS red
   },
   feedList: {
-    paddingTop: 16,
     paddingBottom: 24,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
   footerLoader: {
     flexDirection: 'row',
@@ -490,18 +504,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 24,
-  },
-  emptyButton: {
-    backgroundColor: colors.brand.purple,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  emptyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   errorContainer: {
     flex: 1,
