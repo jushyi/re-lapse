@@ -288,17 +288,13 @@ export const usePhotoDetailModal = ({
    */
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: evt => {
-        // Don't capture if touch is in footer area (bottom ~100px)
-        const touchY = evt.nativeEvent.pageY;
-        const footerThreshold = SCREEN_HEIGHT - 100;
-        return touchY < footerThreshold;
+      onStartShouldSetPanResponder: () => {
+        // Don't capture initial touch - let TouchableWithoutFeedback handle taps
+        return false;
       },
-      onStartShouldSetPanResponderCapture: evt => {
-        // Don't capture if touch is in footer area
-        const touchY = evt.nativeEvent.pageY;
-        const footerThreshold = SCREEN_HEIGHT - 100;
-        return touchY < footerThreshold;
+      onStartShouldSetPanResponderCapture: () => {
+        // Don't capture initial touch - wait for move to determine if it's a swipe
+        return false;
       },
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         // Don't respond if touch started in footer area

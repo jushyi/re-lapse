@@ -119,18 +119,12 @@ const PhotoDetailModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Photo - with tap navigation in stories mode */}
-          {mode === 'stories' ? (
-            <TouchableWithoutFeedback onPress={handleTapNavigation}>
-              <View style={styles.photoScrollView}>
-                <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
-              </View>
-            </TouchableWithoutFeedback>
-          ) : (
+          {/* Photo - with tap navigation in stories mode, touchable in feed mode for swipe gesture */}
+          <TouchableWithoutFeedback onPress={mode === 'stories' ? handleTapNavigation : undefined}>
             <View style={styles.photoScrollView}>
               <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
             </View>
-          )}
+          </TouchableWithoutFeedback>
 
           {/* Profile photo - overlapping top left of photo */}
           <View style={styles.profilePicContainer}>

@@ -93,7 +93,7 @@ export const styles = StyleSheet.create({
   },
   userInfoOverlay: {
     position: 'absolute',
-    bottom: 140,
+    bottom: 108,
     left: 24,
     flexDirection: 'row',
     alignItems: 'center',

@@ -3,14 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
   getFirestore,
@@ -41,6 +40,7 @@ const TAB_BAR_HEIGHT = 88; // iOS tab bar with safe area
 const FeedScreen = () => {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // Animated scroll value for header hide/show
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -465,19 +465,25 @@ const FeedScreen = () => {
   };
 
   // Header transform based on scroll position
+  // Header starts at insets.top, so needs to move up by header height + insets to fully hide
+  const totalHeaderHeight = HEADER_HEIGHT + insets.top;
   const headerTranslateY = scrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
-    outputRange: [0, -HEADER_HEIGHT],
+    outputRange: [0, -totalHeaderHeight],
     extrapolate: 'clamp',
   });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Status bar mask - hides header as it scrolls up */}
+      <View style={[styles.statusBarMask, { height: insets.top }]} />
+
       {/* Animated Header - hides on scroll */}
       <Animated.View
         style={[
           styles.header,
           {
+            top: insets.top,
             transform: [{ translateY: headerTranslateY }],
           },
         ]}
@@ -501,11 +507,11 @@ const FeedScreen = () => {
       ) : error ? (
         renderErrorState()
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={photos}
           renderItem={renderFeedItem}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.feedList}
+          contentContainerStyle={[styles.feedList, { paddingTop: HEADER_HEIGHT }]}
           showsVerticalScrollIndicator={false}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
             useNativeDriver: true,
@@ -569,6 +575,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000', // Pure black to match stories section
   },
+  statusBarMask: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 11, // Above header (zIndex: 10)
+    backgroundColor: '#000000',
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -601,7 +615,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30', // iOS red
   },
   feedList: {
-    paddingTop: HEADER_HEIGHT,
+    // paddingTop set dynamically with insets.top
     paddingBottom: TAB_BAR_HEIGHT + 24,
   },
   sectionHeader: {
