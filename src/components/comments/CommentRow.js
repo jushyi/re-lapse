@@ -30,6 +30,7 @@ import { styles } from '../../styles/CommentRow.styles';
  * @param {boolean} isOwnerComment - Whether this is photo owner's comment (show Author badge)
  * @param {boolean} canDelete - Whether current user can delete this comment
  * @param {boolean} isLiked - Whether current user liked this comment (Plan 04)
+ * @param {boolean} isTopLevel - Whether this is a top-level comment (shows Reply button)
  */
 const CommentRow = ({
   comment,
@@ -40,12 +41,14 @@ const CommentRow = ({
   isOwnerComment = false,
   canDelete = false,
   isLiked = false,
+  isTopLevel = true,
 }) => {
   logger.debug('CommentRow: Rendering', {
     commentId: comment?.id,
     hasMedia: !!comment?.mediaUrl,
     isOwnerComment,
     canDelete,
+    isTopLevel,
   });
 
   /**
@@ -166,10 +169,14 @@ const CommentRow = ({
 
         {/* Footer Row - Reply and Timestamp */}
         <View style={styles.footerRow}>
-          <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
-            <Text style={styles.replyButtonText}>Reply</Text>
-          </TouchableOpacity>
-          <Text style={styles.dot}>·</Text>
+          {isTopLevel && (
+            <>
+              <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
+                <Text style={styles.replyButtonText}>Reply</Text>
+              </TouchableOpacity>
+              <Text style={styles.dot}>·</Text>
+            </>
+          )}
           <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
         </View>
       </View>

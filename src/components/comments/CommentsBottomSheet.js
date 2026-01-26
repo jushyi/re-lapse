@@ -309,6 +309,7 @@ const CommentsBottomSheet = ({
             isOwnerComment={isOwner}
             canDelete={canDelete}
             isLiked={isLikedByUser(comment.id)}
+            isTopLevel={true}
           />
 
           {/* Replies (nested under parent) */}
@@ -317,12 +318,13 @@ const CommentsBottomSheet = ({
               <CommentRow
                 comment={reply}
                 user={reply.user}
-                onReply={handleReply}
+                onReply={null}
                 onLike={handleLike}
                 onDelete={handleDelete}
                 isOwnerComment={isOwnerComment(reply)}
                 canDelete={canDeleteComment(reply)}
                 isLiked={isLikedByUser(reply.id)}
+                isTopLevel={false}
               />
             </View>
           ))}
