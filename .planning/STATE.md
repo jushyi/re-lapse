@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 34 of 37 (Feed Card Redesign)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 34-01-PLAN.md
+Phase: 35 of 37 (Stories Redesign)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-25 - Completed 35-01-PLAN.md
 
-Progress: ██████░░░░ 60%
+Progress: ██████░░░░ 62%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 110 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 10 in v0.7)
+- Total plans completed: 111 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 11 in v0.7)
 - Average duration: 16 min
-- Total execution time: 19.6 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 47m v0.7)
+- Total execution time: 19.7 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 55m v0.7)
 
 **By Milestone:**
 
@@ -139,6 +139,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 33-02         | useFocusEffect for mark-as-read trigger               | Marks notifications read when NotificationsTab gains focus                           |
 | 33-02         | Batch Firestore updates for mark-as-read              | Efficient update of multiple notification documents                                  |
 | 34-01         | Polaroid frame: cream (full contrast)                 | Classic Polaroid look that pops against dark theme (#0F0F0F)                         |
+| 35-01         | blurRadius={20} for photo blur                        | React Native built-in, no expo-blur dependency needed                                |
+| 35-01         | Dark frame (#2A2A2A) for story cards                  | Blends with dark theme, contrasts with gradient glow                                 |
+| 35-01         | Reuse brand.gradient.developing for glow              | DRY principle, consistent with darkroom reveal colors                                |
 
 ### Deferred Issues
 
@@ -170,5 +173,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 34-01-PLAN.md (Polaroid card design)
+Stopped at: Completed 35-01-PLAN.md (Polaroid story cards)
 Resume file: None

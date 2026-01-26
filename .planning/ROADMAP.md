@@ -171,7 +171,7 @@ Plans:
 
 Plans:
 
-- [ ] 35-01: Polaroid story cards with blurred thumbnails and gradient glow
+- [x] 35-01: Polaroid story cards with blurred thumbnails and gradient glow
 - [ ] 35-02: View state tracking and stories sorting (unviewed first)
 - [ ] 35-03: Hot highlights feed filter (engagement-based curation)
 
@@ -242,7 +242,7 @@ Plans:
 | 32. Navigation Restructure                     | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 33. Feed Header & Notifications                | v0.7      | 2/2            | Complete    | 2026-01-25 |
 | 34. Feed Card Redesign                         | v0.7      | 1/1            | Complete    | 2026-01-25 |
-| 35. Stories Redesign                           | v0.7      | 0/3            | Planned     | -          |
+| 35. Stories Redesign                           | v0.7      | 1/3            | In progress | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 
