@@ -75,7 +75,7 @@ export const styles = StyleSheet.create({
   profilePicContainer: {
     position: 'absolute',
     top: (StatusBar.currentHeight || 44) + 14,
-    left: 16, // UAT-011 fix: align with comment preview (was 24)
+    left: 22, // UAT-027 fix: shifted 6px right (was 16)
     zIndex: 5,
   },
   profilePic: {
@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
   userInfoOverlay: {
     position: 'absolute',
     // bottom: dynamic via inline style (UAT-019 fix: 140 with comments, 100 without)
-    left: 16, // UAT-011 fix: align with comment preview (was 24)
+    left: 22, // UAT-027 fix: shifted 6px right (was 16)
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -123,7 +123,7 @@ export const styles = StyleSheet.create({
   commentPreviewContainer: {
     position: 'absolute',
     bottom: 100, // Below userInfoOverlay, above footer
-    left: 16,
+    left: 22, // UAT-027 fix: shifted 6px right (was 16)
     right: 16,
   },
   footer: {
