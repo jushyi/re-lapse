@@ -265,6 +265,7 @@ Plans:
 - [x] 36-01: Comment service layer with CRUD operations and Firestore rules
 - [x] 36-02: Comments UI components (CommentRow, CommentInput, CommentsBottomSheet)
 - [x] 36-03: Comments bottom sheet integration with preview comments
+- [x] 36-03-FIX: UAT Round 2 fixes (sheet closing, keyboard, feed mode tap, alignment, rotation)
 - [ ] 36-04: Comment likes feature
 - [ ] 36-05: Comment input with media
 - [ ] 36-06: Feed card comment preview

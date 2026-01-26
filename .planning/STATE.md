@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 36 of 39 (Comments Feature)
-Plan: 3 of 6 in current phase
+Plan: 3 of 6 in current phase (+ 36-03-FIX complete)
 Status: In progress
-Last activity: 2026-01-26 - Completed 36-03-PLAN.md
+Last activity: 2026-01-26 - Completed 36-03-FIX.md (UAT Round 2 fixes)
 
 Progress: ████████░░ 80%
 
@@ -168,6 +168,10 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 35.4-01-FIX   | 3D cube rotation for friend transitions               | Instagram-style visual feedback for context change                                   |
 | 35.4-01-FIX   | Progress bar matches footer padding (16px)            | Visual consistency between progress bar and emoji pills                              |
 | 35.5-01       | Progress bar/footer aligned with photo (8px padding)  | Matches photo marginHorizontal for consistent alignment                              |
+| 36-03-FIX     | wasVisible ref for visibility transition tracking     | Only apply initialShowComments on false->true modal transition                       |
+| 36-03-FIX     | Dynamic maxHeight removal when keyboard visible       | Keyboard.addListener with platform-specific events for proper avoidance              |
+| 36-03-FIX     | TouchableWithoutFeedback only in stories mode         | Feed mode needs clean touch propagation to footer comment button                     |
+| 36-03-FIX     | 4-second rotation with 200ms fade for comment preview | Readable interval, smooth transitions between rotating comments                      |
 
 ### Deferred Issues
 
@@ -208,5 +212,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 36-03-PLAN.md (Comments bottom sheet integration)
+Stopped at: Completed 36-03-FIX.md (UAT Round 2 fixes for CommentsBottomSheet)
 Resume file: None - ready for 36-04-PLAN.md (Comment likes feature)
