@@ -75,7 +75,7 @@ export const styles = StyleSheet.create({
   profilePicContainer: {
     position: 'absolute',
     top: (StatusBar.currentHeight || 44) + 14,
-    left: 24,
+    left: 16, // UAT-011 fix: align with comment preview (was 24)
     zIndex: 5,
   },
   profilePic: {
@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
   userInfoOverlay: {
     position: 'absolute',
     bottom: 140, // UAT-004 fix: Increased from 108 to give space for comment preview
-    left: 24,
+    left: 16, // UAT-011 fix: align with comment preview (was 24)
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
