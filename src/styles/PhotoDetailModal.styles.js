@@ -122,7 +122,7 @@ export const styles = StyleSheet.create({
   // UAT-011 fix: removed paddingBottom for better alignment with username
   commentPreviewContainer: {
     position: 'absolute',
-    bottom: 100, // Below userInfoOverlay, above footer
+    bottom: 85, // Below userInfoOverlay, above footer
     left: 22, // UAT-027 fix: shifted 6px right (was 16)
     right: 16,
   },
