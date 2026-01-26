@@ -219,6 +219,17 @@ Plans:
 
 - [x] 35.2-01: Black header with scroll-hide behavior, bottom content inset for tab bar
 
+#### Phase 35.3: Stories Performance & View State Fix (INSERTED)
+
+**Goal**: Fix clunky story navigation (slow photo loading) and incorrect view state tracking (ring turns gray before all stories viewed)
+**Depends on**: Phase 35.2
+**Research**: Unlikely (debugging existing implementation)
+**Plans**: TBD
+
+Plans:
+
+- [x] 35.3-01: expo-image for instant loads, hasViewedAllPhotos for accurate ring color
+
 #### Phase 36: Comments Feature
 
 **Goal**: Bottom sheet for photo comments (new social feature)
@@ -291,6 +302,7 @@ Plans:
 | 35. Stories Redesign                           | v0.7      | 3/3            | Complete    | 2026-01-25 |
 | 35.1 Unified Photo Modal (INSERTED)            | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 1/1            | Complete    | 2026-01-25 |
+| 35.3 Stories Performance & View State Fix      | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 

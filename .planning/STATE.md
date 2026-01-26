@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 35.3 of 38 (Stories Performance & View State Fix)
-Plan: 0 of 1 in current phase
-Status: Planned, ready for execution
-Last activity: 2026-01-25 - Phase 35.3 planned (1 plan, 3 tasks)
+Plan: 1 of 1 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 35.3-01-PLAN.md
 
-Progress: ███████░░░ 72%
+Progress: ███████░░░ 73%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 117 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 17 in v0.7)
+- Total plans completed: 118 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 18 in v0.7)
 - Average duration: 16 min
-- Total execution time: 20.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 117m v0.7)
+- Total execution time: 20.9 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 125m v0.7)
 
 **By Milestone:**
 
@@ -156,6 +156,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 35.2-01       | HEADER_HEIGHT = 68, TAB_BAR_HEIGHT = 88               | Based on padding and iOS safe area calculations                                      |
 | 35.2-01       | clamp extrapolation for header animation              | Prevents header from moving beyond bounds on bounce scroll                           |
 | 35.2-01       | Progress bar at bottom of modal                       | Natural info hierarchy: user info → progress → reactions                             |
+| 35.3-01       | Instant cut vs fade for story photos                  | User preferred snappy feel over smooth 200ms transition                              |
+| 35.3-01       | Ring color based on ALL photos viewed                 | Modal open doesn't mean content was seen; photo-level tracking is accurate           |
 
 ### Deferred Issues
 
@@ -192,5 +194,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Created 35.3-01-PLAN.md (stories performance & view state fix)
-Resume file: .planning/phases/35.3-stories-performance-view-state-fix/35.3-01-PLAN.md
+Stopped at: Completed Phase 35.3 (stories performance & view state fix)
+Resume file: None - ready for Phase 36 (Comments Feature)
