@@ -302,9 +302,23 @@ const PhotoDetailModal = ({
             )}
           </View>
 
-          {/* User info - bottom left of photo (UAT-034 fix: moved up 15px) */}
+          {/* User info - bottom left of photo
+              Stories mode: raised 15px (UAT-034 fix)
+              Feed mode: original position */}
           <View
-            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 130 : 110 }]}
+            style={[
+              styles.userInfoOverlay,
+              {
+                bottom:
+                  mode === 'stories'
+                    ? previewComments?.length > 0
+                      ? 130
+                      : 110
+                    : previewComments?.length > 0
+                      ? 115
+                      : 95,
+              },
+            ]}
           >
             <Text style={styles.displayName} numberOfLines={1}>
               {displayName || 'Unknown User'}
@@ -312,9 +326,13 @@ const PhotoDetailModal = ({
             <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
           </View>
 
-          {/* Comment preview - below user info, above progress bar */}
+          {/* Comment preview - below user info, above progress bar
+              Stories mode: raised 15px to match userInfoOverlay
+              Feed mode: original position */}
           {previewComments.length > 0 && (
-            <View style={styles.commentPreviewContainer}>
+            <View
+              style={[styles.commentPreviewContainer, { bottom: mode === 'stories' ? 100 : 85 }]}
+            >
               <CommentPreview
                 comments={previewComments}
                 totalCount={currentPhoto?.commentCount || 0}
