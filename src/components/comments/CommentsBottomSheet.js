@@ -59,11 +59,13 @@ const CommentsBottomSheet = ({
   const [keyboardVisible, setKeyboardVisible] = useState(false); // UAT-013 fix: keyboard state
 
   /**
-   * PanResponder for swipe-to-close on handle bar (UAT-020 fix)
+   * PanResponder for swipe-to-close on handle bar (UAT-020 fix, UAT-030 fix)
+   * UAT-030: Changed onStartShouldSetPanResponder to true - we want to capture
+   * touches that start on the handle bar since the panResponder is scoped to it
    */
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true, // UAT-030 fix: capture touches on handle bar
       onMoveShouldSetPanResponder: (_, gestureState) => {
         // Respond to downward swipes
         return gestureState.dy > 5;
