@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 35.2 of 38 (Feed Header & Bottom Padding)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 35.2-01-PLAN.md
+Phase: 35.3 of 38 (Stories Performance & View State Fix)
+Plan: 0 of 1 in current phase
+Status: Planned, ready for execution
+Last activity: 2026-01-25 - Phase 35.3 planned (1 plan, 3 tasks)
 
 Progress: ███████░░░ 72%
 
@@ -187,9 +187,10 @@ None.
 - Phase 34.2 inserted after Phase 34.1: Feed & Stories UI Refinements (URGENT) - stories scroll behavior, card redesign with profile overlay
 - Phase 35.1 inserted after Phase 35: Unified Photo Modal (URGENT) - identical appearance for stories/feed, story segments only in stories mode, feed photos don't trigger viewed
 - Phase 35.2 inserted after Phase 35.1: Feed Header & Bottom Padding (URGENT) - black header, scroll-hide behavior, bottom padding for tab bar
+- Phase 35.3 inserted after Phase 35.2: Stories Performance & View State Fix (URGENT) - clunky story navigation, incorrect view state tracking
 
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 35.2-01-PLAN.md (feed header & bottom padding)
-Resume file: None
+Stopped at: Created 35.3-01-PLAN.md (stories performance & view state fix)
+Resume file: .planning/phases/35.3-stories-performance-view-state-fix/35.3-01-PLAN.md
