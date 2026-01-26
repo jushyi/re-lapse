@@ -623,16 +623,7 @@ const FeedScreen = () => {
           }
           onEndReached={loadMorePhotos}
           onEndReachedThreshold={0.5}
-          ListHeaderComponent={
-            <>
-              {renderStoriesRow()}
-              {photos.length > 0 && (
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Feed</Text>
-                </View>
-              )}
-            </>
-          }
+          ListHeaderComponent={renderStoriesRow}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyState}
         />
@@ -716,16 +707,6 @@ const styles = StyleSheet.create({
   feedList: {
     // paddingTop set dynamically with insets.top
     paddingBottom: TAB_BAR_HEIGHT + 24,
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
   },
   footerLoader: {
     flexDirection: 'row',
