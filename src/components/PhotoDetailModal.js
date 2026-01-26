@@ -273,19 +273,10 @@ const PhotoDetailModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Photo - tap navigation only in stories mode (UAT-014 fix: no TouchableWithoutFeedback in feed mode) */}
-          {mode === 'stories' ? (
-            <TouchableWithoutFeedback onPress={handleTapNavigation}>
-              <View style={styles.photoScrollView}>
-                <Image
-                  source={{ uri: imageURL }}
-                  style={styles.photo}
-                  contentFit="cover"
-                  transition={0}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          ) : (
+          {/* Photo - TouchableWithoutFeedback in both modes for swipe-to-close gesture support (UAT-028 fix)
+              Stories mode: onPress triggers tap navigation
+              Feed mode: onPress is undefined (touch tracking only for panResponder) */}
+          <TouchableWithoutFeedback onPress={mode === 'stories' ? handleTapNavigation : undefined}>
             <View style={styles.photoScrollView}>
               <Image
                 source={{ uri: imageURL }}
@@ -294,7 +285,7 @@ const PhotoDetailModal = ({
                 transition={0}
               />
             </View>
-          )}
+          </TouchableWithoutFeedback>
 
           {/* Profile photo - overlapping top left of photo */}
           <View style={styles.profilePicContainer}>
@@ -311,9 +302,9 @@ const PhotoDetailModal = ({
             )}
           </View>
 
-          {/* User info - bottom left of photo (UAT-022/UAT-023/UAT-033 fix: adjusted spacing) */}
+          {/* User info - bottom left of photo (UAT-034 fix: moved up 15px) */}
           <View
-            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 115 : 95 }]}
+            style={[styles.userInfoOverlay, { bottom: previewComments?.length > 0 ? 130 : 110 }]}
           >
             <Text style={styles.displayName} numberOfLines={1}>
               {displayName || 'Unknown User'}
