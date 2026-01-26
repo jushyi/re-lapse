@@ -18,6 +18,9 @@ export const styles = StyleSheet.create({
   },
   // Progress bar for stories mode - positioned above footer
   // Matches footer horizontal padding (16px) so edges align
+  progressBarScrollView: {
+    flexGrow: 0, // Prevent ScrollView from expanding and pushing photo
+  },
   progressBarContainer: {
     flexDirection: 'row',
     paddingBottom: 8,
