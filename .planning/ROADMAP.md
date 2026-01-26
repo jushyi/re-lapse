@@ -240,6 +240,18 @@ Plans:
 Plans:
 
 - [x] 35.4-01: Fix stories to fetch all photos in chronological order, fix resume tracking
+- [x] 35.4-01-FIX: UAT fixes - progress bar visibility, Firestore viewed state, cube transitions
+
+#### Phase 35.5: Feed Layout Polish (INSERTED)
+
+**Goal**: Align progress bar and emoji footer widths to match photo view, remove "Feed" header for seamless stories→cards transition
+**Depends on**: Phase 35.4
+**Research**: Unlikely (UI polish)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 35.5-01: TBD
 
 #### Phase 36: Comments Feature
 
@@ -314,7 +326,8 @@ Plans:
 | 35.1 Unified Photo Modal (INSERTED)            | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.2 Feed Header & Bottom Padding (INSERTED)   | v0.7      | 1/1            | Complete    | 2026-01-25 |
 | 35.3 Stories Performance & View State Fix      | v0.7      | 1/1            | Complete    | 2026-01-25 |
-| 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1            | Complete    | 2026-01-26 |
+| 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
+| 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 0/?            | Not started | -          |
 | 36. Comments Feature                           | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 0/?            | Not started | -          |
 

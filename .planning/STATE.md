@@ -20,9 +20,9 @@ Progress: ███████░░░ 76%
 
 **Velocity:**
 
-- Total plans completed: 119 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 19 in v0.7)
+- Total plans completed: 120 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 20 in v0.7)
 - Average duration: 16 min
-- Total execution time: 21.1 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 137m v0.7)
+- Total execution time: 21.5 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 162m v0.7)
 
 **By Milestone:**
 
@@ -162,6 +162,11 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 35.4-01       | Chronological order (oldest first) for stories        | Natural timeline viewing experience                                                  |
 | 35.4-01       | useRef for synchronous state access                   | React setState is async; ref provides immediate access for resume calculation        |
 | 35.4-01       | Mark friend viewed only when ALL photos seen          | Accurate ring color (gradient until complete, then gray)                             |
+| 35.4-01-FIX   | Firestore subcollection for viewed state              | Per-user persistence, survives account switch, works across devices                  |
+| 35.4-01-FIX   | Dynamic segment width with auto-scroll                | Handles any photo count while keeping segments visible                               |
+| 35.4-01-FIX   | 80ms minimum display time for rapid taps              | User sees each photo briefly during rapid tapping                                    |
+| 35.4-01-FIX   | 3D cube rotation for friend transitions               | Instagram-style visual feedback for context change                                   |
+| 35.4-01-FIX   | Progress bar matches footer padding (16px)            | Visual consistency between progress bar and emoji pills                              |
 
 ### Deferred Issues
 
@@ -195,9 +200,10 @@ None.
 - Phase 35.2 inserted after Phase 35.1: Feed Header & Bottom Padding (URGENT) - black header, scroll-hide behavior, bottom padding for tab bar
 - Phase 35.3 inserted after Phase 35.2: Stories Performance & View State Fix (URGENT) - clunky story navigation, incorrect view state tracking
 - Phase 35.4 inserted after Phase 35.3: Stories Feed Data & Resume Fix (URGENT) - missing journaled photos from friends, incorrect story ordering, resume tracking broken
+- Phase 35.5 inserted after Phase 35.4: Feed Layout Polish (URGENT) - align progress bar/emoji footer to photo width, remove "Feed" header for seamless transition
 
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed Phase 35.4 (Stories Feed Data & Resume Fix)
+Stopped at: Completed 35.4-01-FIX (Stories UAT Fixes - progress bar, Firestore viewed state, cube transitions)
 Resume file: None - ready for Phase 36 (Comments Feature) or Phase 37 (Profile Placeholder)
