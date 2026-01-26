@@ -1,27 +1,17 @@
 /**
- * FeedPhotoCard styles - Overlapping Profile Design
+ * FeedPhotoCard styles - Instagram-Style Design
  *
- * Edge-to-edge photos with profile photo overlapping bottom edge
- * and name/timestamp centered below.
+ * Edge-to-edge photos with user info row below.
+ * Modern, clean aesthetic matching dark theme.
  */
 import { StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
-
-// Profile photo dimensions
-const PROFILE_SIZE = 52;
-const PROFILE_OVERLAP = PROFILE_SIZE / 2; // Half overlaps photo
 
 export const styles = StyleSheet.create({
   // Card container - no margins, photos go edge-to-edge
   card: {
     backgroundColor: '#000000', // Pure black to match stories section
     marginBottom: 20,
-  },
-
-  // Wrapper for photo and overlapping profile
-  photoWrapper: {
-    position: 'relative',
-    marginBottom: PROFILE_OVERLAP, // Space for overlapping profile
   },
 
   // Photo container - full screen width, square
@@ -36,66 +26,57 @@ export const styles = StyleSheet.create({
     height: '100%',
   },
 
-  // Profile overlay - positioned at bottom center of photo
-  profileOverlay: {
-    position: 'absolute',
-    bottom: -PROFILE_OVERLAP, // Overlap by half the profile size
-    left: 0,
-    right: 0,
+  // Info row below photo - profile pic + name + timestamp
+  infoRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
 
-  // Profile photo - larger for emphasis
+  // Profile photo
   profilePhoto: {
-    width: PROFILE_SIZE,
-    height: PROFILE_SIZE,
-    borderRadius: PROFILE_SIZE / 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
     backgroundColor: colors.background.tertiary,
-    borderWidth: 3,
-    borderColor: '#000000', // Black border to separate from photo
   },
 
   // Fallback icon container
   profilePhotoFallback: {
-    width: PROFILE_SIZE,
-    height: PROFILE_SIZE,
-    borderRadius: PROFILE_SIZE / 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
     backgroundColor: colors.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#000000',
   },
 
-  // User info container - centered below profile photo
-  userInfo: {
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
+  // Text container for name and timestamp
+  textContainer: {
+    flex: 1,
   },
 
-  // Display name - centered
+  // Display name
   displayName: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text.primary,
-    textAlign: 'center',
   },
 
-  // Timestamp - centered below name
+  // Timestamp
   timestamp: {
     fontSize: 12,
     color: colors.text.secondary,
     marginTop: 2,
-    textAlign: 'center',
   },
 
-  // Reactions row - centered
+  // Reactions row
   reactions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingBottom: 12,
   },
@@ -103,7 +84,7 @@ export const styles = StyleSheet.create({
   reactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 6,
+    marginRight: 12,
   },
 
   reactionEmoji: {
@@ -127,7 +108,6 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text.tertiary,
     fontStyle: 'italic',
-    textAlign: 'center',
     paddingHorizontal: 12,
     paddingBottom: 12,
   },

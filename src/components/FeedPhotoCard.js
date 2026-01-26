@@ -6,10 +6,10 @@ import { styles } from '../styles/FeedPhotoCard.styles';
 import { colors } from '../constants/colors';
 
 /**
- * Feed photo card component - Overlapping Profile Design
+ * Feed photo card component - Instagram-Style Design
  *
- * Full-width photos with profile photo overlapping the bottom edge
- * and name/timestamp floating below, centered.
+ * Full-width photos with user info row below.
+ * Modern, clean aesthetic with dark theme.
  *
  * @param {object} photo - Photo object with user data
  * @param {function} onPress - Callback when card is tapped
@@ -51,30 +51,29 @@ const FeedPhotoCard = ({ photo, onPress }) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
-      {/* Photo container with overlapping profile */}
-      <View style={styles.photoWrapper}>
-        <View style={styles.photoContainer}>
-          <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
-        </View>
-
-        {/* Profile photo overlapping bottom edge */}
-        <View style={styles.profileOverlay}>
-          {profilePhotoURL ? (
-            <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
-          ) : (
-            <View style={styles.profilePhotoFallback}>
-              <Ionicons name="person-circle" size={52} color={colors.text.secondary} />
-            </View>
-          )}
-        </View>
+      {/* Photo - full width with rounded top corners */}
+      <View style={styles.photoContainer}>
+        <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
       </View>
 
-      {/* User info - centered below profile photo */}
-      <View style={styles.userInfo}>
-        <Text style={styles.displayName} numberOfLines={1}>
-          {displayName || 'Unknown'}
-        </Text>
-        <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
+      {/* User info row - profile photo + name + timestamp */}
+      <View style={styles.infoRow}>
+        {/* Profile photo or fallback icon */}
+        {profilePhotoURL ? (
+          <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+        ) : (
+          <View style={styles.profilePhotoFallback}>
+            <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
+          </View>
+        )}
+
+        {/* Name and timestamp */}
+        <View style={styles.textContainer}>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {displayName || 'Unknown'}
+          </Text>
+          <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
+        </View>
       </View>
 
       {/* Reactions row (if present) */}
