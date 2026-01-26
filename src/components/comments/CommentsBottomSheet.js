@@ -101,7 +101,7 @@ const CommentsBottomSheet = ({
     })
   ).current;
 
-  // Track keyboard visibility and animate sheet up (UAT-021 fix)
+  // Track keyboard visibility and animate sheet up (UAT-021 fix, UAT-029 fix)
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -109,9 +109,10 @@ const CommentsBottomSheet = ({
     const showSub = Keyboard.addListener(showEvent, event => {
       const keyboardHeight = event.endCoordinates.height;
       setKeyboardVisible(true);
-      // Animate sheet up above keyboard (UAT-021 fix)
+      // UAT-029 fix: Only move up 60% of keyboard height to reduce excess gap
+      // Full keyboardHeight was too much - sheet bottom is already 40% from screen bottom
       Animated.timing(sheetTranslateY, {
-        toValue: -keyboardHeight,
+        toValue: -(keyboardHeight * 0.6),
         duration: 250,
         useNativeDriver: true,
       }).start();
