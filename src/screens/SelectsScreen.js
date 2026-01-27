@@ -554,16 +554,12 @@ const styles = StyleSheet.create({
   thumbnailSection: {
     paddingVertical: 16,
     marginHorizontal: SCREEN_PADDING,
-    overflow: 'visible',
     zIndex: 1,
   },
-  thumbnailScroll: {
-    overflow: 'visible',
-  },
+  thumbnailScroll: {},
   thumbnailContainer: {
     flexDirection: 'row',
     gap: THUMBNAIL_GAP,
-    overflow: 'visible',
   },
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,
