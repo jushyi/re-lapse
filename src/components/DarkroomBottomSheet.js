@@ -9,7 +9,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
@@ -356,7 +356,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleBackdropPress}>
-      <View style={styles.container}>
+      <GestureHandlerRootView style={styles.container}>
         {/* Backdrop - fades in with modal */}
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleBackdropPress} />
 
@@ -421,7 +421,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
           {/* Message for developing photos */}
           {!hasRevealedPhotos && <Text style={styles.developingText}>Check back soon!</Text>}
         </Animated.View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
