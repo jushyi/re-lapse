@@ -8,6 +8,9 @@ import {
   Alert,
   Dimensions,
   ScrollView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +29,11 @@ import { Button, StepIndicator } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const MAX_SELECTS = 10;
 const THUMBNAIL_SIZE = 56;
@@ -163,21 +171,14 @@ const DraggableThumbnail = ({
         runOnJS(onHoverIndexChange)(null);
         runOnJS(onDragEnd)();
       } else if (didReorder) {
-        // Animate to target position, then trigger reorder after animation completes
-        const targetOffset = (targetIndex - index) * (THUMBNAIL_SIZE + THUMBNAIL_GAP);
-        translateY.value = withTiming(0, { duration: 150 });
+        // Reset visual state - LayoutAnimation will handle the transition
+        translateX.value = 0;
+        translateY.value = 0;
         scale.value = withTiming(1, { duration: 150 });
         zIndex.value = 0;
         runOnJS(onHoverIndexChange)(null);
-
-        // Animate to target and reorder after animation completes
-        translateX.value = withTiming(targetOffset, { duration: 150 }, finished => {
-          'worklet';
-          if (finished) {
-            runOnJS(onReorder)(index, targetIndex);
-            runOnJS(onDragEnd)();
-          }
-        });
+        runOnJS(onReorder)(index, targetIndex);
+        runOnJS(onDragEnd)();
       } else {
         // No reorder - snap back
         translateX.value = withTiming(0, { duration: 150 });
@@ -503,6 +504,10 @@ const SelectsScreen = ({ navigation }) => {
   const handleReorder = useCallback(
     (fromIndex, toIndex) => {
       logger.debug('SelectsScreen: Reordering photo', { fromIndex, toIndex });
+
+      // Animate layout change to prevent flash when array reorders
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
       setSelectedPhotos(prev => {
         const newPhotos = [...prev];
         const [movedItem] = newPhotos.splice(fromIndex, 1);
