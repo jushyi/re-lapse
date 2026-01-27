@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 37 of 39 (Profile Placeholder)
+Phase: 37.1 of 39 (Darkroom Visual Feedback)
 Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-01-26 - Completed 37-01-PLAN.md (minimal profile placeholder)
+Last activity: 2026-01-27 - Completed 37.1-01-PLAN.md (gradient state indicators)
 
-Progress: █████████░ 85%
+Progress: █████████░ 87%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 131 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 31 in v0.7)
+- Total plans completed: 132 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 32 in v0.7)
 - Average duration: 16 min
-- Total execution time: 22.5 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 218m v0.7)
+- Total execution time: 22.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 236m v0.7)
 
 **By Milestone:**
 
@@ -179,6 +179,8 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 36-03-FIX-4   | 60% keyboard offset for comment sheet                 | Full height excessive; 60% keeps input visible while maintaining context             |
 | 36-03-FIX-4   | 44x44 send button dimensions                          | Matches inputWrapper visual height (40px minHeight + padding)                        |
 | 36-03-FIX-5   | Unified TouchableWithoutFeedback for both modes       | Feed mode needs touch tracking for panResponder swipe-to-close                       |
+| 37.1-01       | Keep press-and-hold over swipe-to-reveal              | User tested swipe, preferred original hold interaction                               |
+| 37.1-01       | Gradient on both card button AND hold button          | Visual consistency across darkroom UI                                                |
 
 ### Deferred Issues
 
@@ -215,9 +217,10 @@ None.
 - Phase 35.5 inserted after Phase 35.4: Feed Layout Polish (URGENT) - align progress bar/emoji footer to photo width, remove "Feed" header for seamless transition
 - Phase 37.1 inserted after Phase 37: Darkroom Visual Feedback (URGENT) - gradient button indicator for readiness state, swipe-to-reveal gesture for bottom sheet
 - Phase 37.2 inserted after Phase 37.1: Stories Thumbnail Flash Fix & Feed Skeleton Update (URGENT) - fix stories thumbnails flashing gray on modal dismiss, update feed loading skeleton
+- Phase 36.1 inserted after Phase 36: Comment Sheet Fullscreen Expand (URGENT) - swipe up on comment sheet handle to expand to full screen
 
 ## Session Continuity
 
-Last session: 2026-01-26
-Stopped at: Completed 37-01-PLAN.md (minimal profile placeholder)
-Resume file: None - ready for Phase 37.1
+Last session: 2026-01-27
+Stopped at: Completed 37.1-01-PLAN.md (gradient state indicators)
+Resume file: None - ready for Phase 37.2

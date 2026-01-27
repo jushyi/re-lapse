@@ -274,6 +274,17 @@ Plans:
 - [x] 36-05: Comment threading replies
 - [x] 36-06: Comment notifications & media comments (images, GIFs)
 
+#### Phase 36.1: Comment Sheet Fullscreen Expand (INSERTED)
+
+**Goal**: Swipe up on comment sheet handle to expand comments to full screen for viewing more comments
+**Depends on**: Phase 36
+**Research**: Unlikely (UI enhancement)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 36.1-01: TBD
+
 #### Phase 37: Profile Placeholder
 
 **Goal**: Friends button only (full Profile refactor deferred to later milestone)
@@ -287,14 +298,14 @@ Plans:
 
 #### Phase 37.1: Darkroom Visual Feedback (INSERTED)
 
-**Goal**: Color gradient on camera darkroom button indicating readiness state (pink→purple developing, purple→pink ready), plus swipe-to-reveal gesture replacing press-and-hold on darkroom bottom sheet
+**Goal**: Color gradient on camera darkroom button indicating readiness state (purple-heavy developing, pink-heavy ready), gradient on hold-to-reveal button
 **Depends on**: Phase 37
 **Research**: Unlikely (UI enhancement)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 37.1-01: TBD
+- [x] 37.1-01: Gradient state indicator on card button and hold button
 
 #### Phase 37.2: Stories Thumbnail Flash Fix & Feed Skeleton Update (INSERTED)
 
@@ -361,8 +372,9 @@ Plans:
 | 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
 | 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 1/1            | Complete    | 2026-01-26 |
 | 36. Comments Feature                           | v0.7      | 6/6 + 5 FIX    | Complete    | 2026-01-26 |
+| 36.1 Comment Sheet Fullscreen (INSERTED)       | v0.7      | 0/?            | Not started | -          |
 | 37. Profile Placeholder                        | v0.7      | 1/1            | Complete    | 2026-01-26 |
-| 37.1 Darkroom Visual Feedback (INSERTED)       | v0.7      | 0/?            | Not started | -          |
+| 37.1 Darkroom Visual Feedback (INSERTED)       | v0.7      | 1/1            | Complete    | 2026-01-27 |
 | 37.2 Stories Flash & Feed Skeleton (INSERTED)  | v0.7      | 0/?            | Not started | -          |
 
 <details>
