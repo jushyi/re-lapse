@@ -1,5 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -445,9 +454,13 @@ const SelectsScreen = ({ navigation }) => {
 
         {/* Thumbnail Strip */}
         <View style={styles.thumbnailSection}>
-          <View style={styles.thumbnailContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailContainer}
+          >
             {Array.from({ length: MAX_SELECTS }).map((_, index) => renderThumbnailSlot(index))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* Delete Bar */}
@@ -501,8 +514,9 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: SCREEN_PADDING,
+    paddingTop: 8,
   },
   previewTouchable: {
     borderRadius: 12,
@@ -532,7 +546,6 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: THUMBNAIL_GAP,
   },
   thumbnailSlot: {
