@@ -103,11 +103,11 @@ Plans:
 **Goal**: Improve drag-to-reorder UX with animated thumbnail repositioning - thumbnails slide into position during drag, creating visual space when dragged between photos and collapsing when moved away or toward delete bar
 **Depends on**: Phase 4
 **Research**: Unlikely (animation refinement of existing drag implementation)
-**Plans**: TBD
+**Plans**: 0/1 complete
 
 Plans:
 
-- [ ] 04.1-01: TBD (run /gsd:plan-phase 4.1 to break down)
+- [ ] 04.1-01: Animated thumbnail repositioning + verification
 
 **Details:**
 
@@ -238,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 3. Signup Flow Refactor          | 2/2            | Complete    | 2026-01-27 |
 | 3.1 Auth Input Field Fixes       | 1/1            | Complete    | 2026-01-27 |
 | 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
-| 4.1 Drag-Reorder Visual Feedback | 0/?            | Not started | -          |
+| 4.1 Drag-Reorder Visual Feedback | 0/1            | Planned     | -          |
 | 5. Profile Screen Layout         | 0/?            | Not started | -          |
 | 6. Selects Banner                | 0/?            | Not started | -          |
 | 7. Profile Song Scaffold         | 0/?            | Not started | -          |
