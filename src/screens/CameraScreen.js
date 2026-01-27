@@ -8,10 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import { CameraView } from 'expo-camera';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import Svg, { Path } from 'react-native-svg';
-import { colors } from '../constants/colors';
+import Svg, { Path, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 
 import useCamera, {
   BASE_ROTATION_PER_CARD,
@@ -74,14 +72,35 @@ const FlipCameraIcon = ({ color = '#FFFFFF' }) => (
   </Svg>
 );
 
+// Card dimensions (must match styles for proper SVG sizing)
+const CARD_WIDTH = 63;
+const CARD_HEIGHT = 84;
+
+// Radial gradient card background - center-out burst effect
+const RadialGradientCard = ({ centerColor, edgeColor, children }) => (
+  <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT, position: 'relative' }}>
+    <Svg width={CARD_WIDTH} height={CARD_HEIGHT} style={{ position: 'absolute' }}>
+      <Defs>
+        <RadialGradient id="cardGrad" cx="50%" cy="50%" rx="95%" ry="95%">
+          <Stop offset="0%" stopColor={centerColor} />
+          <Stop offset="40%" stopColor={centerColor} />
+          <Stop offset="100%" stopColor={edgeColor} />
+        </RadialGradient>
+      </Defs>
+      <Rect x="0" y="0" width={CARD_WIDTH} height={CARD_HEIGHT} fill="url(#cardGrad)" />
+    </Svg>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>{children}</View>
+  </View>
+);
+
 // DarkroomCardButton Component - photo card stack design with capture animation
 const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevealedPhotos }) => {
   const isDisabled = count === 0;
 
-  // Get gradient colors based on state
+  // Get gradient colors based on state (center color, edge color)
   const gradientColors = hasRevealedPhotos
-    ? colors.brand.gradient.revealed // Pink-heavy when ready
-    : colors.brand.gradient.developing; // Purple-heavy when developing
+    ? { center: '#DB2777', edge: '#FFFFFF' } // Pink center, white edges (ready)
+    : { center: '#7C3AED', edge: '#FFFFFF' }; // Purple center, white edges (developing)
 
   // Determine number of cards to show (1-4 max)
   const cardCount = Math.min(Math.max(count, 1), 4);
@@ -127,14 +146,9 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
               },
             ]}
           >
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.darkroomCardGradient}
-            >
+            <RadialGradientCard centerColor={gradientColors.center} edgeColor={gradientColors.edge}>
               <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>
-            </LinearGradient>
+            </RadialGradientCard>
           </Animated.View>
         );
         continue;
@@ -181,15 +195,10 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
             },
           ]}
         >
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.darkroomCardGradient}
-          >
+          <RadialGradientCard centerColor={gradientColors.center} edgeColor={gradientColors.edge}>
             {/* Only show count on top card */}
             {isTopCard && <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>}
-          </LinearGradient>
+          </RadialGradientCard>
         </Animated.View>
       );
     }

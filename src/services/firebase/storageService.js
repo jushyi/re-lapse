@@ -85,13 +85,14 @@ export const uploadProfilePhoto = async (userId, localUri) => {
 
 /**
  * Upload photo to Firebase Storage
+ * @param {string} userId - User ID who owns the photo
  * @param {string} photoId - Photo document ID
  * @param {string} localUri - Local image URI
  * @returns {Promise}
  */
-export const uploadPhoto = async (photoId, localUri) => {
+export const uploadPhoto = async (userId, photoId, localUri) => {
   try {
-    logger.debug('StorageService.uploadPhoto: Starting', { photoId });
+    logger.debug('StorageService.uploadPhoto: Starting', { userId, photoId });
 
     // Compress image first
     const compressedUri = await compressImage(localUri, 0.8);
@@ -100,7 +101,8 @@ export const uploadPhoto = async (photoId, localUri) => {
     const filePath = uriToFilePath(compressedUri);
 
     // Create storage reference (modular API pattern)
-    const storageRef = ref(storageInstance, `photos/${photoId}.jpg`);
+    // Path: photos/{userId}/{photoId}.jpg - matches storage.rules
+    const storageRef = ref(storageInstance, `photos/${userId}/${photoId}.jpg`);
 
     // Upload file directly (no blob needed with RN Firebase)
     await storageRef.putFile(filePath);
@@ -138,40 +140,42 @@ export const deleteProfilePhoto = async userId => {
 
 /**
  * Delete photo from Firebase Storage
+ * @param {string} userId - User ID who owns the photo
  * @param {string} photoId - Photo ID
  * @returns {Promise}
  */
-export const deletePhoto = async photoId => {
+export const deletePhoto = async (userId, photoId) => {
   try {
-    logger.debug('StorageService.deletePhoto: Starting', { photoId });
+    logger.debug('StorageService.deletePhoto: Starting', { userId, photoId });
 
-    const storageRef = ref(storageInstance, `photos/${photoId}.jpg`);
+    const storageRef = ref(storageInstance, `photos/${userId}/${photoId}.jpg`);
     await storageRef.delete();
 
-    logger.info('StorageService.deletePhoto: Deleted', { photoId });
+    logger.info('StorageService.deletePhoto: Deleted', { userId, photoId });
     return { success: true };
   } catch (error) {
-    logger.error('StorageService.deletePhoto: Failed', { photoId, error: error.message });
+    logger.error('StorageService.deletePhoto: Failed', { userId, photoId, error: error.message });
     return { success: false, error: error.message };
   }
 };
 
 /**
  * Get download URL for a photo
+ * @param {string} userId - User ID who owns the photo
  * @param {string} photoId - Photo ID
  * @returns {Promise}
  */
-export const getPhotoURL = async photoId => {
+export const getPhotoURL = async (userId, photoId) => {
   try {
-    logger.debug('StorageService.getPhotoURL: Starting', { photoId });
+    logger.debug('StorageService.getPhotoURL: Starting', { userId, photoId });
 
-    const storageRef = ref(storageInstance, `photos/${photoId}.jpg`);
+    const storageRef = ref(storageInstance, `photos/${userId}/${photoId}.jpg`);
     const downloadURL = await storageRef.getDownloadURL();
 
-    logger.info('StorageService.getPhotoURL: Retrieved', { photoId });
+    logger.info('StorageService.getPhotoURL: Retrieved', { userId, photoId });
     return { success: true, url: downloadURL };
   } catch (error) {
-    logger.error('StorageService.getPhotoURL: Failed', { photoId, error: error.message });
+    logger.error('StorageService.getPhotoURL: Failed', { userId, photoId, error: error.message });
     return { success: false, error: error.message };
   }
 };

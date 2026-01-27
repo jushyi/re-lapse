@@ -10,10 +10,27 @@ import {
   Platform,
   Easing,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
+
+// Radial gradient background component for hold button
+const RadialGradientButton = ({ centerColor, edgeColor, width, height, children, style }) => (
+  <View style={[{ width, height, position: 'relative' }, style]}>
+    <Svg width={width} height={height} style={{ position: 'absolute' }}>
+      <Defs>
+        <RadialGradient id="holdButtonGrad" cx="50%" cy="50%" rx="95%" ry="95%">
+          <Stop offset="0%" stopColor={centerColor} />
+          <Stop offset="40%" stopColor={centerColor} />
+          <Stop offset="100%" stopColor={edgeColor} />
+        </RadialGradient>
+      </Defs>
+      <Rect x="0" y="0" width={width} height={height} rx="16" fill="url(#holdButtonGrad)" />
+    </Svg>
+    {children}
+  </View>
+);
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 320; // Increased height for new button design
@@ -444,18 +461,19 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
               onResponderRelease={handlePressOut}
               onResponderTerminate={handlePressOut}
             >
-              {/* Base gradient button - uses revealed gradient (pink-heavy) */}
-              <LinearGradient
-                colors={colors.brand.gradient.revealed}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              {/* Base radial gradient button - pink center, white edges */}
+              <RadialGradientButton
+                centerColor="#DB2777"
+                edgeColor="#FFFFFF"
+                width={SCREEN_WIDTH - 48}
+                height={64}
                 style={styles.holdButtonBase}
               >
-                {/* Fill overlay that animates left-to-right */}
+                {/* Fill overlay that darkens the gradient left-to-right */}
                 <Animated.View
                   style={[
                     styles.fillOverlay,
-                    { width: progressWidth, backgroundColor: COLORS.buttonFill },
+                    { width: progressWidth, backgroundColor: 'rgba(0, 0, 0, 0.35)' },
                   ]}
                 />
 
@@ -466,7 +484,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
                     {isPressing ? 'Revealing...' : 'Hold to reveal photos'}
                   </Text>
                 </View>
-              </LinearGradient>
+              </RadialGradientButton>
             </View>
           )}
 

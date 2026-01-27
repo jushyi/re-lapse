@@ -37,8 +37,8 @@ export const colors = {
     teal: '#14B8A6', // Tertiary - minimal use (Tailwind teal-500)
     lime: '#84CC16', // Accent - minimal use (Tailwind lime-500)
     gradient: {
-      developing: ['#8B5CF6', '#EC4899'], // Purple-heavy (start purple)
-      revealed: ['#A855F7', '#F472B6'], // Pink-heavy (lighter tones)
+      developing: ['#EC4899', '#7C3AED', '#EC4899'], // Pink edges → Purple center → Pink edges
+      revealed: ['#8B5CF6', '#DB2777', '#8B5CF6'], // Purple edges → Pink center → Purple edges
       button: ['#4C1D95', '#7C3AED'], // Dark purple gradient
       fill: ['#6B21A8', '#A855F7'], // Purple fill gradient
     },
