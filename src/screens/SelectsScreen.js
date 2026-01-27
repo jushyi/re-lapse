@@ -31,7 +31,7 @@ const THUMBNAIL_GAP = 8;
 const PREVIEW_ASPECT_RATIO = 4 / 5;
 const SCREEN_PADDING = 24;
 const DELETE_BAR_HEIGHT = 48;
-const DELETE_ZONE_THRESHOLD = 40; // How far down to trigger delete zone
+const DELETE_ZONE_THRESHOLD = 120; // How far down to trigger delete zone (reaches button area)
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // DraggableThumbnail component for drag-to-reorder
@@ -466,21 +466,18 @@ const SelectsScreen = ({ navigation }) => {
         {/* Spacer to push button to bottom */}
         <View style={styles.spacer} />
 
-        {/* Delete Bar - absolute positioned overlay */}
-        {isDragging && (
-          <View style={styles.deleteBarContainer}>
-            <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
-          </View>
-        )}
-
-        {/* Button Area */}
+        {/* Button Area / Delete Bar (swaps when dragging) */}
         <View style={styles.buttonContainer}>
-          <Button
-            title="Complete Profile Setup"
-            variant="primary"
-            onPress={handleComplete}
-            loading={uploading}
-          />
+          {isDragging ? (
+            <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
+          ) : (
+            <Button
+              title="Complete Profile Setup"
+              variant="primary"
+              onPress={handleComplete}
+              loading={uploading}
+            />
+          )}
         </View>
       </SafeAreaView>
     </GestureHandlerRootView>
@@ -591,12 +588,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
     paddingBottom: 24,
     paddingTop: 8,
-  },
-  deleteBarContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: SCREEN_PADDING,
-    right: SCREEN_PADDING,
   },
   deleteBar: {
     height: DELETE_BAR_HEIGHT,
