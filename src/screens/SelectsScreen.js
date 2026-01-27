@@ -485,6 +485,10 @@ const SelectsScreen = ({ navigation }) => {
   const handleRemovePhoto = useCallback(
     index => {
       logger.debug('SelectsScreen: Removing photo', { index });
+
+      // Animate layout change so remaining items slide smoothly
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
       setSelectedPhotos(prev => {
         const newPhotos = prev.filter((_, i) => i !== index);
         // Adjust selectedIndex if needed
