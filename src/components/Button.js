@@ -1,8 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { colors } from '../constants/colors';
 
 /**
- * Reusable Button Component
+ * Reusable Button Component with dark theme support
  * @param {string} title - Button text
  * @param {function} onPress - Function to call on press
  * @param {string} variant - 'primary', 'secondary', 'outline', 'danger'
@@ -56,9 +57,7 @@ const Button = ({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : '#000000'}
-        />
+        <ActivityIndicator color={colors.text.primary} />
       ) : (
         <Text style={getTextStyle()}>{title}</Text>
       )}
@@ -79,37 +78,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Primary button (black background, white text)
+  // Primary button - dark theme CTA (inverted: light on dark background)
   primaryButton: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.secondary,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
-  // Secondary button (white background, black text)
+  // Secondary button - subtle dark variant
   secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    backgroundColor: colors.background.tertiary,
   },
   secondaryButtonText: {
-    color: '#000000',
+    color: colors.text.primary,
   },
-  // Outline button (transparent background, black border and text)
+  // Outline button - transparent with subtle border
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: colors.border.subtle,
   },
   outlineButtonText: {
-    color: '#000000',
+    color: colors.text.primary,
   },
-  // Danger button (red background, white text)
+  // Danger button - red with white text
   dangerButton: {
-    backgroundColor: '#FF4444',
+    backgroundColor: colors.status.danger,
   },
   dangerButtonText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   // Disabled state
   disabledButton: {
