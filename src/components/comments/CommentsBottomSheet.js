@@ -434,84 +434,85 @@ const CommentsBottomSheet = ({
 
         {/* Sheet container - no KeyboardAvoidingView needed with translateY approach (UAT-021 fix) */}
         <View style={styles.keyboardAvoidContainer}>
-          {/* Animated sheet (UAT-021 fix: moves UP when keyboard visible via sheetTranslateY) */}
-          {/* UAT-020 fix: swipeY added for swipe-to-close gesture */}
-          {/* 36.1-01: sheetHeight for expand/collapse animation */}
-          <Animated.View
-            style={[
-              styles.sheet,
-              {
-                height: sheetHeight,
-                maxHeight: undefined, // Override fixed maxHeight for expansion
-                transform: [
-                  { translateY },
-                  { translateY: sheetTranslateY },
-                  { translateY: swipeY },
-                ],
-              },
-            ]}
-          >
-            {/* Handle bar - swipe-to-close gesture (UAT-020 fix) */}
-            <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
-              <View style={styles.handleBar} />
-            </View>
-
-            {/* Mini photo header - visible when expanded (36.1-01) */}
-            {photoUrl && (
-              <Animated.View style={[styles.expandedPhotoHeader, { opacity: headerOpacity }]}>
-                <Image
-                  source={{ uri: photoUrl }}
-                  style={styles.miniPhotoThumbnail}
-                  contentFit="cover"
-                />
-              </Animated.View>
-            )}
-
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.headerTitle}>Comments</Text>
-                {totalCommentCount > 0 && (
-                  <Text style={styles.headerCount}>({totalCommentCount})</Text>
-                )}
+          {/* Outer: Height animation (JS driver) - 36.1-01 expand/collapse */}
+          <Animated.View style={{ height: sheetHeight }}>
+            {/* Inner: Transform animations (native driver) - UAT-020/021 gestures */}
+            <Animated.View
+              style={[
+                styles.sheet,
+                {
+                  flex: 1, // Fill the height-animated container
+                  maxHeight: undefined, // Override fixed maxHeight for expansion
+                  transform: [
+                    { translateY },
+                    { translateY: sheetTranslateY },
+                    { translateY: swipeY },
+                  ],
+                },
+              ]}
+            >
+              {/* Handle bar - swipe-to-close gesture (UAT-020 fix) */}
+              <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
+                <View style={styles.handleBar} />
               </View>
-              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-            </View>
 
-            {/* Comments List */}
-            {loading ? (
-              renderLoading()
-            ) : error ? (
-              renderError()
-            ) : (
-              <FlatList
-                style={styles.commentsList}
-                contentContainerStyle={styles.commentsListContent}
-                data={threadedComments}
-                renderItem={renderCommentItem}
-                keyExtractor={keyExtractor}
-                ListEmptyComponent={renderEmpty}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="interactive"
-              />
-            )}
+              {/* Mini photo header - visible when expanded (36.1-01) */}
+              {photoUrl && (
+                <Animated.View style={[styles.expandedPhotoHeader, { opacity: headerOpacity }]}>
+                  <Image
+                    source={{ uri: photoUrl }}
+                    style={styles.miniPhotoThumbnail}
+                    contentFit="cover"
+                  />
+                </Animated.View>
+              )}
 
-            {/* Comment Input - with safe area padding (UAT-010 fix) */}
-            <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-              <CommentInput
-                ref={inputRef}
-                onSubmit={handleSubmitComment}
-                onImagePick={() => {
-                  logger.debug('CommentsBottomSheet: Image picker (Plan 06)');
-                }}
-                replyingTo={replyingTo}
-                onCancelReply={cancelReply}
-                placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
-              />
-            </View>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.headerTitle}>Comments</Text>
+                  {totalCommentCount > 0 && (
+                    <Text style={styles.headerCount}>({totalCommentCount})</Text>
+                  )}
+                </View>
+                <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                  <Ionicons name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Comments List */}
+              {loading ? (
+                renderLoading()
+              ) : error ? (
+                renderError()
+              ) : (
+                <FlatList
+                  style={styles.commentsList}
+                  contentContainerStyle={styles.commentsListContent}
+                  data={threadedComments}
+                  renderItem={renderCommentItem}
+                  keyExtractor={keyExtractor}
+                  ListEmptyComponent={renderEmpty}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="interactive"
+                />
+              )}
+
+              {/* Comment Input - with safe area padding (UAT-010 fix) */}
+              <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+                <CommentInput
+                  ref={inputRef}
+                  onSubmit={handleSubmitComment}
+                  onImagePick={() => {
+                    logger.debug('CommentsBottomSheet: Image picker (Plan 06)');
+                  }}
+                  replyingTo={replyingTo}
+                  onCancelReply={cancelReply}
+                  placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                />
+              </View>
+            </Animated.View>
           </Animated.View>
         </View>
       </View>
