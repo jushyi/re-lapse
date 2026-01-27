@@ -1,6 +1,6 @@
 import { useState, useEffect, createRef } from 'react';
 import { Text, ActivityIndicator, View, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
@@ -48,16 +48,10 @@ const OnboardingStackNavigator = ({ initialRouteName }) => {
         headerShown: false,
         gestureEnabled: true,
         gestureDirection: 'horizontal',
+        contentStyle: { backgroundColor: '#000000' },
       }}
     >
-      <Stack.Screen
-        name="ProfileSetup"
-        component={ProfileSetupScreen}
-        options={({ route }) => ({
-          // Animate from left when coming back from Selects
-          animation: route.params?.fromSelects ? 'slide_from_left' : 'default',
-        })}
-      />
+      <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Selects" component={SelectsScreen} />
     </Stack.Navigator>
   );
@@ -71,6 +65,7 @@ const ProfileStackNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        contentStyle: { backgroundColor: '#000000' },
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
@@ -122,6 +117,7 @@ const MainTabNavigator = () => {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',
         tabBarShowLabel: false,
+        sceneContainerStyle: { backgroundColor: '#000000' },
       }}
     >
       <Tab.Screen
@@ -299,10 +295,10 @@ const AppNavigator = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#000000',
         }}
       >
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
     );
   }
@@ -318,10 +314,10 @@ const AppNavigator = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#000000',
         }}
       >
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
     );
   }
@@ -347,14 +343,25 @@ const AppNavigator = () => {
   // between PhoneInputScreen/VerificationScreen during auth, and for
   // DeleteAccountScreen re-authentication flow when already logged in
 
+  // Dark theme to prevent white bleeding through during screen transitions
+  const darkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: '#000000',
+      card: '#000000',
+    },
+  };
+
   return (
     <PhoneAuthProvider>
-      <NavigationContainer ref={navigationRef} linking={linking}>
+      <NavigationContainer ref={navigationRef} linking={linking} theme={darkTheme}>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
             gestureEnabled: true,
             gestureDirection: 'horizontal',
+            contentStyle: { backgroundColor: '#000000' },
           }}
         >
           {!isAuthenticated ? (
