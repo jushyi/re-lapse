@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 4 of 10 (Profile Creation Onboarding)
-Plan: 2 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-27 — Completed 04-02-PLAN.md
+Phase: 4 of 13 (Profile Creation Onboarding)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-27 — Completed 04-04-PLAN.md
 
-Progress: ██████░░░░ 55%
+Progress: ██████░░░░ 62%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
-- Average duration: 8.4 min
-- Total execution time: 59 min
+- Total plans completed: 9
+- Average duration: 9.6 min
+- Total execution time: 86 min
 
 **By Phase:**
 
@@ -32,12 +32,12 @@ Progress: ██████░░░░ 55%
 | 2     | 1     | 5 min  | 5 min    |
 | 3     | 2     | 20 min | 10 min   |
 | 3.1   | 1     | 5 min  | 5 min    |
-| 4     | 2     | 27 min | 13.5 min |
+| 4     | 4     | 54 min | 13.5 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 5 min, 12 min, 15 min
-- Trend: Stable (Phase 4 in progress)
+- Last 5 plans: 5 min, 12 min, 15 min, 15 min, 12 min
+- Trend: Stable (Phase 4 complete)
 
 ## Accumulated Context
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 | 4     | Step indicator with dots and "Step X of Y" text      | Clear progress indication for multi-screen onboarding           |
 | 4     | Preview tap: multi-select when empty, disabled after | Users add via thumbnails once photos exist for granular control |
 | 4     | 4:5 aspect ratio for preview area                    | Matches Instagram portrait style                                |
+| 4     | Skip confirmation from Complete button               | Single button, shows alert if no photos selected                |
+| 4     | Tutorial hint shows only with 2+ photos              | Need multiple photos to demonstrate reorder feature             |
+| 4     | AsyncStorage for hint dismissal persistence          | Hint state persists across sessions                             |
 
 ### Deferred Issues
 
@@ -80,9 +83,18 @@ None yet.
   - Profile setup inputs show auto-filled letters instead of just placeholder hints
 - Phase 10 added: Empty Feed State Change UI Change
   - UI improvements for empty feed state transitions
+- Phase 11 added: Feed Reaction Emoji Enhancements
+  - Randomized emoji selection per photo (iOS emojis only)
+  - Custom emoji picker with "Add your own" button at end of reaction picker
+- Phase 12 added: Own Snaps in Stories Bar
+  - User's journaled snaps persist on left of stories bar
+  - Can comment but not react to own photos
+- Phase 4.1 inserted after Phase 4: Drag-Reorder Visual Feedback (URGENT)
+  - Thumbnails slide into position during drag operations
+  - Visual feedback shows drop target, space collapses when moving away
 
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 04-02-PLAN.md (SelectsScreen Layout Redesign)
+Stopped at: Completed 04-04-PLAN.md (Tutorial & Final Polish) - Phase 4 complete
 Resume file: None

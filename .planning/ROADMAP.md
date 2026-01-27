@@ -21,7 +21,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Login Screen Refactor** - Full dark theme application, improved UX
 - [x] **Phase 3: Signup Flow Refactor** - Multi-step signup with consistent dark styling
 - [x] **Phase 3.1: Auth Input Field Fixes** - Phone number backspace fix + profile input placeholder cleanup (INSERTED)
-- [ ] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
+- [x] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
+- [ ] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
 - [ ] **Phase 5: Profile Screen Layout** - Core layout and profile info display
 - [ ] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
@@ -88,19 +89,37 @@ Plans:
 **Goal**: Polish profile onboarding with step indicators, redesigned SelectsScreen with preview/thumbnails, drag-to-reorder, and tutorial hints
 **Depends on**: Phase 3.1
 **Research**: Unlikely (extending existing ProfileSetupScreen patterns)
-**Plans**: 3/4
+**Plans**: 4/4 complete
 
 Plans:
 
 - [x] 04-01: Step Indicator component + ProfileSetupScreen UX updates (step dots, single "Next step" button)
 - [x] 04-02: SelectsScreen layout redesign (large preview, 10 thumbnail slots, tap-to-preview)
 - [x] 04-03: Drag-to-reorder implementation with delete bar
-- [ ] 04-04: Tutorial hint popup, skip confirmation, load existing selects
+- [x] 04-04: Tutorial hint popup, skip confirmation, load existing selects
+
+### Phase 4.1: Drag-Reorder Visual Feedback (INSERTED)
+
+**Goal**: Improve drag-to-reorder UX with animated thumbnail repositioning - thumbnails slide into position during drag, creating visual space when dragged between photos and collapsing when moved away or toward delete bar
+**Depends on**: Phase 4
+**Research**: Unlikely (animation refinement of existing drag implementation)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 04.1-01: TBD (run /gsd:plan-phase 4.1 to break down)
+
+**Details:**
+
+1. Thumbnails animate/slide to make space when item is dragged between them
+2. Space collapses when item moves away from a position
+3. Visual feedback shows where item will be dropped
+4. Smooth animations during drag movement toward delete bar
 
 ### Phase 5: Profile Screen Layout
 
 **Goal**: Build core profile screen layout with profile info display (photo, display name, username, bio)
-**Depends on**: Phase 4
+**Depends on**: Phase 4.1
 **Research**: Unlikely (internal UI patterns)
 **Plans**: TBD
 
@@ -210,20 +229,21 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
 
-| Phase                          | Plans Complete | Status      | Completed  |
-| ------------------------------ | -------------- | ----------- | ---------- |
-| 1. Auth Shared Components      | 1/1            | Complete    | 2026-01-27 |
-| 2. Login Screen Refactor       | 1/1            | Complete    | 2026-01-27 |
-| 3. Signup Flow Refactor        | 2/2            | Complete    | 2026-01-27 |
-| 3.1 Auth Input Field Fixes     | 1/1            | Complete    | 2026-01-27 |
-| 4. Profile Creation Onboarding | 3/4            | In progress | -          |
-| 5. Profile Screen Layout       | 0/?            | Not started | -          |
-| 6. Selects Banner              | 0/?            | Not started | -          |
-| 7. Profile Song Scaffold       | 0/?            | Not started | -          |
-| 8. User Albums Display         | 0/?            | Not started | -          |
-| 9. Monthly Albums              | 0/?            | Not started | -          |
-| 10. Empty Feed State UI Change | 0/?            | Not started | -          |
-| 11. Feed Reaction Emoji        | 0/?            | Not started | -          |
-| 12. Own Snaps in Stories Bar   | 0/?            | Not started | -          |
+| Phase                            | Plans Complete | Status      | Completed  |
+| -------------------------------- | -------------- | ----------- | ---------- |
+| 1. Auth Shared Components        | 1/1            | Complete    | 2026-01-27 |
+| 2. Login Screen Refactor         | 1/1            | Complete    | 2026-01-27 |
+| 3. Signup Flow Refactor          | 2/2            | Complete    | 2026-01-27 |
+| 3.1 Auth Input Field Fixes       | 1/1            | Complete    | 2026-01-27 |
+| 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
+| 4.1 Drag-Reorder Visual Feedback | 0/?            | Not started | -          |
+| 5. Profile Screen Layout         | 0/?            | Not started | -          |
+| 6. Selects Banner                | 0/?            | Not started | -          |
+| 7. Profile Song Scaffold         | 0/?            | Not started | -          |
+| 8. User Albums Display           | 0/?            | Not started | -          |
+| 9. Monthly Albums                | 0/?            | Not started | -          |
+| 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
+| 11. Feed Reaction Emoji          | 0/?            | Not started | -          |
+| 12. Own Snaps in Stories Bar     | 0/?            | Not started | -          |
