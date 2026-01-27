@@ -10,7 +10,16 @@
  * - checkDailyLimit: Check if user can take more photos (36/day limit)
  */
 
-import { getFirestore, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
 const db = getFirestore();
@@ -95,6 +104,46 @@ export const incrementDailyPhotoCount = async userId => {
   } catch (error) {
     logger.error('Error incrementing daily photo count', error);
     return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Check if a username is available
+ * @param {string} username - Username to check (will be lowercased)
+ * @param {string} currentUserId - Current user's ID (to exclude from check)
+ * @returns {Promise} - { success, available, error }
+ */
+export const checkUsernameAvailability = async (username, currentUserId = null) => {
+  try {
+    const normalizedUsername = username.toLowerCase().trim();
+
+    logger.debug('UserService.checkUsernameAvailability: Checking username', {
+      username: normalizedUsername,
+    });
+
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', normalizedUsername));
+    const querySnapshot = await getDocs(q);
+
+    // Check if any user has this username (excluding current user)
+    let available = true;
+    querySnapshot.forEach(docSnap => {
+      if (currentUserId && docSnap.id === currentUserId) {
+        // This is the current user's own username, still available for them
+        return;
+      }
+      available = false;
+    });
+
+    logger.info('UserService.checkUsernameAvailability: Result', {
+      username: normalizedUsername,
+      available,
+    });
+
+    return { success: true, available };
+  } catch (error) {
+    logger.error('UserService.checkUsernameAvailability: Error', error);
+    return { success: false, available: false, error: error.message };
   }
 };
 

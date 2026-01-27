@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Input } from '../components';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +21,13 @@ import {
   getNotificationToken,
   storeNotificationToken,
 } from '../services/firebase/notificationService';
-import { validateLength, sanitizeDisplayName, sanitizeBio } from '../utils/validation';
+import {
+  validateLength,
+  validateUsername,
+  sanitizeDisplayName,
+  sanitizeBio,
+} from '../utils/validation';
+import { checkUsernameAvailability } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
@@ -28,12 +35,89 @@ const ProfileSetupScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
 
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [username, setUsername] = useState(userProfile?.username || '');
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
 
   const [errors, setErrors] = useState({});
+  const usernameCheckTimeout = useRef(null);
+
+  // Debounced username availability check
+  const checkUsername = useCallback(
+    async usernameToCheck => {
+      const normalizedUsername = usernameToCheck.toLowerCase().trim();
+
+      // Skip check if username hasn't changed from original
+      if (normalizedUsername === userProfile?.username?.toLowerCase()) {
+        setUsernameAvailable(true);
+        setCheckingUsername(false);
+        return;
+      }
+
+      // Validate format first
+      const formatError = validateUsername(normalizedUsername);
+      if (formatError) {
+        setErrors(prev => ({ ...prev, username: formatError }));
+        setCheckingUsername(false);
+        return;
+      }
+
+      setCheckingUsername(true);
+      const result = await checkUsernameAvailability(normalizedUsername, user.uid);
+
+      if (result.success) {
+        setUsernameAvailable(result.available);
+        if (!result.available) {
+          setErrors(prev => ({ ...prev, username: 'Username is already taken' }));
+        } else {
+          setErrors(prev => ({ ...prev, username: null }));
+        }
+      } else {
+        logger.error('Username availability check failed', { error: result.error });
+      }
+      setCheckingUsername(false);
+    },
+    [user.uid, userProfile?.username]
+  );
+
+  // Handle username change with debounce
+  const handleUsernameChange = useCallback(
+    text => {
+      const normalizedText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      setUsername(normalizedText);
+      setErrors(prev => ({ ...prev, username: null }));
+
+      // Clear previous timeout
+      if (usernameCheckTimeout.current) {
+        clearTimeout(usernameCheckTimeout.current);
+      }
+
+      // Don't check empty or very short usernames
+      if (normalizedText.length < 3) {
+        setUsernameAvailable(true);
+        return;
+      }
+
+      // Debounce the availability check
+      usernameCheckTimeout.current = setTimeout(() => {
+        checkUsername(normalizedText);
+      }, 500);
+    },
+    [checkUsername]
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout.current) {
+        clearTimeout(usernameCheckTimeout.current);
+      }
+    };
+  }, []);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -92,6 +176,14 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   const validate = () => {
     const newErrors = {};
+
+    // Username validation
+    const usernameError = validateUsername(username.trim());
+    if (usernameError) {
+      newErrors.username = usernameError;
+    } else if (!usernameAvailable) {
+      newErrors.username = 'Username is already taken';
+    }
 
     // Display name validation using centralized utility
     const displayNameError = validateLength(displayName.trim(), 2, 50, 'Display name');
@@ -162,6 +254,7 @@ const ProfileSetupScreen = ({ navigation }) => {
 
       // Update user document with sanitized data
       const updateData = {
+        username: username.toLowerCase().trim(),
         displayName: sanitizeDisplayName(displayName.trim()),
         bio: sanitizeBio(bio.trim()),
         photoURL,
@@ -193,23 +286,74 @@ const ProfileSetupScreen = ({ navigation }) => {
     }
   };
 
-  const handleSkip = () => {
-    // Set profile as completed even if user skips
-    const skipData = {
-      displayName: userProfile?.username || 'User',
-      bio: '',
-      photoURL: null,
-      profileSetupCompleted: true,
-    };
+  const validateRequired = () => {
+    const newErrors = {};
 
-    updateUserDocumentNative(user.uid, skipData).then(result => {
+    // Username is required
+    const usernameError = validateUsername(username.trim());
+    if (usernameError) {
+      newErrors.username = usernameError;
+    } else if (!usernameAvailable) {
+      newErrors.username = 'Username is already taken';
+    }
+
+    // Display name is required
+    const displayNameError = validateLength(displayName.trim(), 2, 50, 'Display name');
+    if (displayNameError) {
+      newErrors.displayName = displayNameError;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSkip = async () => {
+    // Validate required fields (username and display name)
+    if (!validateRequired()) {
+      Alert.alert(
+        'Required Fields',
+        'Please fill in your username and display name before continuing.'
+      );
+      return;
+    }
+
+    // Check if username is still being validated
+    if (checkingUsername) {
+      Alert.alert('Please Wait', 'Still checking username availability...');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Skip with required fields only (no photo, no bio, no song)
+      const skipData = {
+        username: username.toLowerCase().trim(),
+        displayName: sanitizeDisplayName(displayName.trim()),
+        bio: '',
+        photoURL: null,
+        profileSong: null,
+        profileSetupCompleted: true,
+      };
+
+      const result = await updateUserDocumentNative(user.uid, skipData);
+
       if (result.success) {
         updateUserProfile({
           ...userProfile,
           ...skipData,
         });
+
+        // Request notification permissions in background
+        requestNotificationPermissionsAsync();
+      } else {
+        Alert.alert('Error', 'Could not save profile. Please try again.');
       }
-    });
+    } catch (error) {
+      Alert.alert('Error', error.message || 'An error occurred');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -234,7 +378,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                 />
               ) : (
                 <View style={styles.placeholderPhoto}>
-                  <Text style={styles.placeholderIcon}>📷</Text>
+                  <Ionicons name="camera-outline" size={40} color={colors.text.secondary} />
                   <Text style={styles.placeholderText}>Add Photo</Text>
                 </View>
               )}
@@ -254,10 +398,19 @@ const ProfileSetupScreen = ({ navigation }) => {
 
               <Input
                 label="Username"
-                placeholder={userProfile?.username || 'username'}
-                value={userProfile?.username || ''}
-                editable={false}
-                style={styles.disabledInput}
+                placeholder="Choose a unique username"
+                value={username}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.username}
+                rightIcon={
+                  checkingUsername
+                    ? 'loading'
+                    : usernameAvailable && username.length >= 3 && !errors.username
+                      ? 'check'
+                      : null
+                }
               />
 
               <Input
@@ -275,7 +428,12 @@ const ProfileSetupScreen = ({ navigation }) => {
                 <TouchableOpacity style={styles.songContainer} onPress={handleSongPress}>
                   {selectedSong ? (
                     <View style={styles.selectedSong}>
-                      <Text style={styles.songIcon}>🎵</Text>
+                      <Ionicons
+                        name="musical-notes"
+                        size={24}
+                        color={colors.text.primary}
+                        style={styles.songIcon}
+                      />
                       <View style={styles.songInfo}>
                         <Text style={styles.songTitle}>{selectedSong.title}</Text>
                         <Text style={styles.songArtist}>{selectedSong.artist}</Text>
@@ -283,7 +441,12 @@ const ProfileSetupScreen = ({ navigation }) => {
                     </View>
                   ) : (
                     <View style={styles.placeholderSong}>
-                      <Text style={styles.songIcon}>🎵</Text>
+                      <Ionicons
+                        name="musical-notes-outline"
+                        size={24}
+                        color={colors.text.secondary}
+                        style={styles.songIcon}
+                      />
                       <Text style={styles.placeholderSongText}>Add a Song</Text>
                     </View>
                   )}
@@ -359,11 +522,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
   },
-  placeholderIcon: {
-    fontSize: 40,
-    marginBottom: 4,
-  },
   placeholderText: {
+    marginTop: 8,
     fontSize: 14,
     color: colors.text.secondary,
   },
@@ -401,8 +561,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   songIcon: {
-    fontSize: 24,
-    marginRight: 8,
+    marginRight: 12,
   },
   placeholderSongText: {
     fontSize: 16,

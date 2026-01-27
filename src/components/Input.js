@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
 /**
@@ -14,6 +22,7 @@ import { colors } from '../constants/colors';
  * @param {string} error - Error message to display
  * @param {object} style - Additional styles
  * @param {boolean} showPasswordToggle - Show/hide password toggle icon
+ * @param {string} rightIcon - Right icon type: 'loading', 'check', or null
  */
 const Input = ({
   label,
@@ -26,6 +35,7 @@ const Input = ({
   error,
   style,
   showPasswordToggle = false,
+  rightIcon = null,
   ...props
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -58,6 +68,16 @@ const Input = ({
           >
             <Text style={styles.eyeIconText}>{isPasswordVisible ? '👁️' : '👁️‍🗨️'}</Text>
           </TouchableOpacity>
+        )}
+        {rightIcon === 'loading' && (
+          <View style={styles.rightIcon}>
+            <ActivityIndicator size="small" color={colors.text.secondary} />
+          </View>
+        )}
+        {rightIcon === 'check' && (
+          <View style={styles.rightIcon}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.status.ready} />
+          </View>
         )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -104,6 +124,11 @@ const styles = StyleSheet.create({
   },
   eyeIconText: {
     fontSize: 20,
+  },
+  rightIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
   },
 });
 
