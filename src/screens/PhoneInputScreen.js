@@ -170,7 +170,7 @@ const PhoneInputScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.logo}>LAPSE</Text>
+            <Text style={styles.logo}>REWIND</Text>
             <Text style={styles.subtitle}>Enter your phone number</Text>
             <Text style={styles.description}>
               We&apos;ll send you a verification code to confirm your number.
@@ -219,14 +219,6 @@ const PhoneInputScreen = ({ navigation }) => {
                 loading={loading}
                 disabled={loading || !phoneNumber.trim()}
               />
-
-              {/* Back to Login Link */}
-              <Text style={styles.loginText}>
-                Already have an account?{' '}
-                <Text style={styles.loginLink} onPress={handleBack}>
-                  Login
-                </Text>
-              </Text>
             </View>
           </View>
         </ScrollView>
@@ -359,17 +351,6 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     marginBottom: 0,
-  },
-  loginText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: 24,
-  },
-  loginLink: {
-    color: colors.text.primary,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
   // Modal styles
   modalOverlay: {
