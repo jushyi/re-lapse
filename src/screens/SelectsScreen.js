@@ -34,7 +34,51 @@ const SelectsScreen = ({ navigation }) => {
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
   const previewHeight = previewWidth / PREVIEW_ASPECT_RATIO;
 
-  const handlePickPhoto = async () => {
+  // Multi-select picker for preview area
+  const handlePickMultiplePhotos = async () => {
+    logger.debug('SelectsScreen: Opening multi-select photo picker');
+
+    // Check if already at max
+    if (selectedPhotos.length >= MAX_SELECTS) {
+      Alert.alert('Maximum Reached', `You can only select up to ${MAX_SELECTS} photos`);
+      return;
+    }
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library');
+      return;
+    }
+
+    const remaining = MAX_SELECTS - selectedPhotos.length;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      logger.info('SelectsScreen: Photos selected', { count: result.assets.length });
+
+      const newPhotos = result.assets.map(asset => ({
+        uri: asset.uri,
+        assetId: asset.assetId || asset.uri,
+      }));
+
+      setSelectedPhotos(prev => {
+        const combined = [...prev, ...newPhotos].slice(0, MAX_SELECTS);
+        // Set selected index to the first newly added photo
+        setSelectedIndex(prev.length);
+        return combined;
+      });
+    }
+  };
+
+  // Single photo picker for thumbnail slots
+  const handlePickSinglePhoto = async () => {
     logger.debug('SelectsScreen: Opening single photo picker');
 
     // Check if already at max
@@ -95,8 +139,8 @@ const SelectsScreen = ({ navigation }) => {
       // Photo exists at this index - show in preview
       setSelectedIndex(index);
     } else {
-      // Empty slot - open picker
-      handlePickPhoto();
+      // Empty slot - open single photo picker
+      handlePickSinglePhoto();
     }
   };
 
@@ -202,7 +246,7 @@ const SelectsScreen = ({ navigation }) => {
       <View style={styles.previewContainer}>
         <TouchableOpacity
           style={styles.previewTouchable}
-          onPress={handlePickPhoto}
+          onPress={handlePickMultiplePhotos}
           activeOpacity={0.8}
         >
           {selectedPhotos.length === 0 ? renderEmptyPreview() : renderPreviewPhoto()}
