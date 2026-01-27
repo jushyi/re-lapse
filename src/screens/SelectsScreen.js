@@ -31,8 +31,7 @@ const THUMBNAIL_GAP = 8;
 const PREVIEW_ASPECT_RATIO = 4 / 5;
 const SCREEN_PADDING = 24;
 const DELETE_BAR_HEIGHT = 48;
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const DELETE_ZONE_THRESHOLD = SCREEN_HEIGHT * 0.25; // 25% of screen height to trigger delete
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // DraggableThumbnail component for drag-to-reorder
 const DraggableThumbnail = ({
@@ -48,6 +47,7 @@ const DraggableThumbnail = ({
   isDraggingAny,
   draggingIndex,
   totalPhotos,
+  deleteZoneY,
 }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -76,13 +76,13 @@ const DraggableThumbnail = ({
     .onUpdate(event => {
       translateX.value = event.translationX;
       translateY.value = event.translationY;
-      // Check if over delete zone (dragging down)
-      const isOverDelete = event.translationY > DELETE_ZONE_THRESHOLD;
+      // Check if over delete zone using absolute Y position
+      const isOverDelete = deleteZoneY > 0 && event.absoluteY >= deleteZoneY;
       runOnJS(onDragMove)(isOverDelete);
     })
     .onEnd(event => {
-      // Check if dropping on delete zone
-      const isOverDelete = event.translationY > DELETE_ZONE_THRESHOLD;
+      // Check if dropping on delete zone using absolute Y position
+      const isOverDelete = deleteZoneY > 0 && event.absoluteY >= deleteZoneY;
       if (isOverDelete) {
         // Delete the photo
         runOnJS(onDelete)(index);
@@ -181,6 +181,15 @@ const SelectsScreen = ({ navigation }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  const [deleteZoneY, setDeleteZoneY] = useState(0);
+
+  const handleDeleteZoneLayout = useCallback(event => {
+    const { y } = event.nativeEvent.layout;
+    // Measure relative to screen
+    event.target.measureInWindow((x, windowY) => {
+      setDeleteZoneY(windowY);
+    });
+  }, []);
 
   // Calculate preview dimensions
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
@@ -407,6 +416,7 @@ const SelectsScreen = ({ navigation }) => {
           isDraggingAny={isDragging}
           draggingIndex={draggingIndex}
           totalPhotos={selectedPhotos.length}
+          deleteZoneY={deleteZoneY}
         />
       );
     }
@@ -468,7 +478,7 @@ const SelectsScreen = ({ navigation }) => {
         <View style={styles.spacer} />
 
         {/* Button Area / Delete Bar (swaps when dragging) */}
-        <View style={styles.buttonContainer}>
+        <View style={styles.buttonContainer} onLayout={handleDeleteZoneLayout}>
           {isDragging ? (
             <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
           ) : (
