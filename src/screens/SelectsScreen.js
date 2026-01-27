@@ -468,6 +468,9 @@ const SelectsScreen = ({ navigation }) => {
           <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
         </View>
 
+        {/* Spacer to push button to bottom */}
+        <View style={styles.spacer} />
+
         {/* Button Area */}
         <View style={styles.buttonContainer}>
           <Button
@@ -512,11 +515,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   previewContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
     paddingHorizontal: SCREEN_PADDING,
-    paddingTop: 8,
+    marginBottom: 8,
   },
   previewTouchable: {
     borderRadius: 12,
@@ -580,6 +581,9 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  spacer: {
+    flex: 1,
   },
   buttonContainer: {
     paddingHorizontal: SCREEN_PADDING,
