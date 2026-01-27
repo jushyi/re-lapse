@@ -332,9 +332,9 @@ const styles = StyleSheet.create({
   },
   thumbnailSection: {
     paddingVertical: 16,
+    paddingHorizontal: SCREEN_PADDING,
   },
   thumbnailContainer: {
-    paddingHorizontal: SCREEN_PADDING,
     gap: 8,
   },
   thumbnailSlot: {
