@@ -192,10 +192,15 @@ const ProfileSetupScreen = ({ navigation }) => {
       newErrors.username = 'Username is already taken';
     }
 
-    // Display name validation using centralized utility
-    const displayNameError = validateLength(displayName.trim(), 2, 50, 'Display name');
-    if (displayNameError) {
-      newErrors.displayName = displayNameError;
+    // Display name validation - check required first, then length
+    const trimmedDisplayName = displayName.trim();
+    if (!trimmedDisplayName) {
+      newErrors.displayName = 'Display name is required';
+    } else {
+      const displayNameError = validateLength(trimmedDisplayName, 2, 50, 'Display name');
+      if (displayNameError) {
+        newErrors.displayName = displayNameError;
+      }
     }
 
     // Bio validation (optional field)
