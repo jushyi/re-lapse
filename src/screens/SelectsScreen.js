@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Button, StepIndicator } from '../components';
@@ -20,6 +21,8 @@ const THUMBNAIL_SIZE = 56;
 const THUMBNAIL_GAP = 8;
 const PREVIEW_ASPECT_RATIO = 4 / 5;
 const SCREEN_PADDING = 24;
+const DELETE_BAR_HEIGHT = 48;
+const DELETE_ZONE_THRESHOLD = 40; // How far down to trigger delete zone
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // DraggableThumbnail component for drag-to-reorder
@@ -30,12 +33,15 @@ const DraggableThumbnail = ({
   onPress,
   onDragStart,
   onDragEnd,
+  onDragMove,
   onReorder,
+  onDelete,
   isDraggingAny,
   draggingIndex,
   totalPhotos,
 }) => {
   const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
   const zIndex = useSharedValue(0);
 
@@ -60,25 +66,43 @@ const DraggableThumbnail = ({
     })
     .onUpdate(event => {
       translateX.value = event.translationX;
+      translateY.value = event.translationY;
+      // Check if over delete zone (dragging down)
+      const isOverDelete = event.translationY > DELETE_ZONE_THRESHOLD;
+      runOnJS(onDragMove)(isOverDelete);
     })
-    .onEnd(() => {
-      const targetIndex = calculateTargetIndex(translateX.value);
-      if (targetIndex !== index) {
-        runOnJS(onReorder)(index, targetIndex);
+    .onEnd(event => {
+      // Check if dropping on delete zone
+      const isOverDelete = event.translationY > DELETE_ZONE_THRESHOLD;
+      if (isOverDelete) {
+        // Delete the photo
+        runOnJS(onDelete)(index);
+      } else {
+        // Reorder
+        const targetIndex = calculateTargetIndex(translateX.value);
+        if (targetIndex !== index) {
+          runOnJS(onReorder)(index, targetIndex);
+        }
       }
       translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
       scale.value = withSpring(1);
       zIndex.value = 0;
       runOnJS(onDragEnd)();
     })
     .onFinalize(() => {
       translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
       scale.value = withSpring(1);
       zIndex.value = 0;
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { scale: scale.value }],
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
     zIndex: zIndex.value,
   }));
 
@@ -105,6 +129,40 @@ const DraggableThumbnail = ({
   );
 };
 
+// DeleteBar component that appears when dragging
+const DeleteBar = ({ isVisible, isHovering }) => {
+  const translateY = useSharedValue(DELETE_BAR_HEIGHT + 20);
+  const barScale = useSharedValue(1);
+
+  React.useEffect(() => {
+    translateY.value = withTiming(isVisible ? 0 : DELETE_BAR_HEIGHT + 20, { duration: 200 });
+  }, [isVisible, translateY]);
+
+  React.useEffect(() => {
+    barScale.value = withSpring(isHovering ? 1.05 : 1);
+  }, [isHovering, barScale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { scale: barScale.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[styles.deleteBar, animatedStyle, isHovering && styles.deleteBarHovering]}
+    >
+      <Ionicons
+        name="trash-outline"
+        size={20}
+        color={colors.text.primary}
+        style={styles.deleteBarIcon}
+      />
+      <Text style={styles.deleteBarText}>
+        {isHovering ? 'Release to delete' : 'Drop to remove'}
+      </Text>
+    </Animated.View>
+  );
+};
+
 const SelectsScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
 
@@ -113,6 +171,7 @@ const SelectsScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState(null);
+  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
 
   // Calculate preview dimensions
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
@@ -250,6 +309,11 @@ const SelectsScreen = ({ navigation }) => {
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setDraggingIndex(null);
+    setIsOverDeleteZone(false);
+  }, []);
+
+  const handleDragMove = useCallback(isOverDelete => {
+    setIsOverDeleteZone(isOverDelete);
   }, []);
 
   const handleThumbnailPress = index => {
@@ -328,7 +392,9 @@ const SelectsScreen = ({ navigation }) => {
           onPress={() => handleThumbnailPress(index)}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragMove={handleDragMove}
           onReorder={handleReorder}
+          onDelete={handleRemovePhoto}
           isDraggingAny={isDragging}
           draggingIndex={draggingIndex}
           totalPhotos={selectedPhotos.length}
@@ -382,6 +448,11 @@ const SelectsScreen = ({ navigation }) => {
           <View style={styles.thumbnailContainer}>
             {Array.from({ length: MAX_SELECTS }).map((_, index) => renderThumbnailSlot(index))}
           </View>
+        </View>
+
+        {/* Delete Bar */}
+        <View style={styles.deleteBarContainer}>
+          <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
         </View>
 
         {/* Button Area */}
@@ -500,6 +571,32 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: SCREEN_PADDING,
     paddingBottom: 16,
+  },
+  deleteBarContainer: {
+    paddingHorizontal: SCREEN_PADDING,
+    overflow: 'hidden',
+    height: DELETE_BAR_HEIGHT + 8,
+  },
+  deleteBar: {
+    height: DELETE_BAR_HEIGHT,
+    backgroundColor: colors.status.danger,
+    opacity: 0.9,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBarHovering: {
+    backgroundColor: '#FF6666',
+    opacity: 1,
+  },
+  deleteBarIcon: {
+    marginRight: 8,
+  },
+  deleteBarText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
