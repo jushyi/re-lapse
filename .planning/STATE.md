@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 4 of 11 (Profile Creation Onboarding)
+Phase: 4 of 10 (Profile Creation Onboarding)
 Plan: 0 of ? in current phase
 Status: Not planned yet
 Last activity: 2026-01-27 — Completed Phase 3.1 (03.1-01-PLAN.md)
 
-Progress: █████░░░░░ 50%
+Progress: ████░░░░░░ 40%
 
 ## Performance Metrics
 
@@ -73,11 +73,7 @@ None yet.
 - Phase 3.1 inserted after Phase 3: Auth Input Field Fixes (URGENT)
   - Phone number field backspace gets stuck on parenthesis after 3 digits
   - Profile setup inputs show auto-filled letters instead of just placeholder hints
-- Phase 10 added: Selects UI Enhancements
-  - Refactor Selects UI for improved user experience
-  - Add drag-and-drop photo reordering functionality
-  - Increase max selectable photos to 10
-- Phase 11 added: Empty Feed State Change UI Change
+- Phase 10 added: Empty Feed State Change UI Change
   - UI improvements for empty feed state transitions
 
 ## Session Continuity

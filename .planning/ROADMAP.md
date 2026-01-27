@@ -27,8 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
-- [ ] **Phase 10: Selects UI Enhancements** - Refactor UI, add photo reordering, change max to 10 photos
-- [ ] **Phase 11: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
+- [ ] **Phase 10: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
 
 ## Phase Details
 
@@ -150,11 +149,11 @@ Plans:
 
 - [ ] 09-01: TBD during planning
 
-### Phase 10: Selects UI Enhancements
+### Phase 10: Empty Feed State Change UI Change
 
-**Goal**: Refactor Selects UI with photo reordering capability and increase max photo limit to 10
-**Depends on**: Phase 6 (Selects Banner)
-**Research**: Unlikely (React Native drag-and-drop patterns)
+**Goal**: Implement UI improvements for empty feed state transitions
+**Depends on**: Phase 9
+**Research**: Unlikely (internal UI patterns)
 **Plans**: TBD
 
 Plans:
@@ -163,29 +162,12 @@ Plans:
 
 **Details:**
 
-1. Refactor Selects UI for improved user experience
-2. Add drag-and-drop photo reordering functionality
-3. Increase maximum selectable photos from current limit to 10
-
-### Phase 11: Empty Feed State Change UI Change
-
-**Goal**: Implement UI improvements for empty feed state transitions
-**Depends on**: Phase 10
-**Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
-
-Plans:
-
-- [ ] 11-01: TBD (run /gsd:plan-phase 11 to break down)
-
-**Details:**
-
 [To be added during planning]
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase                          | Plans Complete | Status      | Completed  |
 | ------------------------------ | -------------- | ----------- | ---------- |
@@ -199,5 +181,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 7. Profile Song Scaffold       | 0/?            | Not started | -          |
 | 8. User Albums Display         | 0/?            | Not started | -          |
 | 9. Monthly Albums              | 0/?            | Not started | -          |
-| 10. Selects UI Enhancements    | 0/?            | Not started | -          |
-| 11. Empty Feed State UI Change | 0/?            | Not started | -          |
+| 10. Empty Feed State UI Change | 0/?            | Not started | -          |
