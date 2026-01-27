@@ -31,8 +31,8 @@ const THUMBNAIL_GAP = 8;
 const PREVIEW_ASPECT_RATIO = 4 / 5;
 const SCREEN_PADDING = 24;
 const DELETE_BAR_HEIGHT = 48;
-const DELETE_ZONE_THRESHOLD = 120; // How far down to trigger delete zone (reaches button area)
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DELETE_ZONE_THRESHOLD = SCREEN_HEIGHT * 0.25; // 25% of screen height to trigger delete
 
 // DraggableThumbnail component for drag-to-reorder
 const DraggableThumbnail = ({
