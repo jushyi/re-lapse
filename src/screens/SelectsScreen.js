@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { Button, StepIndicator } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
@@ -19,9 +17,93 @@ import logger from '../utils/logger';
 
 const MAX_SELECTS = 10;
 const THUMBNAIL_SIZE = 56;
+const THUMBNAIL_GAP = 8;
 const PREVIEW_ASPECT_RATIO = 4 / 5;
 const SCREEN_PADDING = 24;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// DraggableThumbnail component for drag-to-reorder
+const DraggableThumbnail = ({
+  photo,
+  index,
+  isSelected,
+  onPress,
+  onDragStart,
+  onDragEnd,
+  onReorder,
+  isDraggingAny,
+  draggingIndex,
+  totalPhotos,
+}) => {
+  const translateX = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const zIndex = useSharedValue(0);
+
+  const calculateTargetIndex = useCallback(
+    currentX => {
+      'worklet';
+      const movement = currentX / (THUMBNAIL_SIZE + THUMBNAIL_GAP);
+      let targetIndex = index + Math.round(movement);
+      // Clamp to valid range
+      targetIndex = Math.max(0, Math.min(targetIndex, totalPhotos - 1));
+      return targetIndex;
+    },
+    [index, totalPhotos]
+  );
+
+  const gesture = Gesture.Pan()
+    .activateAfterLongPress(200)
+    .onStart(() => {
+      scale.value = withSpring(1.1);
+      zIndex.value = 1000;
+      runOnJS(onDragStart)(index);
+    })
+    .onUpdate(event => {
+      translateX.value = event.translationX;
+    })
+    .onEnd(() => {
+      const targetIndex = calculateTargetIndex(translateX.value);
+      if (targetIndex !== index) {
+        runOnJS(onReorder)(index, targetIndex);
+      }
+      translateX.value = withSpring(0);
+      scale.value = withSpring(1);
+      zIndex.value = 0;
+      runOnJS(onDragEnd)();
+    })
+    .onFinalize(() => {
+      translateX.value = withSpring(0);
+      scale.value = withSpring(1);
+      zIndex.value = 0;
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { scale: scale.value }],
+    zIndex: zIndex.value,
+  }));
+
+  const opacityStyle = useAnimatedStyle(() => ({
+    opacity: isDraggingAny && draggingIndex !== index ? 0.6 : 1,
+  }));
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={[
+          styles.thumbnailSlot,
+          styles.thumbnailFilled,
+          animatedStyle,
+          opacityStyle,
+          isSelected && styles.thumbnailSelected,
+        ]}
+      >
+        <TouchableOpacity style={styles.thumbnailTouchable} onPress={onPress} activeOpacity={0.7}>
+          <Image source={{ uri: photo.uri }} style={styles.thumbnailImage} />
+        </TouchableOpacity>
+      </Animated.View>
+    </GestureDetector>
+  );
+};
 
 const SelectsScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
@@ -29,6 +111,8 @@ const SelectsScreen = ({ navigation }) => {
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggingIndex, setDraggingIndex] = useState(null);
 
   // Calculate preview dimensions
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
@@ -118,21 +202,55 @@ const SelectsScreen = ({ navigation }) => {
     }
   };
 
-  const handleRemovePhoto = index => {
-    logger.debug('SelectsScreen: Removing photo', { index });
-    setSelectedPhotos(prev => {
-      const newPhotos = prev.filter((_, i) => i !== index);
-      // Adjust selectedIndex if needed
-      if (newPhotos.length === 0) {
-        setSelectedIndex(0);
-      } else if (selectedIndex >= newPhotos.length) {
-        setSelectedIndex(newPhotos.length - 1);
-      } else if (selectedIndex > index) {
+  const handleRemovePhoto = useCallback(
+    index => {
+      logger.debug('SelectsScreen: Removing photo', { index });
+      setSelectedPhotos(prev => {
+        const newPhotos = prev.filter((_, i) => i !== index);
+        // Adjust selectedIndex if needed
+        if (newPhotos.length === 0) {
+          setSelectedIndex(0);
+        } else if (selectedIndex >= newPhotos.length) {
+          setSelectedIndex(newPhotos.length - 1);
+        } else if (selectedIndex > index) {
+          setSelectedIndex(selectedIndex - 1);
+        }
+        return newPhotos;
+      });
+    },
+    [selectedIndex]
+  );
+
+  const handleReorder = useCallback(
+    (fromIndex, toIndex) => {
+      logger.debug('SelectsScreen: Reordering photo', { fromIndex, toIndex });
+      setSelectedPhotos(prev => {
+        const newPhotos = [...prev];
+        const [movedItem] = newPhotos.splice(fromIndex, 1);
+        newPhotos.splice(toIndex, 0, movedItem);
+        return newPhotos;
+      });
+      // Update selectedIndex if the moved item was selected or affected range
+      if (selectedIndex === fromIndex) {
+        setSelectedIndex(toIndex);
+      } else if (fromIndex < selectedIndex && toIndex >= selectedIndex) {
         setSelectedIndex(selectedIndex - 1);
+      } else if (fromIndex > selectedIndex && toIndex <= selectedIndex) {
+        setSelectedIndex(selectedIndex + 1);
       }
-      return newPhotos;
-    });
-  };
+    },
+    [selectedIndex]
+  );
+
+  const handleDragStart = useCallback(index => {
+    setIsDragging(true);
+    setDraggingIndex(index);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    setDraggingIndex(null);
+  }, []);
 
   const handleThumbnailPress = index => {
     if (index < selectedPhotos.length) {
@@ -200,88 +318,91 @@ const SelectsScreen = ({ navigation }) => {
     const hasPhoto = index < selectedPhotos.length;
     const isSelected = hasPhoto && index === selectedIndex;
 
+    if (hasPhoto) {
+      return (
+        <DraggableThumbnail
+          key={index}
+          photo={selectedPhotos[index]}
+          index={index}
+          isSelected={isSelected}
+          onPress={() => handleThumbnailPress(index)}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onReorder={handleReorder}
+          isDraggingAny={isDragging}
+          draggingIndex={draggingIndex}
+          totalPhotos={selectedPhotos.length}
+        />
+      );
+    }
+
     return (
       <TouchableOpacity
         key={index}
-        style={[
-          styles.thumbnailSlot,
-          hasPhoto ? styles.thumbnailFilled : styles.thumbnailEmpty,
-          isSelected && styles.thumbnailSelected,
-        ]}
+        style={[styles.thumbnailSlot, styles.thumbnailEmpty]}
         onPress={() => handleThumbnailPress(index)}
         activeOpacity={0.7}
       >
-        {hasPhoto ? (
-          <>
-            <Image source={{ uri: selectedPhotos[index].uri }} style={styles.thumbnailImage} />
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => handleRemovePhoto(index)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="close-circle" size={20} color={colors.status.danger} />
-            </TouchableOpacity>
-          </>
-        ) : (
-          <Ionicons name="add" size={24} color={colors.text.secondary} />
-        )}
+        <Ionicons name="add" size={24} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Step Indicator */}
-      <StepIndicator currentStep={2} totalSteps={2} style={styles.stepIndicator} />
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        {/* Step Indicator */}
+        <StepIndicator currentStep={2} totalSteps={2} style={styles.stepIndicator} />
 
-      {/* Title Section */}
-      <View style={styles.titleSection}>
-        <Text style={styles.title}>Pick Your Highlights</Text>
-        <Text style={styles.subtitle}>
-          Choose up to {MAX_SELECTS} photos to highlight on your profile
-        </Text>
-      </View>
+        {/* Title Section */}
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>Pick Your Highlights</Text>
+          <Text style={styles.subtitle}>
+            Choose up to {MAX_SELECTS} photos to highlight on your profile
+          </Text>
+        </View>
 
-      {/* Preview Area */}
-      <View style={styles.previewContainer}>
-        {selectedPhotos.length === 0 ? (
-          <TouchableOpacity
-            style={styles.previewTouchable}
-            onPress={handlePickMultiplePhotos}
-            activeOpacity={0.8}
-          >
-            {renderEmptyPreview()}
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.previewTouchable}>{renderPreviewPhoto()}</View>
-        )}
-      </View>
+        {/* Preview Area */}
+        <View style={styles.previewContainer}>
+          {selectedPhotos.length === 0 ? (
+            <TouchableOpacity
+              style={styles.previewTouchable}
+              onPress={handlePickMultiplePhotos}
+              activeOpacity={0.8}
+            >
+              {renderEmptyPreview()}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.previewTouchable}>{renderPreviewPhoto()}</View>
+          )}
+        </View>
 
-      {/* Thumbnail Strip */}
-      <View style={styles.thumbnailSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.thumbnailContainer}
-        >
-          {Array.from({ length: MAX_SELECTS }).map((_, index) => renderThumbnailSlot(index))}
-        </ScrollView>
-      </View>
+        {/* Thumbnail Strip */}
+        <View style={styles.thumbnailSection}>
+          <View style={styles.thumbnailContainer}>
+            {Array.from({ length: MAX_SELECTS }).map((_, index) => renderThumbnailSlot(index))}
+          </View>
+        </View>
 
-      {/* Button Area */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Complete Profile Setup"
-          variant="primary"
-          onPress={handleComplete}
-          loading={uploading}
-        />
-      </View>
-    </SafeAreaView>
+        {/* Button Area */}
+        <View style={styles.buttonContainer}>
+          <Button
+            title="Complete Profile Setup"
+            variant="primary"
+            onPress={handleComplete}
+            loading={uploading}
+          />
+        </View>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -339,7 +460,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
   },
   thumbnailContainer: {
-    gap: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THUMBNAIL_GAP,
   },
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,
@@ -368,12 +491,11 @@ const styles = StyleSheet.create({
     height: THUMBNAIL_SIZE,
     borderRadius: 8,
   },
-  removeButton: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.background.primary,
-    borderRadius: 10,
+  thumbnailTouchable: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   buttonContainer: {
     paddingHorizontal: SCREEN_PADDING,
