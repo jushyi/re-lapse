@@ -587,7 +587,8 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: SCREEN_PADDING,
-    paddingBottom: 16,
+    paddingBottom: 24,
+    paddingTop: 8,
   },
   deleteBarContainer: {
     paddingHorizontal: SCREEN_PADDING,
