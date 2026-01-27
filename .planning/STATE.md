@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 10 (Profile Creation Onboarding)
-Plan: 0 of ? in current phase
-Status: Not planned yet
-Last activity: 2026-01-27 — Completed Phase 3.1 (03.1-01-PLAN.md)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-27 — Completed 04-01-PLAN.md
 
-Progress: ████░░░░░░ 40%
+Progress: █████░░░░░ 45%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 5
-- Average duration: 6.4 min
-- Total execution time: 32 min
+- Total plans completed: 6
+- Average duration: 7.3 min
+- Total execution time: 44 min
 
 **By Phase:**
 
@@ -32,11 +32,12 @@ Progress: ████░░░░░░ 40%
 | 2     | 1     | 5 min  | 5 min    |
 | 3     | 2     | 20 min | 10 min   |
 | 3.1   | 1     | 5 min  | 5 min    |
+| 4     | 1     | 12 min | 12 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 5 min, 12 min, 8 min, 5 min
-- Trend: Stable (Phase 3.1 complete)
+- Last 5 plans: 12 min, 8 min, 5 min, 12 min
+- Trend: Stable (Phase 4 started)
 
 ## Accumulated Context
 
@@ -45,20 +46,22 @@ Progress: ████░░░░░░ 40%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-| Phase | Decision                                      | Rationale                                                     |
-| ----- | --------------------------------------------- | ------------------------------------------------------------- |
-| 1     | Use colors.js constants throughout components | Ensures consistency and maintainability for dark theme        |
-| 1     | AuthCodeInput uses hidden TextInput pattern   | Better UX while maintaining keyboard support and iOS autofill |
-| 2     | Use AuthCodeInput's onComplete callback       | Eliminates need for manual auto-submit useEffect              |
-| 2     | Updated branding from LAPSE to REWIND         | Matches current app identity                                  |
-| 3     | Use Ionicons instead of emojis                | Consistency with other screens using Ionicons                 |
-| 3     | Debounce username check at 500ms              | Balance responsiveness with Firestore query efficiency        |
-| 3     | Require username/display name on skip         | Essential fields even when skipping optional ones             |
-| 3     | Conditional nav rendering over manual replace | Navigator branches auto-transition on auth state change       |
-| 3     | Store photo URIs directly in selects array    | Simpler MVP; future could upload to Firebase Storage          |
-| 3.1   | Text length comparison for deletion detection | Catches formatting char deletion, not just digits             |
-| 3.1   | Show raw digits when deleting                 | Prevents cursor trap on parentheses during phone correction   |
-| 3.1   | Detect defaults in ProfileSetupScreen         | Keep AuthContext defaults for DB uniqueness, detect in UI     |
+| Phase | Decision                                           | Rationale                                                     |
+| ----- | -------------------------------------------------- | ------------------------------------------------------------- |
+| 1     | Use colors.js constants throughout components      | Ensures consistency and maintainability for dark theme        |
+| 1     | AuthCodeInput uses hidden TextInput pattern        | Better UX while maintaining keyboard support and iOS autofill |
+| 2     | Use AuthCodeInput's onComplete callback            | Eliminates need for manual auto-submit useEffect              |
+| 2     | Updated branding from LAPSE to REWIND              | Matches current app identity                                  |
+| 3     | Use Ionicons instead of emojis                     | Consistency with other screens using Ionicons                 |
+| 3     | Debounce username check at 500ms                   | Balance responsiveness with Firestore query efficiency        |
+| 3     | Require username/display name on skip              | Essential fields even when skipping optional ones             |
+| 3     | Conditional nav rendering over manual replace      | Navigator branches auto-transition on auth state change       |
+| 3     | Store photo URIs directly in selects array         | Simpler MVP; future could upload to Firebase Storage          |
+| 3.1   | Text length comparison for deletion detection      | Catches formatting char deletion, not just digits             |
+| 3.1   | Show raw digits when deleting                      | Prevents cursor trap on parentheses during phone correction   |
+| 3.1   | Detect defaults in ProfileSetupScreen              | Keep AuthContext defaults for DB uniqueness, detect in UI     |
+| 4     | Single "Next step" button replaces Complete + Skip | Cleaner UX, users must complete required fields               |
+| 4     | Step indicator with dots and "Step X of Y" text    | Clear progress indication for multi-screen onboarding         |
 
 ### Deferred Issues
 
@@ -79,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Phase 3.1 complete (auth input fixes done)
+Stopped at: Completed 04-01-PLAN.md (Step Indicator + ProfileSetupScreen UX)
 Resume file: None
