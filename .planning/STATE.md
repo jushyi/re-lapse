@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4.1 of 13 (Drag-Reorder Visual Feedback)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 — Completed 04.1-01-PLAN.md
+Plan: 1 of 1 in current phase (+ FIX plan)
+Status: Phase complete, UAT issues resolved
+Last activity: 2026-01-27 — Completed 04.1-01-FIX.md (UAT fixes)
 
 Progress: ██████░░░░ 65%
 
@@ -20,9 +20,9 @@ Progress: ██████░░░░ 65%
 
 **Velocity:**
 
-- Total plans completed: 10
-- Average duration: 13.1 min
-- Total execution time: 131 min
+- Total plans completed: 11 (including 1 FIX plan)
+- Average duration: 14.2 min
+- Total execution time: 156 min
 
 **By Phase:**
 
@@ -33,12 +33,12 @@ Progress: ██████░░░░ 65%
 | 3     | 2     | 20 min | 10 min   |
 | 3.1   | 1     | 5 min  | 5 min    |
 | 4     | 4     | 54 min | 13.5 min |
-| 4.1   | 1     | 45 min | 45 min   |
+| 4.1   | 2     | 70 min | 35 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 12 min, 15 min, 15 min, 12 min, 45 min
-- Trend: Phase 4.1 took longer due to animation debugging
+- Last 5 plans: 15 min, 15 min, 12 min, 45 min, 25 min
+- Trend: Phase 4.1 took longer due to animation debugging and UAT fixes
 
 ## Accumulated Context
 
@@ -71,6 +71,11 @@ Recent decisions affecting current work:
 | 4.1   | Animate dragged item to target before array update   | Prevents visual flash by completing animation before React re-render |
 | 4.1   | Use photoId tracking to detect slot content changes  | Allows clean animation reset when photo at slot changes              |
 | 4.1   | withTiming callback for post-animation state updates | Sequences visual animation completion before triggering reorder      |
+| 4.1   | LayoutAnimation for array state transitions          | Smooth visual transitions when reordering/deleting photos            |
+| 4.1   | photoId as React key instead of index                | Stable component identity prevents content flash during reorder      |
+| 4.1   | withDelay(16ms) + withTiming(200ms) for reset        | Syncs transform reset with LayoutAnimation timing                    |
+| 4.1   | Duplicate photo validation in pickers                | Prevents React key collision from same photo selected twice          |
+| 4.1   | Select dragged photo in preview during drag          | User sees which photo they're manipulating                           |
 
 ### Deferred Issues
 
@@ -100,5 +105,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 04.1-01-PLAN.md (Drag-Reorder Visual Feedback) - Phase 4.1 complete
+Stopped at: Completed 04.1-01-FIX.md (UAT issues resolved) - Phase 4.1 fully complete
 Resume file: None
