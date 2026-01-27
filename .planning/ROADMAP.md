@@ -56,11 +56,12 @@ Plans:
 **Goal**: Refactor signup into multi-step flow with consistent dark styling and clear progression
 **Depends on**: Phase 1
 **Research**: Unlikely (internal UI refactor)
-**Plans**: TBD
+**Plans**: 0/2 complete
 
 Plans:
 
-- [ ] 03-01: TBD during planning
+- [ ] 03-01: Add profile song section to ProfileSetupScreen
+- [ ] 03-02: Create SelectsScreen + update navigation flow
 
 ### Phase 4: Profile Creation Onboarding
 
@@ -139,7 +140,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | ------------------------------ | -------------- | ----------- | ---------- |
 | 1. Auth Shared Components      | 1/1            | Complete    | 2026-01-27 |
 | 2. Login Screen Refactor       | 1/1            | Complete    | 2026-01-27 |
-| 3. Signup Flow Refactor        | 0/?            | Not started | -          |
+| 3. Signup Flow Refactor        | 0/2            | Not started | -          |
 | 4. Profile Creation Onboarding | 0/?            | Not started | -          |
 | 5. Profile Screen Layout       | 0/?            | Not started | -          |
 | 6. Selects Banner              | 0/?            | Not started | -          |
