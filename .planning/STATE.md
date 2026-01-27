@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 37.1 of 39 (Darkroom Visual Feedback)
+Phase: 36.1 of 39 (Comment Sheet Fullscreen Expand)
 Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-01-27 - Completed 37.1-01-PLAN.md (gradient state indicators)
+Last activity: 2026-01-27 - Completed 36.1-01-PLAN.md (expand/collapse gesture)
 
-Progress: █████████░ 87%
+Progress: █████████░ 88%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 132 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 32 in v0.7)
+- Total plans completed: 133 (8 in v0.1 + 8 in v0.2 + 4 in v0.3 + 17 in v0.4 + 37 in v0.5 + 26 in v0.6 + 33 in v0.7)
 - Average duration: 16 min
-- Total execution time: 22.8 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 236m v0.7)
+- Total execution time: 23.1 hours (4.3h v0.1 + 2.1h v0.2 + 0.7h v0.3 + 1.4h v0.4 + 5.8h v0.5 + 4.6h v0.6 + 254m v0.7)
 
 **By Milestone:**
 
@@ -181,6 +181,9 @@ All decisions documented in PROJECT.md Key Decisions table with outcomes.
 | 36-03-FIX-5   | Unified TouchableWithoutFeedback for both modes       | Feed mode needs touch tracking for panResponder swipe-to-close                       |
 | 37.1-01       | Keep press-and-hold over swipe-to-reveal              | User tested swipe, preferred original hold interaction                               |
 | 37.1-01       | Gradient on both card button AND hold button          | Visual consistency across darkroom UI                                                |
+| 36.1-01       | 85% expanded height (not 95%)                         | User feedback: 95% went into notch, hard to grab handle                              |
+| 36.1-01       | Nested Animated.Views for driver separation           | JS driver (height) and native driver (transforms) can't mix on same view             |
+| 36.1-01       | isExpandedRef for PanResponder closure                | Ref provides synchronous state access inside PanResponder                            |
 
 ### Deferred Issues
 

@@ -279,11 +279,11 @@ Plans:
 **Goal**: Swipe up on comment sheet handle to expand comments to full screen for viewing more comments
 **Depends on**: Phase 36
 **Research**: Unlikely (UI enhancement)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 36.1-01: TBD
+- [x] 36.1-01: Bidirectional expand/collapse gesture with velocity-based snapping
 
 #### Phase 37: Profile Placeholder
 
@@ -372,7 +372,7 @@ Plans:
 | 35.4 Stories Feed Data & Resume Fix (INSERTED) | v0.7      | 1/1 + FIX      | Complete    | 2026-01-26 |
 | 35.5 Feed Layout Polish (INSERTED)             | v0.7      | 1/1            | Complete    | 2026-01-26 |
 | 36. Comments Feature                           | v0.7      | 6/6 + 5 FIX    | Complete    | 2026-01-26 |
-| 36.1 Comment Sheet Fullscreen (INSERTED)       | v0.7      | 0/?            | Not started | -          |
+| 36.1 Comment Sheet Fullscreen (INSERTED)       | v0.7      | 1/1            | Complete    | 2026-01-27 |
 | 37. Profile Placeholder                        | v0.7      | 1/1            | Complete    | 2026-01-26 |
 | 37.1 Darkroom Visual Feedback (INSERTED)       | v0.7      | 1/1            | Complete    | 2026-01-27 |
 | 37.2 Stories Flash & Feed Skeleton (INSERTED)  | v0.7      | 0/?            | Not started | -          |
