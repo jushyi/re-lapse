@@ -463,13 +463,15 @@ const SelectsScreen = ({ navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Delete Bar */}
-        <View style={styles.deleteBarContainer}>
-          <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
-        </View>
-
         {/* Spacer to push button to bottom */}
         <View style={styles.spacer} />
+
+        {/* Delete Bar - absolute positioned overlay */}
+        {isDragging && (
+          <View style={styles.deleteBarContainer}>
+            <DeleteBar isVisible={isDragging} isHovering={isOverDeleteZone} />
+          </View>
+        )}
 
         {/* Button Area */}
         <View style={styles.buttonContainer}>
@@ -591,9 +593,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   deleteBarContainer: {
-    paddingHorizontal: SCREEN_PADDING,
-    overflow: 'hidden',
-    height: DELETE_BAR_HEIGHT + 8,
+    position: 'absolute',
+    bottom: 100,
+    left: SCREEN_PADDING,
+    right: SCREEN_PADDING,
   },
   deleteBar: {
     height: DELETE_BAR_HEIGHT,
