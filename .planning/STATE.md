@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 3 — Signup Flow Refactor (Complete)
+**Current focus:** Phase 3.1 — Auth Input Field Fixes (INSERTED - urgent)
 
 ## Current Position
 
-Phase: 3 of 9 (Signup Flow Refactor)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 — Completed 03-02-PLAN.md
+Phase: 3.1 of 10 (Auth Input Field Fixes)
+Plan: 0 of 1 in current phase
+Status: Planned, ready for execution
+Last activity: 2026-01-27 — Created Phase 3.1 plan (03.1-01-PLAN.md)
 
 Progress: ████░░░░░░ 44%
 
@@ -63,6 +63,16 @@ None yet.
 ### Blockers/Concerns
 
 None yet.
+
+### Roadmap Evolution
+
+- Phase 3.1 inserted after Phase 3: Auth Input Field Fixes (URGENT)
+  - Phone number field backspace gets stuck on parenthesis after 3 digits
+  - Profile setup inputs show auto-filled letters instead of just placeholder hints
+- Phase 10 added: Selects UI Enhancements
+  - Refactor Selects UI for improved user experience
+  - Add drag-and-drop photo reordering functionality
+  - Increase max selectable photos to 10
 
 ## Session Continuity
 

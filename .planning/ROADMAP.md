@@ -20,12 +20,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Auth Shared Components** - Dark theme foundation, shared styles and reusable components
 - [x] **Phase 2: Login Screen Refactor** - Full dark theme application, improved UX
 - [x] **Phase 3: Signup Flow Refactor** - Multi-step signup with consistent dark styling
+- [ ] **Phase 3.1: Auth Input Field Fixes** - Phone number backspace fix + profile input placeholder cleanup (INSERTED)
 - [ ] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
 - [ ] **Phase 5: Profile Screen Layout** - Core layout and profile info display
 - [ ] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
+- [ ] **Phase 10: Selects UI Enhancements** - Refactor UI, add photo reordering, change max to 10 photos
 
 ## Phase Details
 
@@ -63,10 +65,26 @@ Plans:
 - [x] 03-01: Add profile song section to ProfileSetupScreen
 - [x] 03-02: Create SelectsScreen + update navigation flow
 
+### Phase 3.1: Auth Input Field Fixes (INSERTED)
+
+**Goal**: Fix phone number field backspace issue with parenthesis formatting and remove auto-filled letters from profile setup inputs (keep only placeholder hints)
+**Depends on**: Phase 3
+**Research**: Unlikely (UI bug fixes)
+**Plans**: 0/1
+
+Plans:
+
+- [ ] 03.1-01: Fix phone backspace + profile input initialization
+
+**Details:**
+
+1. Phone number field: Erasing after entering 3 digits gets stuck on parenthesis that gets auto-generated, making it hard to correct the number
+2. Profile setup screen: Remove auto-filled letters in input boxes, only show placeholder hints
+
 ### Phase 4: Profile Creation Onboarding
 
 **Goal**: Extend profile setup to capture full profile data (username, display name, photo, bio, Selects selection, song selection)
-**Depends on**: Phase 3
+**Depends on**: Phase 3.1
 **Research**: Unlikely (extending existing ProfileSetupScreen patterns)
 **Plans**: TBD
 
@@ -131,19 +149,38 @@ Plans:
 
 - [ ] 09-01: TBD during planning
 
+### Phase 10: Selects UI Enhancements
+
+**Goal**: Refactor Selects UI with photo reordering capability and increase max photo limit to 10
+**Depends on**: Phase 6 (Selects Banner)
+**Research**: Unlikely (React Native drag-and-drop patterns)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 10-01: TBD (run /gsd:plan-phase 10 to break down)
+
+**Details:**
+
+1. Refactor Selects UI for improved user experience
+2. Add drag-and-drop photo reordering functionality
+3. Increase maximum selectable photos from current limit to 10
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase                          | Plans Complete | Status      | Completed  |
 | ------------------------------ | -------------- | ----------- | ---------- |
 | 1. Auth Shared Components      | 1/1            | Complete    | 2026-01-27 |
 | 2. Login Screen Refactor       | 1/1            | Complete    | 2026-01-27 |
 | 3. Signup Flow Refactor        | 2/2            | Complete    | 2026-01-27 |
+| 3.1 Auth Input Field Fixes     | 0/1            | Planned     | -          |
 | 4. Profile Creation Onboarding | 0/?            | Not started | -          |
 | 5. Profile Screen Layout       | 0/?            | Not started | -          |
 | 6. Selects Banner              | 0/?            | Not started | -          |
 | 7. Profile Song Scaffold       | 0/?            | Not started | -          |
 | 8. User Albums Display         | 0/?            | Not started | -          |
 | 9. Monthly Albums              | 0/?            | Not started | -          |
+| 10. Selects UI Enhancements    | 0/?            | Not started | -          |
