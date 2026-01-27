@@ -129,9 +129,13 @@ export const AuthProvider = ({ children }) => {
           error: profileResult.error,
         });
         if (profileResult.success) {
-          logger.info('AuthContext: User profile loaded - checking profileSetupCompleted', {
+          logger.info('AuthContext: User profile loaded - checking setup status', {
             profileSetupCompleted: profileResult.data?.profileSetupCompleted,
-            willShowProfileSetup: profileResult.data?.profileSetupCompleted === false,
+            selectsCompleted: profileResult.data?.selectsCompleted,
+            willShowProfileSetup: profileResult.data?.profileSetupCompleted !== true,
+            willShowSelects:
+              profileResult.data?.profileSetupCompleted === true &&
+              profileResult.data?.selectsCompleted !== true,
           });
           setUserProfile(profileResult.data);
         } else {
@@ -147,6 +151,7 @@ export const AuthProvider = ({ children }) => {
             bio: '',
             friends: [],
             profileSetupCompleted: false,
+            selectsCompleted: false,
           };
 
           const createResult = await createUserDocumentNative(firebaseUser.uid, userDoc);

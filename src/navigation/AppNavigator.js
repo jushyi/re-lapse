@@ -12,6 +12,7 @@ import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import PhoneInputScreen from '../screens/PhoneInputScreen';
 import VerificationScreen from '../screens/VerificationScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+import SelectsScreen from '../screens/SelectsScreen';
 
 // Import main app screens
 import FeedScreen from '../screens/FeedScreen';
@@ -248,6 +249,7 @@ const linking = {
       PhoneInput: 'phone-input',
       Verification: 'verification',
       ProfileSetup: 'profile-setup',
+      Selects: 'selects',
     },
   },
 };
@@ -298,6 +300,13 @@ const AppNavigator = () => {
   const needsProfileSetup =
     isAuthenticated && userProfile && userProfile.profileSetupCompleted !== true;
 
+  // Show Selects if user completed profile setup but hasn't completed selects
+  const needsSelects =
+    isAuthenticated &&
+    userProfile &&
+    userProfile.profileSetupCompleted === true &&
+    userProfile.selectsCompleted !== true;
+
   // Always wrap with PhoneAuthProvider to share confirmation ref
   // between PhoneInputScreen/VerificationScreen during auth, and for
   // DeleteAccountScreen re-authentication flow when already logged in
@@ -323,6 +332,9 @@ const AppNavigator = () => {
           ) : needsProfileSetup ? (
             // Profile Setup - User logged in but needs to complete profile
             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+          ) : needsSelects ? (
+            // Selects - User completed profile but needs to pick selects
+            <Stack.Screen name="Selects" component={SelectsScreen} />
           ) : (
             // Main App - User fully authenticated and profile complete
             <>
