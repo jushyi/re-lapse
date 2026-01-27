@@ -151,10 +151,11 @@ export const styles = StyleSheet.create({
   },
   // Darkroom card stack container - holds fanned cards
   darkroomCardContainer: {
-    width: CARD_WIDTH + 20, // Extra space for fanning offset (increased for larger cards)
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH + 40, // Extra space for fanning offset + glow
+    height: CARD_HEIGHT + 32, // Extra space for glow
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
   darkroomCardDisabled: {
     opacity: 0.4,
@@ -164,15 +165,14 @@ export const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 8,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    // Card shadow for depth
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    // White glow effect emanating from card edges
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   // Gradient background for the card (fills wrapper)
   darkroomCardGradient: {
@@ -188,8 +188,8 @@ export const styles = StyleSheet.create({
   },
   // Invisible spacer to balance darkroom button and center capture button
   footerSpacer: {
-    width: CARD_WIDTH + 20, // Match container width
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH + 40, // Match container width
+    height: CARD_HEIGHT + 32, // Match container height
     opacity: 0,
   },
   // Flash auto indicator (small letter on button)

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { CameraView } from 'expo-camera';
 
-import Svg, { Path, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
 import useCamera, {
   BASE_ROTATION_PER_CARD,
@@ -76,31 +76,57 @@ const FlipCameraIcon = ({ color = '#FFFFFF' }) => (
 const CARD_WIDTH = 63;
 const CARD_HEIGHT = 84;
 
-// Radial gradient card background - center-out burst effect
-const RadialGradientCard = ({ centerColor, edgeColor, children }) => (
-  <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT, position: 'relative' }}>
-    <Svg width={CARD_WIDTH} height={CARD_HEIGHT} style={{ position: 'absolute' }}>
-      <Defs>
-        <RadialGradient id="cardGrad" cx="50%" cy="50%" rx="95%" ry="95%">
-          <Stop offset="0%" stopColor={centerColor} />
-          <Stop offset="40%" stopColor={centerColor} />
-          <Stop offset="100%" stopColor={edgeColor} />
-        </RadialGradient>
-      </Defs>
-      <Rect x="0" y="0" width={CARD_WIDTH} height={CARD_HEIGHT} fill="url(#cardGrad)" />
-    </Svg>
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>{children}</View>
-  </View>
-);
+// Card with gradient border effect - consistent edge highlight using stroke
+const GradientCard = ({ centerColor, children }) => {
+  const strokeWidth = 1.5;
+  const inset = strokeWidth / 2;
+
+  return (
+    <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT, position: 'relative' }}>
+      <Svg width={CARD_WIDTH} height={CARD_HEIGHT} style={{ position: 'absolute' }}>
+        <Defs>
+          {/* Gradient for stroke - fades from white at edge to transparent inside */}
+          <LinearGradient id="strokeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.6" />
+          </LinearGradient>
+        </Defs>
+        {/* Base color fill */}
+        <Rect
+          x="0"
+          y="0"
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+          rx="8"
+          ry="8"
+          fill={centerColor}
+        />
+        {/* White stroke/border for consistent edge highlight */}
+        <Rect
+          x={inset}
+          y={inset}
+          width={CARD_WIDTH - strokeWidth}
+          height={CARD_HEIGHT - strokeWidth}
+          rx="7"
+          ry="7"
+          fill="none"
+          stroke="url(#strokeGrad)"
+          strokeWidth={strokeWidth}
+        />
+      </Svg>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>{children}</View>
+    </View>
+  );
+};
 
 // DarkroomCardButton Component - photo card stack design with capture animation
 const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevealedPhotos }) => {
   const isDisabled = count === 0;
 
-  // Get gradient colors based on state (center color, edge color)
-  const gradientColors = hasRevealedPhotos
-    ? { center: '#DB2777', edge: '#FFFFFF' } // Pink center, white edges (ready)
-    : { center: '#7C3AED', edge: '#FFFFFF' }; // Purple center, white edges (developing)
+  // Get card color based on state
+  const cardColor = hasRevealedPhotos
+    ? '#7C3AED' // Purple (ready)
+    : '#DB2777'; // Pink (developing)
 
   // Determine number of cards to show (1-4 max)
   const cardCount = Math.min(Math.max(count, 1), 4);
@@ -146,9 +172,9 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
               },
             ]}
           >
-            <RadialGradientCard centerColor={gradientColors.center} edgeColor={gradientColors.edge}>
+            <GradientCard centerColor={cardColor}>
               <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>
-            </RadialGradientCard>
+            </GradientCard>
           </Animated.View>
         );
         continue;
@@ -195,10 +221,10 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
             },
           ]}
         >
-          <RadialGradientCard centerColor={gradientColors.center} edgeColor={gradientColors.edge}>
+          <GradientCard centerColor={cardColor}>
             {/* Only show count on top card */}
             {isTopCard && <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>}
-          </RadialGradientCard>
+          </GradientCard>
         </Animated.View>
       );
     }
