@@ -244,13 +244,17 @@ const SelectsScreen = ({ navigation }) => {
 
       {/* Preview Area */}
       <View style={styles.previewContainer}>
-        <TouchableOpacity
-          style={styles.previewTouchable}
-          onPress={handlePickMultiplePhotos}
-          activeOpacity={0.8}
-        >
-          {selectedPhotos.length === 0 ? renderEmptyPreview() : renderPreviewPhoto()}
-        </TouchableOpacity>
+        {selectedPhotos.length === 0 ? (
+          <TouchableOpacity
+            style={styles.previewTouchable}
+            onPress={handlePickMultiplePhotos}
+            activeOpacity={0.8}
+          >
+            {renderEmptyPreview()}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.previewTouchable}>{renderPreviewPhoto()}</View>
+        )}
       </View>
 
       {/* Thumbnail Strip */}
