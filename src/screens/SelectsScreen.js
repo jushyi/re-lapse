@@ -1,23 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Button } from '../components';
+import { Button, StepIndicator } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
-const MAX_SELECTS = 5;
+const MAX_SELECTS = 10;
+const THUMBNAIL_SIZE = 56;
+const PREVIEW_ASPECT_RATIO = 4 / 5;
+const SCREEN_PADDING = 24;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const SelectsScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
 
   const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
 
-  const handleAddPhotos = async () => {
-    logger.debug('SelectsScreen: Opening photo picker');
+  // Calculate preview dimensions
+  const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
+  const previewHeight = previewWidth / PREVIEW_ASPECT_RATIO;
+
+  const handlePickPhoto = async () => {
+    logger.debug('SelectsScreen: Opening single photo picker');
+
+    // Check if already at max
+    if (selectedPhotos.length >= MAX_SELECTS) {
+      Alert.alert('Maximum Reached', `You can only select up to ${MAX_SELECTS} photos`);
+      return;
+    }
 
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -26,36 +50,54 @@ const SelectsScreen = ({ navigation }) => {
       return;
     }
 
-    // Calculate how many more photos can be added
-    const remaining = MAX_SELECTS - selectedPhotos.length;
-
-    if (remaining <= 0) {
-      Alert.alert('Limit Reached', `You can only select up to ${MAX_SELECTS} photos`);
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      selectionLimit: remaining,
+      allowsEditing: false,
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets) {
-      logger.info('SelectsScreen: Photos selected', { count: result.assets.length });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      logger.info('SelectsScreen: Photo selected', { uri: asset.uri });
 
-      const newPhotos = result.assets.map(asset => ({
+      const newPhoto = {
         uri: asset.uri,
         assetId: asset.assetId || asset.uri,
-      }));
+      };
 
-      setSelectedPhotos(prev => [...prev, ...newPhotos].slice(0, MAX_SELECTS));
+      setSelectedPhotos(prev => {
+        const newPhotos = [...prev, newPhoto];
+        // Set selected index to the newly added photo
+        setSelectedIndex(newPhotos.length - 1);
+        return newPhotos;
+      });
     }
   };
 
   const handleRemovePhoto = index => {
     logger.debug('SelectsScreen: Removing photo', { index });
-    setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
+    setSelectedPhotos(prev => {
+      const newPhotos = prev.filter((_, i) => i !== index);
+      // Adjust selectedIndex if needed
+      if (newPhotos.length === 0) {
+        setSelectedIndex(0);
+      } else if (selectedIndex >= newPhotos.length) {
+        setSelectedIndex(newPhotos.length - 1);
+      } else if (selectedIndex > index) {
+        setSelectedIndex(selectedIndex - 1);
+      }
+      return newPhotos;
+    });
+  };
+
+  const handleThumbnailPress = index => {
+    if (index < selectedPhotos.length) {
+      // Photo exists at this index - show in preview
+      setSelectedIndex(index);
+    } else {
+      // Empty slot - open picker
+      handlePickPhoto();
+    }
   };
 
   const handleComplete = async () => {
@@ -92,97 +134,101 @@ const SelectsScreen = ({ navigation }) => {
     }
   };
 
-  const handleSkip = async () => {
-    logger.info('SelectsScreen: Skipping selects');
-    setUploading(true);
+  // Render empty preview placeholder
+  const renderEmptyPreview = () => (
+    <View style={[styles.previewEmpty, { width: previewWidth, height: previewHeight }]}>
+      <Ionicons name="images-outline" size={64} color={colors.text.secondary} />
+      <Text style={styles.previewEmptyText}>Tap to add photos</Text>
+    </View>
+  );
 
-    try {
-      const updateData = {
-        selects: [],
-        selectsCompleted: true,
-      };
+  // Render preview with photo
+  const renderPreviewPhoto = () => (
+    <Image
+      source={{ uri: selectedPhotos[selectedIndex]?.uri }}
+      style={[styles.previewImage, { width: previewWidth, height: previewHeight }]}
+      resizeMode="cover"
+    />
+  );
 
-      const result = await updateUserDocumentNative(user.uid, updateData);
+  // Render thumbnail slot
+  const renderThumbnailSlot = index => {
+    const hasPhoto = index < selectedPhotos.length;
+    const isSelected = hasPhoto && index === selectedIndex;
 
-      if (result.success) {
-        updateUserProfile({
-          ...userProfile,
-          ...updateData,
-        });
-        logger.info('SelectsScreen: Skipped selects, profile updated');
-        // Navigation will be handled automatically by AuthContext state change
-      } else {
-        Alert.alert('Error', 'Could not save your profile. Please try again.');
-      }
-    } catch (error) {
-      logger.error('SelectsScreen: Failed to skip', { error: error.message });
-      Alert.alert('Error', error.message || 'An error occurred');
-    } finally {
-      setUploading(false);
-    }
+    return (
+      <TouchableOpacity
+        key={index}
+        style={[
+          styles.thumbnailSlot,
+          hasPhoto ? styles.thumbnailFilled : styles.thumbnailEmpty,
+          isSelected && styles.thumbnailSelected,
+        ]}
+        onPress={() => handleThumbnailPress(index)}
+        activeOpacity={0.7}
+      >
+        {hasPhoto ? (
+          <>
+            <Image source={{ uri: selectedPhotos[index].uri }} style={styles.thumbnailImage} />
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemovePhoto(index)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.status.danger} />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Ionicons name="add" size={24} color={colors.text.secondary} />
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          <Text style={styles.title}>Pick Your Selects</Text>
-          <Text style={styles.subtitle}>
-            Choose up to {MAX_SELECTS} photos to highlight on your profile
-          </Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Step Indicator */}
+      <StepIndicator currentStep={2} totalSteps={2} style={styles.stepIndicator} />
 
-          {/* Add Photos Button/Area */}
-          <TouchableOpacity style={styles.addPhotosContainer} onPress={handleAddPhotos}>
-            <Ionicons name="images-outline" size={48} color={colors.text.secondary} />
-            <Text style={styles.addPhotosText}>
-              {selectedPhotos.length === 0 ? 'Tap to add photos' : 'Add more photos'}
-            </Text>
-            <Text style={styles.photoCountText}>
-              {selectedPhotos.length} / {MAX_SELECTS} selected
-            </Text>
-          </TouchableOpacity>
+      {/* Title Section */}
+      <View style={styles.titleSection}>
+        <Text style={styles.title}>Pick Your Highlights</Text>
+        <Text style={styles.subtitle}>
+          Choose up to {MAX_SELECTS} photos to highlight on your profile
+        </Text>
+      </View>
 
-          {/* Selected Photos Preview */}
-          {selectedPhotos.length > 0 && (
-            <View style={styles.previewSection}>
-              <Text style={styles.previewLabel}>Selected:</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.previewScroll}
-                contentContainerStyle={styles.previewContainer}
-              >
-                {selectedPhotos.map((photo, index) => (
-                  <View key={photo.assetId || index} style={styles.previewItem}>
-                    <Image source={{ uri: photo.uri }} style={styles.previewImage} />
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => handleRemovePhoto(index)}
-                    >
-                      <Ionicons name="close-circle" size={24} color={colors.status.danger} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+      {/* Preview Area */}
+      <View style={styles.previewContainer}>
+        <TouchableOpacity
+          style={styles.previewTouchable}
+          onPress={handlePickPhoto}
+          activeOpacity={0.8}
+        >
+          {selectedPhotos.length === 0 ? renderEmptyPreview() : renderPreviewPhoto()}
+        </TouchableOpacity>
+      </View>
 
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <Button
-              title="Complete"
-              variant="primary"
-              onPress={handleComplete}
-              loading={uploading}
-              style={styles.completeButton}
-            />
+      {/* Thumbnail Strip */}
+      <View style={styles.thumbnailSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbnailContainer}
+        >
+          {Array.from({ length: MAX_SELECTS }).map((_, index) => renderThumbnailSlot(index))}
+        </ScrollView>
+      </View>
 
-            <Text style={styles.skipText} onPress={handleSkip}>
-              Skip for now
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
+      {/* Button Area */}
+      <View style={styles.buttonContainer}>
+        <Button
+          title="Complete Profile Setup"
+          variant="primary"
+          onPress={handleComplete}
+          loading={uploading}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -192,93 +238,98 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  scrollContent: {
-    flexGrow: 1,
+  stepIndicator: {
+    marginTop: 16,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
+  titleSection: {
+    paddingHorizontal: SCREEN_PADDING,
+    marginTop: 24,
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 8,
     color: colors.text.primary,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     color: colors.text.secondary,
-    marginBottom: 32,
   },
-  addPhotosContainer: {
+  previewContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SCREEN_PADDING,
+  },
+  previewTouchable: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  previewEmpty: {
     backgroundColor: colors.background.tertiary,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
-    paddingVertical: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addPhotosText: {
+  previewEmptyText: {
     fontSize: 16,
     color: colors.text.secondary,
     marginTop: 12,
   },
-  photoCountText: {
-    fontSize: 14,
-    color: colors.text.tertiary,
-    marginTop: 8,
-  },
-  previewSection: {
-    marginTop: 24,
-  },
-  previewLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 12,
-  },
-  previewScroll: {
-    flexGrow: 0,
-  },
-  previewContainer: {
-    paddingRight: 16,
-  },
-  previewItem: {
-    marginRight: 12,
-    position: 'relative',
-  },
   previewImage: {
-    width: 80,
-    height: 80,
     borderRadius: 12,
     backgroundColor: colors.background.tertiary,
   },
+  thumbnailSection: {
+    paddingVertical: 16,
+  },
+  thumbnailContainer: {
+    paddingHorizontal: SCREEN_PADDING,
+    gap: 8,
+  },
+  thumbnailSlot: {
+    width: THUMBNAIL_SIZE,
+    height: THUMBNAIL_SIZE,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  thumbnailFilled: {
+    backgroundColor: colors.background.tertiary,
+  },
+  thumbnailEmpty: {
+    backgroundColor: colors.background.tertiary,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderStyle: 'dashed',
+  },
+  thumbnailSelected: {
+    borderWidth: 2,
+    borderColor: colors.text.primary,
+    borderStyle: 'solid',
+  },
+  thumbnailImage: {
+    width: THUMBNAIL_SIZE,
+    height: THUMBNAIL_SIZE,
+    borderRadius: 8,
+  },
   removeButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -6,
+    right: -6,
     backgroundColor: colors.background.primary,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   buttonContainer: {
-    marginTop: 'auto',
-    paddingTop: 24,
-  },
-  completeButton: {
-    marginTop: 8,
-  },
-  skipText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: 16,
-    textDecorationLine: 'underline',
+    paddingHorizontal: SCREEN_PADDING,
+    paddingBottom: 16,
   },
 });
 
