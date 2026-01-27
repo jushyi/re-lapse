@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Signup Flow Refactor** - Multi-step signup with consistent dark styling
 - [x] **Phase 3.1: Auth Input Field Fixes** - Phone number backspace fix + profile input placeholder cleanup (INSERTED)
 - [x] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
-- [ ] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
+- [x] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
 - [ ] **Phase 5: Profile Screen Layout** - Core layout and profile info display
 - [ ] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
@@ -103,11 +103,11 @@ Plans:
 **Goal**: Improve drag-to-reorder UX with animated thumbnail repositioning - thumbnails slide into position during drag, creating visual space when dragged between photos and collapsing when moved away or toward delete bar
 **Depends on**: Phase 4
 **Research**: Unlikely (animation refinement of existing drag implementation)
-**Plans**: 0/1 complete
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 04.1-01: Animated thumbnail repositioning + verification
+- [x] 04.1-01: Animated thumbnail repositioning + verification
 
 **Details:**
 
@@ -238,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 3. Signup Flow Refactor          | 2/2            | Complete    | 2026-01-27 |
 | 3.1 Auth Input Field Fixes       | 1/1            | Complete    | 2026-01-27 |
 | 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
-| 4.1 Drag-Reorder Visual Feedback | 0/1            | Planned     | -          |
+| 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
 | 5. Profile Screen Layout         | 0/?            | Not started | -          |
 | 6. Selects Banner                | 0/?            | Not started | -          |
 | 7. Profile Song Scaffold         | 0/?            | Not started | -          |
