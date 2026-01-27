@@ -34,8 +34,15 @@ import logger from '../utils/logger';
 const ProfileSetupScreen = ({ navigation }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
 
-  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
-  const [username, setUsername] = useState(userProfile?.username || '');
+  // Detect default placeholder values and use empty string instead
+  // AuthContext sets 'New User' and 'user_{timestamp}' for new users
+  const isDefaultDisplayName = !userProfile?.displayName || userProfile.displayName === 'New User';
+  const isDefaultUsername = !userProfile?.username || /^user_\d+$/.test(userProfile.username);
+
+  const [displayName, setDisplayName] = useState(
+    isDefaultDisplayName ? '' : userProfile.displayName
+  );
+  const [username, setUsername] = useState(isDefaultUsername ? '' : userProfile.username);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);

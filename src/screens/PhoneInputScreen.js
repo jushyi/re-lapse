@@ -60,9 +60,6 @@ const PhoneInputScreen = ({ navigation }) => {
   // Shake animation for error feedback
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  // Track previous digit count to detect backspace vs typing
-  const prevDigitCountRef = useRef(0);
-
   const triggerShake = () => {
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
@@ -140,17 +137,22 @@ const PhoneInputScreen = ({ navigation }) => {
   const handlePhoneChange = text => {
     // Extract digits only
     const digits = text.replace(/[^0-9]/g, '');
-    const newDigitCount = digits.length;
-    const isDeleting = newDigitCount < prevDigitCountRef.current;
+
+    // Detect deletion by comparing input text length to what we're currently displaying
+    // This catches both digit deletion AND formatting character deletion (space, parens)
+    const isDeleting = text.length < formattedPhone.length;
 
     setPhoneNumber(digits);
 
-    // When deleting through formatted characters (like parentheses), use raw digits
-    // to avoid getting stuck. When typing, format normally.
-    const formatted = formatAsUserTypes(digits, selectedCountry.country);
-    setFormattedPhone(isDeleting && digits.length <= 3 ? digits : formatted);
+    // When deleting, show raw digits to avoid re-adding formatting chars that trap cursor
+    // When typing, format normally for nice display
+    if (isDeleting) {
+      setFormattedPhone(digits);
+    } else {
+      const formatted = formatAsUserTypes(digits, selectedCountry.country);
+      setFormattedPhone(formatted);
+    }
 
-    prevDigitCountRef.current = newDigitCount;
     if (error) setError('');
   };
 
