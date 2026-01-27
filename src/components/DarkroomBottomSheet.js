@@ -8,8 +8,9 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Easing,
 } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+// Note: Using solid colors for now. Gradients require expo-linear-gradient rebuild.
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
@@ -25,9 +26,12 @@ const CARD_HEIGHT = 84;
 const BASE_ROTATION_PER_CARD = 6;
 const BASE_OFFSET_PER_CARD = 5;
 
-// Swipe gesture constants
-const SWIPE_THRESHOLD = 200; // Pixels to swipe for completion
-const ARROW_SIZE = 24;
+// Hold duration - 1.6 seconds (1.25x faster than original 2 seconds)
+const HOLD_DURATION = 1600;
+
+// Spinner rotation durations
+const SPINNER_NORMAL_DURATION = 2000;
+const SPINNER_FAST_DURATION = 667; // 3x faster during hold
 
 // Crescendo haptic configuration
 const HAPTIC_CONFIG = {
@@ -60,29 +64,39 @@ const COLORS = {
   buttonFill: colors.brand.gradient.revealed[1], // '#F472B6' (pink)
 };
 
-// Arrow icon (chevron-right) for swipe affordance
-const ArrowIcon = ({ color = COLORS.textPrimary }) => {
+// Spinner: 3/4 solid arc with gap, spins around static play triangle
+const SpinnerIcon = ({ rotation, color = COLORS.textPrimary }) => {
   return (
-    <View style={styles.arrowContainer}>
-      {/* Chevron right using border technique */}
-      <View
-        style={[
-          styles.arrowChevron,
-          {
-            borderRightColor: color,
-            borderBottomColor: color,
-          },
-        ]}
-      />
+    <View style={styles.spinnerOuter}>
+      {/* Rotating 3/4 arc ring */}
+      <Animated.View style={[styles.spinnerRingContainer, { transform: [{ rotate: rotation }] }]}>
+        <View
+          style={[
+            styles.spinnerRing,
+            {
+              borderTopColor: color,
+              borderRightColor: color,
+              borderBottomColor: color,
+              borderLeftColor: 'transparent',
+            },
+          ]}
+        />
+      </Animated.View>
+      {/* Static play triangle in center */}
+      <View style={[styles.playTriangle, { borderLeftColor: color }]} />
     </View>
   );
 };
 
 const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose, onComplete }) => {
-  const [isSwiping, setIsSwiping] = useState(false);
+  const [isPressing, setIsPressing] = useState(false);
   const progressValue = useRef(new Animated.Value(0)).current;
-  const arrowTranslateX = useRef(new Animated.Value(0)).current;
+  const progressAnimation = useRef(null);
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+
+  // Spinner animation
+  const spinnerRotation = useRef(new Animated.Value(0)).current;
+  const spinnerAnimation = useRef(null);
 
   // Haptic interval tracking
   const hapticIntervalRef = useRef(null);
@@ -90,6 +104,37 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
 
   const totalCount = (revealedCount || 0) + (developingCount || 0);
   const hasRevealedPhotos = revealedCount > 0;
+
+  // Start spinner animation
+  const startSpinnerAnimation = (fast = false) => {
+    // Stop any existing animation
+    if (spinnerAnimation.current) {
+      spinnerAnimation.current.stop();
+    }
+
+    // Reset rotation value to 0 before starting
+    spinnerRotation.setValue(0);
+
+    const duration = fast ? SPINNER_FAST_DURATION : SPINNER_NORMAL_DURATION;
+
+    spinnerAnimation.current = Animated.loop(
+      Animated.timing(spinnerRotation, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+        isInteraction: false,
+      })
+    );
+
+    spinnerAnimation.current.start();
+  };
+
+  // Interpolate spinner rotation to degrees
+  const spinnerRotationDeg = spinnerRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   // Animate sheet slide when visibility changes
   useEffect(() => {
@@ -102,6 +147,9 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
         useNativeDriver: true,
       }).start();
 
+      // Start normal spinner animation
+      startSpinnerAnimation(false);
+
       logger.debug('DarkroomBottomSheet: Component mounted', {
         revealedCount,
         developingCount,
@@ -111,13 +159,24 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
     } else {
       // Reset to off-screen position when closed
       slideAnim.setValue(SHEET_HEIGHT);
+
+      // Stop spinner
+      if (spinnerAnimation.current) {
+        spinnerAnimation.current.stop();
+      }
     }
 
     return () => {
       // Clean up animations on unmount
+      if (progressAnimation.current) {
+        progressAnimation.current.stop();
+        logger.debug('DarkroomBottomSheet: Component unmounted, animation stopped');
+      }
+      if (spinnerAnimation.current) {
+        spinnerAnimation.current.stop();
+      }
       if (hapticIntervalRef.current) {
         clearInterval(hapticIntervalRef.current);
-        logger.debug('DarkroomBottomSheet: Component unmounted, haptics stopped');
       }
     };
   }, [visible, revealedCount, developingCount, totalCount, hasRevealedPhotos, slideAnim]);
@@ -126,44 +185,57 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
     // Reset progress when modal visibility changes
     if (!visible) {
       progressValue.setValue(0);
-      arrowTranslateX.setValue(0);
-      setIsSwiping(false);
+      setIsPressing(false);
       if (hapticIntervalRef.current) {
         clearInterval(hapticIntervalRef.current);
         hapticIntervalRef.current = null;
       }
     }
-  }, [visible, progressValue, arrowTranslateX]);
+  }, [visible, progressValue]);
 
-  // Crescendo haptic feedback - triggers based on progress value
-  const triggerCrescendoHaptic = progress => {
-    const now = Date.now();
-    let config;
+  // Crescendo haptic feedback - runs during press
+  const startCrescendoHaptics = () => {
+    lastHapticTimeRef.current = Date.now();
 
-    // Determine which phase we're in
-    if (progress < 0.25) {
-      config = HAPTIC_CONFIG.phase1;
-    } else if (progress < 0.5) {
-      config = HAPTIC_CONFIG.phase2;
-    } else if (progress < 0.75) {
-      config = HAPTIC_CONFIG.phase3;
-    } else {
-      config = HAPTIC_CONFIG.phase4;
+    // Clear any existing interval
+    if (hapticIntervalRef.current) {
+      clearInterval(hapticIntervalRef.current);
     }
 
-    // Check if enough time has passed for this phase's interval
-    if (now - lastHapticTimeRef.current >= config.interval) {
-      try {
-        Haptics.impactAsync(config.style);
-        lastHapticTimeRef.current = now;
-        logger.debug('DarkroomBottomSheet: Crescendo haptic', {
-          progress: (progress * 100).toFixed(0) + '%',
-          style: config.style,
-        });
-      } catch (error) {
-        logger.debug('DarkroomBottomSheet: Haptic failed', error);
-      }
-    }
+    // Use a fast interval to check progress and trigger haptics at dynamic rates
+    hapticIntervalRef.current = setInterval(() => {
+      progressValue.addListener(({ value }) => {
+        progressValue.removeAllListeners();
+
+        const now = Date.now();
+        let config;
+
+        // Determine which phase we're in
+        if (value < 0.25) {
+          config = HAPTIC_CONFIG.phase1;
+        } else if (value < 0.5) {
+          config = HAPTIC_CONFIG.phase2;
+        } else if (value < 0.75) {
+          config = HAPTIC_CONFIG.phase3;
+        } else {
+          config = HAPTIC_CONFIG.phase4;
+        }
+
+        // Check if enough time has passed for this phase's interval
+        if (now - lastHapticTimeRef.current >= config.interval) {
+          try {
+            Haptics.impactAsync(config.style);
+            lastHapticTimeRef.current = now;
+            logger.debug('DarkroomBottomSheet: Crescendo haptic', {
+              progress: (value * 100).toFixed(0) + '%',
+              style: config.style,
+            });
+          } catch (error) {
+            logger.debug('DarkroomBottomSheet: Haptic failed', error);
+          }
+        }
+      });
+    }, 50); // Check every 50ms for responsive haptics
   };
 
   const stopCrescendoHaptics = () => {
@@ -174,116 +246,95 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
     progressValue.removeAllListeners();
   };
 
-  // Handle swipe completion
-  const handleSwipeComplete = () => {
-    logger.info('DarkroomBottomSheet: Swipe completed', {
-      revealedCount,
-      developingCount,
-    });
-
-    // Stop haptics
-    stopCrescendoHaptics();
-
-    // Final success haptic
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      logger.info('DarkroomBottomSheet: Completion haptic triggered');
-    } catch (error) {
-      logger.debug('DarkroomBottomSheet: Completion haptic failed', error);
+  const handlePressIn = () => {
+    if (!visible || !hasRevealedPhotos) {
+      logger.debug('DarkroomBottomSheet: Press-and-hold blocked (no revealed photos)', {
+        hasRevealedPhotos,
+        revealedCount,
+        developingCount,
+      });
+      return;
     }
 
-    // Small delay to let user see full fill
-    setTimeout(() => {
-      // Reset state
-      setIsSwiping(false);
-      progressValue.setValue(0);
-      arrowTranslateX.setValue(0);
+    setIsPressing(true);
+    logger.info('DarkroomBottomSheet: Press-and-hold started', { revealedCount, developingCount });
 
-      // Trigger completion callback
-      if (onComplete) {
-        onComplete();
+    // Speed up spinner during hold
+    startSpinnerAnimation(true);
+
+    // Start crescendo haptics
+    startCrescendoHaptics();
+
+    // Animate from 0 to 1 over 1.6 seconds
+    progressAnimation.current = Animated.timing(progressValue, {
+      toValue: 1,
+      duration: HOLD_DURATION,
+      useNativeDriver: false,
+    });
+
+    progressAnimation.current.start(({ finished }) => {
+      if (finished) {
+        logger.debug('DarkroomBottomSheet: Progress reached 100%');
+        logger.info('DarkroomBottomSheet: Press-and-hold completed', {
+          revealedCount,
+          developingCount,
+        });
+
+        // Stop crescendo haptics
+        stopCrescendoHaptics();
+
+        // Final success haptic
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          logger.info('DarkroomBottomSheet: Completion haptic triggered');
+        } catch (error) {
+          logger.debug('DarkroomBottomSheet: Completion haptic failed', error);
+        }
+
+        // Small delay to let user see full fill
+        setTimeout(() => {
+          // Reset state
+          setIsPressing(false);
+          progressValue.setValue(0);
+
+          // Reset spinner to normal speed
+          startSpinnerAnimation(false);
+
+          // Trigger completion callback
+          if (onComplete) {
+            onComplete();
+          }
+        }, 200);
       }
-    }, 200);
+    });
   };
 
-  // Handle swipe cancel (spring back)
-  const handleSwipeCancel = () => {
-    logger.debug('DarkroomBottomSheet: Swipe cancelled, springing back');
+  const handlePressOut = () => {
+    if (!isPressing) return;
 
-    // Stop haptics
+    logger.debug('DarkroomBottomSheet: Press released before completion');
+
+    // Stop crescendo haptics
     stopCrescendoHaptics();
 
+    // Stop current animation
+    if (progressAnimation.current) {
+      progressAnimation.current.stop();
+    }
+
     // Spring back to 0
-    Animated.parallel([
-      Animated.spring(progressValue, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: false,
-      }),
-      Animated.spring(arrowTranslateX, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.spring(progressValue, {
+      toValue: 0,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: false,
+    }).start();
 
-    setIsSwiping(false);
+    setIsPressing(false);
+
+    // Reset spinner to normal speed
+    startSpinnerAnimation(false);
   };
-
-  // Pan gesture for swipe-to-reveal
-  const panGesture = Gesture.Pan()
-    .enabled(hasRevealedPhotos)
-    .onStart(() => {
-      setIsSwiping(true);
-      lastHapticTimeRef.current = Date.now();
-      logger.info('DarkroomBottomSheet: Swipe started', { revealedCount, developingCount });
-    })
-    .onUpdate(event => {
-      // Only allow positive translation (left to right)
-      const translationX = Math.max(0, event.translationX);
-
-      // Calculate progress (0 to 1)
-      const progress = Math.min(translationX / SWIPE_THRESHOLD, 1);
-
-      // Update progress value for fill animation (non-native driver)
-      progressValue.setValue(progress);
-
-      // Update arrow position (native driver)
-      arrowTranslateX.setValue(translationX);
-
-      // Trigger crescendo haptics
-      triggerCrescendoHaptic(progress);
-    })
-    .onEnd(event => {
-      const translationX = Math.max(0, event.translationX);
-      const velocityX = event.velocityX;
-
-      // Complete if threshold reached OR high velocity
-      if (translationX >= SWIPE_THRESHOLD || velocityX > 500) {
-        // Animate to full completion
-        Animated.parallel([
-          Animated.timing(progressValue, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: false,
-          }),
-          Animated.timing(arrowTranslateX, {
-            toValue: SWIPE_THRESHOLD,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          handleSwipeComplete();
-        });
-      } else {
-        handleSwipeCancel();
-      }
-    })
-    .onFinalize(() => {
-      // Cleanup on gesture termination
-    });
 
   const handleBackdropPress = () => {
     logger.debug('DarkroomBottomSheet: Backdrop pressed, closing');
@@ -356,7 +407,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleBackdropPress}>
-      <GestureHandlerRootView style={styles.container}>
+      <View style={styles.container}>
         {/* Backdrop - fades in with modal */}
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleBackdropPress} />
 
@@ -384,44 +435,40 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
             <View style={styles.cardStackContainer}>{renderCardStack()}</View>
           </View>
 
-          {/* Swipe Button - only show if photos are ready */}
+          {/* Hold Button - only show if photos are ready */}
           {hasRevealedPhotos && (
-            <GestureDetector gesture={panGesture}>
-              <View style={styles.swipeButtonContainer}>
-                {/* Base purple button */}
-                <View style={styles.swipeButtonBase}>
-                  {/* Fill overlay that animates left-to-right */}
-                  <Animated.View
-                    style={[
-                      styles.fillOverlay,
-                      { width: progressWidth, backgroundColor: COLORS.buttonFill },
-                    ]}
-                  />
+            <View
+              style={styles.holdButtonContainer}
+              onStartShouldSetResponder={() => true}
+              onResponderGrant={handlePressIn}
+              onResponderRelease={handlePressOut}
+              onResponderTerminate={handlePressOut}
+            >
+              {/* Base purple button (solid color - gradients require rebuild) */}
+              <View style={styles.holdButtonBase}>
+                {/* Fill overlay that animates left-to-right */}
+                <Animated.View
+                  style={[
+                    styles.fillOverlay,
+                    { width: progressWidth, backgroundColor: COLORS.buttonFill },
+                  ]}
+                />
 
-                  {/* Button content */}
-                  <View style={styles.swipeButtonContent}>
-                    {/* Arrow icon that moves with swipe */}
-                    <Animated.View
-                      style={[
-                        styles.arrowWrapper,
-                        { transform: [{ translateX: arrowTranslateX }] },
-                      ]}
-                    >
-                      <ArrowIcon />
-                    </Animated.View>
-                    <Text style={styles.swipeButtonText}>
-                      {isSwiping ? 'Revealing...' : 'Swipe to reveal photos'}
-                    </Text>
-                  </View>
+                {/* Button content */}
+                <View style={styles.holdButtonContent}>
+                  <SpinnerIcon rotation={spinnerRotationDeg} />
+                  <Text style={styles.holdButtonText}>
+                    {isPressing ? 'Revealing...' : 'Hold to reveal photos'}
+                  </Text>
                 </View>
               </View>
-            </GestureDetector>
+            </View>
           )}
 
           {/* Message for developing photos */}
           {!hasRevealedPhotos && <Text style={styles.developingText}>Check back soon!</Text>}
         </Animated.View>
-      </GestureHandlerRootView>
+      </View>
     </Modal>
   );
 };
@@ -500,14 +547,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // Swipe button
-  swipeButtonContainer: {
+  // Hold button
+  holdButtonContainer: {
     width: '100%',
     marginTop: 16,
     borderRadius: 16,
     overflow: 'hidden',
   },
-  swipeButtonBase: {
+  holdButtonBase: {
     width: '100%',
     height: 64,
     borderRadius: 16,
@@ -523,41 +570,47 @@ const styles = StyleSheet.create({
     bottom: 0,
     overflow: 'hidden',
   },
-  swipeButtonContent: {
+  holdButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    width: '100%',
-    paddingHorizontal: 16,
   },
-  swipeButtonText: {
+  holdButtonText: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginLeft: 12,
   },
-  // Arrow icon for swipe affordance
-  arrowWrapper: {
-    width: ARROW_SIZE,
-    height: ARROW_SIZE,
+  // Spinner - 3/4 solid arc with 1/4 gap
+  spinnerOuter: {
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  arrowContainer: {
-    width: ARROW_SIZE,
-    height: ARROW_SIZE,
+  spinnerRingContainer: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  arrowChevron: {
-    width: 10,
-    height: 10,
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
+  spinnerRing: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderTopWidth: 5,
+    borderBottomWidth: 5,
     borderTopColor: 'transparent',
-    borderLeftColor: 'transparent',
-    transform: [{ rotate: '-45deg' }],
+    borderBottomColor: 'transparent',
+    marginLeft: 3, // Offset to center visually
   },
   developingText: {
     fontSize: 16,
