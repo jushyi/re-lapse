@@ -3,7 +3,6 @@
  *
  * Provides audio preview playback for profile songs with:
  * - Clip range support (start/end positions)
- * - Smooth fade out
  * - Progress callbacks
  *
  * Uses expo-av for cross-platform audio support.
@@ -26,9 +25,7 @@ Audio.setAudioModeAsync({
 
 // Module-level state for single sound instance
 let currentSound = null;
-let fadeTimeout = null;
 let clipEndTimeout = null;
-let isFadingOut = false;
 
 /**
  * Play a preview clip with optional start/end positions and fade out.
@@ -54,7 +51,6 @@ export const playPreview = async (previewUrl, options = {}) => {
     const { sound } = await Audio.Sound.createAsync({ uri: previewUrl }, { shouldPlay: false });
 
     currentSound = sound;
-    isFadingOut = false;
 
     // Seek to clip start position
     if (clipStart > 0) {
@@ -79,23 +75,20 @@ export const playPreview = async (previewUrl, options = {}) => {
         onProgress(progress);
       }
 
-      // Start fade out 1.5 seconds before clip end
-      const fadeStartTime = clipEnd - 1.5;
-      if (currentPositionSec >= fadeStartTime && !isFadingOut) {
-        logger.debug('audioPlayer: Starting fade out');
-        isFadingOut = true;
-        fadeOutAndStop(sound).then(() => {
-          if (onComplete) {
-            onComplete();
-          }
-        });
+      // Stop at clip end (immediate cut, no fade)
+      if (currentPositionSec >= clipEnd) {
+        logger.debug('audioPlayer: Reached clip end, stopping');
+        cleanupSound(sound);
+        if (onComplete) {
+          onComplete();
+        }
       }
 
       // Handle natural playback completion
       if (status.didJustFinish) {
         logger.debug('audioPlayer: Playback finished naturally');
         cleanupSound(sound);
-        if (onComplete && !isFadingOut) {
+        if (onComplete) {
           onComplete();
         }
       }
@@ -109,13 +102,11 @@ export const playPreview = async (previewUrl, options = {}) => {
     const clipDurationMs = (clipEnd - clipStart) * 1000;
     clipEndTimeout = setTimeout(() => {
       logger.debug('audioPlayer: Clip end timeout triggered');
-      if (!isFadingOut) {
-        stopPreview();
-        if (onComplete) {
-          onComplete();
-        }
+      stopPreview();
+      if (onComplete) {
+        onComplete();
       }
-    }, clipDurationMs + 500); // Small buffer for fade
+    }, clipDurationMs + 100); // Small buffer
 
     return sound;
   } catch (error) {
@@ -125,60 +116,21 @@ export const playPreview = async (previewUrl, options = {}) => {
 };
 
 /**
- * Stop current preview playback with fade out.
+ * Stop current preview playback immediately.
  */
 export const stopPreview = async () => {
   logger.debug('audioPlayer: Stopping playback');
 
-  // Clear all timeouts
-  if (fadeTimeout) {
-    clearTimeout(fadeTimeout);
-    fadeTimeout = null;
-  }
+  // Clear timeout
   if (clipEndTimeout) {
     clearTimeout(clipEndTimeout);
     clipEndTimeout = null;
   }
 
-  // Fade out and stop current sound
+  // Stop immediately (no fade)
   if (currentSound) {
     const sound = currentSound;
     currentSound = null;
-    await fadeOutAndStop(sound);
-  }
-};
-
-/**
- * Fade out audio and stop/unload the sound.
- *
- * @param {Audio.Sound} sound - Sound instance to fade out
- * @param {number} durationMs - Fade duration in milliseconds (default 1500)
- */
-export const fadeOutAndStop = async (sound, durationMs = 1500) => {
-  if (!sound) return;
-
-  logger.debug('audioPlayer: Fading out', { durationMs });
-
-  const steps = 15;
-  const stepDuration = durationMs / steps;
-
-  try {
-    // Gradually reduce volume from 1.0 to 0.0
-    for (let i = steps; i >= 0; i--) {
-      const volume = i / steps;
-      await sound.setVolumeAsync(volume);
-      await new Promise(resolve => setTimeout(resolve, stepDuration));
-    }
-
-    // Stop and unload after fade
-    await cleanupSound(sound);
-    logger.debug('audioPlayer: Fade out complete');
-  } catch (error) {
-    // Sound may already be unloaded, that's OK
-    logger.debug('audioPlayer: Fade out error (may be already unloaded)', {
-      error: error?.message,
-    });
-    // Still try to cleanup
     await cleanupSound(sound);
   }
 };
