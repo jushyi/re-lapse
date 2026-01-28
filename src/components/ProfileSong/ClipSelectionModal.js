@@ -1,11 +1,10 @@
 /**
  * ClipSelectionModal Component
  *
- * Modal for selecting a clip range from a song preview.
+ * Modal for previewing a song before saving to profile.
  * Features:
  * - Song info display (album art, title, artist)
- * - Visual scrubber for range selection
- * - Preview button to hear selected clip
+ * - Preview button to hear 30-second clip
  * - Confirm button to save selection
  */
 
@@ -17,104 +16,64 @@ import {
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '../../constants/colors';
 import { playPreview, stopPreview } from '../../services/audioPlayer';
-import WaveformScrubber from './WaveformScrubber';
 import logger from '../../utils/logger';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const WAVEFORM_WIDTH = SCREEN_WIDTH - 64;
-const PREVIEW_DURATION = 30; // iTunes preview duration
 
 const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const insets = useSafeAreaInsets();
 
   // State
-  const [clipStart, setClipStart] = useState(0);
-  const [clipEnd, setClipEnd] = useState(PREVIEW_DURATION);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackPosition, setPlaybackPosition] = useState(0); // Position within clip in seconds
 
   // Reset state when song changes or modal opens
   useEffect(() => {
     if (visible && song) {
-      setClipStart(song.clipStart ?? 0);
-      setClipEnd(song.clipEnd ?? PREVIEW_DURATION);
       setIsPlaying(false);
-      setPlaybackPosition(0);
     }
 
     // Cleanup on close
     if (!visible) {
       stopPreview();
       setIsPlaying(false);
-      setPlaybackPosition(0);
     }
   }, [visible, song]);
 
-  // Handle range change from waveform scrubber
-  const handleRangeChange = useCallback((start, end) => {
-    setClipStart(start);
-    setClipEnd(end);
-  }, []);
-
-  // Handle preview button
+  // Handle preview button - plays full 30s preview
   const handlePreview = useCallback(async () => {
     if (isPlaying) {
       await stopPreview();
       setIsPlaying(false);
-      setPlaybackPosition(0);
     } else {
       setIsPlaying(true);
-      setPlaybackPosition(0);
-      const clipDuration = clipEnd - clipStart;
       await playPreview(song.previewUrl, {
-        clipStart,
-        clipEnd,
-        onProgress: progress => {
-          // progress is 0-1 within the clip range, convert to seconds
-          setPlaybackPosition(progress * clipDuration);
-        },
         onComplete: () => {
           setIsPlaying(false);
-          setPlaybackPosition(0);
         },
       });
     }
-  }, [isPlaying, song, clipStart, clipEnd]);
+  }, [isPlaying, song]);
 
-  // Handle confirm
+  // Handle confirm - passes song as-is (audioPlayer defaults to full 30s)
   const handleConfirm = useCallback(async () => {
     await stopPreview();
     setIsPlaying(false);
-    setPlaybackPosition(0);
 
-    const songWithClip = {
-      ...song,
-      clipStart,
-      clipEnd,
-    };
-
-    logger.info('ClipSelectionModal: Confirming clip', {
+    logger.info('ClipSelectionModal: Confirming song', {
       songId: song.id,
-      clipStart,
-      clipEnd,
     });
 
-    onConfirm(songWithClip);
-  }, [song, clipStart, clipEnd, onConfirm]);
+    onConfirm(song);
+  }, [song, onConfirm]);
 
   // Handle cancel
   const handleCancel = useCallback(async () => {
     await stopPreview();
     setIsPlaying(false);
-    setPlaybackPosition(0);
     onCancel();
   }, [onCancel]);
 
@@ -129,13 +88,13 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
         </TouchableWithoutFeedback>
 
         {/* Content container - partial height at bottom */}
-        <GestureHandlerRootView style={styles.contentContainer}>
+        <View style={styles.contentContainer}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Select Your Clip</Text>
+            <Text style={styles.headerTitle}>Preview Clip</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -152,22 +111,9 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
             </View>
           </View>
 
-          {/* Waveform Section */}
-          <View style={styles.waveformSection}>
-            <WaveformScrubber
-              songId={song.id}
-              initialStart={clipStart}
-              initialEnd={clipEnd}
-              duration={PREVIEW_DURATION}
-              onRangeChange={handleRangeChange}
-              containerWidth={WAVEFORM_WIDTH}
-              currentTime={playbackPosition}
-            />
-          </View>
-
           {/* Instructions */}
           <Text style={styles.instructions}>
-            Drag the handles to select which part of the song plays on your profile
+            Preview the 30-second clip that will play on your profile
           </Text>
 
           {/* Action Buttons */}
@@ -190,10 +136,10 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
             {/* Confirm Button */}
             <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={handleConfirm}>
               <Ionicons name="checkmark" size={20} color={colors.text.primary} />
-              <Text style={styles.buttonText}>Use This Clip</Text>
+              <Text style={styles.buttonText}>Use This Song</Text>
             </TouchableOpacity>
           </View>
-        </GestureHandlerRootView>
+        </View>
       </View>
     </Modal>
   );
@@ -258,12 +204,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     marginTop: 4,
-  },
-  waveformSection: {
-    marginHorizontal: 32,
-    marginTop: 20,
-    minHeight: 120,
-    justifyContent: 'center',
   },
   instructions: {
     fontSize: 13,
