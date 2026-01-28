@@ -11,7 +11,7 @@
  * - Time display (current / total)
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -72,19 +72,21 @@ const WaveformScrubber = ({
   // Playback position indicator (in pixels)
   const playbackX = useSharedValue(currentTime * pixelsPerSecond);
 
-  // Track if user is currently dragging (JS state for useEffect dependency)
-  const isDraggingRef = useSharedValue(false);
+  // Track if user is currently dragging
+  // Use both: shared value for worklet, regular ref for JS useEffect
+  const isDraggingShared = useSharedValue(false);
+  const isDraggingJS = useRef(false);
 
   // Update playback position when currentTime changes (only if not dragging)
   useEffect(() => {
-    if (!isDraggingRef.value) {
+    if (!isDraggingJS.current) {
       const targetX = currentTime * pixelsPerSecond;
       playbackX.value = withTiming(targetX, {
         duration: 50,
         easing: Easing.linear,
       });
     }
-  }, [currentTime, pixelsPerSecond, playbackX, isDraggingRef]);
+  }, [currentTime, pixelsPerSecond, playbackX]);
 
   // Handle seek callback on JS thread
   const handleSeekJS = seconds => {
@@ -93,11 +95,21 @@ const WaveformScrubber = ({
     }
   };
 
+  // JS-side dragging state setters (called from worklet via runOnJS)
+  const setDraggingTrue = () => {
+    isDraggingJS.current = true;
+  };
+
+  const setDraggingFalse = () => {
+    isDraggingJS.current = false;
+  };
+
   // Pan gesture for dragging to seek
   const panGesture = Gesture.Pan()
     .onBegin(e => {
       'worklet';
-      isDraggingRef.value = true;
+      isDraggingShared.value = true;
+      runOnJS(setDraggingTrue)();
       // Jump to touch position immediately
       const clampedX = Math.max(0, Math.min(e.x, containerWidth));
       playbackX.value = clampedX;
@@ -114,11 +126,13 @@ const WaveformScrubber = ({
     })
     .onEnd(() => {
       'worklet';
-      isDraggingRef.value = false;
+      isDraggingShared.value = false;
+      runOnJS(setDraggingFalse)();
     })
     .onFinalize(() => {
       'worklet';
-      isDraggingRef.value = false;
+      isDraggingShared.value = false;
+      runOnJS(setDraggingFalse)();
     });
 
   // Animated style for playback position indicator
