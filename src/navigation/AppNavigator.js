@@ -1,5 +1,5 @@
 import { useState, useEffect, createRef } from 'react';
-import { Text, ActivityIndicator, View, Platform } from 'react-native';
+import { Text, ActivityIndicator, View, Platform, Image } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -81,7 +81,7 @@ const ProfileStackNavigator = () => {
  * Main Tab Navigator (Feed, Camera, Profile) - 3-tab layout
  */
 const MainTabNavigator = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [darkroomCount, setDarkroomCount] = useState(0);
 
   // Load darkroom count on mount and when tab becomes active
@@ -138,7 +138,9 @@ const MainTabNavigator = () => {
         name="Profile"
         component={ProfileStackNavigator}
         options={{
-          tabBarIcon: ({ color }) => <ProfileIcon color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <ProfileTabIcon color={color} focused={focused} photoURL={userProfile?.photoURL} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -229,7 +231,7 @@ const DarkroomIcon = ({ color, count }) => (
   </View>
 );
 
-// Profile Icon - Simple user silhouette
+// Profile Icon - Simple user silhouette (fallback when no photo)
 const ProfileIcon = ({ color }) => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
@@ -241,6 +243,25 @@ const ProfileIcon = ({ color }) => (
     />
   </Svg>
 );
+
+// Profile Tab Icon - Shows user photo or fallback icon
+const ProfileTabIcon = ({ color, focused, photoURL }) => {
+  if (photoURL) {
+    return (
+      <Image
+        source={{ uri: photoURL }}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 14,
+          borderWidth: focused ? 2 : 1,
+          borderColor: focused ? color : 'transparent',
+        }}
+      />
+    );
+  }
+  return <ProfileIcon color={color} />;
+};
 
 /**
  * Deep linking configuration for notifications
