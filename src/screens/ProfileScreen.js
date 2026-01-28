@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ const PROFILE_PHOTO_SIZE = 80;
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const { userProfile } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleFriendsPress = () => {
     logger.info('ProfileScreen: Friends button pressed');
@@ -31,18 +32,18 @@ const ProfileScreen = () => {
   // Handle loading state
   if (!userProfile) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
+      <View style={styles.container}>
+        <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
           <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       {/* Header - 3 column layout */}
-      <View style={styles.header}>
+      <View style={[styles.header, { top: insets.top }]}>
         {/* Left: Friends icon */}
         <TouchableOpacity onPress={handleFriendsPress} style={styles.headerButton}>
           <Ionicons name="people-outline" size={24} color={colors.text.primary} />
@@ -64,7 +65,7 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Selects Banner Placeholder */}
-        <View style={styles.selectsBanner}>
+        <View style={[styles.selectsBanner, { marginTop: insets.top + HEADER_HEIGHT }]}>
           <Text style={styles.selectsBannerText}>Selects</Text>
         </View>
 
@@ -111,7 +112,7 @@ const ProfileScreen = () => {
           <Text style={styles.placeholderText}>Monthly Albums</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -161,7 +162,6 @@ const styles = StyleSheet.create({
   },
   // Selects Banner
   selectsBanner: {
-    marginTop: HEADER_HEIGHT,
     marginHorizontal: 16,
     height: 250,
     backgroundColor: colors.background.secondary,
