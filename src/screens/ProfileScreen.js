@@ -10,8 +10,6 @@ import {
   FullscreenSelectsViewer,
   SelectsEditOverlay,
   ProfileSongCard,
-  SongSearchModal,
-  ClipSelectionModal,
 } from '../components';
 import logger from '../utils/logger';
 
@@ -27,8 +25,6 @@ const ProfileScreen = () => {
   // Modal states
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showEditOverlay, setShowEditOverlay] = useState(false);
-  const [showSongSearch, setShowSongSearch] = useState(false);
-  const [selectedSongForClip, setSelectedSongForClip] = useState(null);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -101,9 +97,12 @@ const ProfileScreen = () => {
   // Handle song card press (add song when empty)
   const handleSongPress = () => {
     if (!profileData?.profileSong) {
-      // Open song search (placeholder for now - Plan 03 will add modal)
       logger.info('ProfileScreen: Add song pressed');
-      setShowSongSearch(true);
+      navigation.navigate('SongSearch', {
+        onSongSelected: songWithClip => {
+          handleSaveSong(songWithClip);
+        },
+      });
     }
     // Play/pause handled internally by ProfileSongCard
   };
@@ -117,13 +116,22 @@ const ProfileScreen = () => {
       {
         text: 'Change Song',
         onPress: () => {
-          setShowSongSearch(true);
+          navigation.navigate('SongSearch', {
+            onSongSelected: songWithClip => {
+              handleSaveSong(songWithClip);
+            },
+          });
         },
       },
       {
         text: 'Edit Clip',
         onPress: () => {
-          setSelectedSongForClip(profileData.profileSong);
+          navigation.navigate('SongSearch', {
+            editSong: profileData.profileSong, // Pre-select for clip editing
+            onSongSelected: songWithClip => {
+              handleSaveSong(songWithClip);
+            },
+          });
         },
       },
       {
@@ -153,31 +161,6 @@ const ProfileScreen = () => {
       logger.error('ProfileScreen: Failed to remove song', { error: error.message });
       Alert.alert('Error', error.message || 'An error occurred');
     }
-  };
-
-  // Handle song selection from search modal - closes search, opens clip selection
-  const handleSongSelected = song => {
-    logger.info('ProfileScreen: Song selected for clip', { songId: song.id, title: song.title });
-    setShowSongSearch(false); // Close song search first
-    setSelectedSongForClip(song); // Then open clip selection
-  };
-
-  // Handle clip selection confirmation
-  const handleClipConfirm = songWithClip => {
-    logger.info('ProfileScreen: Clip confirmed', {
-      songId: songWithClip.id,
-      clipStart: songWithClip.clipStart,
-      clipEnd: songWithClip.clipEnd,
-    });
-    setSelectedSongForClip(null);
-    handleSaveSong(songWithClip);
-  };
-
-  // Handle clip selection cancel - re-opens song search
-  const handleClipCancel = () => {
-    logger.info('ProfileScreen: Clip selection cancelled, returning to song search');
-    setSelectedSongForClip(null);
-    setShowSongSearch(true); // Re-open song search so user can pick different song
   };
 
   // Save song to Firestore and update local state
@@ -310,21 +293,6 @@ const ProfileScreen = () => {
         selects={userProfile?.selects || []}
         onSave={handleSaveSelects}
         onClose={() => setShowEditOverlay(false)}
-      />
-
-      {/* Song search modal */}
-      <SongSearchModal
-        visible={showSongSearch}
-        onClose={() => setShowSongSearch(false)}
-        onSelectSong={handleSongSelected}
-      />
-
-      {/* Clip selection modal */}
-      <ClipSelectionModal
-        visible={selectedSongForClip !== null}
-        song={selectedSongForClip}
-        onConfirm={handleClipConfirm}
-        onCancel={handleClipCancel}
       />
     </View>
   );
