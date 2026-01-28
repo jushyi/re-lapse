@@ -25,8 +25,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
 - [x] **Phase 5: Profile Screen Layout** - Core layout and profile info display
 - [x] **Phase 6: Selects Banner** - User-selected photos slideshow
-- [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
+- [x] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
 - [ ] **Phase 7.1: Full Song Music Integration** - Spotify + Apple Music for full song clip selection (INSERTED)
+- [ ] **Phase 7.2: Song Modal Stacking Fix** - Convert SongSearchModal to screen for stacked navigation (INSERTED)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
 - [ ] **Phase 10: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
@@ -149,7 +150,7 @@ Plans:
 **Goal**: Scaffold music preview feature with tap-to-play (provider integration deferred)
 **Depends on**: Phase 5
 **Research**: Complete (iTunes API selected for free 30s previews)
-**Plans**: 4/5 complete
+**Plans**: 5/5 complete (+ 2 FIX plans)
 
 Plans:
 
@@ -158,7 +159,8 @@ Plans:
 - [x] 07-03: Song search modal
 - [x] 07-04: Clip selection with WaveformScrubber
 - [x] 07-04-FIX: UX fixes (partial height modal, playback indicator, cancel flow)
-- [ ] 07-05: Song selection in onboarding
+- [x] 07-04-FIX2: Silent mode audio + smooth animations
+- [x] 07-05: Full integration (setup screen, edit menu, navigation cleanup)
 
 ### Phase 7.1: Full Song Music Integration (INSERTED)
 
@@ -186,6 +188,26 @@ Plans:
 3. Settings screen for connecting/disconnecting music services
 4. Fallback to iTunes 30s preview for users without either service
 5. Update clip selection UI to handle full song duration with scrollable waveform
+
+### Phase 7.2: Song Modal Stacking Fix (INSERTED)
+
+**Goal**: Fix modal navigation so clip selection overlays song search instead of replacing it (UAT-007)
+**Depends on**: Phase 7
+**Research**: Unlikely (React Navigation screen conversion)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 07.2-01: TBD (run /gsd:plan-phase 7.2 to break down)
+
+**Details:**
+
+1. Convert SongSearchModal from Modal to a navigation screen
+2. ClipSelectionModal stacks on top of SongSearchScreen
+3. User sees both layers, creating connected flow
+4. Cancel in clip selection pops back to song search screen
+
+**Source issue:** UAT-007 from .planning/phases/07-profile-song/07-04-ISSUES.md
 
 ### Phase 8: User Albums Display
 
@@ -317,7 +339,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.1 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.1 → 7.2 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -329,8 +351,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
 | 5. Profile Screen Layout         | 2/2            | Complete    | 2026-01-27 |
 | 6. Selects Banner                | 2/2            | Complete    | 2026-01-28 |
-| 7. Profile Song Scaffold         | 4/5 + 1 FIX    | In progress | -          |
+| 7. Profile Song Scaffold         | 5/5 + 2 FIX    | Complete    | 2026-01-28 |
 | 7.1 Full Song Music Integration  | 0/?            | Not started | -          |
+| 7.2 Song Modal Stacking Fix      | 0/?            | Not started | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
