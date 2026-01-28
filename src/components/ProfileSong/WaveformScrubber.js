@@ -19,6 +19,7 @@ import Animated, {
   useAnimatedStyle,
   useAnimatedReaction,
   withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
@@ -66,6 +67,7 @@ const WaveformScrubber = ({
   duration = 30,
   onRangeChange,
   containerWidth = DEFAULT_WIDTH,
+  currentTime = 0, // Current playback position in seconds (0 if not playing)
 }) => {
   // Range state for display
   const [startSec, setStartSec] = useState(initialStart);
@@ -85,6 +87,20 @@ const WaveformScrubber = ({
   // Context for gesture tracking
   const startContext = useSharedValue(0);
   const endContext = useSharedValue(0);
+
+  // Playback position indicator
+  const playbackX = useSharedValue(0);
+
+  // Update playback position when currentTime changes
+  useEffect(() => {
+    if (currentTime > 0) {
+      // Position relative to clip start, within the selected range
+      const relativePosition = (currentTime / (endSec - startSec)) * (endX.value - startX.value);
+      playbackX.value = withTiming(startX.value + relativePosition, { duration: 100 });
+    } else {
+      playbackX.value = startX.value;
+    }
+  }, [currentTime, startSec, endSec]);
 
   // Use animated reaction to sync shared values to state
   useAnimatedReaction(
@@ -168,6 +184,11 @@ const WaveformScrubber = ({
     right: 0,
   }));
 
+  // Animated style for playback position indicator
+  const playbackIndicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: playbackX.value }],
+  }));
+
   // Calculate bar width
   const barWidth = (containerWidth - (BAR_COUNT - 1) * 2) / BAR_COUNT;
 
@@ -214,6 +235,11 @@ const WaveformScrubber = ({
               <View style={styles.handleKnob} />
             </Animated.View>
           </GestureDetector>
+
+          {/* Playback position indicator - only visible when playing */}
+          {currentTime > 0 && (
+            <Animated.View style={[styles.playbackIndicator, playbackIndicatorStyle]} />
+          )}
         </View>
       </View>
 
@@ -289,6 +315,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     borderWidth: 2,
     borderColor: colors.text.primary,
+  },
+  playbackIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: colors.text.primary,
+    borderRadius: 1,
   },
   timeContainer: {
     flexDirection: 'row',
