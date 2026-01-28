@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
-const HEADER_HEIGHT = 56;
+const HEADER_HEIGHT = 64;
 const PROFILE_PHOTO_SIZE = 80;
 
 const ProfileScreen = () => {
@@ -65,7 +65,7 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Selects Banner Placeholder */}
-        <View style={[styles.selectsBanner, { marginTop: insets.top + HEADER_HEIGHT }]}>
+        <View style={[styles.selectsBanner, { marginTop: insets.top + HEADER_HEIGHT + 16 }]}>
           <Text style={styles.selectsBannerText}>Selects</Text>
         </View>
 
