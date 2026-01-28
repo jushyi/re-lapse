@@ -54,6 +54,14 @@ const OnboardingStackNavigator = ({ initialRouteName }) => {
     >
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Selects" component={SelectsScreen} />
+      <Stack.Screen
+        name="SongSearch"
+        component={SongSearchScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_bottom',
+        }}
+      />
     </Stack.Navigator>
   );
 };
