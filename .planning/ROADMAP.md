@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3.1: Auth Input Field Fixes** - Phone number backspace fix + profile input placeholder cleanup (INSERTED)
 - [x] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
 - [x] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
-- [ ] **Phase 5: Profile Screen Layout** - Core layout and profile info display
+- [x] **Phase 5: Profile Screen Layout** - Core layout and profile info display
 - [ ] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
@@ -122,12 +122,12 @@ Plans:
 **Goal**: Build core profile screen layout with profile info display (photo, display name, username, bio)
 **Depends on**: Phase 4.1
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 1/2 complete
+**Plans**: 2/2 complete
 
 Plans:
 
 - [x] 05-01: Core layout (header with Friends/Settings, Selects placeholder, overlapping profile photo, info section, future feature placeholders)
-- [ ] 05-02: Profile integration (nav bar thumbnail, other user profile adaptation)
+- [x] 05-02: Profile integration (nav bar thumbnail, other user profile adaptation)
 
 ### Phase 6: Selects Banner
 
@@ -259,7 +259,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 3.1 Auth Input Field Fixes       | 1/1            | Complete    | 2026-01-27 |
 | 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
-| 5. Profile Screen Layout         | 1/2            | In progress | -          |
+| 5. Profile Screen Layout         | 2/2            | Complete    | 2026-01-27 |
 | 6. Selects Banner                | 0/?            | Not started | -          |
 | 7. Profile Song Scaffold         | 0/?            | Not started | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
