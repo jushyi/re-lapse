@@ -17,3 +17,4 @@ export { default as FriendStoryCard } from './FriendStoryCard';
 export { default as AnimatedSplash } from './AnimatedSplash';
 export { default as StepIndicator } from './StepIndicator';
 export { default as SelectsBanner } from './SelectsBanner';
+export { default as FullscreenSelectsViewer } from './FullscreenSelectsViewer';
