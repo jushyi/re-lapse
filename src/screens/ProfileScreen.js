@@ -5,7 +5,12 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
-import { SelectsBanner, FullscreenSelectsViewer, SelectsEditOverlay } from '../components';
+import {
+  SelectsBanner,
+  FullscreenSelectsViewer,
+  SelectsEditOverlay,
+  ProfileSongCard,
+} from '../components';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -20,6 +25,8 @@ const ProfileScreen = () => {
   // Modal states
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showEditOverlay, setShowEditOverlay] = useState(false);
+  const [showSongSearch, setShowSongSearch] = useState(false);
+  const [showSongMenu, setShowSongMenu] = useState(false);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -87,6 +94,22 @@ const ProfileScreen = () => {
       logger.error('ProfileScreen: Failed to save selects', { error: error.message });
       Alert.alert('Error', error.message || 'An error occurred');
     }
+  };
+
+  // Handle song card press (add song when empty)
+  const handleSongPress = () => {
+    if (!profileData?.profileSong) {
+      // Open song search (placeholder for now - Plan 03 will add modal)
+      logger.info('ProfileScreen: Add song pressed');
+      setShowSongSearch(true);
+    }
+    // Play/pause handled internally by ProfileSongCard
+  };
+
+  // Handle song card long press (edit menu)
+  const handleSongLongPress = () => {
+    logger.info('ProfileScreen: Song long press');
+    setShowSongMenu(true);
   };
 
   // Handle loading state
@@ -170,9 +193,14 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* 4. Future Feature Placeholders */}
-        <View style={styles.featurePlaceholder}>
-          <Text style={styles.placeholderText}>Profile Song</Text>
+        {/* 4. Profile Song */}
+        <View style={styles.songContainer}>
+          <ProfileSongCard
+            song={profileData?.profileSong || null}
+            isOwnProfile={isOwnProfile}
+            onPress={handleSongPress}
+            onLongPress={handleSongLongPress}
+          />
         </View>
 
         <View style={[styles.featurePlaceholder, styles.featurePlaceholderLarge]}>
@@ -301,6 +329,11 @@ const styles = StyleSheet.create({
   },
   bioPlaceholder: {
     fontStyle: 'italic',
+  },
+  // Profile Song
+  songContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   // Feature Placeholders
   featurePlaceholder: {
