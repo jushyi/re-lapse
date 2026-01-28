@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
   withSequence,
   cancelAnimation,
+  Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
@@ -29,6 +30,9 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
 
   // Glow animation value
   const glowOpacity = useSharedValue(0);
+
+  // Progress bar animation value (0-1)
+  const progressValue = useSharedValue(0);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -56,6 +60,25 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
 
   const glowStyle = useAnimatedStyle(() => ({
     shadowOpacity: glowOpacity.value,
+  }));
+
+  // Animate progress bar smoothly
+  useEffect(() => {
+    if (progress > 0) {
+      // Animate to new position with linear easing for smooth constant-speed movement
+      progressValue.value = withTiming(progress, {
+        duration: 100,
+        easing: Easing.linear,
+      });
+    } else {
+      // Reset to start without animation
+      progressValue.value = 0;
+    }
+  }, [progress, progressValue]);
+
+  // Animated style for progress bar width
+  const progressBarStyle = useAnimatedStyle(() => ({
+    width: `${progressValue.value * 100}%`,
   }));
 
   // Handle progress updates from audio player
@@ -168,7 +191,7 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
         {/* Progress Bar */}
         {(isPlaying || progress > 0) && (
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+            <Animated.View style={[styles.progressBar, progressBarStyle]} />
           </View>
         )}
       </TouchableOpacity>
