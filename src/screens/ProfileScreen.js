@@ -64,29 +64,32 @@ const ProfileScreen = () => {
           <Text style={styles.selectsBannerText}>Selects</Text>
         </View>
 
-        {/* 2. Profile Photo (overlapping) */}
-        <View style={styles.profilePhotoContainer}>
-          {userProfile?.photoURL ? (
-            <Image source={{ uri: userProfile.photoURL }} style={styles.profilePhoto} />
-          ) : (
-            <View style={[styles.profilePhoto, styles.profilePhotoPlaceholder]}>
-              <Ionicons name="person" size={40} color={colors.text.secondary} />
-            </View>
-          )}
-        </View>
+        {/* 2. Profile Section - Photo overlaps onto Selects, info below */}
+        <View style={styles.profileSection}>
+          {/* Profile Photo (absolutely positioned, overlapping Selects) */}
+          <View style={styles.profilePhotoContainer}>
+            {userProfile?.photoURL ? (
+              <Image source={{ uri: userProfile.photoURL }} style={styles.profilePhoto} />
+            ) : (
+              <View style={[styles.profilePhoto, styles.profilePhotoPlaceholder]}>
+                <Ionicons name="person" size={40} color={colors.text.secondary} />
+              </View>
+            )}
+          </View>
 
-        {/* 3. Profile Info Section - left aligned for best friends feature on right */}
-        <View style={styles.profileInfo}>
-          {/* Display Name */}
-          <Text style={styles.displayName}>{userProfile?.displayName || 'New User'}</Text>
+          {/* Profile Info - left aligned for best friends feature on right */}
+          <View style={styles.profileInfo}>
+            {/* Display Name */}
+            <Text style={styles.displayName}>{userProfile?.displayName || 'New User'}</Text>
 
-          {/* Username */}
-          <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
+            {/* Username */}
+            <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
 
-          {/* Bio */}
-          <Text style={[styles.bio, !userProfile?.bio && styles.bioPlaceholder]}>
-            {userProfile?.bio || 'No bio yet'}
-          </Text>
+            {/* Bio */}
+            <Text style={[styles.bio, !userProfile?.bio && styles.bioPlaceholder]}>
+              {userProfile?.bio || 'No bio yet'}
+            </Text>
+          </View>
         </View>
 
         {/* 4. Future Feature Placeholders */}
@@ -167,9 +170,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   // Profile Photo
+  profileSection: {
+    marginTop: 8,
+  },
   profilePhotoContainer: {
-    alignSelf: 'center',
-    marginTop: -PROFILE_PHOTO_SIZE / 2, // Overlap onto Selects banner
+    position: 'absolute',
+    left: '50%',
+    marginLeft: -PROFILE_PHOTO_SIZE / 2,
+    top: -PROFILE_PHOTO_SIZE / 2 - 8, // Overlap onto Selects banner
+    zIndex: 5,
   },
   profilePhoto: {
     width: PROFILE_PHOTO_SIZE,
@@ -185,14 +194,12 @@ const styles = StyleSheet.create({
   },
   // Profile Info - left aligned for best friends feature on right
   profileInfo: {
-    paddingTop: 12,
     paddingHorizontal: 16,
   },
   displayName: {
     fontSize: 22,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginTop: 8,
   },
   username: {
     fontSize: 16,
