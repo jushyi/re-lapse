@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 4 — Profile Creation Onboarding
+**Current focus:** Phase 5 — Profile Screen Layout
 
 ## Current Position
 
-Phase: 4.1 of 13 (Drag-Reorder Visual Feedback)
-Plan: 1 of 1 in current phase (+ FIX plan)
-Status: Phase complete, UAT issues resolved
-Last activity: 2026-01-27 — Completed 04.1-01-FIX.md (UAT fixes)
+Phase: 5 of 13 (Profile Screen Layout)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-27 — Completed 05-01-PLAN.md
 
-Progress: ██████░░░░ 65%
+Progress: ███████░░░ 70%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 11 (including 1 FIX plan)
+- Total plans completed: 12 (including 1 FIX plan)
 - Average duration: 14.2 min
-- Total execution time: 156 min
+- Total execution time: 170 min
 
 **By Phase:**
 
@@ -34,11 +34,12 @@ Progress: ██████░░░░ 65%
 | 3.1   | 1     | 5 min  | 5 min    |
 | 4     | 4     | 54 min | 13.5 min |
 | 4.1   | 2     | 70 min | 35 min   |
+| 5     | 1     | 14 min | 14 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 15 min, 15 min, 12 min, 45 min, 25 min
-- Trend: Phase 4.1 took longer due to animation debugging and UAT fixes
+- Last 5 plans: 15 min, 12 min, 45 min, 25 min, 14 min
+- Trend: Back to normal pace after Phase 4.1 animation complexity
 
 ## Accumulated Context
 
@@ -76,6 +77,10 @@ Recent decisions affecting current work:
 | 4.1   | withDelay(16ms) + withTiming(200ms) for reset        | Syncs transform reset with LayoutAnimation timing                    |
 | 4.1   | Duplicate photo validation in pickers                | Prevents React key collision from same photo selected twice          |
 | 4.1   | Select dragged photo in preview during drag          | User sees which photo they're manipulating                           |
+| 5     | Left-align profile info for best friends feature     | Reserve right half of section for future best friends feature        |
+| 5     | Profile info in gray card (left half)                | Visual separation and prepares for split layout                      |
+| 5     | Remove edit button from profile                      | Editing via profile photo tap or Settings navigation (future)        |
+| 5     | useSafeAreaInsets for header positioning             | Better control than SafeAreaView for absolute positioned headers     |
 
 ### Deferred Issues
 
@@ -101,9 +106,12 @@ None yet.
 - Phase 4.1 inserted after Phase 4: Drag-Reorder Visual Feedback (URGENT)
   - Thumbnails slide into position during drag operations
   - Visual feedback shows drop target, space collapses when moving away
+- Phase 13 added: Split Activity into Notifications & Friends
+  - Heart icon → notifications screen
+  - New friend icon on header left → friends list screen
 
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 04.1-01-FIX.md (UAT issues resolved) - Phase 4.1 fully complete
+Stopped at: Completed 05-01-PLAN.md - Profile screen core layout
 Resume file: None

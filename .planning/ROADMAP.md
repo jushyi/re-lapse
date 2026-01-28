@@ -31,6 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 10: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
 - [ ] **Phase 11: Feed Reaction Emoji Enhancements** - Randomized emoji selection per photo, custom emoji picker with "Add your own"
 - [ ] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
+- [ ] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
 
 ## Phase Details
 
@@ -121,11 +122,12 @@ Plans:
 **Goal**: Build core profile screen layout with profile info display (photo, display name, username, bio)
 **Depends on**: Phase 4.1
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 1/2 complete
 
 Plans:
 
-- [ ] 05-01: TBD during planning
+- [x] 05-01: Core layout (header with Friends/Settings, Selects placeholder, overlapping profile photo, info section, future feature placeholders)
+- [ ] 05-02: Profile integration (nav bar thumbnail, other user profile adaptation)
 
 ### Phase 6: Selects Banner
 
@@ -226,10 +228,28 @@ Plans:
 3. Users can comment on their own photos
 4. Users cannot react to their own photos (disable reaction UI for self)
 
+### Phase 13: Split Activity into Notifications & Friends
+
+**Goal**: Separate the current activity page into two distinct screens - notifications (accessed via heart icon) and friends list (accessed via new friend icon on left side of feed header)
+**Depends on**: Phase 12
+**Research**: Unlikely (internal UI restructuring)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 13-01: TBD (run /gsd:plan-phase 13 to break down)
+
+**Details:**
+
+1. Heart icon in feed header navigates to notifications screen
+2. New friend icon added to left side of feed header bar
+3. Friend icon navigates to friends list screen
+4. Split existing activity page content between the two screens
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -239,7 +259,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 3.1 Auth Input Field Fixes       | 1/1            | Complete    | 2026-01-27 |
 | 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
-| 5. Profile Screen Layout         | 0/?            | Not started | -          |
+| 5. Profile Screen Layout         | 1/2            | In progress | -          |
 | 6. Selects Banner                | 0/?            | Not started | -          |
 | 7. Profile Song Scaffold         | 0/?            | Not started | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
@@ -247,3 +267,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
 | 11. Feed Reaction Emoji          | 0/?            | Not started | -          |
 | 12. Own Snaps in Stories Bar     | 0/?            | Not started | -          |
+| 13. Split Activity/Friends       | 0/?            | Not started | -          |
