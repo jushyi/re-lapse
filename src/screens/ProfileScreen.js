@@ -24,11 +24,6 @@ const ProfileScreen = () => {
     navigation.navigate('Settings');
   };
 
-  const handleEditProfile = () => {
-    logger.info('ProfileScreen: Edit profile pressed');
-    // Navigation to edit screen is future
-  };
-
   // Handle loading state
   if (!userProfile) {
     return (
@@ -80,18 +75,13 @@ const ProfileScreen = () => {
           )}
         </View>
 
-        {/* 3. Profile Info Section */}
+        {/* 3. Profile Info Section - left aligned for best friends feature on right */}
         <View style={styles.profileInfo}>
           {/* Display Name */}
           <Text style={styles.displayName}>{userProfile?.displayName || 'New User'}</Text>
 
-          {/* Username Row with Edit Icon */}
-          <View style={styles.usernameRow}>
-            <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
-            <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
-              <Ionicons name="create-outline" size={16} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
+          {/* Username */}
+          <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
 
           {/* Bio */}
           <Text style={[styles.bio, !userProfile?.bio && styles.bioPlaceholder]}>
@@ -193,11 +183,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Profile Info
+  // Profile Info - left aligned for best friends feature on right
   profileInfo: {
     paddingTop: 12,
     paddingHorizontal: 16,
-    alignItems: 'center',
   },
   displayName: {
     fontSize: 22,
@@ -205,25 +194,15 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginTop: 8,
   },
-  usernameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
   username: {
     fontSize: 16,
     color: colors.text.secondary,
-  },
-  editButton: {
-    marginLeft: 8,
-    padding: 4,
+    marginTop: 4,
   },
   bio: {
     fontSize: 14,
     color: colors.text.secondary,
     marginTop: 8,
-    textAlign: 'center',
-    maxWidth: 280,
   },
   bioPlaceholder: {
     fontStyle: 'italic',
