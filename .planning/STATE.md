@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 6 of 13 (Selects Banner)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-28 — Completed 06-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-28 — Completed 06-02-PLAN.md
 
-Progress: ████████░░ 78%
+Progress: ████████░░ 80%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 14 (including 1 FIX plan)
+- Total plans completed: 15 (including 1 FIX plan)
 - Average duration: 14 min
-- Total execution time: 200 min
+- Total execution time: 212 min
 
 **By Phase:**
 
@@ -35,12 +35,12 @@ Progress: ████████░░ 78%
 | 4     | 4     | 54 min | 13.5 min |
 | 4.1   | 2     | 70 min | 35 min   |
 | 5     | 2     | 26 min | 13 min   |
-| 6     | 1     | 18 min | 18 min   |
+| 6     | 2     | 30 min | 15 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 45 min, 25 min, 14 min, 12 min, 18 min
-- Trend: Consistent pace, Phase 6 in progress
+- Last 5 plans: 25 min, 14 min, 12 min, 18 min, 12 min
+- Trend: Consistent pace, Phase 6 complete
 
 ## Accumulated Context
 
@@ -89,6 +89,9 @@ Recent decisions affecting current work:
 | 6     | 150ms threshold for tap vs hold detection             | Quick taps trigger onTap, holds pause cycling                        |
 | 6     | Gesture.Exclusive pattern for tap/hold                | LongPress wins if held, Tap wins if quick release                    |
 | 6     | GestureHandlerRootView wrapper for gesture components | Required for gesture recognition in component context                |
+| 6     | Copy DraggableThumbnail into SelectsEditOverlay       | Simpler than extracting to shared, avoids breaking existing code     |
+| 6     | 750ms cycle interval for slideshow                    | Faster cycling for snappier highlight experience                     |
+| 6     | 3:4 aspect ratio for edit overlay preview             | Taller preview with better visual centering                          |
 
 ### Deferred Issues
 
@@ -117,9 +120,16 @@ None yet.
 - Phase 13 added: Split Activity into Notifications & Friends
   - Heart icon → notifications screen
   - New friend icon on header left → friends list screen
+- Phase 14 added: Profile Field Character Limits
+  - Display name: max 16 characters
+  - Username: max 16 characters
+  - Bio: max 160 characters
+- Phase 15 added: Friends Screen & Other Profiles
+  - Friends screen refactor
+  - Wire up ability to view other peoples profile
 
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 06-01-PLAN.md - SelectsBanner component
+Stopped at: Completed 06-02-PLAN.md - Phase 6 complete
 Resume file: None

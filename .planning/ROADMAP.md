@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Profile Creation Onboarding** - Extended setup flow with Selects and song
 - [x] **Phase 4.1: Drag-Reorder Visual Feedback** - Animated thumbnail repositioning during drag (INSERTED)
 - [x] **Phase 5: Profile Screen Layout** - Core layout and profile info display
-- [ ] **Phase 6: Selects Banner** - User-selected photos slideshow
+- [x] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [ ] **Phase 7: Profile Song Scaffold** - Music preview feature (provider TBD)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
@@ -32,6 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 11: Feed Reaction Emoji Enhancements** - Randomized emoji selection per photo, custom emoji picker with "Add your own"
 - [ ] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
 - [ ] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
+- [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (16), username (16), bio (160)
+- [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
 
 ## Phase Details
 
@@ -134,12 +136,12 @@ Plans:
 **Goal**: Implement user-selected photos quick slideshow at top of profile
 **Depends on**: Phase 5
 **Research**: Unlikely (using existing gesture-handler and reanimated)
-**Plans**: 1/2 complete
+**Plans**: 2/2 complete
 
 Plans:
 
 - [x] 06-01: SelectsBanner component with auto-play, hold-to-pause, tap callback
-- [ ] 06-02: Fullscreen view + edit mode navigation
+- [x] 06-02: Fullscreen view + edit mode navigation
 
 ### Phase 7: Profile Song Scaffold
 
@@ -246,10 +248,44 @@ Plans:
 3. Friend icon navigates to friends list screen
 4. Split existing activity page content between the two screens
 
+### Phase 14: Profile Field Character Limits
+
+**Goal**: Enforce maximum character lengths for profile fields - display name (16 chars), username (16 chars), bio (160 chars)
+**Depends on**: Phase 13
+**Research**: Unlikely (input validation patterns)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 14-01: TBD (run /gsd:plan-phase 14 to break down)
+
+**Details:**
+
+1. Display name: maximum 16 characters
+2. Username: maximum 16 characters
+3. Bio: maximum 160 characters
+4. Apply limits in ProfileSetupScreen and any edit profile screens
+5. Show character count feedback to users
+
+### Phase 15: Friends Screen & Other Profiles
+
+**Goal**: Refactor friends screen and wire up the ability to view other peoples profile
+**Depends on**: Phase 14
+**Research**: Unlikely (internal UI patterns)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 15-01: TBD (run /gsd:plan-phase 15 to break down)
+
+**Details:**
+
+[To be added during planning]
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -260,7 +296,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 4. Profile Creation Onboarding   | 4/4            | Complete    | 2026-01-27 |
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
 | 5. Profile Screen Layout         | 2/2            | Complete    | 2026-01-27 |
-| 6. Selects Banner                | 1/2            | In progress | -          |
+| 6. Selects Banner                | 2/2            | Complete    | 2026-01-28 |
 | 7. Profile Song Scaffold         | 0/?            | Not started | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
@@ -268,3 +304,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 11. Feed Reaction Emoji          | 0/?            | Not started | -          |
 | 12. Own Snaps in Stories Bar     | 0/?            | Not started | -          |
 | 13. Split Activity/Friends       | 0/?            | Not started | -          |
+| 14. Profile Field Limits         | 0/?            | Not started | -          |
+| 15. Friends Screen & Profiles    | 0/?            | Not started | -          |
