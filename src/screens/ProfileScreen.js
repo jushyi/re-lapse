@@ -64,7 +64,7 @@ const ProfileScreen = () => {
           <Text style={styles.selectsBannerText}>Selects</Text>
         </View>
 
-        {/* 2. Profile Section - Photo overlaps onto Selects, info below */}
+        {/* 2. Profile Section - Photo overlaps onto Selects, info cards below */}
         <View style={styles.profileSection}>
           {/* Profile Photo (absolutely positioned, overlapping Selects) */}
           <View style={styles.profilePhotoContainer}>
@@ -77,15 +77,10 @@ const ProfileScreen = () => {
             )}
           </View>
 
-          {/* Profile Info - left aligned for best friends feature on right */}
-          <View style={styles.profileInfo}>
-            {/* Display Name */}
+          {/* Profile Info Card - left half, best friends will go on right */}
+          <View style={styles.profileInfoCard}>
             <Text style={styles.displayName}>{userProfile?.displayName || 'New User'}</Text>
-
-            {/* Username */}
             <Text style={styles.username}>@{userProfile?.username || 'username'}</Text>
-
-            {/* Bio */}
             <Text style={[styles.bio, !userProfile?.bio && styles.bioPlaceholder]}>
               {userProfile?.bio || 'No bio yet'}
             </Text>
@@ -169,15 +164,17 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: 16,
   },
-  // Profile Photo
+  // Profile Section
   profileSection: {
-    marginTop: 8,
+    marginTop: 16,
+    marginHorizontal: 16,
+    flexDirection: 'row',
   },
   profilePhotoContainer: {
     position: 'absolute',
     left: '50%',
     marginLeft: -PROFILE_PHOTO_SIZE / 2,
-    top: -PROFILE_PHOTO_SIZE / 2 - 8, // Overlap onto Selects banner
+    top: -PROFILE_PHOTO_SIZE / 2 - 16, // Overlap onto Selects banner
     zIndex: 5,
   },
   profilePhoto: {
@@ -192,9 +189,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Profile Info - left aligned for best friends feature on right
-  profileInfo: {
-    paddingHorizontal: 16,
+  // Profile Info Card - left half
+  profileInfoCard: {
+    flex: 1,
+    maxWidth: '48%',
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 8,
+    padding: 12,
   },
   displayName: {
     fontSize: 22,
