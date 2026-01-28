@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 
 /**
@@ -13,6 +14,16 @@ import logger from '../utils/logger';
  */
 const SettingsScreen = () => {
   const navigation = useNavigation();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    logger.info('SettingsScreen: Sign out pressed');
+    try {
+      await signOut();
+    } catch (error) {
+      logger.error('SettingsScreen: Sign out failed', { error: error.message });
+    }
+  };
 
   const handleNavigate = screenName => {
     logger.debug('SettingsScreen: Navigating to screen', { screenName });
@@ -36,6 +47,12 @@ const SettingsScreen = () => {
       label: 'Terms of Service',
       icon: 'document-outline',
       onPress: () => handleNavigate('TermsOfService'),
+    },
+    {
+      id: 'signout',
+      label: 'Sign Out',
+      icon: 'log-out-outline',
+      onPress: handleSignOut,
     },
     {
       id: 'delete',
