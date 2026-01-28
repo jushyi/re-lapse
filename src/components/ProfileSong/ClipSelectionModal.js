@@ -95,12 +95,12 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
     }
   }, [isPlaying, song]);
 
-  // Handle tap-to-seek on waveform
+  // Handle drag-to-seek on waveform
   const handleSeek = useCallback(
     async seconds => {
+      setPlaybackPosition(seconds);
       if (isPlaying) {
         await seekTo(seconds);
-        setPlaybackPosition(seconds);
       }
     },
     [isPlaying]
@@ -175,7 +175,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
 
             {/* Instructions */}
             <Text style={styles.instructions}>
-              Tap the waveform to skip to any part of the 30-second preview
+              Drag across the waveform to scrub through the preview
             </Text>
 
             {/* Action Buttons */}

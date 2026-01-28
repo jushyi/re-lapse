@@ -1,24 +1,24 @@
 /**
  * WaveformScrubber Component
  *
- * Displays audio timeline with tap-to-seek functionality.
+ * Displays audio timeline with drag-to-seek functionality.
  * Uses a simulated waveform visual (no native modules) for compatibility.
  *
  * Features:
  * - Visual waveform-like representation
- * - Tap anywhere to seek to that position
+ * - Drag to seek through the audio
  * - Playback position indicator
  * - Time display (current / total)
  */
 
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   Easing,
-  useAnimatedReaction,
   runOnJS,
 } from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
@@ -60,7 +60,7 @@ const WaveformScrubber = ({
   songId,
   duration = 30,
   currentTime = 0, // Current playback position in seconds
-  onSeek, // Callback when user taps to seek: (seconds) => void
+  onSeek, // Callback when user drags to seek: (seconds) => void
   containerWidth = DEFAULT_WIDTH,
 }) => {
   // Generate waveform data based on songId
@@ -69,37 +69,61 @@ const WaveformScrubber = ({
   // Calculate pixels per second
   const pixelsPerSecond = containerWidth / duration;
 
-  // Playback position indicator
-  const playbackX = useSharedValue(0);
+  // Playback position indicator (in pixels)
+  const playbackX = useSharedValue(currentTime * pixelsPerSecond);
 
-  // Update playback position when currentTime changes
-  useAnimatedReaction(
-    () => currentTime,
-    time => {
+  // Track if user is currently dragging
+  const isDragging = useSharedValue(false);
+
+  // Update playback position when currentTime changes (only if not dragging)
+  // Using a more direct approach without useAnimatedReaction
+  if (!isDragging.value) {
+    const targetX = currentTime * pixelsPerSecond;
+    playbackX.value = withTiming(targetX, {
+      duration: 50,
+      easing: Easing.linear,
+    });
+  }
+
+  // Handle seek callback on JS thread
+  const handleSeekJS = seconds => {
+    if (onSeek) {
+      onSeek(seconds);
+    }
+  };
+
+  // Pan gesture for dragging to seek
+  const panGesture = Gesture.Pan()
+    .onBegin(e => {
       'worklet';
-      const targetX = time * pixelsPerSecond;
-      // Use linear easing for smooth constant-speed movement matching audio playback
-      playbackX.value = withTiming(targetX, {
-        duration: 50,
-        easing: Easing.linear,
-      });
-    },
-    [currentTime, pixelsPerSecond]
-  );
+      isDragging.value = true;
+      // Jump to touch position immediately
+      const clampedX = Math.max(0, Math.min(e.x, containerWidth));
+      playbackX.value = clampedX;
+      const seekTime = (clampedX / containerWidth) * duration;
+      runOnJS(handleSeekJS)(seekTime);
+    })
+    .onUpdate(e => {
+      'worklet';
+      // Follow finger position
+      const clampedX = Math.max(0, Math.min(e.x, containerWidth));
+      playbackX.value = clampedX;
+      const seekTime = (clampedX / containerWidth) * duration;
+      runOnJS(handleSeekJS)(seekTime);
+    })
+    .onEnd(() => {
+      'worklet';
+      isDragging.value = false;
+    })
+    .onFinalize(() => {
+      'worklet';
+      isDragging.value = false;
+    });
 
   // Animated style for playback position indicator
   const playbackIndicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: playbackX.value }],
   }));
-
-  // Handle tap to seek
-  const handlePress = event => {
-    if (onSeek) {
-      const { locationX } = event.nativeEvent;
-      const seekTime = Math.max(0, Math.min((locationX / containerWidth) * duration, duration));
-      onSeek(seekTime);
-    }
-  };
 
   // Calculate bar width
   const barWidth = (containerWidth - (BAR_COUNT - 1) * 2) / BAR_COUNT;
@@ -109,32 +133,34 @@ const WaveformScrubber = ({
 
   return (
     <View style={[styles.container, { width: containerWidth }]}>
-      {/* Simulated waveform visualization - tappable */}
-      <Pressable onPress={handlePress} style={styles.waveformContainer}>
-        {/* Waveform bars */}
-        <View style={styles.barsContainer}>
-          {waveformData.map((height, index) => {
-            const barProgress = index / BAR_COUNT;
-            const isPlayed = barProgress < progressRatio;
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.bar,
-                  {
-                    width: Math.max(2, barWidth),
-                    height: height * 60,
-                    backgroundColor: isPlayed ? colors.brand.purple : colors.text.tertiary,
-                  },
-                ]}
-              />
-            );
-          })}
-        </View>
+      {/* Simulated waveform visualization - draggable */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={styles.waveformContainer}>
+          {/* Waveform bars */}
+          <View style={styles.barsContainer}>
+            {waveformData.map((height, index) => {
+              const barProgress = index / BAR_COUNT;
+              const isPlayed = barProgress < progressRatio;
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.bar,
+                    {
+                      width: Math.max(2, barWidth),
+                      height: height * 60,
+                      backgroundColor: isPlayed ? colors.brand.purple : colors.text.tertiary,
+                    },
+                  ]}
+                />
+              );
+            })}
+          </View>
 
-        {/* Playback position indicator */}
-        <Animated.View style={[styles.playbackIndicator, playbackIndicatorStyle]} />
-      </Pressable>
+          {/* Playback position indicator */}
+          <Animated.View style={[styles.playbackIndicator, playbackIndicatorStyle]} />
+        </Animated.View>
+      </GestureDetector>
 
       {/* Time labels */}
       <View style={styles.timeContainer}>
