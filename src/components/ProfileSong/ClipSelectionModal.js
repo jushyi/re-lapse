@@ -4,28 +4,19 @@
  * Modal for selecting a clip range from a song preview.
  * Features:
  * - Song info display (album art, title, artist)
- * - Waveform scrubber for range selection
+ * - Visual scrubber for range selection
  * - Preview button to hear selected clip
  * - Confirm button to save selection
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ActivityIndicator,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '../../constants/colors';
 import { playPreview, stopPreview } from '../../services/audioPlayer';
-import { downloadForWaveform } from '../../services/audioDownloader';
 import WaveformScrubber from './WaveformScrubber';
 import logger from '../../utils/logger';
 
@@ -37,34 +28,16 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const insets = useSafeAreaInsets();
 
   // State
-  const [audioPath, setAudioPath] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [clipStart, setClipStart] = useState(0);
   const [clipEnd, setClipEnd] = useState(PREVIEW_DURATION);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Download audio when modal opens
+  // Reset state when song changes or modal opens
   useEffect(() => {
     if (visible && song) {
-      setLoading(true);
-      setError(null);
-      setAudioPath(null);
       setClipStart(song.clipStart ?? 0);
       setClipEnd(song.clipEnd ?? PREVIEW_DURATION);
       setIsPlaying(false);
-
-      downloadForWaveform(song.previewUrl, song.id)
-        .then(path => {
-          logger.info('ClipSelectionModal: Audio downloaded', { path });
-          setAudioPath(path);
-          setLoading(false);
-        })
-        .catch(err => {
-          logger.error('ClipSelectionModal: Download failed', { error: err.message });
-          setError('Could not load audio preview');
-          setLoading(false);
-        });
     }
 
     // Cleanup on close
@@ -158,26 +131,14 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
 
         {/* Waveform Section */}
         <View style={styles.waveformSection}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.brand.purple} />
-              <Text style={styles.loadingText}>Loading waveform...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : audioPath ? (
-            <WaveformScrubber
-              audioPath={audioPath}
-              initialStart={clipStart}
-              initialEnd={clipEnd}
-              duration={PREVIEW_DURATION}
-              onRangeChange={handleRangeChange}
-              containerWidth={WAVEFORM_WIDTH}
-            />
-          ) : null}
+          <WaveformScrubber
+            songId={song.id}
+            initialStart={clipStart}
+            initialEnd={clipEnd}
+            duration={PREVIEW_DURATION}
+            onRangeChange={handleRangeChange}
+            containerWidth={WAVEFORM_WIDTH}
+          />
         </View>
 
         {/* Instructions */}
@@ -191,7 +152,6 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
           <TouchableOpacity
             style={[styles.button, styles.previewButton, isPlaying && styles.previewButtonActive]}
             onPress={handlePreview}
-            disabled={loading || !!error}
           >
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
@@ -204,11 +164,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
           </TouchableOpacity>
 
           {/* Confirm Button */}
-          <TouchableOpacity
-            style={[styles.button, styles.confirmButton]}
-            onPress={handleConfirm}
-            disabled={loading || !!error}
-          >
+          <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={handleConfirm}>
             <Ionicons name="checkmark" size={20} color={colors.text.primary} />
             <Text style={styles.buttonText}>Use This Clip</Text>
           </TouchableOpacity>
@@ -273,26 +229,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     minHeight: 120,
     justifyContent: 'center',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 100,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 100,
-  },
-  errorText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.text.tertiary,
   },
   instructions: {
     fontSize: 13,

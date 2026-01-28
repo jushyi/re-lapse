@@ -1,20 +1,18 @@
 /**
  * WaveformScrubber Component
  *
- * Displays audio waveform with dual-handle range selection.
- * Uses @simform_solutions/react-native-audio-waveform for visualization
- * and custom range overlay for start/end selection.
+ * Displays audio timeline with dual-handle range selection.
+ * Uses a simulated waveform visual (no native modules) for compatibility.
  *
  * Features:
- * - Waveform visualization (native module)
+ * - Visual waveform-like representation
  * - Draggable start and end handles
  * - Visual feedback for selected range
  * - Time display for handles
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Waveform } from '@simform_solutions/react-native-audio-waveform';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -27,6 +25,7 @@ import { colors } from '../../constants/colors';
 const MIN_CLIP_GAP = 5; // Minimum 5 seconds between start and end
 const HANDLE_WIDTH = 4;
 const HANDLE_TOUCH_SIZE = 40;
+const BAR_COUNT = 60; // Number of bars in waveform visualization
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DEFAULT_WIDTH = SCREEN_WIDTH - 64; // Account for padding
@@ -40,8 +39,28 @@ const formatTime = seconds => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+/**
+ * Generate pseudo-random waveform heights based on song ID
+ * Creates a consistent but varied pattern for visual appeal
+ */
+const generateWaveformData = songId => {
+  const seed = songId ? songId.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 12345;
+  const bars = [];
+
+  for (let i = 0; i < BAR_COUNT; i++) {
+    // Create varied heights using sine waves and pseudo-random variation
+    const base = Math.sin((i / BAR_COUNT) * Math.PI) * 0.3 + 0.4;
+    const variation = Math.sin((i * 7 + seed) * 0.5) * 0.3;
+    const height = Math.max(0.15, Math.min(1, base + variation));
+    bars.push(height);
+  }
+
+  return bars;
+};
+
 const WaveformScrubber = ({
   audioPath,
+  songId,
   initialStart = 0,
   initialEnd = 30,
   duration = 30,
@@ -52,8 +71,8 @@ const WaveformScrubber = ({
   const [startSec, setStartSec] = useState(initialStart);
   const [endSec, setEndSec] = useState(initialEnd);
 
-  // Track waveform ready state
-  const [waveformReady, setWaveformReady] = useState(false);
+  // Generate waveform data based on songId
+  const waveformData = useMemo(() => generateWaveformData(songId), [songId]);
 
   // Animated values for handle positions (in pixels)
   const startX = useSharedValue((initialStart / duration) * containerWidth);
@@ -62,9 +81,6 @@ const WaveformScrubber = ({
   // Context for gesture tracking
   const startContext = useSharedValue(0);
   const endContext = useSharedValue(0);
-
-  // Waveform ref
-  const waveformRef = useRef(null);
 
   // Convert pixels to seconds
   const pixelsToSeconds = useCallback(
@@ -165,27 +181,28 @@ const WaveformScrubber = ({
     right: 0,
   }));
 
-  // Handle waveform ready
-  const handleWaveformReady = useCallback(() => {
-    setWaveformReady(true);
-  }, []);
+  // Calculate bar width
+  const barWidth = (containerWidth - (BAR_COUNT - 1) * 2) / BAR_COUNT;
 
   return (
     <View style={[styles.container, { width: containerWidth }]}>
-      {/* Waveform visualization */}
+      {/* Simulated waveform visualization */}
       <View style={styles.waveformContainer}>
-        <Waveform
-          ref={waveformRef}
-          mode="static"
-          path={audioPath}
-          candleSpace={2}
-          candleWidth={3}
-          candleHeightScale={4}
-          containerStyle={styles.waveform}
-          waveColor={colors.text.tertiary}
-          scrubColor={colors.text.primary}
-          onPanStateChange={handleWaveformReady}
-        />
+        {/* Waveform bars */}
+        <View style={styles.barsContainer}>
+          {waveformData.map((height, index) => (
+            <View
+              key={index}
+              style={[
+                styles.bar,
+                {
+                  width: Math.max(2, barWidth),
+                  height: height * 60,
+                },
+              ]}
+            />
+          ))}
+        </View>
 
         {/* Range selection overlay */}
         <View style={styles.overlayContainer}>
@@ -230,9 +247,17 @@ const styles = StyleSheet.create({
   waveformContainer: {
     height: 80,
     position: 'relative',
+    justifyContent: 'center',
   },
-  waveform: {
-    height: 80,
+  barsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 60,
+  },
+  bar: {
+    backgroundColor: colors.text.tertiary,
+    borderRadius: 1,
   },
   overlayContainer: {
     position: 'absolute',
