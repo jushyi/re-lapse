@@ -11,12 +11,13 @@
  * - Time display for handles
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedReaction,
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
@@ -59,7 +60,6 @@ const generateWaveformData = songId => {
 };
 
 const WaveformScrubber = ({
-  audioPath,
   songId,
   initialStart = 0,
   initialEnd = 30,
@@ -67,97 +67,84 @@ const WaveformScrubber = ({
   onRangeChange,
   containerWidth = DEFAULT_WIDTH,
 }) => {
-  // Range state
+  // Range state for display
   const [startSec, setStartSec] = useState(initialStart);
   const [endSec, setEndSec] = useState(initialEnd);
 
   // Generate waveform data based on songId
   const waveformData = useMemo(() => generateWaveformData(songId), [songId]);
 
+  // Calculate pixels per second for worklet use
+  const pixelsPerSecond = containerWidth / duration;
+  const minGapPixels = MIN_CLIP_GAP * pixelsPerSecond;
+
   // Animated values for handle positions (in pixels)
-  const startX = useSharedValue((initialStart / duration) * containerWidth);
-  const endX = useSharedValue((initialEnd / duration) * containerWidth);
+  const startX = useSharedValue(initialStart * pixelsPerSecond);
+  const endX = useSharedValue(initialEnd * pixelsPerSecond);
 
   // Context for gesture tracking
   const startContext = useSharedValue(0);
   const endContext = useSharedValue(0);
 
-  // Convert pixels to seconds
-  const pixelsToSeconds = useCallback(
-    px => {
-      return (px / containerWidth) * duration;
+  // Use animated reaction to sync shared values to state
+  useAnimatedReaction(
+    () => startX.value,
+    currentValue => {
+      'worklet';
+      const seconds = Math.max(0, Math.min(currentValue / pixelsPerSecond, duration));
+      runOnJS(setStartSec)(Math.round(seconds * 10) / 10);
     },
-    [containerWidth, duration]
+    [pixelsPerSecond, duration]
   );
 
-  // Convert seconds to pixels
-  const secondsToPixels = useCallback(
-    sec => {
-      return (sec / duration) * containerWidth;
+  useAnimatedReaction(
+    () => endX.value,
+    currentValue => {
+      'worklet';
+      const seconds = Math.max(0, Math.min(currentValue / pixelsPerSecond, duration));
+      runOnJS(setEndSec)(Math.round(seconds * 10) / 10);
     },
-    [containerWidth, duration]
-  );
-
-  // Update state from animated values (run on JS thread)
-  const updateStartState = useCallback(
-    px => {
-      const sec = pixelsToSeconds(px);
-      setStartSec(Math.max(0, Math.min(sec, duration)));
-    },
-    [pixelsToSeconds, duration]
-  );
-
-  const updateEndState = useCallback(
-    px => {
-      const sec = pixelsToSeconds(px);
-      setEndSec(Math.max(0, Math.min(sec, duration)));
-    },
-    [pixelsToSeconds, duration]
+    [pixelsPerSecond, duration]
   );
 
   // Notify parent of range change
-  const notifyRangeChange = useCallback(() => {
+  useEffect(() => {
     if (onRangeChange) {
       onRangeChange(startSec, endSec);
     }
-  }, [onRangeChange, startSec, endSec]);
-
-  // Notify when either value changes
-  useEffect(() => {
-    notifyRangeChange();
-  }, [startSec, endSec, notifyRangeChange]);
+  }, [startSec, endSec, onRangeChange]);
 
   // Start handle gesture
   const startPanGesture = Gesture.Pan()
     .onBegin(() => {
+      'worklet';
       startContext.value = startX.value;
     })
     .onUpdate(e => {
+      'worklet';
       const newX = startContext.value + e.translationX;
-      const maxX = endX.value - secondsToPixels(MIN_CLIP_GAP);
-      const clampedX = Math.min(Math.max(0, newX), maxX);
-      startX.value = clampedX;
-      runOnJS(updateStartState)(clampedX);
+      const maxX = endX.value - minGapPixels;
+      startX.value = Math.min(Math.max(0, newX), maxX);
     })
     .onEnd(() => {
-      // Snap to nearest position
+      'worklet';
       startX.value = withSpring(startX.value, { damping: 15 });
     });
 
   // End handle gesture
   const endPanGesture = Gesture.Pan()
     .onBegin(() => {
+      'worklet';
       endContext.value = endX.value;
     })
     .onUpdate(e => {
+      'worklet';
       const newX = endContext.value + e.translationX;
-      const minX = startX.value + secondsToPixels(MIN_CLIP_GAP);
-      const clampedX = Math.max(minX, Math.min(newX, containerWidth));
-      endX.value = clampedX;
-      runOnJS(updateEndState)(clampedX);
+      const minX = startX.value + minGapPixels;
+      endX.value = Math.max(minX, Math.min(newX, containerWidth));
     })
     .onEnd(() => {
-      // Snap to nearest position
+      'worklet';
       endX.value = withSpring(endX.value, { damping: 15 });
     });
 
