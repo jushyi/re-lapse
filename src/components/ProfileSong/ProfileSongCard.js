@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -41,6 +42,22 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
       stopPreview();
     };
   }, []);
+
+  // Stop audio when navigating away from screen
+  useFocusEffect(
+    useCallback(() => {
+      // When screen gains focus, nothing to do
+      return () => {
+        // When screen loses focus (navigate away), stop audio
+        if (isPlaying) {
+          logger.debug('ProfileSongCard: Screen losing focus, stopping audio');
+          stopPreview();
+          setIsPlaying(false);
+          setProgress(0);
+        }
+      };
+    }, [isPlaying])
+  );
 
   // Start/stop glow animation based on playing state
   useEffect(() => {
