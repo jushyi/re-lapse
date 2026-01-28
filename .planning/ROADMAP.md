@@ -148,14 +148,14 @@ Plans:
 **Goal**: Scaffold music preview feature with tap-to-play (provider integration deferred)
 **Depends on**: Phase 5
 **Research**: Complete (iTunes API selected for free 30s previews)
-**Plans**: 2/5 complete
+**Plans**: 4/5 complete
 
 Plans:
 
 - [x] 07-01: Audio infrastructure (iTunes service + audio player)
 - [x] 07-02: ProfileSongCard component + ProfileScreen integration
 - [x] 07-03: Song search modal
-- [ ] 07-04: Profile song integration
+- [x] 07-04: Clip selection with WaveformScrubber
 - [ ] 07-05: Song selection in onboarding
 
 ### Phase 8: User Albums Display
@@ -300,7 +300,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
 | 5. Profile Screen Layout         | 2/2            | Complete    | 2026-01-27 |
 | 6. Selects Banner                | 2/2            | Complete    | 2026-01-28 |
-| 7. Profile Song Scaffold         | 3/5            | In progress | -          |
+| 7. Profile Song Scaffold         | 4/5            | In progress | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
