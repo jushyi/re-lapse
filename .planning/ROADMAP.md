@@ -147,13 +147,16 @@ Plans:
 
 **Goal**: Scaffold music preview feature with tap-to-play (provider integration deferred)
 **Depends on**: Phase 5
-**Research**: Likely (music preview API patterns)
-**Research topics**: Spotify/Apple Music preview APIs, audio playback in React Native, expo-av usage
-**Plans**: TBD
+**Research**: Complete (iTunes API selected for free 30s previews)
+**Plans**: 1/5 complete
 
 Plans:
 
-- [ ] 07-01: TBD during planning
+- [x] 07-01: Audio infrastructure (iTunes service + audio player)
+- [ ] 07-02: Song search UI
+- [ ] 07-03: Song player component
+- [ ] 07-04: Profile song integration
+- [ ] 07-05: Song selection in onboarding
 
 ### Phase 8: User Albums Display
 
@@ -297,7 +300,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 4.1 Drag-Reorder Visual Feedback | 1/1            | Complete    | 2026-01-27 |
 | 5. Profile Screen Layout         | 2/2            | Complete    | 2026-01-27 |
 | 6. Selects Banner                | 2/2            | Complete    | 2026-01-28 |
-| 7. Profile Song Scaffold         | 0/?            | Not started | -          |
+| 7. Profile Song Scaffold         | 1/5            | In progress | -          |
 | 8. User Albums Display           | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
