@@ -10,6 +10,7 @@ import {
   FullscreenSelectsViewer,
   SelectsEditOverlay,
   ProfileSongCard,
+  SongSearchModal,
 } from '../components';
 import logger from '../utils/logger';
 
@@ -110,6 +111,36 @@ const ProfileScreen = () => {
   const handleSongLongPress = () => {
     logger.info('ProfileScreen: Song long press');
     setShowSongMenu(true);
+  };
+
+  // Handle song selection from search modal
+  const handleSongSelected = song => {
+    logger.info('ProfileScreen: Song selected', { songId: song.id, title: song.title });
+    setShowSongSearch(false);
+    // For now, directly save to profile (waveform scrubber in Plan 04)
+    // Default clip: 0-30 seconds
+    const profileSong = {
+      ...song,
+      clipStart: 0,
+      clipEnd: 30,
+    };
+    handleSaveSong(profileSong);
+  };
+
+  // Save song to Firestore and update local state
+  const handleSaveSong = async songData => {
+    try {
+      const result = await updateUserDocumentNative(user.uid, { profileSong: songData });
+      if (result.success) {
+        updateUserProfile({ ...userProfile, profileSong: songData });
+        logger.info('ProfileScreen: Profile song saved');
+      } else {
+        Alert.alert('Error', 'Could not save song. Please try again.');
+      }
+    } catch (error) {
+      logger.error('ProfileScreen: Failed to save song', { error: error.message });
+      Alert.alert('Error', error.message || 'An error occurred');
+    }
   };
 
   // Handle loading state
@@ -226,6 +257,13 @@ const ProfileScreen = () => {
         selects={userProfile?.selects || []}
         onSave={handleSaveSelects}
         onClose={() => setShowEditOverlay(false)}
+      />
+
+      {/* Song search modal */}
+      <SongSearchModal
+        visible={showSongSearch}
+        onClose={() => setShowSongSearch(false)}
+        onSelectSong={handleSongSelected}
       />
     </View>
   );

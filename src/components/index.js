@@ -19,4 +19,4 @@ export { default as StepIndicator } from './StepIndicator';
 export { default as SelectsBanner } from './SelectsBanner';
 export { default as FullscreenSelectsViewer } from './FullscreenSelectsViewer';
 export { default as SelectsEditOverlay } from './SelectsEditOverlay';
-export { ProfileSongCard } from './ProfileSong';
+export { ProfileSongCard, SongSearchModal } from './ProfileSong';
