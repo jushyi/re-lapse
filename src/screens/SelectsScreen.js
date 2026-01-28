@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
-  withDelay,
   runOnJS,
   cancelAnimation,
 } from 'react-native-reanimated';
@@ -71,6 +70,11 @@ const DraggableThumbnail = ({
   const scale = useSharedValue(1);
   const zIndex = useSharedValue(0);
   const shiftX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  // Track pending reorder for animation after layout changes
+  const pendingReorderRef = useRef(null);
+  const prevIndexRef = useRef(index);
 
   // Reset position when the photo at this slot changes (after reorder)
   // Cancel any running animations and reset instantly to avoid flash
@@ -83,7 +87,27 @@ const DraggableThumbnail = ({
     translateY.value = 0;
     shiftX.value = 0;
     scale.value = 1;
+    opacity.value = 1;
   }, [photoId]);
+
+  // Apply compensation and animate AFTER layout has changed
+  // useLayoutEffect runs after render but before paint
+  useLayoutEffect(() => {
+    if (pendingReorderRef.current !== null && prevIndexRef.current !== index) {
+      // Layout has changed, now apply compensation so item appears at drop position
+      const { savedTranslateX, savedTranslateY, slotShift } = pendingReorderRef.current;
+      translateX.value = savedTranslateX - slotShift;
+      translateY.value = savedTranslateY;
+
+      // Animate from drop position to final slot position
+      translateX.value = withTiming(0, { duration: 220 });
+      translateY.value = withTiming(0, { duration: 220 });
+      opacity.value = withTiming(1, { duration: 150 });
+
+      pendingReorderRef.current = null;
+    }
+    prevIndexRef.current = index;
+  }, [index]);
 
   // Animate horizontal shift for non-dragged items based on hover position
   useEffect(() => {
@@ -134,6 +158,11 @@ const DraggableThumbnail = ({
     [index, totalPhotos]
   );
 
+  // Store pending reorder info for useLayoutEffect to process after layout changes
+  const storePendingReorder = useCallback(info => {
+    pendingReorderRef.current = info;
+  }, []);
+
   const gesture = Gesture.Pan()
     .activateAfterLongPress(200)
     .onStart(() => {
@@ -172,15 +201,25 @@ const DraggableThumbnail = ({
         runOnJS(onHoverIndexChange)(null);
         runOnJS(onDragEnd)();
       } else if (didReorder) {
-        // Reset visual state - delay transform reset to sync with LayoutAnimation
+        // Calculate compensation for after layout changes
+        const slotShift = (targetIndex - index) * (THUMBNAIL_SIZE + THUMBNAIL_GAP);
+
+        // Store pending reorder info - compensation will be applied in useLayoutEffect
+        // after the layout has actually changed
+        runOnJS(storePendingReorder)({
+          savedTranslateX: translateX.value,
+          savedTranslateY: translateY.value,
+          slotShift,
+        });
+
+        // Brief opacity fade to mask the layout transition
+        opacity.value = withTiming(0.4, { duration: 30 });
+
         scale.value = withTiming(1, { duration: 150 });
         zIndex.value = 0;
         runOnJS(onHoverIndexChange)(null);
         runOnJS(onReorder)(index, targetIndex);
         runOnJS(onDragEnd)();
-        // Delay reset slightly so LayoutAnimation has started before transform resets
-        translateX.value = withDelay(16, withTiming(0, { duration: 200 }));
-        translateY.value = withDelay(16, withTiming(0, { duration: 200 }));
       } else {
         // No reorder - snap back
         translateX.value = withTiming(0, { duration: 150 });
@@ -208,9 +247,11 @@ const DraggableThumbnail = ({
     zIndex: zIndex.value,
   }));
 
-  const opacityStyle = useAnimatedStyle(() => ({
-    opacity: isDraggingAny && draggingIndex !== index ? 0.6 : 1,
-  }));
+  const opacityStyle = useAnimatedStyle(() => {
+    // Combine: non-dragged items are dimmed, and dropped item fades during transition
+    const baseOpacity = isDraggingAny && draggingIndex !== index ? 0.6 : 1;
+    return { opacity: baseOpacity * opacity.value };
+  });
 
   return (
     <GestureDetector gesture={gesture}>
