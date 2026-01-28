@@ -39,6 +39,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const [clipStart, setClipStart] = useState(0);
   const [clipEnd, setClipEnd] = useState(PREVIEW_DURATION);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0); // Position within clip in seconds
 
   // Reset state when song changes or modal opens
   useEffect(() => {
@@ -46,12 +47,14 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
       setClipStart(song.clipStart ?? 0);
       setClipEnd(song.clipEnd ?? PREVIEW_DURATION);
       setIsPlaying(false);
+      setPlaybackPosition(0);
     }
 
     // Cleanup on close
     if (!visible) {
       stopPreview();
       setIsPlaying(false);
+      setPlaybackPosition(0);
     }
   }, [visible, song]);
 
@@ -66,13 +69,21 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
     if (isPlaying) {
       await stopPreview();
       setIsPlaying(false);
+      setPlaybackPosition(0);
     } else {
       setIsPlaying(true);
+      setPlaybackPosition(0);
+      const clipDuration = clipEnd - clipStart;
       await playPreview(song.previewUrl, {
         clipStart,
         clipEnd,
+        onProgress: progress => {
+          // progress is 0-1 within the clip range, convert to seconds
+          setPlaybackPosition(progress * clipDuration);
+        },
         onComplete: () => {
           setIsPlaying(false);
+          setPlaybackPosition(0);
         },
       });
     }
@@ -82,6 +93,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const handleConfirm = useCallback(async () => {
     await stopPreview();
     setIsPlaying(false);
+    setPlaybackPosition(0);
 
     const songWithClip = {
       ...song,
@@ -102,6 +114,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const handleCancel = useCallback(async () => {
     await stopPreview();
     setIsPlaying(false);
+    setPlaybackPosition(0);
     onCancel();
   }, [onCancel]);
 
@@ -148,6 +161,7 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
               duration={PREVIEW_DURATION}
               onRangeChange={handleRangeChange}
               containerWidth={WAVEFORM_WIDTH}
+              currentTime={playbackPosition}
             />
           </View>
 
