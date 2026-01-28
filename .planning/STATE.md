@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 7 of 16 (Profile Song Scaffold)
-Plan: 4 of 5 in current phase (+ 1 FIX plan)
+Plan: 4 of 5 in current phase (+ 2 FIX plans)
 Status: In progress
-Last activity: 2026-01-28 — Completed 07-04-FIX.md
+Last activity: 2026-01-28 — Completed 07-04-FIX2.md
 
 Progress: ████████░░ 80%
 
@@ -20,9 +20,9 @@ Progress: ████████░░ 80%
 
 **Velocity:**
 
-- Total plans completed: 21 (including 3 FIX plans)
-- Average duration: 12 min
-- Total execution time: 264 min
+- Total plans completed: 22 (including 4 FIX plans)
+- Average duration: 13 min
+- Total execution time: 280 min
 
 **By Phase:**
 
@@ -36,12 +36,12 @@ Progress: ████████░░ 80%
 | 4.1   | 2     | 70 min | 35 min   |
 | 5     | 2     | 26 min | 13 min   |
 | 6     | 3     | 38 min | 13 min   |
-| 7     | 5     | 44 min | 9 min    |
+| 7     | 6     | 60 min | 10 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 8 min, 3 min, 3 min, 20 min, 10 min
-- Trend: Consistent pace, FIX plan addressed minor UX polish
+- Last 5 plans: 3 min, 3 min, 20 min, 10 min, 16 min
+- Trend: Consistent pace, FIX2 plan addressed audio and animation polish
 
 ## Accumulated Context
 
@@ -108,6 +108,10 @@ Recent decisions affecting current work:
 | 7     | Worklet directive + runOnJS for gesture state         | Prevents crash when updating React state from gesture callbacks        |
 | 7     | 5-second minimum clip gap                             | Ensures meaningful clip selection, prevents degenerate ranges          |
 | 7     | Sequential modal flow for song/clip selection         | iOS React Native doesn't support stacked modals; cancel reopens search |
+| 7     | 50ms progress update interval for audio               | 20 updates/sec provides smooth playback indicator animation            |
+| 7     | Linear easing with matching animation duration        | Constant speed movement for audio playback (not spring/ease-in-out)    |
+| 7     | Immediate audio cut on stop (no fade out)             | User preference for clean cut over gradual fade                        |
+| 7     | playsInSilentModeIOS: true for audio                  | Profile songs play through speakers regardless of silent switch        |
 
 ### Deferred Issues
 
@@ -152,5 +156,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 07-04-FIX.md - UX fixes for clip selection modal
+Stopped at: Completed 07-04-FIX2.md - Silent mode audio + smooth animations
 Resume file: None
