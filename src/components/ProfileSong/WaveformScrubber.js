@@ -11,7 +11,7 @@
  * - Time display (current / total)
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -72,18 +72,19 @@ const WaveformScrubber = ({
   // Playback position indicator (in pixels)
   const playbackX = useSharedValue(currentTime * pixelsPerSecond);
 
-  // Track if user is currently dragging
-  const isDragging = useSharedValue(false);
+  // Track if user is currently dragging (JS state for useEffect dependency)
+  const isDraggingRef = useSharedValue(false);
 
   // Update playback position when currentTime changes (only if not dragging)
-  // Using a more direct approach without useAnimatedReaction
-  if (!isDragging.value) {
-    const targetX = currentTime * pixelsPerSecond;
-    playbackX.value = withTiming(targetX, {
-      duration: 50,
-      easing: Easing.linear,
-    });
-  }
+  useEffect(() => {
+    if (!isDraggingRef.value) {
+      const targetX = currentTime * pixelsPerSecond;
+      playbackX.value = withTiming(targetX, {
+        duration: 50,
+        easing: Easing.linear,
+      });
+    }
+  }, [currentTime, pixelsPerSecond, playbackX, isDraggingRef]);
 
   // Handle seek callback on JS thread
   const handleSeekJS = seconds => {
@@ -96,7 +97,7 @@ const WaveformScrubber = ({
   const panGesture = Gesture.Pan()
     .onBegin(e => {
       'worklet';
-      isDragging.value = true;
+      isDraggingRef.value = true;
       // Jump to touch position immediately
       const clampedX = Math.max(0, Math.min(e.x, containerWidth));
       playbackX.value = clampedX;
@@ -113,11 +114,11 @@ const WaveformScrubber = ({
     })
     .onEnd(() => {
       'worklet';
-      isDragging.value = false;
+      isDraggingRef.value = false;
     })
     .onFinalize(() => {
       'worklet';
-      isDragging.value = false;
+      isDraggingRef.value = false;
     });
 
   // Animated style for playback position indicator
