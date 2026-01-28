@@ -13,14 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  Button,
-  Input,
-  StepIndicator,
-  SongSearchModal,
-  ClipSelectionModal,
-  ProfileSongCard,
-} from '../components';
+import { Button, Input, StepIndicator, ProfileSongCard } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto } from '../services/firebase/storageService';
 import {
@@ -54,8 +47,6 @@ const ProfileSetupScreen = ({ navigation }) => {
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
-  const [showSongSearch, setShowSongSearch] = useState(false);
-  const [selectedSongForClip, setSelectedSongForClip] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(true);
 
@@ -183,23 +174,12 @@ const ProfileSetupScreen = ({ navigation }) => {
   };
 
   const handleSongPress = () => {
-    setShowSongSearch(true);
-  };
-
-  const handleSongSearchSelect = song => {
-    setShowSongSearch(false);
-    setSelectedSongForClip(song);
-  };
-
-  const handleClipConfirm = songWithClip => {
-    setSelectedSongForClip(null);
-    setSelectedSong(songWithClip);
-    logger.info('ProfileSetupScreen: Song selected', { songId: songWithClip.id });
-  };
-
-  const handleClipCancel = () => {
-    setSelectedSongForClip(null);
-    setShowSongSearch(true); // Re-open search so user can pick different song
+    navigation.navigate('SongSearch', {
+      onSongSelected: songWithClip => {
+        setSelectedSong(songWithClip);
+        logger.info('ProfileSetupScreen: Song selected', { songId: songWithClip.id });
+      },
+    });
   };
 
   const validate = () => {
@@ -427,19 +407,6 @@ const ProfileSetupScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <SongSearchModal
-        visible={showSongSearch}
-        onClose={() => setShowSongSearch(false)}
-        onSelectSong={handleSongSearchSelect}
-      />
-
-      <ClipSelectionModal
-        visible={selectedSongForClip !== null}
-        song={selectedSongForClip}
-        onConfirm={handleClipConfirm}
-        onCancel={handleClipCancel}
-      />
     </SafeAreaView>
   );
 };
