@@ -58,18 +58,31 @@ const ProfileScreen = () => {
       setAlbums(result.albums);
       logger.info('ProfileScreen: Fetched albums', { count: result.albums.length });
 
-      // Fetch cover photo URLs
-      const coverPhotoIds = result.albums.map(album => album.coverPhotoId).filter(id => id);
+      // Fetch cover photo URLs AND stack photo URLs (up to 2 per album for stack effect)
+      const allPhotoIds = new Set();
 
-      if (coverPhotoIds.length > 0) {
-        const photosResult = await getPhotosByIds(coverPhotoIds);
+      result.albums.forEach(album => {
+        // Add cover photo
+        if (album.coverPhotoId) {
+          allPhotoIds.add(album.coverPhotoId);
+        }
+        // Add up to 2 most recent non-cover photos for stack effect
+        if (album.photoIds && album.photoIds.length > 0) {
+          const nonCoverPhotos = album.photoIds.filter(id => id !== album.coverPhotoId);
+          const stackPhotos = nonCoverPhotos.slice(-2);
+          stackPhotos.forEach(id => allPhotoIds.add(id));
+        }
+      });
+
+      if (allPhotoIds.size > 0) {
+        const photosResult = await getPhotosByIds([...allPhotoIds]);
         if (photosResult.success) {
           const urlMap = {};
           photosResult.photos.forEach(photo => {
             urlMap[photo.id] = photo.imageURL;
           });
           setCoverPhotoUrls(urlMap);
-          logger.info('ProfileScreen: Fetched cover photo URLs', {
+          logger.info('ProfileScreen: Fetched album photo URLs', {
             count: Object.keys(urlMap).length,
           });
         }
