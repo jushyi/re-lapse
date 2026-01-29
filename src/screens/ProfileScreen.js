@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -37,6 +37,11 @@ const ProfileScreen = () => {
   const [albumMenuVisible, setAlbumMenuVisible] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [albumMenuAnchor, setAlbumMenuAnchor] = useState(null);
+
+  // New album animation state
+  const [highlightedAlbumId, setHighlightedAlbumId] = useState(null);
+  const scrollViewRef = useRef(null);
+  const albumBarRef = useRef(null);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -100,6 +105,44 @@ const ProfileScreen = () => {
       fetchAlbums();
     }, [isOwnProfile, user?.uid])
   );
+
+  // Run new album animation sequence
+  const runNewAlbumAnimation = useCallback(
+    albumId => {
+      // Wait for albums to be fetched, then run animation sequence
+      // Timing: scroll to albums (0ms), scroll FlatList (300ms), highlight (500ms), clear (1500ms)
+
+      // Step 1: Scroll main ScrollView to show albums bar (approximately 450-500px)
+      scrollViewRef.current?.scrollTo({ y: 450, animated: true });
+
+      // Step 2: After 300ms, scroll the album FlatList to the new album
+      setTimeout(() => {
+        albumBarRef.current?.scrollToAlbum(albumId);
+      }, 300);
+
+      // Step 3: After 500ms total, set highlightedAlbumId to trigger scale bounce
+      setTimeout(() => {
+        setHighlightedAlbumId(albumId);
+      }, 500);
+
+      // Step 4: After 1500ms total, clear the highlight
+      setTimeout(() => {
+        setHighlightedAlbumId(null);
+      }, 1500);
+    },
+    [scrollViewRef, albumBarRef]
+  );
+
+  // Detect newAlbumId from route params and trigger animation
+  useEffect(() => {
+    const { newAlbumId } = route.params || {};
+    if (newAlbumId && albums.length > 0) {
+      // Clear param to prevent re-trigger on future focus
+      navigation.setParams({ newAlbumId: undefined });
+      // Run animation sequence
+      runNewAlbumAnimation(newAlbumId);
+    }
+  }, [route.params, albums, navigation, runNewAlbumAnimation]);
 
   // TODO: Fetch other user's profile data from Firestore
   // For now, use own profile for own view, placeholder for other users
@@ -350,6 +393,7 @@ const ProfileScreen = () => {
 
       {/* Scrollable Content */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -400,10 +444,12 @@ const ProfileScreen = () => {
 
         {/* 5. Albums Bar */}
         <AlbumBar
+          ref={albumBarRef}
           albums={albums}
           photoUrls={coverPhotoUrls}
           isOwnProfile={isOwnProfile}
           onAlbumPress={handleAlbumPress}
+          highlightedAlbumId={highlightedAlbumId}
           onAlbumLongPress={handleAlbumLongPress}
           onAddPress={handleAddAlbumPress}
         />
