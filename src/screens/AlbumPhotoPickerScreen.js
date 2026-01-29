@@ -163,7 +163,10 @@ const AlbumPhotoPickerScreen = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Photos</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Select Photos</Text>
+          <Text style={styles.headerSubtitle}>{selectedIds.length} selected</Text>
+        </View>
         <TouchableOpacity
           onPress={handleCreatePress}
           style={styles.headerButton}
@@ -180,13 +183,6 @@ const AlbumPhotoPickerScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Selection count */}
-      {selectedIds.length > 0 && (
-        <View style={styles.selectionBar}>
-          <Text style={styles.selectionText}>{selectedIds.length} selected</Text>
-        </View>
-      )}
 
       {/* Photo Grid */}
       {loading ? (
@@ -233,10 +229,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text.primary,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#888888',
+    marginTop: 2,
   },
   actionButtonText: {
     fontSize: 16,
@@ -245,15 +250,6 @@ const styles = StyleSheet.create({
   },
   actionButtonDisabled: {
     color: colors.text.tertiary,
-  },
-  selectionBar: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: colors.background.secondary,
-  },
-  selectionText: {
-    fontSize: 14,
-    color: colors.text.secondary,
   },
   loadingContainer: {
     flex: 1,
