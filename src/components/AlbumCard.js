@@ -47,7 +47,6 @@ export const AddAlbumCard = ({ onPress }) => {
       <View style={styles.addContainer}>
         <Ionicons name="add" size={40} color={colors.text.secondary} />
       </View>
-      <Text style={styles.title}>New Album</Text>
     </TouchableOpacity>
   );
 };
