@@ -457,15 +457,14 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: 'absolute',
-    left: 20,
-    right: 20,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#333333',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 20,
     gap: 8,
   },
   toastText: {
