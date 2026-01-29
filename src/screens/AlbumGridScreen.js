@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import {
@@ -101,10 +101,12 @@ const AlbumGridScreen = () => {
     }
   };
 
-  // Fetch album and photos on mount
-  useEffect(() => {
-    fetchAlbumData();
-  }, [albumId]);
+  // Fetch album and photos when screen gains focus (handles returning from photo picker)
+  useFocusEffect(
+    useCallback(() => {
+      fetchAlbumData();
+    }, [albumId])
+  );
 
   const handleBackPress = () => {
     logger.info('AlbumGridScreen: Back pressed');
@@ -252,6 +254,7 @@ const AlbumGridScreen = () => {
     logger.info('AlbumGridScreen: Add photos pressed');
     navigation.navigate('AlbumPhotoPicker', {
       existingAlbumId: albumId,
+      existingPhotoIds: album?.photoIds || [],
     });
   };
 
