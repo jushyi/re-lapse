@@ -25,3 +25,4 @@ export { default as AlbumBar } from './AlbumBar';
 export { default as AlbumPhotoViewer } from './AlbumPhotoViewer';
 export { default as AddToAlbumSheet } from './AddToAlbumSheet';
 export { default as DropdownMenu } from './DropdownMenu';
+export { default as RenameAlbumModal } from './RenameAlbumModal';
