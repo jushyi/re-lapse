@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 9 — Monthly Albums
+**Current focus:** Phase 8.1 — Grid Header Safe Area Fix
 
 ## Current Position
 
 Phase: 8 of 15 (User Albums Display)
-Plan: FIX7 complete (6/6 plans + 7 FIX plans)
-Status: Phase complete (all FIX plans complete)
-Last activity: 2026-01-29 — Completed 08-FIX7-PLAN.md
+Plan: ENH1 complete (6/6 plans + 7 FIX plans + 1 ENH plan)
+Status: Phase complete
+Last activity: 2026-01-29 — Completed 08-ENH1-PLAN.md
 
 Progress: █████████░ 95%
 
@@ -43,8 +43,8 @@ Progress: █████████░ 95%
 
 **Recent Trend:**
 
-- Last 5 plans: 12 min, 15 min, 2 min, 15 min, 8 min
-- Trend: Phase 8 all FIX plans complete - photo picker/viewer fixes
+- Last 5 plans: 15 min, 2 min, 15 min, 8 min, 3 min
+- Trend: Phase 8 ENH1 complete - stacked card effect for albums
 
 ## Accumulated Context
 
@@ -191,9 +191,13 @@ None yet.
   - User preference: Keep waveform visualization with drag-to-seek
   - Removed dual range handles, simplified to single-point seeking
   - Tap or drag to scrub through 30-second preview
+- Phase 8.1 inserted after Phase 8: Grid Header Safe Area Fix (URGENT)
+  - Album grid view and photo picker header gets cut off when scrolling up
+  - Photos visible behind notch/status bar area
+  - Header background should extend to cover safe area with black
 
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 08-FIX7-PLAN.md - Photo picker/viewer fixes (UAT-015, UAT-016, UAT-017)
+Stopped at: Completed 08-ENH1-PLAN.md - Stacked card effect for album cards
 Resume file: None

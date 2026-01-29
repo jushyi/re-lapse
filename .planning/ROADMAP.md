@@ -29,6 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7.2: Song Modal Stacking Fix** - Convert SongSearchModal to screen for stacked navigation (INSERTED)
 - [x] **Phase 7.3: Simplify Clip Selection Modal** - Simplified waveform with drag-to-seek, no range handles (INSERTED)
 - [x] **Phase 8: User Albums Display** - Horizontal scroll album bar
+- [ ] **Phase 8.1: Grid Header Safe Area Fix** - Fix grid views showing photos behind status bar when scrolling (INSERTED)
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
 - [ ] **Phase 10: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
 - [ ] **Phase 11: Feed Reaction Emoji Enhancements** - Randomized emoji selection per photo, custom emoji picker with "Add your own"
@@ -207,7 +208,7 @@ Plans:
 **Goal**: Implement horizontal scroll bar for user-created albums (Instagram highlights style)
 **Depends on**: Phase 5
 **Research**: Unlikely (standard horizontal FlatList pattern)
-**Plans**: 6/6 complete (+ 7 FIX plans)
+**Plans**: 6/6 complete (+ 7 FIX plans + 1 ENH plan)
 
 Plans:
 
@@ -224,6 +225,25 @@ Plans:
 - [x] 08-FIX5: Menu system overhaul (UAT-007, UAT-009)
 - [x] 08-FIX6: Modal/menu UX polish (UAT-013, UAT-014, UAT-018)
 - [x] 08-FIX7: Photo picker/viewer fixes (UAT-015, UAT-016, UAT-017)
+- [x] 08-ENH1: Stacked card effect (visual depth for album cards)
+
+### Phase 8.1: Grid Header Safe Area Fix (INSERTED)
+
+**Goal**: Fix album grid view and photo picker showing photos behind status bar/notch when scrolling up - header should have black background extending to safe area
+**Depends on**: Phase 8
+**Research**: Unlikely (safe area styling fix)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 08.1-01: TBD (run /gsd:plan-phase 8.1 to break down)
+
+**Details:**
+
+1. Album grid view (AlbumGridScreen) header gets cut off when scrolling up
+2. Photo picker (AlbumPhotoPickerScreen) has same issue
+3. Photos visible behind the notch/iOS status bar indicators
+4. Header background should extend to cover the entire safe area with black
 
 ### Phase 9: Monthly Albums
 
@@ -344,7 +364,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -360,6 +380,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 7.2 Song Modal Stacking Fix      | 1/1 + 1 FIX    | Complete    | 2026-01-28 |
 | 7.3 Simplify Clip Selection      | 1/1            | Complete    | 2026-01-29 |
 | 8. User Albums Display           | 6/6 + 7 FIX    | Complete    | 2026-01-29 |
+| 8.1 Grid Header Safe Area Fix    | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
 | 11. Feed Reaction Emoji          | 0/?            | Not started | -          |
