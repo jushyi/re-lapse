@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
-  withDelay,
+  withTiming,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
@@ -38,11 +39,11 @@ export const AlbumCard = ({
   // Trigger scale bounce when isHighlighted becomes true
   useEffect(() => {
     if (isHighlighted) {
-      // Quick bounce - spring up then back down
-      scale.value = withSpring(1.08, { damping: 12, stiffness: 500 }, () => {
-        // Bounce back to normal
-        scale.value = withSpring(1, { damping: 14, stiffness: 500 });
-      });
+      // Quick bounce - 80ms up, 80ms down
+      scale.value = withSequence(
+        withTiming(1.08, { duration: 80, easing: Easing.out(Easing.ease) }),
+        withTiming(1, { duration: 80, easing: Easing.in(Easing.ease) })
+      );
     }
   }, [isHighlighted, scale]);
 
