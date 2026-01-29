@@ -207,7 +207,7 @@ Plans:
 **Goal**: Implement horizontal scroll bar for user-created albums (Instagram highlights style)
 **Depends on**: Phase 5
 **Research**: Unlikely (standard horizontal FlatList pattern)
-**Plans**: 6/6 complete
+**Plans**: 6/6 complete (+ 1 FIX plan)
 
 Plans:
 
@@ -217,6 +217,7 @@ Plans:
 - [x] 08-04: Album grid view (AlbumGridScreen, cover photos, navigation)
 - [x] 08-05: Album photo viewer (full-screen, swipe navigation, set cover, remove)
 - [x] 08-06: Album management (rename, delete, change cover, AddToAlbumSheet)
+- [x] 08-FIX1: UAT cosmetic fixes (UAT-001, UAT-003, UAT-005)
 
 ### Phase 9: Monthly Albums
 
