@@ -22,7 +22,7 @@ import {
   updateAlbum,
   deleteAlbum,
 } from '../services/firebase';
-import { AlbumPhotoViewer } from '../components';
+import { AlbumPhotoViewer, DropdownMenu, RenameAlbumModal } from '../components';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -46,6 +46,12 @@ const AlbumGridScreen = () => {
   const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
   const [toastVisible, setToastVisible] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
+
+  // Menu states
+  const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
+  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   // Fetch album and photos function
   const fetchAlbumData = async () => {
@@ -102,38 +108,15 @@ const AlbumGridScreen = () => {
     navigation.goBack();
   };
 
-  // Rename album handler
-  const handleRenameAlbum = () => {
-    logger.info('AlbumGridScreen: Rename album selected');
-    Alert.prompt(
-      'Rename Album',
-      'Enter a new name (max 24 characters)',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: async newName => {
-            if (!newName || newName.trim().length === 0) {
-              Alert.alert('Error', 'Album name cannot be empty');
-              return;
-            }
-            if (newName.trim().length > 24) {
-              Alert.alert('Error', 'Album name must be 24 characters or less');
-              return;
-            }
-            logger.info('AlbumGridScreen: Renaming album', { albumId, newName: newName.trim() });
-            const result = await updateAlbum(albumId, { name: newName.trim() });
-            if (result.success) {
-              fetchAlbumData(); // Refresh to show new name
-            } else {
-              Alert.alert('Error', result.error || 'Could not rename album');
-            }
-          },
-        },
-      ],
-      'plain-text',
-      album?.name || ''
-    );
+  // Rename album handler - save new name
+  const handleRenameAlbum = async newName => {
+    logger.info('AlbumGridScreen: Renaming album', { albumId, newName });
+    const result = await updateAlbum(albumId, { name: newName });
+    if (result.success) {
+      fetchAlbumData(); // Refresh to show new name
+    } else {
+      Alert.alert('Error', result.error || 'Could not rename album');
+    }
   };
 
   // Delete album handler with confirmation
@@ -158,24 +141,20 @@ const AlbumGridScreen = () => {
     ]);
   };
 
-  const handleMenuPress = () => {
-    logger.info('AlbumGridScreen: Menu pressed');
-    Alert.alert(album?.name || 'Album', '', [
-      {
-        text: 'Rename Album',
-        onPress: handleRenameAlbum,
-      },
-      {
-        text: 'Delete Album',
-        style: 'destructive',
-        onPress: handleDeleteAlbum,
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-    ]);
-  };
+  // Header menu options
+  const headerMenuOptions = [
+    {
+      label: 'Rename Album',
+      icon: 'pencil-outline',
+      onPress: () => setRenameModalVisible(true),
+    },
+    {
+      label: 'Delete Album',
+      icon: 'trash-outline',
+      onPress: handleDeleteAlbum,
+      destructive: true,
+    },
+  ];
 
   const handlePhotoPress = (photo, index) => {
     logger.info('AlbumGridScreen: Photo pressed', { photoId: photo.id, index });
@@ -188,17 +167,20 @@ const AlbumGridScreen = () => {
     if (!isOwnProfile) return;
 
     logger.info('AlbumGridScreen: Photo long pressed', { photoId: photo.id });
-    Alert.alert('Photo Options', '', [
-      {
-        text: 'Set as Album Cover',
-        onPress: () => handleSetCover(photo.id),
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-    ]);
+    setSelectedPhoto(photo);
+    setPhotoMenuVisible(true);
   };
+
+  // Photo menu options (dynamically created based on selectedPhoto)
+  const photoMenuOptions = selectedPhoto
+    ? [
+        {
+          label: 'Set as Cover',
+          icon: 'image-outline',
+          onPress: () => handleSetCover(selectedPhoto.id),
+        },
+      ]
+    : [];
 
   // Handle remove photo from album
   const handleRemovePhoto = async photoId => {
@@ -330,7 +312,7 @@ const AlbumGridScreen = () => {
           </Text>
         </View>
         {isOwnProfile ? (
-          <TouchableOpacity onPress={handleMenuPress} style={styles.headerButton}>
+          <TouchableOpacity onPress={() => setHeaderMenuVisible(true)} style={styles.headerButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         ) : (
@@ -371,6 +353,28 @@ const AlbumGridScreen = () => {
           <Text style={styles.toastText}>Cover set</Text>
         </Animated.View>
       )}
+
+      {/* Header dropdown menu */}
+      <DropdownMenu
+        visible={headerMenuVisible}
+        onClose={() => setHeaderMenuVisible(false)}
+        options={headerMenuOptions}
+      />
+
+      {/* Photo long-press dropdown menu */}
+      <DropdownMenu
+        visible={photoMenuVisible}
+        onClose={() => setPhotoMenuVisible(false)}
+        options={photoMenuOptions}
+      />
+
+      {/* Rename album modal */}
+      <RenameAlbumModal
+        visible={renameModalVisible}
+        currentName={album?.name || ''}
+        onClose={() => setRenameModalVisible(false)}
+        onSave={handleRenameAlbum}
+      />
     </View>
   );
 };
