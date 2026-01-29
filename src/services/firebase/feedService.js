@@ -448,7 +448,7 @@ export const getFriendStoriesData = async currentUserId => {
       logger.error('feedService.getFriendStoriesData: Failed to get friend IDs', {
         error: friendsResult.error,
       });
-      return { success: false, error: friendsResult.error };
+      return { success: false, error: friendsResult.error, totalFriendCount: 0 };
     }
 
     const friendUserIds = friendsResult.friendUserIds || [];
@@ -458,7 +458,7 @@ export const getFriendStoriesData = async currentUserId => {
 
     if (friendUserIds.length === 0) {
       logger.info('feedService.getFriendStoriesData: No friends found');
-      return { success: true, friendStories: [] };
+      return { success: true, friendStories: [], totalFriendCount: 0 };
     }
 
     // Step 2: Fetch user profile and ALL photos for each friend in parallel
@@ -542,12 +542,12 @@ export const getFriendStoriesData = async currentUserId => {
       friendStoriesCount: friendStories.length,
     });
 
-    return { success: true, friendStories };
+    return { success: true, friendStories, totalFriendCount: friendUserIds.length };
   } catch (error) {
     logger.error('feedService.getFriendStoriesData: Failed', {
       currentUserId,
       error: error.message,
     });
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, totalFriendCount: 0 };
   }
 };
