@@ -18,6 +18,8 @@ import {
   getPhotosByIds,
   removePhotoFromAlbum,
   setCoverPhoto,
+  updateAlbum,
+  deleteAlbum,
 } from '../services/firebase';
 import { AlbumPhotoViewer } from '../components';
 import logger from '../utils/logger';
@@ -96,30 +98,73 @@ const AlbumGridScreen = () => {
     navigation.goBack();
   };
 
-  const handleMenuPress = () => {
-    logger.info('AlbumGridScreen: Menu pressed');
-    Alert.alert(album?.name || 'Album', 'Album options', [
+  // Rename album handler
+  const handleRenameAlbum = () => {
+    logger.info('AlbumGridScreen: Rename album selected');
+    Alert.prompt(
+      'Rename Album',
+      'Enter a new name (max 24 characters)',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: async newName => {
+            if (!newName || newName.trim().length === 0) {
+              Alert.alert('Error', 'Album name cannot be empty');
+              return;
+            }
+            if (newName.trim().length > 24) {
+              Alert.alert('Error', 'Album name must be 24 characters or less');
+              return;
+            }
+            logger.info('AlbumGridScreen: Renaming album', { albumId, newName: newName.trim() });
+            const result = await updateAlbum(albumId, { name: newName.trim() });
+            if (result.success) {
+              fetchAlbumData(); // Refresh to show new name
+            } else {
+              Alert.alert('Error', result.error || 'Could not rename album');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      album?.name || ''
+    );
+  };
+
+  // Delete album handler with confirmation
+  const handleDeleteAlbum = () => {
+    logger.info('AlbumGridScreen: Delete album selected');
+    Alert.alert('Delete Album?', 'Photos will remain in your library.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Rename Album',
-        onPress: () => {
-          logger.info('AlbumGridScreen: Rename album selected (stub)');
-          // TODO: 08-06 - Implement rename
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          logger.info('AlbumGridScreen: Confirming album deletion', { albumId });
+          const result = await deleteAlbum(albumId);
+          if (result.success) {
+            logger.info('AlbumGridScreen: Album deleted successfully');
+            navigation.goBack();
+          } else {
+            Alert.alert('Error', result.error || 'Could not delete album');
+          }
         },
       },
+    ]);
+  };
+
+  const handleMenuPress = () => {
+    logger.info('AlbumGridScreen: Menu pressed');
+    Alert.alert(album?.name || 'Album', '', [
       {
-        text: 'Change Cover',
-        onPress: () => {
-          logger.info('AlbumGridScreen: Change cover selected (stub)');
-          // TODO: 08-06 - Implement change cover
-        },
+        text: 'Rename Album',
+        onPress: handleRenameAlbum,
       },
       {
         text: 'Delete Album',
         style: 'destructive',
-        onPress: () => {
-          logger.info('AlbumGridScreen: Delete album selected (stub)');
-          // TODO: 08-06 - Implement delete with confirmation
-        },
+        onPress: handleDeleteAlbum,
       },
       {
         text: 'Cancel',
@@ -132,6 +177,23 @@ const AlbumGridScreen = () => {
     logger.info('AlbumGridScreen: Photo pressed', { photoId: photo.id, index });
     setViewerInitialIndex(index);
     setViewerVisible(true);
+  };
+
+  // Handle long-press on grid photo to show set cover option
+  const handlePhotoLongPress = photo => {
+    if (!isOwnProfile) return;
+
+    logger.info('AlbumGridScreen: Photo long pressed', { photoId: photo.id });
+    Alert.alert('Photo Options', '', [
+      {
+        text: 'Set as Album Cover',
+        onPress: () => handleSetCover(photo.id),
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+    ]);
   };
 
   // Handle remove photo from album
@@ -195,6 +257,7 @@ const AlbumGridScreen = () => {
       <TouchableOpacity
         style={styles.photoCell}
         onPress={() => handlePhotoPress(item.photo, index)}
+        onLongPress={() => handlePhotoLongPress(item.photo)}
         activeOpacity={0.8}
       >
         <Image source={{ uri: item.photo.imageURL }} style={styles.photoImage} />
