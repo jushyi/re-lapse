@@ -39,13 +39,10 @@ export const AlbumCard = ({
   useEffect(() => {
     if (isHighlighted) {
       // Quick bounce - spring up then back down
-      scale.value = withDelay(
-        50,
-        withSpring(1.08, { damping: 10, stiffness: 400 }, () => {
-          // Bounce back to normal
-          scale.value = withSpring(1, { damping: 12, stiffness: 400 });
-        })
-      );
+      scale.value = withSpring(1.08, { damping: 12, stiffness: 500 }, () => {
+        // Bounce back to normal
+        scale.value = withSpring(1, { damping: 14, stiffness: 500 });
+      });
     }
   }, [isHighlighted, scale]);
 
@@ -54,44 +51,42 @@ export const AlbumCard = ({
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
-      <TouchableOpacity
-        style={styles.container}
-        onPress={onPress}
-        onLongPress={event => onLongPress?.(event)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.stackContainer}>
-          {/* Back card (2nd back) - only show if we have 2+ stack photos */}
-          {stackCount >= 2 && (
-            <View style={[styles.stackCard, styles.stackCardBack]}>
-              <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
-            </View>
-          )}
-
-          {/* Middle card (1st back) - only show if we have 1+ stack photos */}
-          {stackCount >= 1 && (
-            <View style={[styles.stackCard, styles.stackCardMiddle]}>
-              <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
-            </View>
-          )}
-
-          {/* Front card (cover) */}
-          <View style={styles.imageContainer}>
-            {coverPhotoUrl ? (
-              <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
-            ) : (
-              <View style={styles.placeholder}>
-                <Ionicons name="images-outline" size={40} color={colors.text.secondary} />
-              </View>
-            )}
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      onLongPress={event => onLongPress?.(event)}
+      activeOpacity={0.8}
+    >
+      <Animated.View style={[styles.stackContainer, animatedStyle]}>
+        {/* Back card (2nd back) - only show if we have 2+ stack photos */}
+        {stackCount >= 2 && (
+          <View style={[styles.stackCard, styles.stackCardBack]}>
+            <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
           </View>
+        )}
+
+        {/* Middle card (1st back) - only show if we have 1+ stack photos */}
+        {stackCount >= 1 && (
+          <View style={[styles.stackCard, styles.stackCardMiddle]}>
+            <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
+          </View>
+        )}
+
+        {/* Front card (cover) */}
+        <View style={styles.imageContainer}>
+          {coverPhotoUrl ? (
+            <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
+          ) : (
+            <View style={styles.placeholder}>
+              <Ionicons name="images-outline" size={40} color={colors.text.secondary} />
+            </View>
+          )}
         </View>
-        <Text style={styles.title} numberOfLines={2}>
-          {album.name}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
+      </Animated.View>
+      <Text style={styles.title} numberOfLines={2}>
+        {album.name}
+      </Text>
+    </TouchableOpacity>
   );
 };
 
