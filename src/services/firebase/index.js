@@ -55,3 +55,6 @@ export {
 
 // Export Photo service functions
 export { getPhotosByIds } from './photoService';
+
+// Export Monthly Album service functions (auto-generated monthly albums)
+export { getUserPhotosByMonth, getMonthPhotos } from './monthlyAlbumService';
