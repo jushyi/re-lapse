@@ -13,11 +13,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReanimatedModule, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedGestureHandler,
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
@@ -73,14 +72,16 @@ const AlbumPhotoViewer = ({
     onClose?.();
   }, [onClose]);
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onActive: event => {
+  const panGesture = Gesture.Pan()
+    .onUpdate(event => {
+      'worklet';
       // Only track downward movement
       if (event.translationY > 0) {
         translateY.value = event.translationY;
       }
-    },
-    onEnd: event => {
+    })
+    .onEnd(event => {
+      'worklet';
       // Dismiss if dragged far enough or fast enough
       if (event.translationY > 150 || event.velocityY > 500) {
         runOnJS(handleDismiss)();
@@ -88,8 +89,7 @@ const AlbumPhotoViewer = ({
         // Spring back to original position
         translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
       }
-    },
-  });
+    });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -322,7 +322,7 @@ const AlbumPhotoViewer = ({
 
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose}>
-      <PanGestureHandler onGestureEvent={gestureHandler}>
+      <GestureDetector gesture={panGesture}>
         <ReanimatedView style={[styles.container, animatedStyle]}>
           {/* Photo viewer - fills entire screen */}
           <FlatList
@@ -403,7 +403,7 @@ const AlbumPhotoViewer = ({
             </Animated.View>
           )}
         </ReanimatedView>
-      </PanGestureHandler>
+      </GestureDetector>
     </Modal>
   );
 };
