@@ -24,3 +24,4 @@ export { AlbumCard, AddAlbumCard } from './AlbumCard';
 export { default as AlbumBar } from './AlbumBar';
 export { default as AlbumPhotoViewer } from './AlbumPhotoViewer';
 export { default as AddToAlbumSheet } from './AddToAlbumSheet';
+export { default as DropdownMenu } from './DropdownMenu';
