@@ -271,11 +271,13 @@ Plans:
 **Goal**: Auto-generate and display monthly albums grouping all user photos by month
 **Depends on**: Phase 5
 **Research**: Unlikely (internal Firestore query grouping)
-**Plans**: TBD
+**Plans**: 0/3
 
 Plans:
 
-- [ ] 09-01: TBD during planning
+- [ ] 09-01: Data layer + MonthlyAlbumCard component
+- [ ] 09-02: YearSection + MonthlyAlbumsSection with animations
+- [ ] 09-03: Grid view + ProfileScreen integration
 
 ### Phase 10: Empty Feed State Change UI Change
 
