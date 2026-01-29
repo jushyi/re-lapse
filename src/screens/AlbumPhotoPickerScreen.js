@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   header: {
+    backgroundColor: colors.background.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
