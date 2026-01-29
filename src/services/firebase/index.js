@@ -40,3 +40,15 @@ export { getSignedPhotoUrl, convertToSignedUrl } from './signedUrlService';
 
 // Export Account service functions (account deletion)
 export { deleteUserAccount } from './accountService';
+
+// Export Album service functions (user-created photo albums)
+export {
+  createAlbum,
+  getAlbum,
+  getUserAlbums,
+  updateAlbum,
+  deleteAlbum,
+  addPhotosToAlbum,
+  removePhotoFromAlbum,
+  setCoverPhoto,
+} from './albumService';
