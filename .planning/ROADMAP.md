@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Selects Banner** - User-selected photos slideshow
 - [x] **Phase 7: Profile Song Scaffold** - Music preview feature (iTunes 30s previews)
 - [x] **Phase 7.2: Song Modal Stacking Fix** - Convert SongSearchModal to screen for stacked navigation (INSERTED)
-- [ ] **Phase 7.3: Simplify Clip Selection Modal** - Remove waveform scrubber, just preview + submit buttons (INSERTED)
+- [x] **Phase 7.3: Simplify Clip Selection Modal** - Simplified waveform with drag-to-seek, no range handles (INSERTED)
 - [ ] **Phase 8: User Albums Display** - Horizontal scroll album bar
 - [ ] **Phase 9: Monthly Albums** - Auto-generated albums by month
 - [ ] **Phase 10: Empty Feed State Change UI Change** - UI improvements for empty feed state transitions
@@ -185,22 +185,22 @@ Plans:
 
 ### Phase 7.3: Simplify Clip Selection Modal (INSERTED)
 
-**Goal**: Remove waveform scrubber from ClipSelectionModal since iTunes clips are only 30 seconds - just preview and submit buttons
+**Goal**: Simplify waveform scrubber - remove dual range handles, keep drag-to-seek for scrubbing through preview
 **Depends on**: Phase 7
 **Research**: Unlikely (UI simplification)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 07.3-01: TBD (run /gsd:plan-phase 7.3 to break down)
+- [x] 07.3-01: Simplified waveform with drag-to-seek
 
 **Details:**
 
-1. Remove WaveformScrubber component from ClipSelectionModal
-2. Keep preview button to play the 30-second clip
-3. Keep submit/confirm button to save selection
-4. Simplify modal layout without drag-to-choose functionality
-5. Update any related state management (clip start/end no longer needed)
+1. Removed dual-handle range selection from WaveformScrubber
+2. Implemented drag-to-seek (touch and drag to scrub through preview)
+3. Tap-to-seek also supported (tap anywhere to jump)
+4. Playback starts from scrubbed position
+5. Preview + confirm button flow unchanged
 
 ### Phase 8: User Albums Display
 
@@ -346,7 +346,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 6. Selects Banner                | 2/2            | Complete    | 2026-01-28 |
 | 7. Profile Song Scaffold         | 5/5 + 2 FIX    | Complete    | 2026-01-28 |
 | 7.2 Song Modal Stacking Fix      | 1/1 + 1 FIX    | Complete    | 2026-01-28 |
-| 7.3 Simplify Clip Selection      | 0/?            | Not started | -          |
+| 7.3 Simplify Clip Selection      | 1/1            | Complete    | 2026-01-29 |
 | 8. User Albums Display           | 0/?            | Not started | -          |
 | 9. Monthly Albums                | 0/?            | Not started | -          |
 | 10. Empty Feed State UI Change   | 0/?            | Not started | -          |
