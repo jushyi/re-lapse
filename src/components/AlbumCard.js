@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   addContainer: {
     width: CARD_SIZE,
     height: CARD_SIZE,
+    marginTop: 6,
     borderRadius: 12,
     borderWidth: 2,
     borderStyle: 'dashed',
