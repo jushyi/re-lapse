@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 8 of 15 (User Albums Display)
-Plan: FIX3 complete (6/6 plans + 3 FIX plans)
+Plan: FIX4 complete (6/6 plans + 4 FIX plans)
 Status: Phase complete (FIX plans in progress)
-Last activity: 2026-01-29 — Completed 08-FIX3-PLAN.md
+Last activity: 2026-01-29 — Completed 08-FIX4-PLAN.md
 
 Progress: █████████░ 95%
 
@@ -20,9 +20,9 @@ Progress: █████████░ 95%
 
 **Velocity:**
 
-- Total plans completed: 33 (including 6 FIX plans)
+- Total plans completed: 34 (including 7 FIX plans)
 - Average duration: 12 min
-- Total execution time: 390 min
+- Total execution time: 395 min
 
 **By Phase:**
 
@@ -138,6 +138,9 @@ Recent decisions affecting current work:
 | 8     | Silent cover update (no success dialog)               | Cleaner UX, visual feedback from cover change is sufficient            |
 | 8     | useFocusEffect for ProfileScreen album refresh        | Ensures data consistency when returning from nested edits              |
 | 8     | AddToAlbumSheet deferred integration                  | Component ready, wiring to photo menus in future phase                 |
+| 8     | 50x67 thumbnail bar at viewer bottom                  | 3:4 ratio matching album grid, 2px white border for active             |
+| 8     | Swipe dismiss: 150px or 500px/s threshold             | Standard gesture threshold for natural dismissal feel                  |
+| 8     | Last photo removal prompts album deletion             | Cascading deletion prevents orphaned empty albums                      |
 
 ### Deferred Issues
 
@@ -189,5 +192,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 08-FIX3-PLAN.md - Redesign empty album state (UAT-012)
+Stopped at: Completed 08-FIX4-PLAN.md - Photo viewer enhancements (UAT-006, UAT-008, UAT-010, UAT-011)
 Resume file: None
