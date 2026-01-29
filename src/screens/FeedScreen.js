@@ -75,8 +75,14 @@ const FeedScreen = () => {
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
   // View tracking state
-  const { isViewed, markAsViewed, markPhotosAsViewed, getFirstUnviewedIndex, hasViewedAllPhotos } =
-    useViewedStories();
+  const {
+    isViewed,
+    markAsViewed,
+    markPhotosAsViewed,
+    getFirstUnviewedIndex,
+    hasViewedAllPhotos,
+    loading: viewedStoriesLoading,
+  } = useViewedStories();
 
   // Track initial index for stories modal
   const [storiesInitialIndex, setStoriesInitialIndex] = useState(0);
@@ -557,10 +563,12 @@ const FeedScreen = () => {
   /**
    * Render stories row
    * Sorts friends by viewed state (unviewed first)
+   * Waits for both stories data AND viewed state to load to prevent race conditions
    */
   const renderStoriesRow = () => {
-    // Don't show stories row if loading or no friends have photos
-    if (storiesLoading) {
+    // Wait for both stories data AND viewed state to load
+    // This prevents showing all stories as unviewed while Firestore data is loading
+    if (storiesLoading || viewedStoriesLoading) {
       return <View style={styles.storiesContainer}>{renderStoriesLoadingSkeleton()}</View>;
     }
 
