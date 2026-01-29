@@ -39,13 +39,14 @@ export const AlbumCard = ({
   // Trigger scale bounce when isHighlighted becomes true
   useEffect(() => {
     if (isHighlighted) {
-      // Quick bounce - 80ms up, 80ms down
+      // Quick bounce - 100ms up, 100ms down
       scale.value = withSequence(
-        withTiming(1.08, { duration: 80, easing: Easing.out(Easing.ease) }),
-        withTiming(1, { duration: 80, easing: Easing.in(Easing.ease) })
+        withTiming(1.15, { duration: 100 }),
+        withTiming(1, { duration: 100 })
       );
     }
-  }, [isHighlighted, scale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHighlighted]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
