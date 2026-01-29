@@ -136,17 +136,16 @@ const AlbumPhotoViewer = ({
     }
   }, [currentIndex, visible, photos.length]);
 
-  // Handle scroll to update position indicator in real-time
-  const handleScroll = useCallback(
+  // Handle momentum scroll end for stable index updates (prevents oscillation)
+  const handleMomentumScrollEnd = useCallback(
     event => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const newIndex = Math.round(offsetX / SCREEN_WIDTH);
-      // Only update if index changed and is valid
-      if (newIndex !== currentIndex && newIndex >= 0 && newIndex < photos.length) {
+      if (newIndex >= 0 && newIndex < photos.length) {
         setCurrentIndex(newIndex);
       }
     },
-    [currentIndex, photos.length]
+    [photos.length]
   );
 
   // Navigate to specific index
@@ -344,8 +343,7 @@ const AlbumPhotoViewer = ({
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
+              onMomentumScrollEnd={handleMomentumScrollEnd}
               getItemLayout={getItemLayout}
               initialScrollIndex={initialIndex}
               onScrollToIndexFailed={info => {
