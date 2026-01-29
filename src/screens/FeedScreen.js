@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingTop: 100,
+    paddingTop: 40,
   },
   emptyIcon: {
     fontSize: 64,
