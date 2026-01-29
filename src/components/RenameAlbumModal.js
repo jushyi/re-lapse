@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, Keyboard } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 
@@ -43,47 +53,56 @@ const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleCancel}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleCancel}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
-          onPress={e => e.stopPropagation()}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
         >
-          <View style={styles.handle} />
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
+            onPress={e => e.stopPropagation()}
+          >
+            <View style={styles.handle} />
 
-          <Text style={styles.title}>Rename Album</Text>
+            <Text style={styles.title}>Rename Album</Text>
 
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Album name"
-            placeholderTextColor="#666"
-            autoFocus
-            maxLength={MAX_ALBUM_NAME_LENGTH}
-            returnKeyType="done"
-            onSubmitEditing={handleSave}
-            selectionColor={colors.brand?.primary || '#8B5CF6'}
-          />
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Album name"
+              placeholderTextColor="#666"
+              autoFocus
+              maxLength={MAX_ALBUM_NAME_LENGTH}
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+              selectionColor={colors.brand?.primary || '#8B5CF6'}
+            />
 
-          <Text style={styles.charCount}>
-            {name.length}/{MAX_ALBUM_NAME_LENGTH}
-          </Text>
+            <Text style={styles.charCount}>
+              {name.length}/{MAX_ALBUM_NAME_LENGTH}
+            </Text>
 
-          <View style={styles.buttons}>
-            <TouchableOpacity onPress={handleCancel} style={styles.button} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.buttons}>
+              <TouchableOpacity onPress={handleCancel} style={styles.button} activeOpacity={0.7}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleSave}
-              style={[styles.button, styles.saveButton, !isValidName && styles.saveButtonDisabled]}
-              disabled={!isValidName}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.saveText, !isValidName && styles.saveTextDisabled]}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSave}
+                style={[
+                  styles.button,
+                  styles.saveButton,
+                  !isValidName && styles.saveButtonDisabled,
+                ]}
+                disabled={!isValidName}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.saveText, !isValidName && styles.saveTextDisabled]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </TouchableOpacity>
     </Modal>
   );
@@ -94,6 +113,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  keyboardAvoid: {
+    width: '100%',
   },
   modalContent: {
     backgroundColor: '#1a1a1a',
