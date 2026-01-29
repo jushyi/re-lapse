@@ -39,9 +39,10 @@ export const AlbumCard = ({
   // Trigger scale bounce when isHighlighted becomes true
   useEffect(() => {
     if (isHighlighted) {
-      // Quick bounce - 100ms up, 100ms down
+      // Quick bounce - 100ms up, hold 30ms, 100ms down
       scale.value = withSequence(
         withTiming(1.15, { duration: 100 }),
+        withTiming(1.15, { duration: 30 }),
         withTiming(1, { duration: 100 })
       );
     }
