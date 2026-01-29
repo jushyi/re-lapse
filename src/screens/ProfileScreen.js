@@ -12,7 +12,7 @@ import {
   ProfileSongCard,
   AlbumBar,
 } from '../components';
-import { getUserAlbums, getPhotosByIds } from '../services/firebase';
+import { getUserAlbums, getPhotosByIds, deleteAlbum } from '../services/firebase';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -38,44 +38,45 @@ const ProfileScreen = () => {
   // Determine if viewing own profile vs another user's profile
   const isOwnProfile = !userId || userId === user?.uid;
 
+  // Fetch albums function (reusable for refresh after operations)
+  const fetchAlbums = async () => {
+    if (!isOwnProfile || !user?.uid) {
+      // TODO: For other profiles, fetch albums with friendship check
+      setAlbums([]);
+      setCoverPhotoUrls({});
+      return;
+    }
+
+    const result = await getUserAlbums(user.uid);
+    if (result.success) {
+      setAlbums(result.albums);
+      logger.info('ProfileScreen: Fetched albums', { count: result.albums.length });
+
+      // Fetch cover photo URLs
+      const coverPhotoIds = result.albums.map(album => album.coverPhotoId).filter(id => id);
+
+      if (coverPhotoIds.length > 0) {
+        const photosResult = await getPhotosByIds(coverPhotoIds);
+        if (photosResult.success) {
+          const urlMap = {};
+          photosResult.photos.forEach(photo => {
+            urlMap[photo.id] = photo.imageURL;
+          });
+          setCoverPhotoUrls(urlMap);
+          logger.info('ProfileScreen: Fetched cover photo URLs', {
+            count: Object.keys(urlMap).length,
+          });
+        }
+      }
+    } else {
+      logger.error('ProfileScreen: Failed to fetch albums', { error: result.error });
+      setAlbums([]);
+      setCoverPhotoUrls({});
+    }
+  };
+
   // Fetch albums on mount (for own profile only)
   useEffect(() => {
-    const fetchAlbums = async () => {
-      if (!isOwnProfile || !user?.uid) {
-        // TODO: For other profiles, fetch albums with friendship check
-        setAlbums([]);
-        setCoverPhotoUrls({});
-        return;
-      }
-
-      const result = await getUserAlbums(user.uid);
-      if (result.success) {
-        setAlbums(result.albums);
-        logger.info('ProfileScreen: Fetched albums', { count: result.albums.length });
-
-        // Fetch cover photo URLs
-        const coverPhotoIds = result.albums.map(album => album.coverPhotoId).filter(id => id);
-
-        if (coverPhotoIds.length > 0) {
-          const photosResult = await getPhotosByIds(coverPhotoIds);
-          if (photosResult.success) {
-            const urlMap = {};
-            photosResult.photos.forEach(photo => {
-              urlMap[photo.id] = photo.imageURL;
-            });
-            setCoverPhotoUrls(urlMap);
-            logger.info('ProfileScreen: Fetched cover photo URLs', {
-              count: Object.keys(urlMap).length,
-            });
-          }
-        }
-      } else {
-        logger.error('ProfileScreen: Failed to fetch albums', { error: result.error });
-        setAlbums([]);
-        setCoverPhotoUrls({});
-      }
-    };
-
     fetchAlbums();
   }, [isOwnProfile, user?.uid]);
 
@@ -226,9 +227,49 @@ const ProfileScreen = () => {
     });
   };
 
+  // Confirm and delete album
+  const confirmDeleteAlbum = album => {
+    Alert.alert('Delete Album?', 'Photos will remain in your library.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          logger.info('ProfileScreen: Deleting album', { albumId: album.id });
+          const result = await deleteAlbum(album.id);
+          if (result.success) {
+            logger.info('ProfileScreen: Album deleted successfully');
+            fetchAlbums(); // Refresh albums list
+          } else {
+            Alert.alert('Error', result.error || 'Could not delete album');
+          }
+        },
+      },
+    ]);
+  };
+
   const handleAlbumLongPress = album => {
     logger.info('ProfileScreen: Album long press', { albumId: album.id, name: album.name });
-    // TODO: Show edit menu (08-06)
+
+    Alert.alert(album.name, '', [
+      {
+        text: 'Edit Album',
+        onPress: () =>
+          navigation.navigate('AlbumGrid', {
+            albumId: album.id,
+            isOwnProfile: true,
+          }),
+      },
+      {
+        text: 'Delete Album',
+        style: 'destructive',
+        onPress: () => confirmDeleteAlbum(album),
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+    ]);
   };
 
   const handleAddAlbumPress = () => {
