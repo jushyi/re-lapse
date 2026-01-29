@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -10,7 +10,9 @@ import {
   FullscreenSelectsViewer,
   SelectsEditOverlay,
   ProfileSongCard,
+  AlbumBar,
 } from '../components';
+import { getUserAlbums } from '../services/firebase';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -26,11 +28,36 @@ const ProfileScreen = () => {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showEditOverlay, setShowEditOverlay] = useState(false);
 
+  // Albums state
+  const [albums, setAlbums] = useState([]);
+
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
 
   // Determine if viewing own profile vs another user's profile
   const isOwnProfile = !userId || userId === user?.uid;
+
+  // Fetch albums on mount (for own profile only)
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      if (!isOwnProfile || !user?.uid) {
+        // TODO: For other profiles, fetch albums with friendship check
+        setAlbums([]);
+        return;
+      }
+
+      const result = await getUserAlbums(user.uid);
+      if (result.success) {
+        setAlbums(result.albums);
+        logger.info('ProfileScreen: Fetched albums', { count: result.albums.length });
+      } else {
+        logger.error('ProfileScreen: Failed to fetch albums', { error: result.error });
+        setAlbums([]);
+      }
+    };
+
+    fetchAlbums();
+  }, [isOwnProfile, user?.uid]);
 
   // TODO: Fetch other user's profile data from Firestore
   // For now, use own profile for own view, placeholder for other users
@@ -170,6 +197,22 @@ const ProfileScreen = () => {
     }
   };
 
+  // Album handlers
+  const handleAlbumPress = album => {
+    logger.info('ProfileScreen: Album pressed', { albumId: album.id, name: album.name });
+    // TODO: Navigate to album grid view (08-04)
+  };
+
+  const handleAlbumLongPress = album => {
+    logger.info('ProfileScreen: Album long press', { albumId: album.id, name: album.name });
+    // TODO: Show edit menu (08-06)
+  };
+
+  const handleAddAlbumPress = () => {
+    logger.info('ProfileScreen: Add album pressed');
+    // TODO: Navigate to album create screen (08-03)
+  };
+
   // Handle loading state
   if (!userProfile) {
     return (
@@ -261,9 +304,15 @@ const ProfileScreen = () => {
           />
         </View>
 
-        <View style={[styles.featurePlaceholder, styles.featurePlaceholderLarge]}>
-          <Text style={styles.placeholderText}>Albums</Text>
-        </View>
+        {/* 5. Albums Bar */}
+        <AlbumBar
+          albums={albums}
+          photoUrls={{}}
+          isOwnProfile={isOwnProfile}
+          onAlbumPress={handleAlbumPress}
+          onAlbumLongPress={handleAlbumLongPress}
+          onAddPress={handleAddAlbumPress}
+        />
 
         <View style={[styles.featurePlaceholder, styles.featurePlaceholderLarge]}>
           <Text style={styles.placeholderText}>Monthly Albums</Text>

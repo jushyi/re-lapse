@@ -20,3 +20,5 @@ export { default as SelectsBanner } from './SelectsBanner';
 export { default as FullscreenSelectsViewer } from './FullscreenSelectsViewer';
 export { default as SelectsEditOverlay } from './SelectsEditOverlay';
 export { ProfileSongCard, ClipSelectionModal } from './ProfileSong';
+export { AlbumCard, AddAlbumCard } from './AlbumCard';
+export { default as AlbumBar } from './AlbumBar';
