@@ -12,8 +12,10 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
+import { deleteAlbum } from '../services/firebase';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -23,6 +25,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  * @param {boolean} visible - Whether modal is visible
  * @param {Array} photos - Array of photo objects with { id, imageURL }
  * @param {number} initialIndex - Starting photo index
+ * @param {string} albumId - Album ID for deletion
  * @param {string} albumName - Album name for header
  * @param {boolean} isOwnProfile - Show edit options only for own albums
  * @param {function} onClose - Callback to close viewer
@@ -33,12 +36,14 @@ const AlbumPhotoViewer = ({
   visible,
   photos = [],
   initialIndex = 0,
+  albumId = '',
   albumName = '',
   isOwnProfile = false,
   onClose,
   onRemovePhoto,
   onSetCover,
 }) => {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [toastVisible, setToastVisible] = useState(false);
@@ -138,7 +143,26 @@ const AlbumPhotoViewer = ({
         text: 'Remove from Album',
         style: 'destructive',
         onPress: () => {
-          // Show confirmation
+          // Check if this is the last photo - prompt to delete album instead
+          if (photos.length === 1) {
+            Alert.alert('Delete Album?', 'Removing the last photo will delete this album.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete Album',
+                style: 'destructive',
+                onPress: async () => {
+                  if (albumId) {
+                    await deleteAlbum(albumId);
+                    onClose?.();
+                    navigation.navigate('ProfileMain');
+                  }
+                },
+              },
+            ]);
+            return;
+          }
+
+          // Show confirmation for non-last photo
           Alert.alert(
             'Remove Photo?',
             'This photo will be removed from the album but will still be in your library.',
@@ -154,11 +178,6 @@ const AlbumPhotoViewer = ({
                       goToIndex(currentIndex - 1);
                     }
                     // Remove the photo (parent will refresh data)
-                    // If this is the last photo, just close the viewer
-                    // The parent (AlbumGridScreen) will handle the empty state
-                    if (photos.length === 1) {
-                      onClose?.();
-                    }
                     onRemovePhoto(currentPhoto.id);
                   }
                 },
@@ -169,7 +188,18 @@ const AlbumPhotoViewer = ({
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
-  }, [photos, currentIndex, albumName, onSetCover, onRemovePhoto, onClose, goToIndex, showToast]);
+  }, [
+    photos,
+    currentIndex,
+    albumId,
+    albumName,
+    navigation,
+    onSetCover,
+    onRemovePhoto,
+    onClose,
+    goToIndex,
+    showToast,
+  ]);
 
   // Render individual photo
   const renderPhoto = useCallback(

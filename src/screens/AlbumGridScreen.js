@@ -354,6 +354,7 @@ const AlbumGridScreen = () => {
         visible={viewerVisible}
         photos={photos}
         initialIndex={viewerInitialIndex}
+        albumId={albumId}
         albumName={album?.name}
         isOwnProfile={isOwnProfile}
         onClose={() => setViewerVisible(false)}
