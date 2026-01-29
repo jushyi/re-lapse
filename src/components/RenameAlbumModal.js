@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
@@ -26,6 +27,7 @@ const MAX_ALBUM_NAME_LENGTH = 24;
 const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState(currentName);
+  const slideAnim = useRef(new Animated.Value(300)).current;
 
   // Reset name when modal opens with new currentName
   useEffect(() => {
@@ -33,6 +35,22 @@ const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
       setName(currentName);
     }
   }, [visible, currentName]);
+
+  // Animate content slide when visibility changes
+  useEffect(() => {
+    if (visible) {
+      // Slide up with spring animation
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        damping: 15,
+        stiffness: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Reset position for next open
+      slideAnim.setValue(300);
+    }
+  }, [visible, slideAnim]);
 
   const handleSave = () => {
     const trimmedName = name.trim();
@@ -51,57 +69,61 @@ const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
   const isValidName = name.trim().length > 0;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleCancel}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleCancel}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoid}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
-            onPress={e => e.stopPropagation()}
-          >
-            <View style={styles.handle} />
+          <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+            <TouchableOpacity
+              activeOpacity={1}
+              style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
+              onPress={e => e.stopPropagation()}
+            >
+              <View style={styles.handle} />
 
-            <Text style={styles.title}>Rename Album</Text>
+              <Text style={styles.title}>Rename Album</Text>
 
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Album name"
-              placeholderTextColor="#666"
-              autoFocus
-              maxLength={MAX_ALBUM_NAME_LENGTH}
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-              selectionColor={colors.brand?.primary || '#8B5CF6'}
-            />
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Album name"
+                placeholderTextColor="#666"
+                autoFocus
+                maxLength={MAX_ALBUM_NAME_LENGTH}
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+                selectionColor={colors.brand?.primary || '#8B5CF6'}
+              />
 
-            <Text style={styles.charCount}>
-              {name.length}/{MAX_ALBUM_NAME_LENGTH}
-            </Text>
+              <Text style={styles.charCount}>
+                {name.length}/{MAX_ALBUM_NAME_LENGTH}
+              </Text>
 
-            <View style={styles.buttons}>
-              <TouchableOpacity onPress={handleCancel} style={styles.button} activeOpacity={0.7}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.buttons}>
+                <TouchableOpacity onPress={handleCancel} style={styles.button} activeOpacity={0.7}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={handleSave}
-                style={[
-                  styles.button,
-                  styles.saveButton,
-                  !isValidName && styles.saveButtonDisabled,
-                ]}
-                disabled={!isValidName}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.saveText, !isValidName && styles.saveTextDisabled]}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSave}
+                  style={[
+                    styles.button,
+                    styles.saveButton,
+                    !isValidName && styles.saveButtonDisabled,
+                  ]}
+                  disabled={!isValidName}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.saveText, !isValidName && styles.saveTextDisabled]}>
+                    Save
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
         </KeyboardAvoidingView>
       </TouchableOpacity>
     </Modal>
