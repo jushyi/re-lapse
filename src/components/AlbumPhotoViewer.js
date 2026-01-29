@@ -321,8 +321,8 @@ const AlbumPhotoViewer = ({
   }
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'transparent' }}>
         <GestureDetector gesture={panGesture}>
           <ReanimatedView style={[styles.container, animatedStyle]}>
             {/* Photo viewer - fills entire screen */}
