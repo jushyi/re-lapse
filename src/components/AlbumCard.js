@@ -1,4 +1,11 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
@@ -12,48 +19,79 @@ const CARD_SIZE = 150;
  * @param {array} stackPhotoUrls - URLs for stack photos (up to 3, most recent non-cover photos)
  * @param {function} onPress - Callback when card tapped
  * @param {function} onLongPress - Optional callback for long press (edit menu)
+ * @param {boolean} isHighlighted - Whether to show scale bounce animation
  */
-export const AlbumCard = ({ album, coverPhotoUrl, stackPhotoUrls = [], onPress, onLongPress }) => {
+export const AlbumCard = ({
+  album,
+  coverPhotoUrl,
+  stackPhotoUrls = [],
+  onPress,
+  onLongPress,
+  isHighlighted = false,
+}) => {
   // Show stack cards based on how many stack photos we have
   const stackCount = stackPhotoUrls.length;
 
+  // Animation for highlight effect
+  const scale = useSharedValue(1);
+
+  // Trigger scale bounce when isHighlighted becomes true
+  useEffect(() => {
+    if (isHighlighted) {
+      // Small delay to allow scroll to complete visually, then spring bounce
+      scale.value = withDelay(
+        100,
+        withSpring(1.08, { damping: 8, stiffness: 300 }, () => {
+          // Bounce back to normal
+          scale.value = withSpring(1, { damping: 10, stiffness: 300 });
+        })
+      );
+    }
+  }, [isHighlighted, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      onLongPress={event => onLongPress?.(event)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.stackContainer}>
-        {/* Back card (2nd back) - only show if we have 2+ stack photos */}
-        {stackCount >= 2 && (
-          <View style={[styles.stackCard, styles.stackCardBack]}>
-            <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
-          </View>
-        )}
-
-        {/* Middle card (1st back) - only show if we have 1+ stack photos */}
-        {stackCount >= 1 && (
-          <View style={[styles.stackCard, styles.stackCardMiddle]}>
-            <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
-          </View>
-        )}
-
-        {/* Front card (cover) */}
-        <View style={styles.imageContainer}>
-          {coverPhotoUrl ? (
-            <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
-          ) : (
-            <View style={styles.placeholder}>
-              <Ionicons name="images-outline" size={40} color={colors.text.secondary} />
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={onPress}
+        onLongPress={event => onLongPress?.(event)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.stackContainer}>
+          {/* Back card (2nd back) - only show if we have 2+ stack photos */}
+          {stackCount >= 2 && (
+            <View style={[styles.stackCard, styles.stackCardBack]}>
+              <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
             </View>
           )}
+
+          {/* Middle card (1st back) - only show if we have 1+ stack photos */}
+          {stackCount >= 1 && (
+            <View style={[styles.stackCard, styles.stackCardMiddle]}>
+              <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
+            </View>
+          )}
+
+          {/* Front card (cover) */}
+          <View style={styles.imageContainer}>
+            {coverPhotoUrl ? (
+              <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
+            ) : (
+              <View style={styles.placeholder}>
+                <Ionicons name="images-outline" size={40} color={colors.text.secondary} />
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-      <Text style={styles.title} numberOfLines={2}>
-        {album.name}
-      </Text>
-    </TouchableOpacity>
+        <Text style={styles.title} numberOfLines={2}>
+          {album.name}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -113,6 +151,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
     zIndex: 3,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   coverImage: {
     width: '100%',
