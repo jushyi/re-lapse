@@ -49,10 +49,25 @@ const AlbumBar = ({
     // Get cover photo URL from photoUrls map
     const coverUrl = item.coverPhotoId ? photoUrls[item.coverPhotoId] : null;
 
+    // Get stack photo URLs (most recent photos excluding cover, up to 3)
+    const stackPhotoUrls = [];
+    if (item.photoIds && item.photoIds.length > 0) {
+      // Get photos from end of array (most recent), excluding cover
+      const nonCoverPhotos = item.photoIds.filter(id => id !== item.coverPhotoId);
+      // Take up to 3 most recent (from end of array)
+      const recentPhotos = nonCoverPhotos.slice(-3).reverse();
+      recentPhotos.forEach(photoId => {
+        if (photoUrls[photoId]) {
+          stackPhotoUrls.push(photoUrls[photoId]);
+        }
+      });
+    }
+
     return (
       <AlbumCard
         album={item}
         coverPhotoUrl={coverUrl}
+        stackPhotoUrls={stackPhotoUrls}
         onPress={() => onAlbumPress?.(item)}
         onLongPress={event => onAlbumLongPress?.(item, event)}
       />

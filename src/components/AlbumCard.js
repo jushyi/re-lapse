@@ -9,11 +9,13 @@ const CARD_SIZE = 150;
  *
  * @param {object} album - Album object with { id, name, coverPhotoId, photoIds }
  * @param {string} coverPhotoUrl - URL for the cover photo (resolved by parent)
+ * @param {array} stackPhotoUrls - URLs for stack photos (up to 3, most recent non-cover photos)
  * @param {function} onPress - Callback when card tapped
  * @param {function} onLongPress - Optional callback for long press (edit menu)
  */
-export const AlbumCard = ({ album, coverPhotoUrl, onPress, onLongPress }) => {
-  const hasPhotos = album.photoIds && album.photoIds.length > 0;
+export const AlbumCard = ({ album, coverPhotoUrl, stackPhotoUrls = [], onPress, onLongPress }) => {
+  // Show stack cards based on how many stack photos we have
+  const stackCount = stackPhotoUrls.length;
 
   return (
     <TouchableOpacity
@@ -23,14 +25,26 @@ export const AlbumCard = ({ album, coverPhotoUrl, onPress, onLongPress }) => {
       activeOpacity={0.8}
     >
       <View style={styles.stackContainer}>
-        {/* Furthest card (3rd back) - only show if album has photos */}
-        {hasPhotos && <View style={[styles.stackCard, styles.stackCardFurthest]} />}
+        {/* Furthest card (3rd back) - only show if we have 3+ stack photos */}
+        {stackCount >= 3 && (
+          <View style={[styles.stackCard, styles.stackCardFurthest]}>
+            <Image source={{ uri: stackPhotoUrls[2] }} style={styles.stackImage} />
+          </View>
+        )}
 
-        {/* Back card (2nd back) - only show if album has photos */}
-        {hasPhotos && <View style={[styles.stackCard, styles.stackCardBack]} />}
+        {/* Back card (2nd back) - only show if we have 2+ stack photos */}
+        {stackCount >= 2 && (
+          <View style={[styles.stackCard, styles.stackCardBack]}>
+            <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
+          </View>
+        )}
 
-        {/* Middle card (1st back) - only show if album has photos */}
-        {hasPhotos && <View style={[styles.stackCard, styles.stackCardMiddle]} />}
+        {/* Middle card (1st back) - only show if we have 1+ stack photos */}
+        {stackCount >= 1 && (
+          <View style={[styles.stackCard, styles.stackCardMiddle]}>
+            <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
+          </View>
+        )}
 
         {/* Front card (cover) */}
         <View style={styles.imageContainer}>
@@ -81,8 +95,12 @@ const styles = StyleSheet.create({
     height: CARD_SIZE,
     backgroundColor: '#2A2A2A',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  stackImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   stackCardFurthest: {
     transform: [{ scale: 0.9 }, { translateY: -6 }],
