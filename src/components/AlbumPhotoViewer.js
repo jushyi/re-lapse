@@ -149,14 +149,17 @@ const AlbumPhotoViewer = ({
                 style: 'destructive',
                 onPress: () => {
                   if (onRemovePhoto) {
-                    onRemovePhoto(currentPhoto.id);
-                    // If removing current photo and it's the last one, close viewer
-                    if (photos.length === 1) {
-                      onClose?.();
-                    } else if (currentIndex === photos.length - 1) {
-                      // If removing last photo in list, go to previous
+                    // If removing last photo in list, go to previous index first
+                    if (currentIndex === photos.length - 1 && currentIndex > 0) {
                       goToIndex(currentIndex - 1);
                     }
+                    // Remove the photo (parent will refresh data)
+                    // If this is the last photo, just close the viewer
+                    // The parent (AlbumGridScreen) will handle the empty state
+                    if (photos.length === 1) {
+                      onClose?.();
+                    }
+                    onRemovePhoto(currentPhoto.id);
                   }
                 },
               },
