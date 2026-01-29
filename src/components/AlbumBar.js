@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AlbumCard, AddAlbumCard } from './AlbumCard';
 import { colors } from '../constants/colors';
 
@@ -31,6 +32,7 @@ const AlbumBar = ({
       <View style={styles.container}>
         <Text style={styles.header}>Albums</Text>
         <TouchableOpacity style={styles.emptyPrompt} onPress={onAddPress} activeOpacity={0.8}>
+          <Ionicons name="albums-outline" size={28} color="#888" style={styles.emptyPromptIcon} />
           <Text style={styles.emptyPromptText}>Tap here to make your first album</Text>
         </TouchableOpacity>
       </View>
@@ -103,6 +105,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyPromptIcon: {
+    marginBottom: 6,
   },
   emptyPromptText: {
     fontSize: 15,
