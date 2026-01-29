@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 8 of 15 (User Albums Display)
-Plan: 4 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 08-04-PLAN.md
+Last activity: 2026-01-29 — Completed 08-05-PLAN.md
 
-Progress: █████████░ 90%
+Progress: █████████░ 92%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 30 (including 5 FIX plans)
+- Total plans completed: 31 (including 5 FIX plans)
 - Average duration: 12 min
-- Total execution time: 361 min
+- Total execution time: 373 min
 
 **By Phase:**
 
@@ -39,12 +39,12 @@ Progress: █████████░ 90%
 | 7     | 7     | 68 min | 10 min   |
 | 7.2   | 2     | 20 min | 10 min   |
 | 7.3   | 1     | 15 min | 15 min   |
-| 8     | 4     | 38 min | 10 min   |
+| 8     | 5     | 50 min | 10 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 15 min, 2 min, 8 min, 19 min, 9 min
-- Trend: Album grid view and navigation
+- Last 5 plans: 2 min, 8 min, 19 min, 9 min, 12 min
+- Trend: Album photo viewer and actions
 
 ## Accumulated Context
 
@@ -132,10 +132,13 @@ Recent decisions affecting current work:
 | 8     | Two-screen album creation flow (name → photos)        | Cleaner UX separating naming from photo selection                      |
 | 8     | 3-column grid for photo picker                        | Matches common photo picker patterns in iOS apps                       |
 | 8     | Navigate to ProfileMain on album create success       | Pops both CreateAlbum and PhotoPicker screens cleanly                  |
+| 8     | resizeMode cover for full-screen photo viewer         | Photos fill entire screen, may crop edges for non-matching aspect      |
+| 8     | onScroll with 16ms throttle for position indicator    | Smooth real-time updates during fast swipes                            |
+| 8     | Header overlay pattern for photo viewer               | Controls float over photo with semi-transparent background             |
 
 ### Deferred Issues
 
-None yet.
+- ISS-001: Optimize photo capture for full-screen display
 
 ### Blockers/Concerns
 
@@ -183,5 +186,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 08-04-PLAN.md - Album grid view (AlbumGridScreen, cover photos, navigation)
+Stopped at: Completed 08-05-PLAN.md - Album photo viewer (full-screen, swipe, set cover, remove)
 Resume file: None
