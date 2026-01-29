@@ -110,7 +110,7 @@ const ProfileScreen = () => {
   const runNewAlbumAnimation = useCallback(
     albumId => {
       // Wait for albums to be fetched, then run animation sequence
-      // Timing: scroll + highlight immediately, clear at 200ms
+      // Timing: scroll + highlight immediately, clear at 500ms
 
       // Step 1: Scroll main ScrollView to show albums bar
       scrollViewRef.current?.scrollTo({ y: 450, animated: true });
@@ -121,10 +121,10 @@ const ProfileScreen = () => {
       // Step 3: Immediately trigger scale bounce
       setHighlightedAlbumId(albumId);
 
-      // Step 4: After 200ms, clear the highlight
+      // Step 4: After 500ms, clear the highlight
       setTimeout(() => {
         setHighlightedAlbumId(null);
-      }, 200);
+      }, 500);
     },
     [scrollViewRef, albumBarRef]
   );
