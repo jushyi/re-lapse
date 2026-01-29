@@ -322,6 +322,9 @@ const AlbumGridScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Safe area background - covers gap between screen top and header */}
+      <View style={[styles.safeAreaBackground, { height: insets.top }]} />
+
       {/* Header */}
       <View style={[styles.header, { top: insets.top }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
@@ -412,6 +415,14 @@ const AlbumGridScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  safeAreaBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     backgroundColor: colors.background.primary,
   },
   loadingContainer: {
