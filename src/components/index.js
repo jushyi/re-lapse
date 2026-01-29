@@ -23,3 +23,4 @@ export { ProfileSongCard, ClipSelectionModal } from './ProfileSong';
 export { AlbumCard, AddAlbumCard } from './AlbumCard';
 export { default as AlbumBar } from './AlbumBar';
 export { default as AlbumPhotoViewer } from './AlbumPhotoViewer';
+export { default as AddToAlbumSheet } from './AddToAlbumSheet';

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
@@ -75,10 +75,12 @@ const ProfileScreen = () => {
     }
   };
 
-  // Fetch albums on mount (for own profile only)
-  useEffect(() => {
-    fetchAlbums();
-  }, [isOwnProfile, user?.uid]);
+  // Fetch albums when screen gains focus (refreshes after editing albums)
+  useFocusEffect(
+    useCallback(() => {
+      fetchAlbums();
+    }, [isOwnProfile, user?.uid])
+  );
 
   // TODO: Fetch other user's profile data from Firestore
   // For now, use own profile for own view, placeholder for other users

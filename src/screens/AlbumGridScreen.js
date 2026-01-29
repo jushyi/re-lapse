@@ -217,7 +217,6 @@ const AlbumGridScreen = () => {
     const result = await setCoverPhoto(albumId, photoId);
     if (result.success) {
       fetchAlbumData(); // Refresh to update cover
-      Alert.alert('Success', 'Album cover updated');
     } else {
       Alert.alert('Error', result.error || 'Could not set cover photo');
     }
