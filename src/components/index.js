@@ -26,3 +26,4 @@ export { default as AlbumPhotoViewer } from './AlbumPhotoViewer';
 export { default as AddToAlbumSheet } from './AddToAlbumSheet';
 export { default as DropdownMenu } from './DropdownMenu';
 export { default as RenameAlbumModal } from './RenameAlbumModal';
+export { default as MonthlyAlbumCard } from './MonthlyAlbumCard';
