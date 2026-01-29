@@ -22,7 +22,8 @@ import logger from '../utils/logger';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = 3;
 const GAP = 2;
-const CELL_SIZE = (SCREEN_WIDTH - GAP * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
+const CELL_WIDTH = (SCREEN_WIDTH - GAP * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
+const CELL_HEIGHT = CELL_WIDTH * (4 / 3); // 3:4 portrait ratio
 
 const AlbumPhotoPickerScreen = () => {
   const navigation = useNavigation();
@@ -279,8 +280,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: GAP,
   },
   photoCell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
+    width: CELL_WIDTH,
+    height: CELL_HEIGHT,
     margin: GAP / 2,
   },
   photoImage: {
