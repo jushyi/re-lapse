@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 11 of 16 (Feed Reaction Emoji Enhancements) - COMPLETE
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-30 — Completed 11-01-PLAN.md
+Plan: 1 of 1 in current phase (+ 1 FIX plan)
+Status: Phase complete (with fixes)
+Last activity: 2026-01-30 — Completed 11-01-FIX.md
 
 Progress: ██████████ 100% (Phase 11)
 
@@ -20,9 +20,9 @@ Progress: ██████████ 100% (Phase 11)
 
 **Velocity:**
 
-- Total plans completed: 44 (including 10 FIX plans)
+- Total plans completed: 45 (including 11 FIX plans)
 - Average duration: 11 min
-- Total execution time: 486 min
+- Total execution time: 506 min
 
 **By Phase:**
 
@@ -44,12 +44,12 @@ Progress: ██████████ 100% (Phase 11)
 | 8.2   | 1     | 12 min | 12 min   |
 | 9     | 3     | 15 min | 5 min    |
 | 10    | 1     | 8 min  | 8 min    |
-| 11    | 1     | 12 min | 12 min   |
+| 11    | 2     | 32 min | 16 min   |
 
 **Recent Trend:**
 
-- Last 5 plans: 3 min, 4 min, 8 min, 8 min, 12 min
-- Trend: Phase 11 complete - Curated emoji reactions with custom picker
+- Last 5 plans: 4 min, 8 min, 8 min, 12 min, 20 min
+- Trend: Phase 11 FIX complete - Dark theme + emoji persistence + highlight animation
 
 ## Accumulated Context
 
@@ -164,7 +164,8 @@ Recent decisions affecting current work:
 | 11    | 8 emoji categories with 10 emojis each                | Provides enough variety for curated rotation while keeping manageable  |
 | 11    | Deterministic hash selection for emoji rotation       | Same photo always shows same emojis, prevents UI flickering            |
 | 11    | Prime multiplier (31) for pool distribution           | Better spread across categories for varied curated emoji selection     |
-| 11    | Preview → confirm flow for custom emoji               | User sees selected emoji before committing reaction                    |
+| 11    | Immediate selection for custom emoji (no confirm)     | User feedback: faster UX, emoji appears at front with highlight        |
+| 11    | Purple highlight with 1s fade for all emoji taps      | Visual feedback for reactions, applies to both curated and custom      |
 
 ### Deferred Issues
 
@@ -229,5 +230,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 11 - Feed Reaction Emoji Enhancements
+Stopped at: Completed Phase 11 FIX - Dark theme, emoji persistence, highlight animation
 Resume file: None
