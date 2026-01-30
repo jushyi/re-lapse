@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFirestore, doc, getDoc } from '@react-native-firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import {
   getFriendships,
@@ -271,6 +272,13 @@ const FriendsListScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Friends ({friends.length})</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -351,13 +359,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
+  backButton: {
+    padding: 4,
+    marginRight: 8,
+  },
   headerTitle: {
+    flex: 1,
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text.primary,
