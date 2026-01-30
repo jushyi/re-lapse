@@ -81,6 +81,12 @@ const PhotoDetailModal = ({
   // Progress bar scroll ref for auto-scrolling
   const progressScrollRef = useRef(null);
 
+  // Emoji scroll ref for auto-scrolling when new emoji added
+  const emojiScrollRef = useRef(null);
+
+  // Highlight animation for newly added emoji
+  const highlightScale = useRef(new Animated.Value(1)).current;
+
   // Track previous visibility for initialShowComments logic (UAT-009 fix)
   const wasVisible = useRef(false);
 
@@ -162,6 +168,7 @@ const PhotoDetailModal = ({
     handleOpenEmojiPicker,
     handleEmojiPickerSelect,
     handleCustomEmojiConfirm,
+    newlyAddedEmoji,
   } = usePhotoDetailModal({
     mode,
     photo,
@@ -217,6 +224,30 @@ const PhotoDetailModal = ({
 
     return { segmentWidth: calculatedWidth, needsScroll: false };
   }, [totalPhotos]);
+
+  // Auto-scroll emoji row to start and highlight when new emoji is added
+  useEffect(() => {
+    if (newlyAddedEmoji && emojiScrollRef.current) {
+      // Scroll to start to show the new emoji
+      emojiScrollRef.current.scrollTo({ x: 0, animated: true });
+
+      // Trigger highlight animation (scale bounce)
+      highlightScale.setValue(1);
+      Animated.sequence([
+        Animated.timing(highlightScale, {
+          toValue: 1.3,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.spring(highlightScale, {
+          toValue: 1,
+          friction: 4,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [newlyAddedEmoji, highlightScale]);
 
   // Auto-scroll progress bar to keep current segment visible
   useEffect(() => {
@@ -392,8 +423,9 @@ const PhotoDetailModal = ({
               </Text>
             </TouchableOpacity>
 
-            {/* Emoji pills - right side (5 curated emojis + add button) */}
+            {/* Emoji pills - right side (custom + curated emojis + preview + add button) */}
             <ScrollView
+              ref={emojiScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.emojiPickerContainer}
@@ -403,8 +435,10 @@ const PhotoDetailModal = ({
                 const totalCount = groupedReactions[emoji] || 0;
                 const userCount = getUserReactionCount(emoji);
                 const isSelected = userCount > 0;
+                const isNewlyAdded = emoji === newlyAddedEmoji;
 
-                return (
+                // Wrap in Animated.View for highlight animation on newly added emoji
+                const pillContent = (
                   <TouchableOpacity
                     key={emoji}
                     style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
@@ -415,19 +449,36 @@ const PhotoDetailModal = ({
                     {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
                   </TouchableOpacity>
                 );
+
+                if (isNewlyAdded) {
+                  return (
+                    <Animated.View key={emoji} style={{ transform: [{ scale: highlightScale }] }}>
+                      {pillContent}
+                    </Animated.View>
+                  );
+                }
+
+                return pillContent;
               })}
 
-              {/* Add custom emoji button */}
+              {/* Preview emoji button (shown when customEmoji is selected but not confirmed) */}
+              {customEmoji && (
+                <TouchableOpacity
+                  style={[styles.emojiPill, styles.previewEmojiButton]}
+                  onPress={handleCustomEmojiConfirm}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.emojiPillEmoji}>{customEmoji}</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Add custom emoji button - always shows "+" */}
               <TouchableOpacity
                 style={[styles.emojiPill, styles.addEmojiButton]}
-                onPress={customEmoji ? handleCustomEmojiConfirm : handleOpenEmojiPicker}
+                onPress={handleOpenEmojiPicker}
                 activeOpacity={0.7}
               >
-                {customEmoji ? (
-                  <Text style={styles.emojiPillEmoji}>{customEmoji}</Text>
-                ) : (
-                  <Text style={styles.addEmojiText}>+</Text>
-                )}
+                <Text style={styles.addEmojiText}>+</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

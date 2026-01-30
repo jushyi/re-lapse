@@ -55,6 +55,8 @@ export const usePhotoDetailModal = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   // Track custom emojis that have been confirmed (persist in reaction row)
   const [activeCustomEmojis, setActiveCustomEmojis] = useState([]);
+  // Track newly added emoji for highlight animation (null when no highlight needed)
+  const [newlyAddedEmoji, setNewlyAddedEmoji] = useState(null);
 
   // Minimum display time tracking for rapid taps (ensures each photo is briefly visible)
   const lastTapTimeRef = useRef(0);
@@ -174,7 +176,7 @@ export const usePhotoDetailModal = ({
 
   /**
    * Get ordered emoji list (frozen or sorted by count)
-   * Uses curated emojis based on photo ID, plus any active custom emojis at the end
+   * Custom emojis appear at the FRONT, followed by curated emojis
    */
   const orderedEmojis = useMemo(() => {
     // Sort curated emojis by count
@@ -186,17 +188,17 @@ export const usePhotoDetailModal = ({
       .sort((a, b) => b.totalCount - a.totalCount)
       .map(item => item.emoji);
 
-    // Add active custom emojis at the end (if any)
+    // Custom emojis go at the FRONT (newest first since we prepend)
     // Filter out any that might overlap with curated (shouldn't happen but safety check)
     const customToAdd = activeCustomEmojis.filter(e => !curatedEmojis.includes(e));
 
     if (frozenOrder) {
-      // When frozen, keep curated in frozen order, but still include custom emojis
+      // When frozen, keep curated in frozen order, but still include custom emojis at front
       const frozenCurated = frozenOrder.filter(e => curatedEmojis.includes(e));
-      return [...frozenCurated, ...customToAdd];
+      return [...customToAdd, ...frozenCurated];
     }
 
-    return [...sortedCurated, ...customToAdd];
+    return [...customToAdd, ...sortedCurated];
   }, [frozenOrder, groupedReactions, curatedEmojis, activeCustomEmojis]);
 
   /**
@@ -217,7 +219,8 @@ export const usePhotoDetailModal = ({
 
   /**
    * Confirm and commit the custom emoji reaction
-   * Adds emoji to activeCustomEmojis so it persists in the reaction row
+   * Adds emoji to FRONT of activeCustomEmojis so it appears first in the row
+   * Sets newlyAddedEmoji for highlight animation
    */
   const handleCustomEmojiConfirm = useCallback(() => {
     if (customEmoji) {
@@ -225,9 +228,15 @@ export const usePhotoDetailModal = ({
       const currentCount = getUserReactionCount(customEmoji);
       onReactionToggle(customEmoji, currentCount);
 
-      // Add to activeCustomEmojis if not already there (and not in curated list)
+      // Add to FRONT of activeCustomEmojis if not already there (and not in curated list)
       if (!activeCustomEmojis.includes(customEmoji) && !curatedEmojis.includes(customEmoji)) {
-        setActiveCustomEmojis(prev => [...prev, customEmoji]);
+        setActiveCustomEmojis(prev => [customEmoji, ...prev]);
+        // Set for highlight animation
+        setNewlyAddedEmoji(customEmoji);
+        // Clear highlight after animation completes
+        setTimeout(() => {
+          setNewlyAddedEmoji(null);
+        }, 600);
       }
 
       // Clear preview state so "+" button shows "+" again
@@ -492,6 +501,7 @@ export const usePhotoDetailModal = ({
     handleOpenEmojiPicker,
     handleEmojiPickerSelect,
     handleCustomEmojiConfirm,
+    newlyAddedEmoji,
 
     // Close handler
     handleClose: onClose,

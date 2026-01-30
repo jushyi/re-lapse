@@ -184,6 +184,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  // Preview emoji button - distinct styling to indicate "tap to confirm"
+  previewEmojiButton: {
+    borderColor: '#9370DB', // Purple border to indicate pending confirmation
+    borderWidth: 2,
+    backgroundColor: '#4A3A5A', // Slightly purple-tinted background
+  },
   // Add emoji button - same size and styling as emojiPill for equal visual presence
   addEmojiButton: {
     justifyContent: 'center',
