@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Empty Feed State UI Change** - Contextual empty states for new users and established users
 - [x] **Phase 11: Feed Reaction Emoji Enhancements** - Curated 5-emoji rotation per photo, custom emoji picker with rn-emoji-keyboard
 - [x] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
-- [ ] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
+- [x] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
 - [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (16), username (16), bio (160)
 - [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
@@ -347,11 +347,12 @@ Plans:
 **Goal**: Separate the current activity page into two distinct screens - notifications (accessed via heart icon) and friends list (accessed via new friend icon on left side of feed header)
 **Depends on**: Phase 12
 **Research**: Unlikely (internal UI restructuring)
-**Plans**: 1/? complete
+**Plans**: 2/2 complete
 
 Plans:
 
 - [x] 13-01: Feed header navigation icons (friend icon left, heart icon right)
+- [x] 13-02: Activity screen cleanup (remove FriendsTab, notifications-only)
 
 **Details:**
 
@@ -478,7 +479,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 10. Empty Feed State UI Change   | 1/1            | Complete    | 2026-01-29 |
 | 11. Feed Reaction Emoji          | 1/1            | Complete    | 2026-01-30 |
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
-| 13. Split Activity/Friends       | 1/?            | In progress | -          |
+| 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
 | 14. Profile Field Limits         | 0/?            | Not started | -          |
 | 15. Friends Screen & Profiles    | 0/?            | Not started | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
