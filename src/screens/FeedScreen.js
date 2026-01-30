@@ -798,6 +798,13 @@ const FeedScreen = () => {
           },
         ]}
       >
+        {/* Left-aligned friends button */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('FriendsList')}
+          style={styles.friendsButton}
+        >
+          <Ionicons name="people-outline" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
         {/* Centered title */}
         <Text style={styles.headerTitle}>Rewind</Text>
         {/* Right-aligned notification button */}
@@ -924,6 +931,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text.primary,
+  },
+  friendsButton: {
+    padding: 8,
+    position: 'absolute',
+    left: 24,
   },
   notificationButton: {
     padding: 8,
