@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8.2: Album Creation Animation** - Visual feedback when new album is created (INSERTED)
 - [x] **Phase 9: Monthly Albums** - Auto-generated albums by month
 - [x] **Phase 10: Empty Feed State UI Change** - Contextual empty states for new users and established users
-- [ ] **Phase 11: Feed Reaction Emoji Enhancements** - Randomized emoji selection per photo, custom emoji picker with "Add your own"
+- [x] **Phase 11: Feed Reaction Emoji Enhancements** - Curated 5-emoji rotation per photo, custom emoji picker with rn-emoji-keyboard
 - [ ] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
 - [ ] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
 - [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (16), username (16), bio (160)
@@ -306,23 +306,21 @@ Changes:
 
 ### Phase 11: Feed Reaction Emoji Enhancements
 
-**Goal**: Enhance feed page reaction system with randomized emoji selection per photo (iOS emojis only), user custom emoji picker accessible via "Add your own" button at end of reaction picker
+**Goal**: Curated 5-emoji rotation per photo with custom emoji picker using rn-emoji-keyboard
 **Depends on**: Phase 10
-**Research**: Likely (emoji picker libraries, random selection patterns)
-**Research topics**: React Native emoji picker libraries, iOS emoji rendering, random selection without repetition
-**Plans**: TBD
+**Research**: Complete (rn-emoji-keyboard selected)
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 11-01: TBD (run /gsd:plan-phase 11 to break down)
+- [x] 11-01: Curated emoji infrastructure, hook updates, and UI integration
 
 **Details:**
 
-1. Randomize/rotate available reaction emojis for each photo (iOS emojis only)
-2. User can select their own custom emoji to react with
-3. Custom emoji gets added to the photo's reactions and can be updated
-4. "Add your own" button appears at end of reaction picker scroll
-5. Button opens emoji picker modal for selection
+1. Each photo shows 5 curated emojis (from 8 categories: faces, love, fire, animals, food, gestures, nature, expressions)
+2. Deterministic hash-based selection ensures same photo shows same emojis
+3. "+" add button at end of emoji row opens rn-emoji-keyboard picker
+4. Preview → confirm flow: selecting emoji shows preview, tapping confirms reaction
 
 ### Phase 12: Own Snaps in Stories Bar
 
@@ -437,7 +435,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 8.2 Album Creation Animation     | 1/1            | Complete    | 2026-01-29 |
 | 9. Monthly Albums                | 3/3            | Complete    | 2026-01-29 |
 | 10. Empty Feed State UI Change   | 1/1            | Complete    | 2026-01-29 |
-| 11. Feed Reaction Emoji          | 0/?            | Not started | -          |
+| 11. Feed Reaction Emoji          | 1/1            | Complete    | 2026-01-30 |
 | 12. Own Snaps in Stories Bar     | 0/?            | Not started | -          |
 | 13. Split Activity/Friends       | 0/?            | Not started | -          |
 | 14. Profile Field Limits         | 0/?            | Not started | -          |
