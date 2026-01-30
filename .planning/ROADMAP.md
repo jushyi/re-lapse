@@ -347,11 +347,11 @@ Plans:
 **Goal**: Separate the current activity page into two distinct screens - notifications (accessed via heart icon) and friends list (accessed via new friend icon on left side of feed header)
 **Depends on**: Phase 12
 **Research**: Unlikely (internal UI restructuring)
-**Plans**: TBD
+**Plans**: 1/? complete
 
 Plans:
 
-- [ ] 13-01: TBD (run /gsd:plan-phase 13 to break down)
+- [x] 13-01: Feed header navigation icons (friend icon left, heart icon right)
 
 **Details:**
 
@@ -478,7 +478,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 10. Empty Feed State UI Change   | 1/1            | Complete    | 2026-01-29 |
 | 11. Feed Reaction Emoji          | 1/1            | Complete    | 2026-01-30 |
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
-| 13. Split Activity/Friends       | 0/?            | Not started | -          |
+| 13. Split Activity/Friends       | 1/?            | In progress | -          |
 | 14. Profile Field Limits         | 0/?            | Not started | -          |
 | 15. Friends Screen & Profiles    | 0/?            | Not started | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |

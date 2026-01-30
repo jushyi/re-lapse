@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 12 of 18 (Own Snaps in Stories Bar) - COMPLETE
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-30 — Completed 12-01-PLAN.md
+Phase: 13 of 18 (Split Activity into Notifications & Friends)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-01-30 — Completed 13-01-PLAN.md
 
-Progress: ████████░░░░░░░░░░ 67% (12 of 18 phases)
+Progress: ████████░░░░░░░░░░ 67% (12 of 18 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 46 (including 11 FIX plans)
+- Total plans completed: 47 (including 11 FIX plans)
 - Average duration: 11 min
-- Total execution time: 524 min
+- Total execution time: 530 min
 
 **By Phase:**
 
@@ -46,11 +46,12 @@ Progress: ████████░░░░░░░░░░ 67% (12 of 18 p
 | 10    | 1     | 8 min  | 8 min    |
 | 11    | 2     | 32 min | 16 min   |
 | 12    | 1     | 18 min | 18 min   |
+| 13    | 1     | 6 min  | 6 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 8 min, 8 min, 12 min, 20 min, 18 min
-- Trend: Phase 12 complete - Own snaps in stories bar with disabled self-reactions
+- Last 5 plans: 8 min, 12 min, 20 min, 18 min, 6 min
+- Trend: Phase 13 in progress - Feed header dual navigation icons added
 
 ## Accumulated Context
 
@@ -172,6 +173,8 @@ Recent decisions affecting current work:
 | 12    | isOwnStory prop for reaction disabling                | Pattern for differentiating own vs friend content in modals            |
 | 12    | Reactions visible but grayed out (opacity 0.4)        | Users can see friend reactions but can't react to themselves           |
 | 12    | Comments remain functional for own stories            | Users may want to add self-notes/captions to their photos              |
+| 13    | Mirror notification button positioning for friends    | Absolute left: 24 matches right: 24 pattern for visual symmetry        |
+| 13    | Chevron-back icon for FriendsListScreen back nav      | Consistent with iOS navigation patterns and other screens              |
 
 ### Deferred Issues
 
@@ -244,5 +247,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 12 - Own snaps in stories bar with disabled self-reactions
+Stopped at: Completed 13-01-PLAN.md - Feed header dual navigation icons
 Resume file: None
