@@ -4,17 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   RefreshControl,
   Image,
   ActivityIndicator,
-  TextInput,
   Alert,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getFirestore,
@@ -31,14 +28,8 @@ import { colors } from '../constants/colors';
 import { useAuth } from '../context/AuthContext';
 import {
   getPendingRequests,
-  getSentRequests,
-  getFriendships,
   acceptFriendRequest,
   declineFriendRequest,
-  sendFriendRequest,
-  removeFriend,
-  checkFriendshipStatus,
-  subscribeFriendships,
 } from '../services/firebase/friendshipService';
 import { getTimeAgo } from '../utils/timeUtils';
 import { mediumImpact } from '../utils/haptics';
@@ -46,12 +37,12 @@ import { markNotificationsAsRead } from '../services/firebase/notificationServic
 import logger from '../utils/logger';
 
 const db = getFirestore();
-const Tab = createMaterialTopTabNavigator();
 
 /**
- * Notifications Tab - Pinned friend requests + reaction notifications
+ * Notifications Screen - Friend requests + reaction notifications
+ * Accessed via heart icon in feed header
  */
-const NotificationsTab = () => {
+const ActivityScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [friendRequests, setFriendRequests] = useState([]);
@@ -136,7 +127,7 @@ const NotificationsTab = () => {
   }, [loadData]);
 
   /**
-   * Mark notifications as read when tab is focused
+   * Mark notifications as read when screen is focused
    */
   useFocusEffect(
     useCallback(() => {
@@ -200,30 +191,27 @@ const NotificationsTab = () => {
     if (!otherUser) return null;
 
     return (
-      <View style={notifStyles.requestItem}>
+      <View style={styles.requestItem}>
         {otherUser.profilePhotoURL ? (
-          <Image source={{ uri: otherUser.profilePhotoURL }} style={notifStyles.requestPhoto} />
+          <Image source={{ uri: otherUser.profilePhotoURL }} style={styles.requestPhoto} />
         ) : (
-          <View style={[notifStyles.requestPhoto, notifStyles.requestPhotoPlaceholder]}>
-            <Text style={notifStyles.requestPhotoText}>
+          <View style={[styles.requestPhoto, styles.requestPhotoPlaceholder]}>
+            <Text style={styles.requestPhotoText}>
               {otherUser.displayName?.[0]?.toUpperCase() || '?'}
             </Text>
           </View>
         )}
-        <View style={notifStyles.requestInfo}>
-          <Text style={notifStyles.requestName} numberOfLines={1}>
+        <View style={styles.requestInfo}>
+          <Text style={styles.requestName} numberOfLines={1}>
             {otherUser.displayName || otherUser.username}
           </Text>
-          <Text style={notifStyles.requestSubtext}>wants to be friends</Text>
+          <Text style={styles.requestSubtext}>wants to be friends</Text>
         </View>
-        <View style={notifStyles.requestActions}>
-          <TouchableOpacity style={notifStyles.acceptButton} onPress={() => handleAccept(item.id)}>
+        <View style={styles.requestActions}>
+          <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.id)}>
             <Ionicons name="checkmark" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={notifStyles.declineButton}
-            onPress={() => handleDecline(item.id)}
-          >
+          <TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item.id)}>
             <Ionicons name="close" size={18} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
@@ -240,20 +228,20 @@ const NotificationsTab = () => {
       item.message || `${item.senderName || 'Someone'} reacted ${reactionsText} to your photo`;
 
     return (
-      <View style={notifStyles.notificationItem}>
+      <View style={styles.notificationItem}>
         {item.senderProfilePhotoURL ? (
-          <Image source={{ uri: item.senderProfilePhotoURL }} style={notifStyles.notifPhoto} />
+          <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
         ) : (
-          <View style={[notifStyles.notifPhoto, notifStyles.notifPhotoPlaceholder]}>
+          <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
             <Ionicons name="person" size={20} color={colors.text.tertiary} />
           </View>
         )}
-        <View style={notifStyles.notifContent}>
-          <Text style={notifStyles.notifMessage} numberOfLines={2}>
+        <View style={styles.notifContent}>
+          <Text style={styles.notifMessage} numberOfLines={2}>
             {displayMessage}
           </Text>
         </View>
-        <Text style={notifStyles.notifTime}>
+        <Text style={styles.notifTime}>
           {item.createdAt ? getTimeAgo(item.createdAt).replace(' ago', '') : ''}
         </Text>
       </View>
@@ -268,10 +256,10 @@ const NotificationsTab = () => {
 
     if (friendRequests.length === 0 && notifications.length === 0) {
       return (
-        <View style={notifStyles.emptyContainer}>
+        <View style={styles.emptyContainer}>
           <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
-          <Text style={notifStyles.emptyTitle}>No activity yet</Text>
-          <Text style={notifStyles.emptyText}>Friend requests and reactions will appear here</Text>
+          <Text style={styles.emptyTitle}>No activity yet</Text>
+          <Text style={styles.emptyText}>Friend requests and reactions will appear here</Text>
         </View>
       );
     }
@@ -280,469 +268,20 @@ const NotificationsTab = () => {
 
   if (loading) {
     return (
-      <View style={notifStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.text.primary} />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.text.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
-
-  return (
-    <ScrollView
-      style={notifStyles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.text.primary}
-        />
-      }
-    >
-      {/* Pinned Friend Requests Section */}
-      {friendRequests.length > 0 && (
-        <View style={notifStyles.section}>
-          <TouchableOpacity
-            style={notifStyles.sectionHeader}
-            onPress={() => navigation.navigate('FriendRequests')}
-          >
-            <Text style={notifStyles.sectionTitle}>Friend Requests</Text>
-            <View style={notifStyles.sectionBadge}>
-              <Text style={notifStyles.sectionBadgeText}>{friendRequests.length}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-          </TouchableOpacity>
-          {friendRequests.map(item => (
-            <View key={item.id}>{renderFriendRequest({ item })}</View>
-          ))}
-        </View>
-      )}
-
-      {/* Reactions Section */}
-      {notifications.length > 0 && (
-        <View style={notifStyles.section}>
-          <Text style={[notifStyles.sectionTitle, { paddingHorizontal: 16, paddingVertical: 12 }]}>
-            Reactions
-          </Text>
-          {notifications.map(item => (
-            <View key={item.id}>{renderNotification({ item })}</View>
-          ))}
-        </View>
-      )}
-
-      {renderEmpty()}
-    </ScrollView>
-  );
-};
-
-/**
- * Friends Tab - Consolidated friend management
- */
-const FriendsTab = () => {
-  const navigation = useNavigation();
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [friends, setFriends] = useState([]);
-  const [pendingIncoming, setPendingIncoming] = useState(0);
-  const [pendingOutgoing, setPendingOutgoing] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [friendshipStatuses, setFriendshipStatuses] = useState({});
-
-  /**
-   * Fetch friends list with user data
-   */
-  const fetchFriends = useCallback(async () => {
-    if (!user?.uid) return [];
-
-    try {
-      const result = await getFriendships(user.uid);
-      if (!result.success) return [];
-
-      const friendsWithData = await Promise.all(
-        result.friendships.map(async friendship => {
-          const otherUserId =
-            friendship.user1Id === user.uid ? friendship.user2Id : friendship.user1Id;
-          try {
-            const userDoc = await getDoc(doc(db, 'users', otherUserId));
-            if (userDoc.exists()) {
-              return {
-                friendshipId: friendship.id,
-                acceptedAt: friendship.acceptedAt,
-                userId: otherUserId,
-                ...userDoc.data(),
-              };
-            }
-          } catch {
-            logger.error('Failed to fetch friend user data');
-          }
-          return null;
-        })
-      );
-
-      return friendsWithData
-        .filter(f => f !== null)
-        .sort((a, b) => {
-          const nameA = (a.displayName || a.username || '').toLowerCase();
-          const nameB = (b.displayName || b.username || '').toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-    } catch (error) {
-      logger.error('Error fetching friends', { error: error.message });
-    }
-    return [];
-  }, [user?.uid]);
-
-  /**
-   * Fetch pending request counts
-   */
-  const fetchPendingCounts = useCallback(async () => {
-    if (!user?.uid) return;
-
-    try {
-      const [incomingResult, outgoingResult] = await Promise.all([
-        getPendingRequests(user.uid),
-        getSentRequests(user.uid),
-      ]);
-
-      setPendingIncoming(incomingResult.success ? incomingResult.requests.length : 0);
-      setPendingOutgoing(outgoingResult.success ? outgoingResult.requests.length : 0);
-    } catch (error) {
-      logger.error('Error fetching pending counts', { error: error.message });
-    }
-  }, [user?.uid]);
-
-  /**
-   * Load all data
-   */
-  const loadData = useCallback(async () => {
-    const friendsList = await fetchFriends();
-    setFriends(friendsList);
-    await fetchPendingCounts();
-    setLoading(false);
-    setRefreshing(false);
-  }, [fetchFriends, fetchPendingCounts]);
-
-  useEffect(() => {
-    loadData();
-
-    // Set up real-time listener
-    const unsubscribe = subscribeFriendships(user?.uid, () => {
-      loadData();
-    });
-
-    return () => unsubscribe();
-  }, [loadData, user?.uid]);
-
-  /**
-   * Debounced search
-   */
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setFriendshipStatuses({});
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  /**
-   * Search users by username
-   */
-  const searchUsers = async term => {
-    setSearching(true);
-    try {
-      const normalizedTerm = term.toLowerCase().trim();
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('username', '>=', normalizedTerm),
-        where('username', '<=', normalizedTerm + '\uf8ff'),
-        limit(20)
-      );
-
-      const snapshot = await getDocs(usersQuery);
-      const results = [];
-      snapshot.forEach(docSnap => {
-        if (docSnap.id !== user.uid) {
-          results.push({ id: docSnap.id, ...docSnap.data() });
-        }
-      });
-
-      setSearchResults(results);
-
-      // Fetch friendship statuses
-      if (results.length > 0) {
-        const statuses = {};
-        await Promise.all(
-          results.map(async searchUser => {
-            const statusResult = await checkFriendshipStatus(user.uid, searchUser.id);
-            if (statusResult.success) {
-              statuses[searchUser.id] = statusResult.status;
-            }
-          })
-        );
-        setFriendshipStatuses(statuses);
-      }
-    } catch (error) {
-      logger.error('Error searching users', { error: error.message });
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  /**
-   * Handle pull-to-refresh
-   */
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
-
-  /**
-   * Handle send friend request
-   */
-  const handleSendRequest = async toUserId => {
-    mediumImpact();
-    setFriendshipStatuses(prev => ({ ...prev, [toUserId]: 'pending_sent' }));
-
-    const result = await sendFriendRequest(user.uid, toUserId);
-    if (!result.success) {
-      setFriendshipStatuses(prev => ({ ...prev, [toUserId]: 'none' }));
-      Alert.alert('Error', result.error || 'Failed to send request');
-    }
-  };
-
-  /**
-   * Handle remove friend
-   */
-  const handleRemoveFriend = friend => {
-    Alert.alert('Remove Friend', `Remove ${friend.displayName || friend.username} as a friend?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          mediumImpact();
-          const result = await removeFriend(user.uid, friend.userId);
-          if (!result.success) {
-            Alert.alert('Error', result.error || 'Failed to remove friend');
-          }
-        },
-      },
-    ]);
-  };
-
-  /**
-   * Get button config for search results
-   */
-  const getButtonConfig = status => {
-    switch (status) {
-      case 'friends':
-        return { label: 'Friends', disabled: true, style: 'disabled' };
-      case 'pending_sent':
-        return { label: 'Pending', disabled: true, style: 'pending' };
-      case 'pending_received':
-        return { label: 'Respond', disabled: false, style: 'active' };
-      default:
-        return { label: 'Add', disabled: false, style: 'active' };
-    }
-  };
-
-  /**
-   * Render search result
-   */
-  const renderSearchResult = item => {
-    const status = friendshipStatuses[item.id] || 'none';
-    const config = getButtonConfig(status);
-
-    return (
-      <View key={item.id} style={friendStyles.searchResultItem}>
-        {item.profilePhotoURL ? (
-          <Image source={{ uri: item.profilePhotoURL }} style={friendStyles.searchResultPhoto} />
-        ) : (
-          <View style={[friendStyles.searchResultPhoto, friendStyles.photoPlaceholder]}>
-            <Text style={friendStyles.photoPlaceholderText}>
-              {item.displayName?.[0]?.toUpperCase() || '?'}
-            </Text>
-          </View>
-        )}
-        <View style={friendStyles.searchResultInfo}>
-          <Text style={friendStyles.searchResultName} numberOfLines={1}>
-            {item.displayName || 'Unknown'}
-          </Text>
-          <Text style={friendStyles.searchResultUsername} numberOfLines={1}>
-            @{item.username || 'unknown'}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            friendStyles.addButton,
-            config.style === 'disabled' && friendStyles.addButtonDisabled,
-            config.style === 'pending' && friendStyles.addButtonPending,
-          ]}
-          onPress={() =>
-            status === 'pending_received'
-              ? navigation.navigate('FriendRequests')
-              : handleSendRequest(item.id)
-          }
-          disabled={config.disabled}
-        >
-          <Text
-            style={[
-              friendStyles.addButtonText,
-              config.style === 'disabled' && friendStyles.addButtonTextDisabled,
-              config.style === 'pending' && friendStyles.addButtonTextPending,
-            ]}
-          >
-            {config.label}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  /**
-   * Render friend item
-   */
-  const renderFriend = item => (
-    <TouchableOpacity
-      key={item.friendshipId}
-      style={friendStyles.friendItem}
-      onLongPress={() => handleRemoveFriend(item)}
-      activeOpacity={0.7}
-    >
-      {item.profilePhotoURL ? (
-        <Image source={{ uri: item.profilePhotoURL }} style={friendStyles.friendPhoto} />
-      ) : (
-        <View style={[friendStyles.friendPhoto, friendStyles.photoPlaceholder]}>
-          <Text style={friendStyles.photoPlaceholderText}>
-            {item.displayName?.[0]?.toUpperCase() || '?'}
-          </Text>
-        </View>
-      )}
-      <View style={friendStyles.friendInfo}>
-        <Text style={friendStyles.friendName} numberOfLines={1}>
-          {item.displayName || 'Unknown'}
-        </Text>
-        <Text style={friendStyles.friendUsername} numberOfLines={1}>
-          @{item.username || 'unknown'}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  if (loading) {
-    return (
-      <View style={friendStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.text.primary} />
-      </View>
-    );
-  }
-
-  const totalPending = pendingIncoming + pendingOutgoing;
-
-  return (
-    <ScrollView
-      style={friendStyles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.text.primary}
-        />
-      }
-    >
-      {/* Search Bar */}
-      <View style={friendStyles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={20}
-          color={colors.text.tertiary}
-          style={friendStyles.searchIcon}
-        />
-        <TextInput
-          style={friendStyles.searchInput}
-          placeholder="Search for friends..."
-          placeholderTextColor={colors.text.tertiary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color={colors.text.tertiary} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Search Results */}
-      {searchQuery.trim() && (
-        <View style={friendStyles.section}>
-          <Text style={friendStyles.sectionTitle}>Search Results</Text>
-          {searching ? (
-            <ActivityIndicator size="small" color={colors.text.primary} style={{ padding: 20 }} />
-          ) : searchResults.length > 0 ? (
-            searchResults.map(renderSearchResult)
-          ) : (
-            <Text style={friendStyles.emptyText}>No users found</Text>
-          )}
-        </View>
-      )}
-
-      {/* Pending Requests */}
-      {!searchQuery.trim() && totalPending > 0 && (
-        <TouchableOpacity
-          style={friendStyles.pendingSection}
-          onPress={() => navigation.navigate('FriendRequests')}
-        >
-          <View style={friendStyles.pendingIcon}>
-            <Ionicons name="people" size={24} color={colors.brand.purple} />
-          </View>
-          <View style={friendStyles.pendingInfo}>
-            <Text style={friendStyles.pendingTitle}>Pending Requests</Text>
-            <Text style={friendStyles.pendingSubtext}>
-              {pendingIncoming > 0 && `${pendingIncoming} incoming`}
-              {pendingIncoming > 0 && pendingOutgoing > 0 && ' · '}
-              {pendingOutgoing > 0 && `${pendingOutgoing} sent`}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
-        </TouchableOpacity>
-      )}
-
-      {/* Friends List */}
-      {!searchQuery.trim() && (
-        <View style={friendStyles.section}>
-          <Text style={friendStyles.sectionTitle}>
-            Friends {friends.length > 0 && `(${friends.length})`}
-          </Text>
-          {friends.length > 0 ? (
-            friends.map(renderFriend)
-          ) : (
-            <View style={friendStyles.emptyContainer}>
-              <Ionicons name="people-outline" size={48} color={colors.text.tertiary} />
-              <Text style={friendStyles.emptyTitle}>No friends yet</Text>
-              <Text style={friendStyles.emptySubtext}>Search above to find and add friends</Text>
-            </View>
-          )}
-        </View>
-      )}
-    </ScrollView>
-  );
-};
-
-/**
- * Activity Screen - Two-tab structure for Notifications and Friends
- * Accessed via heart icon in feed header (Instagram-style Activity page)
- */
-const ActivityScreen = () => {
-  const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -751,24 +290,54 @@ const ActivityScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Activity</Text>
+        <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Top Tab Navigator */}
-      <Tab.Navigator
-        screenOptions={{
-          tabBarStyle: styles.tabBar,
-          tabBarIndicatorStyle: styles.tabIndicator,
-          tabBarActiveTintColor: colors.text.primary,
-          tabBarInactiveTintColor: colors.text.secondary,
-          tabBarLabelStyle: styles.tabLabel,
-          tabBarPressColor: 'transparent',
-        }}
+      {/* Content */}
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.text.primary}
+          />
+        }
       >
-        <Tab.Screen name="Notifications" component={NotificationsTab} />
-        <Tab.Screen name="Friends" component={FriendsTab} />
-      </Tab.Navigator>
+        {/* Pinned Friend Requests Section */}
+        {friendRequests.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => navigation.navigate('FriendRequests')}
+            >
+              <Text style={styles.sectionTitle}>Friend Requests</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{friendRequests.length}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+            </TouchableOpacity>
+            {friendRequests.map(item => (
+              <View key={item.id}>{renderFriendRequest({ item })}</View>
+            ))}
+          </View>
+        )}
+
+        {/* Reactions Section */}
+        {notifications.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { paddingHorizontal: 16, paddingVertical: 12 }]}>
+              Reactions
+            </Text>
+            {notifications.map(item => (
+              <View key={item.id}>{renderNotification({ item })}</View>
+            ))}
+          </View>
+        )}
+
+        {renderEmpty()}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -797,35 +366,13 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 36,
   },
-  tabBar: {
-    backgroundColor: colors.background.primary,
-    elevation: 0,
-    shadowOpacity: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  tabIndicator: {
-    backgroundColor: colors.brand.purple,
-    height: 2,
-  },
-  tabLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'none',
-  },
-});
-
-// Notifications Tab Styles
-const notifStyles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
   },
   section: {
     marginBottom: 8,
@@ -968,197 +515,6 @@ const notifStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
-  },
-});
-
-// Friends Tab Styles
-const friendStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background.primary,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text.primary,
-    paddingVertical: 12,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pendingSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  pendingIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.brand.purple + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  pendingInfo: {
-    flex: 1,
-  },
-  pendingTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  pendingSubtext: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  searchResultPhoto: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-  },
-  searchResultInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  searchResultName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  searchResultUsername: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  addButton: {
-    backgroundColor: colors.brand.purple,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  addButtonDisabled: {
-    backgroundColor: colors.background.tertiary,
-  },
-  addButtonTextDisabled: {
-    color: colors.text.tertiary,
-  },
-  addButtonPending: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.text.tertiary,
-  },
-  addButtonTextPending: {
-    color: colors.text.secondary,
-  },
-  friendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  friendPhoto: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-  },
-  photoPlaceholder: {
-    backgroundColor: colors.background.tertiary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoPlaceholderText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  friendInfo: {
-    flex: 1,
-  },
-  friendName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  friendUsername: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    padding: 20,
   },
 });
 
