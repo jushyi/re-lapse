@@ -142,6 +142,7 @@ export const usePhotoDetailModal = ({
 
   /**
    * Handle emoji button press (curated or custom emoji)
+   * Triggers highlight animation (purple border that fades over 1 second)
    */
   const handleEmojiPress = useCallback(
     emoji => {
@@ -170,6 +171,12 @@ export const usePhotoDetailModal = ({
       sortTimerRef.current = setTimeout(() => {
         setFrozenOrder(null);
       }, 1500);
+
+      // Trigger highlight animation (purple border that fades over 1 second)
+      setNewlyAddedEmoji(emoji);
+      setTimeout(() => {
+        setNewlyAddedEmoji(null);
+      }, 2000);
     },
     [getUserReactionCount, onReactionToggle, frozenOrder, groupedReactions, curatedEmojis]
   );
