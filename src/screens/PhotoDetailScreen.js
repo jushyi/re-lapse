@@ -62,8 +62,9 @@ const PhotoDetailScreen = () => {
     mode: contextMode,
     isOwnStory: contextIsOwnStory,
     hasNextFriend: contextHasNextFriend,
-    initialShowComments: contextInitialShowComments,
     currentUserId: contextUserId,
+    showComments,
+    setShowComments,
     handleReactionToggle,
     handlePhotoChange,
     handleRequestNextFriend,
@@ -75,8 +76,7 @@ const PhotoDetailScreen = () => {
   const cubeRotation = useRef(new Animated.Value(0)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Comments state
-  const [showComments, setShowComments] = useState(contextInitialShowComments);
+  // Comments preview state (local since it's just for display)
   const [previewComments, setPreviewComments] = useState([]);
 
   // Progress bar scroll ref for auto-scrolling
@@ -92,8 +92,7 @@ const PhotoDetailScreen = () => {
   useEffect(() => {
     cubeRotation.setValue(0);
     setIsTransitioning(false);
-    setShowComments(contextInitialShowComments);
-  }, [contextInitialShowComments]);
+  }, []);
 
   /**
    * Handle close - navigate back
@@ -197,9 +196,12 @@ const PhotoDetailScreen = () => {
 
   /**
    * Handle avatar press from comments - navigate to user's profile
+   * Keep comments open - when user returns they'll be right where they were
    */
   const handleCommentAvatarPress = useCallback(
     (userId, userName) => {
+      // Navigate directly - comments and PhotoDetail stay open underneath
+      // When user goes back from profile, they return to PhotoDetail with comments still visible
       if (contextAvatarPress) {
         contextAvatarPress(userId, userName);
       }

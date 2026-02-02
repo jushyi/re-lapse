@@ -455,11 +455,21 @@ export const getUserStoriesData = async userId => {
     );
     const photosSnapshot = await getDocs(photosQuery);
 
+    // Create user object for attaching to each photo
+    const userObj = {
+      uid: userId,
+      username: userData.username || 'unknown',
+      displayName: userData.displayName || 'Me',
+      profilePhotoURL: userData.profilePhotoURL || null,
+    };
+
     // Map and sort photos by capturedAt ASCENDING (oldest first for timeline viewing)
+    // Attach user data to each photo so PhotoDetailScreen can display it
     const allPhotos = photosSnapshot.docs
       .map(photoDoc => ({
         id: photoDoc.id,
         ...photoDoc.data(),
+        user: userObj, // Attach user data for PhotoDetailScreen display
       }))
       .sort((a, b) => {
         const aTime = a.capturedAt?.seconds || 0;
@@ -481,8 +491,8 @@ export const getUserStoriesData = async userId => {
       success: true,
       userStory: {
         userId,
-        displayName: 'Me',
-        profilePhotoURL: userData.profilePhotoURL || null,
+        displayName: userObj.displayName,
+        profilePhotoURL: userObj.profilePhotoURL,
         topPhotos: allPhotos, // All photos in chronological order
         thumbnailURL, // Most recent photo for story card preview
         totalPhotoCount,
@@ -548,11 +558,21 @@ export const getFriendStoriesData = async currentUserId => {
       );
       const photosSnapshot = await getDocs(photosQuery);
 
+      // Create user object for attaching to each photo
+      const userObj = {
+        uid: friendId,
+        username: userData.username || 'unknown',
+        displayName: userData.displayName || 'Unknown User',
+        profilePhotoURL: userData.profilePhotoURL || null,
+      };
+
       // Map and sort photos by capturedAt ASCENDING (oldest first for timeline viewing)
+      // Attach user data to each photo so PhotoDetailScreen can display it
       const allPhotos = photosSnapshot.docs
         .map(photoDoc => ({
           id: photoDoc.id,
           ...photoDoc.data(),
+          user: userObj, // Attach user data for PhotoDetailScreen display
         }))
         .sort((a, b) => {
           const aTime = a.capturedAt?.seconds || 0;
@@ -578,9 +598,9 @@ export const getFriendStoriesData = async currentUserId => {
 
       return {
         userId: friendId,
-        username: userData.username || 'unknown',
-        displayName: userData.displayName || 'Unknown User',
-        profilePhotoURL: userData.profilePhotoURL || null,
+        username: userObj.username,
+        displayName: userObj.displayName,
+        profilePhotoURL: userObj.profilePhotoURL,
         topPhotos: allPhotos, // All photos in chronological order (backwards compatible name)
         thumbnailURL, // Most recent photo for story card preview
         totalPhotoCount,

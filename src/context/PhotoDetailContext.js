@@ -47,6 +47,9 @@ export const PhotoDetailProvider = ({ children }) => {
   // Track if photo detail should be shown (for navigation trigger)
   const [isActive, setIsActive] = useState(false);
 
+  // Comments visibility - stored in context to persist across navigation
+  const [showComments, setShowComments] = useState(false);
+
   // Callback refs - using refs to avoid re-renders when callbacks change
   const callbacksRef = useRef({
     onReactionToggle: null,
@@ -128,6 +131,7 @@ export const PhotoDetailProvider = ({ children }) => {
    */
   const closePhotoDetail = useCallback(() => {
     setIsActive(false);
+    setShowComments(false); // Close comments when photo detail closes
     // Keep state briefly for animation, then clear
     setTimeout(() => {
       setCurrentPhoto(null);
@@ -224,6 +228,7 @@ export const PhotoDetailProvider = ({ children }) => {
     initialShowComments,
     currentUserId,
     isActive,
+    showComments,
 
     // Methods
     openPhotoDetail,
@@ -232,6 +237,7 @@ export const PhotoDetailProvider = ({ children }) => {
     getCallbacks,
     updateCurrentPhoto,
     updateHasNextFriend,
+    setShowComments,
 
     // Callback handlers (for PhotoDetailScreen to call)
     handleReactionToggle,
