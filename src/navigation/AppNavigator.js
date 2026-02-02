@@ -469,11 +469,9 @@ const AppNavigator = () => {
                 name="OtherUserProfile"
                 component={ProfileScreen}
                 options={{
-                  presentation: 'card', // Standard push - slides from right
-                  animation: 'slide_from_right',
+                  presentation: 'fullScreenModal', // Modal overlay - keeps parent mounted
                   headerShown: false,
                   gestureEnabled: true,
-                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
