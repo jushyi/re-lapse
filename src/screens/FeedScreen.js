@@ -602,6 +602,7 @@ const FeedScreen = () => {
       photo={item}
       onPress={() => handlePhotoPress(item)}
       onCommentPress={() => handleCommentPress(item)}
+      onAvatarPress={handleAvatarPress}
     />
   );
 

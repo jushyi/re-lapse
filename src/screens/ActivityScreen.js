@@ -173,6 +173,14 @@ const ActivityScreen = () => {
   };
 
   /**
+   * Handle avatar press - navigate to user's profile
+   */
+  const handleAvatarPress = (userId, displayName) => {
+    logger.debug('ActivityScreen: Avatar pressed', { userId, displayName });
+    navigation.navigate('ProfileMain', { userId, username: displayName });
+  };
+
+  /**
    * Format reactions text
    */
   const formatReactionsText = reactions => {
@@ -192,15 +200,20 @@ const ActivityScreen = () => {
 
     return (
       <View style={styles.requestItem}>
-        {otherUser.profilePhotoURL ? (
-          <Image source={{ uri: otherUser.profilePhotoURL }} style={styles.requestPhoto} />
-        ) : (
-          <View style={[styles.requestPhoto, styles.requestPhotoPlaceholder]}>
-            <Text style={styles.requestPhotoText}>
-              {otherUser.displayName?.[0]?.toUpperCase() || '?'}
-            </Text>
-          </View>
-        )}
+        <TouchableOpacity
+          onPress={() => handleAvatarPress(otherUser.id, otherUser.displayName)}
+          activeOpacity={0.7}
+        >
+          {otherUser.profilePhotoURL ? (
+            <Image source={{ uri: otherUser.profilePhotoURL }} style={styles.requestPhoto} />
+          ) : (
+            <View style={[styles.requestPhoto, styles.requestPhotoPlaceholder]}>
+              <Text style={styles.requestPhotoText}>
+                {otherUser.displayName?.[0]?.toUpperCase() || '?'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.requestInfo}>
           <Text style={styles.requestName} numberOfLines={1}>
             {otherUser.displayName || otherUser.username}
@@ -229,13 +242,19 @@ const ActivityScreen = () => {
 
     return (
       <View style={styles.notificationItem}>
-        {item.senderProfilePhotoURL ? (
-          <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
-        ) : (
-          <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
-            <Ionicons name="person" size={20} color={colors.text.tertiary} />
-          </View>
-        )}
+        <TouchableOpacity
+          onPress={() => item.senderId && handleAvatarPress(item.senderId, item.senderName)}
+          activeOpacity={0.7}
+          disabled={!item.senderId}
+        >
+          {item.senderProfilePhotoURL ? (
+            <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
+          ) : (
+            <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
+              <Ionicons name="person" size={20} color={colors.text.tertiary} />
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.notifContent}>
           <Text style={styles.notifMessage} numberOfLines={2}>
             {displayMessage}
