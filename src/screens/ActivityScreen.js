@@ -174,10 +174,11 @@ const ActivityScreen = () => {
 
   /**
    * Handle avatar press - navigate to user's profile
+   * Uses OtherUserProfile screen in root stack for viewing other users
    */
   const handleAvatarPress = (userId, displayName) => {
     logger.debug('ActivityScreen: Avatar pressed', { userId, displayName });
-    navigation.navigate('ProfileMain', { userId, username: displayName });
+    navigation.navigate('OtherUserProfile', { userId, username: displayName });
   };
 
   /**

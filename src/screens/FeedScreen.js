@@ -232,18 +232,19 @@ const FeedScreen = () => {
 
   /**
    * Handle avatar press - navigate to user's profile
+   * Uses OtherUserProfile screen in root stack for viewing other users
    */
   const handleAvatarPress = (userId, username) => {
     logger.debug('FeedScreen: Avatar pressed', { userId, username });
-    navigation.navigate('ProfileMain', { userId, username });
+    navigation.navigate('OtherUserProfile', { userId, username });
   };
 
   /**
-   * Handle own avatar press - navigate to own profile
+   * Handle own avatar press - switch to Profile tab
    */
   const handleOwnAvatarPress = () => {
     logger.debug('FeedScreen: Own avatar pressed');
-    navigation.navigate('ProfileMain');
+    navigation.navigate('Profile');
   };
 
   /**
