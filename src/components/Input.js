@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: colors.background.secondary,
     color: colors.text.primary,
+    letterSpacing: 0,
   },
   inputError: {
     borderColor: colors.status.danger,

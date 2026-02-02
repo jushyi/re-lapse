@@ -17,14 +17,17 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   // Progress bar for stories mode - positioned above footer
-  // Matches photo marginHorizontal (8px) so edges align with photo
+  // Container clips at 8px margin (matches photo window padding)
+  // Segments extend edge-to-edge within container for edge-to-edge visual effect
   progressBarScrollView: {
     flexGrow: 0, // Prevent ScrollView from expanding and pushing photo
+    marginHorizontal: 8, // Match photo marginHorizontal - clips the segments
+    overflow: 'hidden', // Clip segments at container edges
   },
   progressBarContainer: {
     flexDirection: 'row',
     paddingBottom: 8,
-    paddingHorizontal: 8,
+    // No horizontal padding - segments extend to edges (clipped by container)
     gap: 2,
   },
   progressSegment: {
