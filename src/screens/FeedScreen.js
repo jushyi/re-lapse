@@ -917,7 +917,14 @@ const FeedScreen = () => {
           onClose={handleCloseMyStories}
           currentUserId={user?.uid}
           isOwnStory={true}
-          onAvatarPress={handleOwnAvatarPress}
+          onAvatarPress={(userId, username) => {
+            // For own stories: header avatar goes to Profile tab, comment avatars go to their profile
+            if (userId === user?.uid) {
+              navigation.navigate('Profile');
+            } else {
+              navigation.navigate('OtherUserProfile', { userId, username });
+            }
+          }}
         />
       )}
     </SafeAreaView>
