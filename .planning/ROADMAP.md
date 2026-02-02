@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
 - [x] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
 - [x] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (24), username (24), bio (240)
-- [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
+- [x] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
 - [x] **Phase 15.1: Profile Setup Cancel Flow** - Cancel profile setup with verification, return to phone input, delete partial profile (INSERTED)
 - [ ] **Phase 15.2: Modal State Preservation** - Return to story/comment modal after viewing profile instead of feed (INSERTED)
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
@@ -394,7 +394,7 @@ Plans:
 **Goal**: Refactor friends screen and wire up the ability to view other peoples profile
 **Depends on**: Phase 14
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 2/3 complete (+ 2 FIX plans)
+**Plans**: 3/3 complete (+ 2 FIX plans)
 
 Plans:
 
@@ -402,7 +402,7 @@ Plans:
 - [x] 15-02: Wire up profile navigation from avatar taps
 - [x] 15-02-FIX: UAT fixes for other user profile viewing
 - [x] 15-02-FIX2: Album navigation and read-only fixes
-- [ ] 15-03: Conditional profile display (friends vs non-friends)
+- [x] 15-03: Universal avatar navigation throughout the app
 
 **Details:**
 
@@ -634,7 +634,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
 | 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
 | 14. Profile Field Limits         | 1/1            | Complete    | 2026-02-02 |
-| 15. Friends Screen & Profiles    | 2/3            | In progress | -          |
+| 15. Friends Screen & Profiles    | 3/3            | Complete    | 2026-02-02 |
 | 15.1 Profile Setup Cancel        | 1/1            | Complete    | 2026-02-02 |
 | 15.2 Modal State Preservation    | 0/?            | Not started | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
