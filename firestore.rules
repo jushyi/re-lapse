@@ -111,11 +111,13 @@ service cloud.firestore {
       // Read access:
       // - Owner can always read their own photos
       // - Any authenticated user can read journaled photos (client-side filters by friends)
-      // Note: areFriends() cannot be used in collection queries due to Firestore limitations
-      // The feedService filters by friends client-side for the MVP
+      // - Friends can read each other's photos (for monthly albums, profile views)
+      // Note: areFriends() works for bounded queries (e.g., where userId == X)
       allow read: if isOwner(resource.data.userId) ||
                      (isAuthenticated() &&
-                      resource.data.photoState == 'journal');
+                      resource.data.photoState == 'journal') ||
+                     (isAuthenticated() &&
+                      areFriends(resource.data.userId));
 
       // Create: Only authenticated users can create photos for themselves
       allow create: if isAuthenticated() &&
@@ -264,10 +266,10 @@ service cloud.firestore {
     // ALBUMS COLLECTION
     // =============================================================================
     match /albums/{albumId} {
-      // Users can read their own albums
-      // TODO: Friends can read albums with appropriate visibility settings
+      // Users can read their own albums OR friends can read each other's albums
       allow read: if isAuthenticated() &&
-                     resource.data.userId == request.auth.uid;
+                     (resource.data.userId == request.auth.uid ||
+                      areFriends(resource.data.userId));
 
       // Users can create albums for themselves
       allow create: if isAuthenticated() &&
