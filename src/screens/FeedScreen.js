@@ -22,6 +22,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import { useViewedStories } from '../hooks/useViewedStories';
+import { usePhotoDetail } from '../context/PhotoDetailContext';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
 import PhotoDetailModal from '../components/PhotoDetailModal';
@@ -49,6 +50,12 @@ const FeedScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
+  // Photo detail context for feed mode navigation
+  const { openPhotoDetail, setCallbacks } = usePhotoDetail();
+
+  // Track current feed photo for reaction updates (ref to avoid re-renders)
+  const currentFeedPhotoRef = useRef(null);
+
   // Animated scroll value for header hide/show
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -65,11 +72,6 @@ const FeedScreen = () => {
     refreshFeed,
     updatePhotoInState,
   } = useFeedPhotos(true, true); // realTimeUpdates=true, hotOnly=true
-
-  // Modal state
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [initialShowComments, setInitialShowComments] = useState(false);
 
   // Stories state
   const [friendStories, setFriendStories] = useState([]);
@@ -187,6 +189,21 @@ const FeedScreen = () => {
 
     return () => unsubscribe();
   }, [user?.uid]);
+
+  /**
+   * Set up callbacks for PhotoDetailContext (feed mode)
+   * These callbacks are called by PhotoDetailScreen when user interacts
+   */
+  useEffect(() => {
+    setCallbacks({
+      onReactionToggle: handleFeedReactionToggle,
+      onClose: () => {
+        // Clear current feed photo ref when closing
+        currentFeedPhotoRef.current = null;
+      },
+      onAvatarPress: handleAvatarPress,
+    });
+  }, [setCallbacks]);
 
   /**
    * Handle pull-to-refresh
@@ -431,44 +448,47 @@ const FeedScreen = () => {
   };
 
   /**
-   * Handle photo card press - Open detail modal
+   * Handle photo card press - Navigate to PhotoDetail screen
    */
   const handlePhotoPress = photo => {
-    setSelectedPhoto(photo);
-    setInitialShowComments(false);
-    setShowPhotoModal(true);
+    currentFeedPhotoRef.current = photo;
+    openPhotoDetail({
+      mode: 'feed',
+      photo,
+      currentUserId: user?.uid,
+      initialShowComments: false,
+    });
+    navigation.navigate('PhotoDetail');
   };
 
   /**
-   * Handle comment press on feed card - Opens modal with comments sheet visible (UAT-005 fix)
+   * Handle comment press on feed card - Navigate with comments visible (UAT-005 fix)
    */
   const handleCommentPress = photo => {
-    setSelectedPhoto(photo);
-    setInitialShowComments(true);
-    setShowPhotoModal(true);
+    currentFeedPhotoRef.current = photo;
+    openPhotoDetail({
+      mode: 'feed',
+      photo,
+      currentUserId: user?.uid,
+      initialShowComments: true,
+    });
+    navigation.navigate('PhotoDetail');
   };
 
   /**
-   * Close photo modal
-   */
-  const handleClosePhotoModal = () => {
-    setShowPhotoModal(false);
-    setSelectedPhoto(null);
-    setInitialShowComments(false);
-  };
-
-  /**
-   * Handle reaction toggle with optimistic UI update
+   * Handle reaction toggle for feed photos with optimistic UI update
+   * Called via context callback from PhotoDetailScreen
    * Increments the count for the selected emoji
    */
-  const handleReactionToggle = async (emoji, currentCount) => {
-    if (!user || !selectedPhoto) return;
+  const handleFeedReactionToggle = async (emoji, currentCount) => {
+    const photo = currentFeedPhotoRef.current;
+    if (!user || !photo) return;
 
-    const photoId = selectedPhoto.id;
+    const photoId = photo.id;
     const userId = user.uid;
 
     // Optimistic update - increment count immediately
-    const updatedReactions = { ...selectedPhoto.reactions };
+    const updatedReactions = { ...photo.reactions };
     if (!updatedReactions[userId]) {
       updatedReactions[userId] = {};
     }
@@ -485,12 +505,13 @@ const FeedScreen = () => {
     });
 
     const updatedPhoto = {
-      ...selectedPhoto,
+      ...photo,
       reactions: updatedReactions,
       reactionCount: newTotalCount,
     };
 
-    setSelectedPhoto(updatedPhoto);
+    // Update the ref and feed state
+    currentFeedPhotoRef.current = updatedPhoto;
     updatePhotoInState(photoId, updatedPhoto);
 
     // Persist to Firebase
@@ -499,14 +520,14 @@ const FeedScreen = () => {
       if (!result.success) {
         logger.error('Failed to toggle reaction', { error: result.error });
         // Revert optimistic update on error
-        setSelectedPhoto(selectedPhoto);
-        updatePhotoInState(photoId, selectedPhoto);
+        currentFeedPhotoRef.current = photo;
+        updatePhotoInState(photoId, photo);
       }
     } catch (error) {
       logger.error('Error toggling reaction', error);
       // Revert optimistic update on error
-      setSelectedPhoto(selectedPhoto);
-      updatePhotoInState(photoId, selectedPhoto);
+      currentFeedPhotoRef.current = photo;
+      updatePhotoInState(photoId, photo);
     }
   };
 
@@ -857,20 +878,6 @@ const FeedScreen = () => {
           ListHeaderComponent={renderStoriesRow}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyState}
-        />
-      )}
-
-      {/* Photo Detail Modal - Feed Mode */}
-      {selectedPhoto && (
-        <PhotoDetailModal
-          mode="feed"
-          visible={showPhotoModal}
-          photo={selectedPhoto}
-          onClose={handleClosePhotoModal}
-          onReactionToggle={handleReactionToggle}
-          currentUserId={user?.uid}
-          initialShowComments={initialShowComments}
-          onAvatarPress={handleAvatarPress}
         />
       )}
 
