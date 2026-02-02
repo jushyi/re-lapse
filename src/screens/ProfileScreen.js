@@ -674,7 +674,7 @@ const ProfileScreen = () => {
               isOwnProfile={isOwnProfile}
               onAlbumPress={handleAlbumPress}
               highlightedAlbumId={highlightedAlbumId}
-              onAlbumLongPress={handleAlbumLongPress}
+              onAlbumLongPress={isOwnProfile ? handleAlbumLongPress : undefined}
               onAddPress={handleAddAlbumPress}
             />
 
