@@ -517,8 +517,10 @@ const FriendsScreen = ({ navigation }) => {
                 showFriendsSince={true}
                 friendsSince={item.acceptedAt}
                 onPress={() => {
-                  // Navigate to profile (to be wired in Plan 15-03)
-                  // navigation.navigate('Profile', { userId: item.userId });
+                  navigation.navigate('ProfileMain', {
+                    userId: item.userId,
+                    username: item.username,
+                  });
                 }}
               />
             </TouchableOpacity>
@@ -588,6 +590,12 @@ const FriendsScreen = ({ navigation }) => {
                     onAccept={() => handleAcceptRequest(statusInfo.friendshipId)}
                     onDeny={() => handleDenyRequest(statusInfo.friendshipId)}
                     loading={actionLoading[item.userId]}
+                    onPress={() => {
+                      navigation.navigate('ProfileMain', {
+                        userId: item.userId,
+                        username: item.username,
+                      });
+                    }}
                   />
                 );
               }}
@@ -644,6 +652,12 @@ const FriendsScreen = ({ navigation }) => {
                     onAccept={handleAcceptRequest}
                     onDeny={handleDenyRequest}
                     loading={actionLoading[item.data.id]}
+                    onPress={() => {
+                      navigation.navigate('ProfileMain', {
+                        userId: item.data.userId,
+                        username: item.data.username,
+                      });
+                    }}
                   />
                 );
               }
@@ -655,6 +669,12 @@ const FriendsScreen = ({ navigation }) => {
                     friendshipId={item.data.id}
                     onAction={handleCancelRequest}
                     loading={actionLoading[item.data.id]}
+                    onPress={() => {
+                      navigation.navigate('ProfileMain', {
+                        userId: item.data.userId,
+                        username: item.data.username,
+                      });
+                    }}
                   />
                 );
               }
