@@ -34,8 +34,16 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  * @param {object} friend - Friend object with userId, displayName, profilePhotoURL, topPhotos
  * @param {function} onPhotoChange - Optional callback when photo changes
  * @param {number} initialIndex - Starting photo index (default: 0)
+ * @param {function} onAvatarPress - Callback when avatar is tapped (navigates to profile)
  */
-const StoriesViewerModal = ({ visible, onClose, friend, onPhotoChange, initialIndex = 0 }) => {
+const StoriesViewerModal = ({
+  visible,
+  onClose,
+  friend,
+  onPhotoChange,
+  initialIndex = 0,
+  onAvatarPress,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   // Animated values for swipe gesture
@@ -201,6 +209,18 @@ const StoriesViewerModal = ({ visible, onClose, friend, onPhotoChange, initialIn
   };
 
   /**
+   * Handle avatar press - close modal and navigate to profile
+   */
+  const handleAvatarPress = () => {
+    logger.debug('StoriesViewer: Avatar pressed', { userId, displayName });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+    if (onAvatarPress) {
+      onAvatarPress(userId, displayName);
+    }
+  };
+
+  /**
    * Render progress bar segments
    */
   const renderProgressBar = () => {
@@ -247,15 +267,17 @@ const StoriesViewerModal = ({ visible, onClose, friend, onPhotoChange, initialIn
           {/* Header with friend info */}
           <View style={styles.header}>
             <View style={styles.friendInfo}>
-              {profilePhotoURL ? (
-                <Image source={{ uri: profilePhotoURL }} style={styles.profilePic} />
-              ) : (
-                <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-                  <Text style={styles.profilePicText}>
-                    {displayName?.[0]?.toUpperCase() || '?'}
-                  </Text>
-                </View>
-              )}
+              <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
+                {profilePhotoURL ? (
+                  <Image source={{ uri: profilePhotoURL }} style={styles.profilePic} />
+                ) : (
+                  <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                    <Text style={styles.profilePicText}>
+                      {displayName?.[0]?.toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <View style={styles.friendTextContainer}>
                 <Text style={styles.displayName} numberOfLines={1}>
                   {displayName || 'Unknown User'}

@@ -231,6 +231,22 @@ const FeedScreen = () => {
   };
 
   /**
+   * Handle avatar press - navigate to user's profile
+   */
+  const handleAvatarPress = (userId, username) => {
+    logger.debug('FeedScreen: Avatar pressed', { userId, username });
+    navigation.navigate('ProfileMain', { userId, username });
+  };
+
+  /**
+   * Handle own avatar press - navigate to own profile
+   */
+  const handleOwnAvatarPress = () => {
+    logger.debug('FeedScreen: Own avatar pressed');
+    navigation.navigate('ProfileMain');
+  };
+
+  /**
    * Handle opening stories for a friend
    * Starts at the first unviewed photo, or beginning if all viewed
    */
@@ -698,6 +714,7 @@ const FeedScreen = () => {
               <MeStoryCard
                 friend={myStories}
                 onPress={handleOpenMyStories}
+                onAvatarPress={handleOwnAvatarPress}
                 isFirst={true}
                 isViewed={hasViewedAllPhotos(myStories.topPhotos)}
               />
@@ -725,6 +742,7 @@ const FeedScreen = () => {
               <MeStoryCard
                 friend={myStories}
                 onPress={handleOpenMyStories}
+                onAvatarPress={handleOwnAvatarPress}
                 isFirst={true}
                 isViewed={hasViewedAllPhotos(myStories.topPhotos)}
               />
@@ -747,6 +765,7 @@ const FeedScreen = () => {
             <MeStoryCard
               friend={myStories}
               onPress={handleOpenMyStories}
+              onAvatarPress={handleOwnAvatarPress}
               isFirst={true}
               isViewed={hasViewedAllPhotos(myStories.topPhotos)}
             />
@@ -757,6 +776,7 @@ const FeedScreen = () => {
               key={friend.userId}
               friend={friend}
               onPress={() => handleOpenStories(friend)}
+              onAvatarPress={handleAvatarPress}
               isFirst={false}
               isViewed={hasViewedAllPhotos(friend.topPhotos)}
             />
@@ -863,6 +883,7 @@ const FeedScreen = () => {
           onReactionToggle={handleReactionToggle}
           currentUserId={user?.uid}
           initialShowComments={initialShowComments}
+          onAvatarPress={handleAvatarPress}
         />
       )}
 
@@ -879,6 +900,7 @@ const FeedScreen = () => {
           currentUserId={user?.uid}
           onRequestNextFriend={handleRequestNextFriend}
           hasNextFriend={hasNextFriend()}
+          onAvatarPress={handleAvatarPress}
         />
       )}
 
@@ -893,6 +915,7 @@ const FeedScreen = () => {
           onClose={handleCloseMyStories}
           currentUserId={user?.uid}
           isOwnStory={true}
+          onAvatarPress={handleOwnAvatarPress}
         />
       )}
     </SafeAreaView>

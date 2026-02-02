@@ -56,6 +56,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
  * @param {function} onRequestNextFriend - Callback for friend-to-friend transition (stories mode)
  * @param {boolean} hasNextFriend - Whether there's another friend's stories after this
  * @param {boolean} isOwnStory - Whether viewing user's own story (disables reactions)
+ * @param {function} onAvatarPress - Callback when avatar is tapped (userId, username) -> navigate to profile
  */
 const PhotoDetailModal = ({
   mode = 'feed',
@@ -71,6 +72,7 @@ const PhotoDetailModal = ({
   hasNextFriend = false,
   initialShowComments = false,
   isOwnStory = false,
+  onAvatarPress,
 }) => {
   // Cube transition animation for friend-to-friend
   const cubeRotation = useRef(new Animated.Value(0)).current;
@@ -136,6 +138,20 @@ const PhotoDetailModal = ({
 
     return true;
   }, [hasNextFriend, onRequestNextFriend, cubeRotation, isTransitioning]);
+
+  /**
+   * Handle avatar press - close modal and navigate to profile
+   */
+  const handleAvatarPress = useCallback(() => {
+    if (onAvatarPress && currentPhoto) {
+      onClose();
+      // Use setTimeout to ensure modal closes before navigation
+      setTimeout(() => {
+        onAvatarPress(currentPhoto.userId, displayName);
+      }, 100);
+    }
+  }, [onAvatarPress, onClose, currentPhoto, displayName]);
+
   const {
     // Mode
     showProgressBar,
@@ -321,8 +337,12 @@ const PhotoDetailModal = ({
             </View>
           </TouchableWithoutFeedback>
 
-          {/* Profile photo - overlapping top left of photo */}
-          <View style={styles.profilePicContainer}>
+          {/* Profile photo - overlapping top left of photo, tappable to navigate to profile */}
+          <TouchableOpacity
+            style={styles.profilePicContainer}
+            onPress={handleAvatarPress}
+            activeOpacity={0.7}
+          >
             {profilePhotoURL ? (
               <Image
                 source={{ uri: profilePhotoURL }}
@@ -334,7 +354,7 @@ const PhotoDetailModal = ({
                 <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* User info - bottom left of photo
               Stories mode: raised 15px (UAT-034 fix)
