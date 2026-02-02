@@ -152,6 +152,25 @@ const PhotoDetailModal = ({
     }
   }, [onAvatarPress, onClose, currentPhoto, displayName]);
 
+  /**
+   * Handle avatar press from comments - close comments sheet, then modal, then navigate
+   */
+  const handleCommentAvatarPress = useCallback(
+    (userId, userName) => {
+      if (onAvatarPress) {
+        // Close comments sheet first
+        setShowComments(false);
+        // Close main modal
+        onClose();
+        // Navigate after modal closes
+        setTimeout(() => {
+          onAvatarPress(userId, userName);
+        }, 150);
+      }
+    },
+    [onAvatarPress, onClose]
+  );
+
   const {
     // Mode
     showProgressBar,
@@ -507,6 +526,7 @@ const PhotoDetailModal = ({
         photoId={currentPhoto?.id}
         photoOwnerId={currentPhoto?.userId}
         currentUserId={currentUserId}
+        onAvatarPress={handleCommentAvatarPress}
       />
 
       {/* Custom Emoji Picker */}

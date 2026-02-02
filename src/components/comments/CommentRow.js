@@ -27,6 +27,7 @@ import { styles } from '../../styles/CommentRow.styles';
  * @param {function} onReply - Callback when Reply button pressed (receives comment)
  * @param {function} onLike - Callback when heart pressed (Plan 04)
  * @param {function} onDelete - Callback when delete confirmed
+ * @param {function} onAvatarPress - Callback when avatar pressed (userId, displayName) -> navigate to profile
  * @param {boolean} isOwnerComment - Whether this is photo owner's comment (show Author badge)
  * @param {boolean} canDelete - Whether current user can delete this comment
  * @param {boolean} isLiked - Whether current user liked this comment (Plan 04)
@@ -38,6 +39,7 @@ const CommentRow = ({
   onReply,
   onLike,
   onDelete,
+  onAvatarPress,
   isOwnerComment = false,
   canDelete = false,
   isLiked = false,
@@ -72,6 +74,17 @@ const CommentRow = ({
       onLike(comment);
     }
   }, [comment, isLiked, onLike]);
+
+  /**
+   * Handle avatar press - navigate to user's profile
+   */
+  const handleAvatarPress = useCallback(() => {
+    logger.info('CommentRow: Avatar pressed', { commentId: comment?.id, userId: comment?.userId });
+    if (onAvatarPress && comment?.userId) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onAvatarPress(comment.userId, user?.displayName);
+    }
+  }, [comment?.id, comment?.userId, user?.displayName, onAvatarPress]);
 
   /**
    * Handle long press for delete
@@ -124,8 +137,12 @@ const CommentRow = ({
       onLongPress={handleLongPress}
       delayLongPress={500}
     >
-      {/* Profile Photo */}
-      <View style={styles.profilePhotoContainer}>
+      {/* Profile Photo - tappable to navigate to user's profile */}
+      <TouchableOpacity
+        style={styles.profilePhotoContainer}
+        onPress={handleAvatarPress}
+        activeOpacity={0.7}
+      >
         {profilePhotoURL ? (
           <Image
             source={{ uri: profilePhotoURL }}
@@ -138,7 +155,7 @@ const CommentRow = ({
             <Text style={styles.profilePhotoInitial}>{initials}</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* Content - Name, Text, Reply */}
       <View style={styles.contentContainer}>

@@ -43,6 +43,7 @@ import { styles, SHEET_HEIGHT, EXPANDED_HEIGHT } from '../../styles/CommentsBott
  * @param {string} photoOwnerId - Photo owner's user ID (for delete permissions)
  * @param {string} currentUserId - Current user's ID
  * @param {function} onCommentAdded - Callback after comment successfully added
+ * @param {function} onAvatarPress - Callback when avatar pressed (userId, displayName) -> navigate to profile
  */
 const CommentsBottomSheet = ({
   visible,
@@ -51,6 +52,7 @@ const CommentsBottomSheet = ({
   photoOwnerId,
   currentUserId,
   onCommentAdded,
+  onAvatarPress,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const sheetTranslateY = useRef(new Animated.Value(0)).current; // UAT-021 fix: sheet position for keyboard
@@ -350,13 +352,22 @@ const CommentsBottomSheet = ({
           onReply={handleReply}
           onLike={handleLike}
           onDelete={handleDelete}
+          onAvatarPress={onAvatarPress}
           isOwnerComment={isOwnerComment}
           canDeleteComment={canDeleteComment}
           isLikedByUser={isLikedByUser}
         />
       );
     },
-    [handleReply, handleLike, handleDelete, isOwnerComment, canDeleteComment, isLikedByUser]
+    [
+      handleReply,
+      handleLike,
+      handleDelete,
+      onAvatarPress,
+      isOwnerComment,
+      canDeleteComment,
+      isLikedByUser,
+    ]
   );
 
   /**
