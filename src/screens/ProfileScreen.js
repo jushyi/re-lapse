@@ -544,7 +544,7 @@ const ProfileScreen = () => {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerButton} />
@@ -567,7 +567,7 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
         )}
 
