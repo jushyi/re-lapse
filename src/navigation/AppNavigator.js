@@ -469,11 +469,11 @@ const AppNavigator = () => {
                 name="OtherUserProfile"
                 component={ProfileScreen}
                 options={{
-                  presentation: 'transparentModal', // Keeps parent mounted, respects animation
-                  animation: 'slide_from_right', // Slide in from right
+                  presentation: 'card', // Standard push - slides from right
+                  animation: 'slide_from_right',
                   headerShown: false,
-                  gestureEnabled: true, // Allow swipe from edge to go back
-                  gestureDirection: 'horizontal', // Horizontal swipe (from left edge) to dismiss
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
