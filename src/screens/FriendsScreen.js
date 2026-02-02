@@ -597,9 +597,15 @@ const FriendsScreen = ({ navigation }) => {
                     onDeny={() => handleDenyRequest(statusInfo.friendshipId)}
                     loading={actionLoading[item.userId]}
                     onPress={() => {
-                      navigation.navigate('ProfileMain', {
-                        userId: item.userId,
-                        username: item.username,
+                      navigation.navigate('MainTabs', {
+                        screen: 'Profile',
+                        params: {
+                          screen: 'ProfileMain',
+                          params: {
+                            userId: item.userId,
+                            username: item.username,
+                          },
+                        },
                       });
                     }}
                   />

@@ -666,11 +666,10 @@ const ProfileScreen = () => {
               onAddPress={handleAddAlbumPress}
             />
 
-            {/* 6. Monthly Albums */}
-            <MonthlyAlbumsSection
-              userId={isOwnProfile ? user?.uid : userId}
-              onMonthPress={handleMonthPress}
-            />
+            {/* 6. Monthly Albums - Only for own profile (Firestore rules need update for friend access) */}
+            {isOwnProfile && (
+              <MonthlyAlbumsSection userId={user?.uid} onMonthPress={handleMonthPress} />
+            )}
           </>
         )}
       </ScrollView>
