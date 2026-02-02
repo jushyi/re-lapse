@@ -25,7 +25,6 @@ import { useViewedStories } from '../hooks/useViewedStories';
 import { usePhotoDetail } from '../context/PhotoDetailContext';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
-import PhotoDetailModal from '../components/PhotoDetailModal';
 import { FriendStoryCard } from '../components';
 import { MeStoryCard } from '../components/MeStoryCard';
 import AddFriendsPromptCard from '../components/AddFriendsPromptCard';
@@ -77,30 +76,28 @@ const FeedScreen = () => {
   const [friendStories, setFriendStories] = useState([]);
   const [totalFriendCount, setTotalFriendCount] = useState(0);
   const [storiesLoading, setStoriesLoading] = useState(true);
-  const [storiesModalVisible, setStoriesModalVisible] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState(null);
-  const [selectedFriendIndex, setSelectedFriendIndex] = useState(0); // Track position in friendStories for navigation
+  const selectedFriendRef = useRef(null);
+  const selectedFriendIndexRef = useRef(0);
 
   // Own stories state
   const [myStories, setMyStories] = useState(null);
   const [myStoriesLoading, setMyStoriesLoading] = useState(true);
-  const [myStoriesModalVisible, setMyStoriesModalVisible] = useState(false);
+
+  // Track whether currently in stories mode (for callbacks)
+  const isInStoriesModeRef = useRef(false);
+  const isOwnStoriesRef = useRef(false);
 
   // Notifications state - red dot indicator
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
   // View tracking state
   const {
-    isViewed,
     markAsViewed,
     markPhotosAsViewed,
     getFirstUnviewedIndex,
     hasViewedAllPhotos,
     loading: viewedStoriesLoading,
   } = useViewedStories();
-
-  // Track initial index for stories modal
-  const [storiesInitialIndex, setStoriesInitialIndex] = useState(0);
   // Track current index in stories modal (updated via onPhotoChange)
   const [storiesCurrentIndex, setStoriesCurrentIndex] = useState(0);
 
@@ -191,19 +188,45 @@ const FeedScreen = () => {
   }, [user?.uid]);
 
   /**
-   * Set up callbacks for PhotoDetailContext (feed mode)
-   * These callbacks are called by PhotoDetailScreen when user interacts
+   * Set up default callbacks for PhotoDetailContext
+   * Callbacks are overridden when opening feed or stories mode
    */
   useEffect(() => {
+    // Set up a callback router that checks current mode
     setCallbacks({
-      onReactionToggle: handleFeedReactionToggle,
-      onClose: () => {
-        // Clear current feed photo ref when closing
-        currentFeedPhotoRef.current = null;
+      onReactionToggle: (emoji, currentCount) => {
+        if (isInStoriesModeRef.current) {
+          handleStoriesReactionToggle(emoji, currentCount);
+        } else {
+          handleFeedReactionToggle(emoji, currentCount);
+        }
       },
-      onAvatarPress: handleAvatarPress,
+      onPhotoChange: handleStoriesPhotoChange,
+      onRequestNextFriend: handleRequestNextFriend,
+      onClose: () => {
+        if (isInStoriesModeRef.current) {
+          if (isOwnStoriesRef.current) {
+            handleCloseMyStories();
+          } else {
+            handleCloseStories();
+          }
+        } else {
+          // Feed mode close
+          currentFeedPhotoRef.current = null;
+        }
+        isInStoriesModeRef.current = false;
+        isOwnStoriesRef.current = false;
+      },
+      onAvatarPress: (userId, username) => {
+        // For own stories: header avatar goes to Profile tab
+        if (isOwnStoriesRef.current && userId === user?.uid) {
+          navigation.navigate('Profile');
+        } else {
+          handleAvatarPress(userId, username);
+        }
+      },
     });
-  }, [setCallbacks]);
+  }, [setCallbacks, user?.uid]);
 
   /**
    * Handle pull-to-refresh
@@ -276,11 +299,25 @@ const FeedScreen = () => {
       totalFriends: sortedFriends.length,
     });
 
-    setStoriesInitialIndex(startIndex);
+    // Store friend info in refs for callbacks
+    selectedFriendRef.current = friend;
+    selectedFriendIndexRef.current = friendIdx;
     setStoriesCurrentIndex(startIndex);
-    setSelectedFriend(friend);
-    setSelectedFriendIndex(friendIdx);
-    setStoriesModalVisible(true);
+
+    // Set mode flags
+    isInStoriesModeRef.current = true;
+    isOwnStoriesRef.current = false;
+
+    // Open via context and navigate
+    openPhotoDetail({
+      mode: 'stories',
+      photos: friend.topPhotos || [],
+      initialIndex: startIndex,
+      currentUserId: user?.uid,
+      hasNextFriend: friendIdx < sortedFriends.length - 1,
+      isOwnStory: false,
+    });
+    navigation.navigate('PhotoDetail');
   };
 
   /**
@@ -300,14 +337,27 @@ const FeedScreen = () => {
       photoCount: myStories.topPhotos?.length || 0,
     });
 
-    setStoriesInitialIndex(startIndex);
     setStoriesCurrentIndex(startIndex);
-    setMyStoriesModalVisible(true);
+
+    // Set mode flags
+    isInStoriesModeRef.current = true;
+    isOwnStoriesRef.current = true;
+
+    // Open via context and navigate
+    openPhotoDetail({
+      mode: 'stories',
+      photos: myStories.topPhotos || [],
+      initialIndex: startIndex,
+      currentUserId: user?.uid,
+      hasNextFriend: false,
+      isOwnStory: true,
+    });
+    navigation.navigate('PhotoDetail');
   };
 
   /**
    * Handle closing own stories viewer
-   * Marks photos as viewed
+   * Marks photos as viewed (called via context close callback)
    */
   const handleCloseMyStories = () => {
     logger.debug('FeedScreen: Closing own stories viewer');
@@ -330,8 +380,7 @@ const FeedScreen = () => {
         }
       }
     }
-    setMyStoriesModalVisible(false);
-    setStoriesInitialIndex(0);
+    // Mode flags are cleared in the onClose callback
   };
 
   /**
@@ -358,8 +407,11 @@ const FeedScreen = () => {
   /**
    * Handle transitioning to next friend's stories (cube animation)
    * Called when user reaches end of current friend's photos
+   * Note: PhotoDetailScreen handles cube animation, we just update context state
    */
   const handleRequestNextFriend = () => {
+    const selectedFriend = selectedFriendRef.current;
+    const selectedFriendIndex = selectedFriendIndexRef.current;
     if (!selectedFriend) return;
 
     const sortedFriends = getSortedFriends();
@@ -367,7 +419,7 @@ const FeedScreen = () => {
 
     if (nextFriendIdx >= sortedFriends.length) {
       logger.debug('FeedScreen: No more friends, closing stories');
-      handleCloseStories();
+      // Navigation will be handled by PhotoDetailScreen
       return;
     }
 
@@ -390,28 +442,24 @@ const FeedScreen = () => {
       startIndex: nextStartIndex,
     });
 
-    // Update state for next friend
-    setSelectedFriend(nextFriend);
-    setSelectedFriendIndex(nextFriendIdx);
-    setStoriesInitialIndex(nextStartIndex);
+    // Update refs for next friend
+    selectedFriendRef.current = nextFriend;
+    selectedFriendIndexRef.current = nextFriendIdx;
     setStoriesCurrentIndex(nextStartIndex);
-  };
 
-  /**
-   * Check if there's a next friend available
-   */
-  const hasNextFriend = () => {
-    const sortedFriends = getSortedFriends();
-    return selectedFriendIndex < sortedFriends.length - 1;
+    // Note: PhotoDetailScreen will need to update its photos via context
+    // This is handled by the cube animation callback in the screen
   };
 
   /**
    * Handle closing stories viewer
    * Only marks photos up to current position as viewed
    * Only marks friend as viewed (gray ring) when ALL photos are viewed
+   * (called via context close callback)
    */
   const handleCloseStories = () => {
     logger.debug('FeedScreen: Closing stories viewer');
+    const selectedFriend = selectedFriendRef.current;
     if (selectedFriend) {
       const allPhotos = selectedFriend.topPhotos || [];
       const isAtEnd = storiesCurrentIndex >= allPhotos.length - 1;
@@ -442,9 +490,8 @@ const FeedScreen = () => {
         });
       }
     }
-    setStoriesModalVisible(false);
-    setSelectedFriend(null);
-    setStoriesInitialIndex(0);
+    selectedFriendRef.current = null;
+    // Mode flags are cleared in the onClose callback
   };
 
   /**
@@ -536,6 +583,7 @@ const FeedScreen = () => {
    * Updates the photo in selectedFriend.topPhotos and persists to Firebase
    */
   const handleStoriesReactionToggle = async (emoji, currentCount) => {
+    const selectedFriend = selectedFriendRef.current;
     if (!user || !selectedFriend) return;
 
     const userId = user.uid;
@@ -575,11 +623,11 @@ const FeedScreen = () => {
       reactionCount: newTotalCount,
     };
 
-    // Update selectedFriend state
-    setSelectedFriend(prev => ({
-      ...prev,
+    // Update ref with new photos
+    selectedFriendRef.current = {
+      ...selectedFriend,
       topPhotos: updatedPhotos,
-    }));
+    };
 
     // Persist to Firebase
     try {
@@ -587,18 +635,12 @@ const FeedScreen = () => {
       if (!result.success) {
         logger.error('Failed to toggle stories reaction', { error: result.error });
         // Revert optimistic update on error
-        setSelectedFriend(prev => ({
-          ...prev,
-          topPhotos: topPhotos,
-        }));
+        selectedFriendRef.current = selectedFriend;
       }
     } catch (error) {
       logger.error('Error toggling stories reaction', error);
       // Revert optimistic update on error
-      setSelectedFriend(prev => ({
-        ...prev,
-        topPhotos: topPhotos,
-      }));
+      selectedFriendRef.current = selectedFriend;
     }
   };
 
@@ -878,45 +920,6 @@ const FeedScreen = () => {
           ListHeaderComponent={renderStoriesRow}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyState}
-        />
-      )}
-
-      {/* Photo Detail Modal - Stories Mode (Friends) */}
-      {selectedFriend && (
-        <PhotoDetailModal
-          mode="stories"
-          visible={storiesModalVisible}
-          photos={selectedFriend.topPhotos || []}
-          initialIndex={storiesInitialIndex}
-          onPhotoChange={handleStoriesPhotoChange}
-          onClose={handleCloseStories}
-          onReactionToggle={handleStoriesReactionToggle}
-          currentUserId={user?.uid}
-          onRequestNextFriend={handleRequestNextFriend}
-          hasNextFriend={hasNextFriend()}
-          onAvatarPress={handleAvatarPress}
-        />
-      )}
-
-      {/* Photo Detail Modal - Stories Mode (Own Stories) */}
-      {myStories && (
-        <PhotoDetailModal
-          mode="stories"
-          visible={myStoriesModalVisible}
-          photos={myStories.topPhotos || []}
-          initialIndex={storiesInitialIndex}
-          onPhotoChange={handleStoriesPhotoChange}
-          onClose={handleCloseMyStories}
-          currentUserId={user?.uid}
-          isOwnStory={true}
-          onAvatarPress={(userId, username) => {
-            // For own stories: header avatar goes to Profile tab, comment avatars go to their profile
-            if (userId === user?.uid) {
-              navigation.navigate('Profile');
-            } else {
-              navigation.navigate('OtherUserProfile', { userId, username });
-            }
-          }}
         />
       )}
     </SafeAreaView>
