@@ -198,7 +198,7 @@ const ProfileSetupScreen = ({ navigation }) => {
     if (!trimmedDisplayName) {
       newErrors.displayName = 'Display name is required';
     } else {
-      const displayNameError = validateLength(trimmedDisplayName, 2, 50, 'Display name');
+      const displayNameError = validateLength(trimmedDisplayName, 2, 24, 'Display name');
       if (displayNameError) {
         newErrors.displayName = displayNameError;
       }
@@ -206,7 +206,7 @@ const ProfileSetupScreen = ({ navigation }) => {
 
     // Bio validation (optional field)
     if (bio && bio.trim().length > 0) {
-      const bioError = validateLength(bio.trim(), 1, 150, 'Bio');
+      const bioError = validateLength(bio.trim(), 1, 240, 'Bio');
       if (bioError) {
         newErrors.bio = bioError;
       }
@@ -346,6 +346,8 @@ const ProfileSetupScreen = ({ navigation }) => {
                   if (errors.displayName) setErrors({ ...errors, displayName: null });
                 }}
                 error={errors.displayName}
+                maxLength={24}
+                showCharacterCount={true}
               />
 
               <Input
@@ -363,6 +365,8 @@ const ProfileSetupScreen = ({ navigation }) => {
                       ? 'check'
                       : null
                 }
+                maxLength={24}
+                showCharacterCount={true}
               />
 
               <Input
@@ -373,6 +377,8 @@ const ProfileSetupScreen = ({ navigation }) => {
                 multiline
                 numberOfLines={3}
                 style={styles.bioInput}
+                maxLength={240}
+                showCharacterCount={true}
               />
 
               <View style={styles.songSection}>
