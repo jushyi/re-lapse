@@ -190,57 +190,28 @@ const PhotoDetailModal = ({
   const isOwnPhoto = currentPhoto?.userId === currentUserId;
 
   /**
-   * Handle avatar press - close modal and navigate to profile
+   * Handle avatar press - navigate to user's profile
    * Disabled for own photos (currentPhoto.userId === currentUserId)
-   * Passes modal type ('feed' or 'stories') as third param for state preservation
-   * Uses deferred navigation pattern: save state first, close modal, then navigate
+   * Profile opens as modal overlay - this modal stays mounted underneath
    */
   const handleAvatarPress = useCallback(() => {
-    // Don't allow tap on own avatar
     if (isOwnPhoto) return;
     if (onAvatarPress && currentPhoto) {
-      // Determine modal type for state preservation
-      const modalType = mode === 'feed' ? 'photoDetail' : 'stories';
-      // Save state and get navigation function (deferred navigation)
-      const navigate = onAvatarPress(currentPhoto.userId, displayName, modalType);
-      // Close the modal
-      onClose();
-      // Navigate after modal close animation completes
-      if (navigate) {
-        setTimeout(() => {
-          navigate();
-        }, 100);
-      }
+      onAvatarPress(currentPhoto.userId, displayName);
     }
-  }, [onAvatarPress, onClose, currentPhoto, displayName, isOwnPhoto, mode]);
+  }, [onAvatarPress, currentPhoto, displayName, isOwnPhoto]);
 
   /**
-   * Handle avatar press from comments - close comments sheet, then modal, then navigate
-   * Properly sequence the closing to avoid frozen UI from overlapping modal animations
-   * Uses deferred navigation pattern: save state first, close everything, then navigate
+   * Handle avatar press from comments - navigate to user's profile
+   * Profile opens as modal overlay - this modal stays mounted underneath
    */
   const handleCommentAvatarPress = useCallback(
     (userId, userName) => {
       if (onAvatarPress) {
-        // Determine modal type for state preservation
-        const modalType = mode === 'feed' ? 'photoDetail' : 'stories';
-        // Save state and get navigation function (deferred navigation)
-        const navigate = onAvatarPress(userId, userName, modalType);
-        // Step 1: Close comments sheet
-        setShowComments(false);
-        // Step 2: Wait for comments sheet animation, then close main modal
-        setTimeout(() => {
-          onClose();
-          // Step 3: Wait for modal animation, then navigate
-          if (navigate) {
-            setTimeout(() => {
-              navigate();
-            }, 100);
-          }
-        }, 200);
+        onAvatarPress(userId, userName);
       }
     },
-    [onAvatarPress, onClose, mode]
+    [onAvatarPress]
   );
 
   // Fetch preview comments when photo changes
