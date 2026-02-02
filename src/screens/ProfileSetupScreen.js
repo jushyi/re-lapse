@@ -27,12 +27,12 @@ import {
   sanitizeDisplayName,
   sanitizeBio,
 } from '../utils/validation';
-import { checkUsernameAvailability } from '../services/firebase/userService';
+import { checkUsernameAvailability, cancelProfileSetup } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation }) => {
-  const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
+  const { user, userProfile, updateUserProfile, updateUserDocumentNative, signOut } = useAuth();
 
   // Detect default placeholder values and use empty string instead
   // AuthContext sets 'New User' and 'user_{timestamp}' for new users
@@ -52,6 +52,38 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
   const usernameCheckTimeout = useRef(null);
+
+  // Handle cancel profile setup
+  const handleCancel = () => {
+    Alert.alert(
+      'Cancel Setup?',
+      "Your profile won't be saved. You'll need to verify your phone number again to sign up.",
+      [
+        {
+          text: 'Keep Setting Up',
+          style: 'cancel',
+        },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await cancelProfileSetup(user.uid);
+              if (result.success) {
+                await signOut();
+                // Auth state listener will navigate to PhoneInput
+              } else {
+                Alert.alert('Error', result.error || 'Could not cancel profile setup');
+              }
+            } catch (error) {
+              logger.error('ProfileSetupScreen.handleCancel: Error', error);
+              Alert.alert('Error', 'An unexpected error occurred');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Debounced username availability check
   const checkUsername = useCallback(
@@ -318,6 +350,11 @@ const ProfileSetupScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
+                <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
             <StepIndicator currentStep={1} totalSteps={2} style={styles.stepIndicator} />
             <Text style={styles.title}>Complete Your Profile</Text>
             <Text style={styles.subtitle}>Help your friends recognize you</Text>
@@ -431,8 +468,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 16,
     paddingBottom: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  backButton: {
+    padding: 4,
   },
   title: {
     fontSize: 28,
