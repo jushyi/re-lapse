@@ -122,14 +122,18 @@ const ProfileScreen = () => {
 
   // Fetch albums function (reusable for refresh after operations)
   const fetchAlbums = async () => {
-    if (!isOwnProfile || !user?.uid) {
-      // TODO: For other profiles, fetch albums with friendship check
+    // For own profile, always fetch albums
+    // For other profiles, only fetch if friends
+    const targetUserId = isOwnProfile ? user?.uid : userId;
+    const shouldFetchAlbums = isOwnProfile || isFriend;
+
+    if (!shouldFetchAlbums || !targetUserId) {
       setAlbums([]);
       setCoverPhotoUrls({});
       return;
     }
 
-    const result = await getUserAlbums(user.uid);
+    const result = await getUserAlbums(targetUserId);
     if (result.success) {
       setAlbums(result.albums);
       logger.info('ProfileScreen: Fetched albums', { count: result.albums.length });
@@ -171,10 +175,11 @@ const ProfileScreen = () => {
   };
 
   // Fetch albums when screen gains focus (refreshes after editing albums)
+  // Also refetch when friendship status changes to 'friends'
   useFocusEffect(
     useCallback(() => {
       fetchAlbums();
-    }, [isOwnProfile, user?.uid])
+    }, [isOwnProfile, user?.uid, userId, isFriend])
   );
 
   // Run new album animation sequence
@@ -606,23 +611,68 @@ const ProfileScreen = () => {
           />
         </View>
 
-        {/* 5. Albums Bar */}
-        <AlbumBar
-          ref={albumBarRef}
-          albums={albums}
-          photoUrls={coverPhotoUrls}
-          isOwnProfile={isOwnProfile}
-          onAlbumPress={handleAlbumPress}
-          highlightedAlbumId={highlightedAlbumId}
-          onAlbumLongPress={handleAlbumLongPress}
-          onAddPress={handleAddAlbumPress}
-        />
+        {/* 5. Albums Section - Friends only for other profiles */}
+        {!isOwnProfile && !isFriend ? (
+          <View style={styles.addFriendSection}>
+            <TouchableOpacity
+              style={[
+                styles.addFriendButton,
+                (friendshipStatus === 'pending_sent' || friendshipLoading) &&
+                  styles.addFriendButtonDisabled,
+              ]}
+              onPress={
+                friendshipStatus === 'pending_received' ? handleAcceptRequest : handleAddFriend
+              }
+              disabled={friendshipStatus === 'pending_sent' || friendshipLoading}
+            >
+              <Ionicons
+                name={
+                  friendshipStatus === 'pending_received'
+                    ? 'checkmark-outline'
+                    : 'person-add-outline'
+                }
+                size={24}
+                color="#FFF"
+              />
+              <Text style={styles.addFriendText}>
+                {friendshipStatus === 'pending_sent'
+                  ? 'Request Sent'
+                  : friendshipStatus === 'pending_received'
+                    ? 'Accept Request'
+                    : 'Add Friend'}
+              </Text>
+            </TouchableOpacity>
+            {friendshipStatus === 'pending_sent' && (
+              <TouchableOpacity
+                onPress={handleCancelRequest}
+                disabled={friendshipLoading}
+                style={styles.cancelRequestButton}
+              >
+                <Text style={styles.cancelText}>Cancel Request</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <>
+            {/* Albums Bar */}
+            <AlbumBar
+              ref={albumBarRef}
+              albums={albums}
+              photoUrls={coverPhotoUrls}
+              isOwnProfile={isOwnProfile}
+              onAlbumPress={handleAlbumPress}
+              highlightedAlbumId={highlightedAlbumId}
+              onAlbumLongPress={handleAlbumLongPress}
+              onAddPress={handleAddAlbumPress}
+            />
 
-        {/* 6. Monthly Albums */}
-        <MonthlyAlbumsSection
-          userId={isOwnProfile ? user?.uid : userId}
-          onMonthPress={handleMonthPress}
-        />
+            {/* 6. Monthly Albums */}
+            <MonthlyAlbumsSection
+              userId={isOwnProfile ? user?.uid : userId}
+              onMonthPress={handleMonthPress}
+            />
+          </>
+        )}
       </ScrollView>
 
       {/* Fullscreen viewer for other users' selects */}
@@ -755,6 +805,39 @@ const styles = StyleSheet.create({
   songContainer: {
     marginHorizontal: 16,
     marginTop: 16,
+  },
+  // Add Friend Section (for non-friends)
+  addFriendSection: {
+    marginHorizontal: 16,
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  addFriendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand.purple,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    gap: 8,
+  },
+  addFriendButtonDisabled: {
+    opacity: 0.6,
+  },
+  addFriendText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cancelRequestButton: {
+    marginTop: 12,
+    padding: 8,
+  },
+  cancelText: {
+    color: colors.text.secondary,
+    fontSize: 14,
   },
 });
 
