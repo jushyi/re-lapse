@@ -65,6 +65,10 @@ const ProfileScreen = () => {
   const [friendshipLoading, setFriendshipLoading] = useState(false);
   const [friendshipStatusLoaded, setFriendshipStatusLoaded] = useState(false);
 
+  // Track if initial data fetch is done (to avoid re-fetching on focus for other user profiles)
+  const initialFetchDoneRef = useRef(false);
+  const albumsFetchedRef = useRef(false);
+
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
 
@@ -116,10 +120,18 @@ const ProfileScreen = () => {
     }
   }, [isOwnProfile, userId, user?.uid]);
 
-  // Fetch other user data and friendship status on mount/focus
+  // Reset fetch refs when userId changes
+  useEffect(() => {
+    initialFetchDoneRef.current = false;
+    albumsFetchedRef.current = false;
+  }, [userId]);
+
+  // Fetch other user data and friendship status on mount (only once, not on every focus)
+  // This preserves scroll position when navigating back from album views
   useFocusEffect(
     useCallback(() => {
-      if (!isOwnProfile) {
+      if (!isOwnProfile && !initialFetchDoneRef.current) {
+        initialFetchDoneRef.current = true;
         fetchOtherUserProfile();
         fetchFriendshipStatus();
       }
@@ -181,12 +193,16 @@ const ProfileScreen = () => {
   };
 
   // Fetch albums when screen gains focus (refreshes after editing albums)
-  // For other profiles, wait until friendship status is determined to avoid race condition
+  // For own profile: re-fetch on every focus to reflect edits
+  // For other profiles: only fetch once when friendship status is determined (read-only, preserve scroll)
   useFocusEffect(
     useCallback(() => {
-      // For own profile, fetch immediately
-      // For other profiles, wait until friendship status is determined
-      if (isOwnProfile || friendshipStatusLoaded) {
+      if (isOwnProfile) {
+        // Own profile: always refresh to reflect any album edits
+        fetchAlbums();
+      } else if (friendshipStatusLoaded && !albumsFetchedRef.current) {
+        // Other profile: only fetch once when friendship is determined
+        albumsFetchedRef.current = true;
         fetchAlbums();
       }
     }, [isOwnProfile, user?.uid, userId, friendshipStatus, friendshipStatusLoaded])
