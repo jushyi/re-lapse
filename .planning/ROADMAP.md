@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Feed Reaction Emoji Enhancements** - Curated 5-emoji rotation per photo, custom emoji picker with rn-emoji-keyboard
 - [x] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
 - [x] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
-- [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (24), username (24), bio (240)
+- [x] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (24), username (24), bio (240)
 - [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [ ] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
@@ -366,11 +366,11 @@ Plans:
 **Goal**: Enforce maximum character lengths for profile fields - display name (24 chars), username (24 chars), bio (240 chars)
 **Depends on**: Phase 13
 **Research**: Unlikely (input validation patterns)
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 14-01: TBD (run /gsd:plan-phase 14 to break down)
+- [x] 14-01: Input component enhancements + ProfileSetupScreen integration
 
 **Details:**
 
@@ -481,7 +481,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 11. Feed Reaction Emoji          | 1/1            | Complete    | 2026-01-30 |
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
 | 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
-| 14. Profile Field Limits         | 0/?            | Not started | -          |
+| 14. Profile Field Limits         | 1/1            | Complete    | 2026-02-02 |
 | 15. Friends Screen & Profiles    | 0/?            | Not started | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
 | 17. Nested Reply Comments        | 0/?            | Not started | -          |

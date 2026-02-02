@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 13 of 18 (Split Activity into Notifications & Friends)
-Plan: 2 of 2 in current phase
+Phase: 14 of 18 (Profile Field Character Limits)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-30 — Completed 13-02-PLAN.md
+Last activity: 2026-02-02 — Completed 14-01-PLAN.md
 
-Progress: █████████░░░░░░░░░ 72% (13 of 18 phases complete)
+Progress: ██████████░░░░░░░░ 78% (14 of 18 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 48 (including 11 FIX plans)
+- Total plans completed: 49 (including 11 FIX plans)
 - Average duration: 11 min
-- Total execution time: 538 min
+- Total execution time: 546 min
 
 **By Phase:**
 
@@ -47,11 +47,12 @@ Progress: █████████░░░░░░░░░ 72% (13 of 18 p
 | 11    | 2     | 32 min | 16 min   |
 | 12    | 1     | 18 min | 18 min   |
 | 13    | 2     | 14 min | 7 min    |
+| 14    | 1     | 8 min  | 8 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 12 min, 20 min, 18 min, 6 min, 8 min
-- Trend: Phase 13 complete - Activity screen simplified to notifications-only
+- Last 5 plans: 20 min, 18 min, 6 min, 8 min, 8 min
+- Trend: Phase 14 complete - Profile field character limits with visual feedback
 
 ## Accumulated Context
 
@@ -177,6 +178,9 @@ Recent decisions affecting current work:
 | 13    | Chevron-back icon for FriendsListScreen back nav      | Consistent with iOS navigation patterns and other screens              |
 | 13    | Inline NotificationsTab into ActivityScreen           | Simpler structure for single-purpose notifications screen              |
 | 13    | Remove TabNavigator from ActivityScreen               | No tabs needed when screen has single purpose                          |
+| 14    | 24/24/240 character limits for profile fields         | More breathing room than original 16/16/160 while keeping fields tight |
+| 14    | Character counter visible only on focus               | Keeps UI clean, shows feedback when user needs it                      |
+| 14    | 200ms shake animation (4px amplitude) for limit       | Tactile feedback without being intrusive or annoying                   |
 
 ### Deferred Issues
 
@@ -248,6 +252,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30
-Stopped at: Completed 13-02-PLAN.md - Phase 13 complete
+Last session: 2026-02-02
+Stopped at: Completed 14-01-PLAN.md - Phase 14 complete
 Resume file: None
