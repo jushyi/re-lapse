@@ -392,12 +392,12 @@ Plans:
 **Goal**: Refactor friends screen and wire up the ability to view other peoples profile
 **Depends on**: Phase 14
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 1/3 complete
+**Plans**: 2/3 complete
 
 Plans:
 
 - [x] 15-01: Unified Friends screen with Requests | Friends tabs
-- [ ] 15-02: Wire up profile navigation from avatar taps
+- [x] 15-02: Wire up profile navigation from avatar taps
 - [ ] 15-03: Conditional profile display (friends vs non-friends)
 
 **Details:**
@@ -587,7 +587,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
 | 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
 | 14. Profile Field Limits         | 1/1            | Complete    | 2026-02-02 |
-| 15. Friends Screen & Profiles    | 1/3            | In progress | -          |
+| 15. Friends Screen & Profiles    | 2/3            | In progress | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
 | 17. Nested Reply Comments        | 0/?            | Not started | -          |
 | 18. Content Visibility Duration  | 0/?            | Not started | -          |
