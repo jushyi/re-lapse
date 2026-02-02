@@ -38,6 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
 - [x] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (24), username (24), bio (240)
 - [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
+- [ ] **Phase 15.1: Profile Setup Cancel Flow** - Cancel profile setup with verification, return to phone input, delete partial profile (INSERTED)
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [ ] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
 - [ ] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
@@ -392,12 +393,14 @@ Plans:
 **Goal**: Refactor friends screen and wire up the ability to view other peoples profile
 **Depends on**: Phase 14
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 2/3 complete
+**Plans**: 2/3 complete (+ 2 FIX plans)
 
 Plans:
 
 - [x] 15-01: Unified Friends screen with Requests | Friends tabs
 - [x] 15-02: Wire up profile navigation from avatar taps
+- [x] 15-02-FIX: UAT fixes for other user profile viewing
+- [x] 15-02-FIX2: Album navigation and read-only fixes
 - [ ] 15-03: Conditional profile display (friends vs non-friends)
 
 **Details:**
@@ -406,6 +409,25 @@ Plans:
 2. Two-tab structure: Requests | Friends with search in both
 3. Profile navigation from any avatar tap (stories, comments, friend cards)
 4. Conditional profile display: friends see everything, non-friends see limited info
+
+### Phase 15.1: Profile Setup Cancel Flow (INSERTED)
+
+**Goal:** Allow users to cancel profile setup and return to phone number input screen with proper cleanup of partial profile data
+**Depends on:** Phase 15
+**Research:** Unlikely (internal navigation and cleanup patterns)
+**Plans:** TBD
+
+Plans:
+
+- [ ] 15.1-01: TBD (run /gsd:plan-phase 15.1 to break down)
+
+**Details:**
+
+1. Add cancel/back option during profile setup for new phone numbers
+2. Show confirmation dialog ("Are you sure?") before canceling
+3. Delete in-progress profile data from database on cancel confirmation
+4. Navigate back to phone number input screen
+5. Handle edge cases (network errors during cleanup, etc.)
 
 ### Phase 16: Color Constants Standardization
 
@@ -563,7 +585,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -588,6 +610,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
 | 14. Profile Field Limits         | 1/1            | Complete    | 2026-02-02 |
 | 15. Friends Screen & Profiles    | 2/3            | In progress | -          |
+| 15.1 Profile Setup Cancel        | 0/?            | Not started | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
 | 17. Nested Reply Comments        | 0/?            | Not started | -          |
 | 18. Content Visibility Duration  | 0/?            | Not started | -          |
