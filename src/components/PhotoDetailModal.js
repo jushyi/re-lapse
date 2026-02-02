@@ -154,18 +154,21 @@ const PhotoDetailModal = ({
 
   /**
    * Handle avatar press from comments - close comments sheet, then modal, then navigate
+   * Properly sequence the closing to avoid frozen UI from overlapping modal animations
    */
   const handleCommentAvatarPress = useCallback(
     (userId, userName) => {
       if (onAvatarPress) {
-        // Close comments sheet first
+        // Step 1: Close comments sheet first
         setShowComments(false);
-        // Close main modal
-        onClose();
-        // Navigate after modal closes
+        // Step 2: Wait for comments sheet animation, then close main modal
         setTimeout(() => {
-          onAvatarPress(userId, userName);
-        }, 150);
+          onClose();
+          // Step 3: Wait for modal animation, then navigate
+          setTimeout(() => {
+            onAvatarPress(userId, userName);
+          }, 300);
+        }, 200);
       }
     },
     [onAvatarPress, onClose]
