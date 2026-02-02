@@ -41,6 +41,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [ ] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
 - [ ] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
+- [ ] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
+- [ ] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
+- [ ] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
+- [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
+- [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
+- [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
 
 ## Phase Details
 
@@ -386,15 +392,20 @@ Plans:
 **Goal**: Refactor friends screen and wire up the ability to view other peoples profile
 **Depends on**: Phase 14
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 1/3 complete
 
 Plans:
 
-- [ ] 15-01: TBD (run /gsd:plan-phase 15 to break down)
+- [x] 15-01: Unified Friends screen with Requests | Friends tabs
+- [ ] 15-02: Wire up profile navigation from avatar taps
+- [ ] 15-03: Conditional profile display (friends vs non-friends)
 
 **Details:**
 
-[To be added during planning]
+1. Friends screen redesign with unified FriendCard component
+2. Two-tab structure: Requests | Friends with search in both
+3. Profile navigation from any avatar tap (stories, comments, friend cards)
+4. Conditional profile display: friends see everything, non-friends see limited info
 
 ### Phase 16: Color Constants Standardization
 
@@ -455,10 +466,104 @@ Plans:
 4. Different rules for own content vs friends' content?
 5. Visual indicators for content expiration?
 
+### Phase 19: Delete Account Fallback
+
+**Goal**: Ensure delete account function works properly with proper fallback handling for errors and edge cases
+**Depends on**: Phase 18
+**Research**: Unlikely (internal account management)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 19-01: TBD (run /gsd:plan-phase 19 to break down)
+
+**Details:**
+
+[To be added during planning]
+
+### Phase 20: Friend Suggestions via Contacts Sync
+
+**Goal**: Suggest potential friends to users based on phone contacts synced from their device
+**Depends on**: Phase 19
+**Research**: Likely (permissions handling, contact matching algorithms)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 20-01: TBD (run /gsd:plan-phase 20 to break down)
+
+**Details:**
+
+[To be added during planning]
+
+### Phase 21: Remove/Block Friends
+
+**Goal**: Add ability to remove or block friends
+**Depends on**: Phase 20
+**Research**: Unlikely (internal UI patterns)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 21-01: TBD (run /gsd:plan-phase 21 to break down)
+
+**Details:**
+
+[To be added during planning]
+
+### Phase 22: Ability to Edit Profile
+
+**Goal**: Edit profile screen for updating display name, username, bio, profile photo, and profile song
+**Depends on**: Phase 21
+**Research**: Unlikely (internal UI patterns, reusing existing components)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 22-01: TBD (run /gsd:plan-phase 22 to break down)
+
+**Details:**
+
+[To be added during planning]
+
+### Phase 23: Photo Deletion & Archiving
+
+**Goal**: Enable users to delete photos entirely or remove them from their journal (archive for later access)
+**Depends on**: Phase 22
+**Research**: Unlikely (internal data management patterns)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 23-01: TBD (run /gsd:plan-phase 23 to break down)
+
+**Details:**
+
+1. Delete photo: permanently removes photo from storage and all references
+2. Archive/remove from journal: hides photo from feed/stories but preserves in archive
+3. Access archived photos from profile or settings
+4. Confirmation dialogs for destructive actions
+5. Cascade handling for photos in albums, selects, reactions, comments
+
+### Phase 24: Social Media Feature Audit
+
+**Goal**: Full audit to ensure all expected social media app features are present and identify any gaps
+**Depends on**: Phase 23
+**Research**: Likely (competitive analysis of social media apps)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 24-01: TBD (run /gsd:plan-phase 24 to break down)
+
+**Details:**
+
+[To be added during planning]
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -482,7 +587,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 12. Own Snaps in Stories Bar     | 1/1            | Complete    | 2026-01-30 |
 | 13. Split Activity/Friends       | 2/2            | Complete    | 2026-01-30 |
 | 14. Profile Field Limits         | 1/1            | Complete    | 2026-02-02 |
-| 15. Friends Screen & Profiles    | 0/?            | Not started | -          |
+| 15. Friends Screen & Profiles    | 1/3            | In progress | -          |
 | 16. Color Constants              | 0/?            | Not started | -          |
 | 17. Nested Reply Comments        | 0/?            | Not started | -          |
 | 18. Content Visibility Duration  | 0/?            | Not started | -          |
+| 19. Delete Account Fallback      | 0/?            | Not started | -          |
+| 20. Friend Suggestions Contacts  | 0/?            | Not started | -          |
+| 21. Remove/Block Friends         | 0/?            | Not started | -          |
+| 22. Ability to Edit Profile      | 0/?            | Not started | -          |
+| 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
+| 24. Social Media Feature Audit   | 0/?            | Not started | -          |

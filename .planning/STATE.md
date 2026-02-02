@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 13 — Split Activity into Notifications & Friends
+**Current focus:** Phase 15 — Friends Screen & Other Profiles
 
 ## Current Position
 
-Phase: 14 of 18 (Profile Field Character Limits)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-02 — Completed 14-01-PLAN.md
+Phase: 15 of 23 (Friends Screen & Other Profiles)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 15-01-PLAN.md
 
-Progress: ██████████░░░░░░░░ 78% (14 of 18 phases complete)
+Progress: █████░░░░░░░░░░░░░ 61% (14 of 23 phases complete, 15-01 done)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 49 (including 11 FIX plans)
+- Total plans completed: 50 (including 11 FIX plans)
 - Average duration: 11 min
-- Total execution time: 546 min
+- Total execution time: 555 min
 
 **By Phase:**
 
@@ -48,11 +48,12 @@ Progress: ██████████░░░░░░░░ 78% (14 of 18 p
 | 12    | 1     | 18 min | 18 min   |
 | 13    | 2     | 14 min | 7 min    |
 | 14    | 1     | 8 min  | 8 min    |
+| 15    | 1     | 9 min  | 9 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 20 min, 18 min, 6 min, 8 min, 8 min
-- Trend: Phase 14 complete - Profile field character limits with visual feedback
+- Last 5 plans: 18 min, 6 min, 8 min, 8 min, 9 min
+- Trend: Phase 15 in progress - Unified FriendsScreen with tabs
 
 ## Accumulated Context
 
@@ -181,6 +182,10 @@ Recent decisions affecting current work:
 | 14    | 24/24/240 character limits for profile fields         | More breathing room than original 16/16/160 while keeping fields tight |
 | 14    | Character counter visible only on focus               | Keeps UI clean, shows feedback when user needs it                      |
 | 14    | 200ms shake animation (4px amplitude) for limit       | Tactile feedback without being intrusive or annoying                   |
+| 15    | State-based tabs over material-top-tabs               | Simpler implementation using useState                                  |
+| 15    | Unified FriendCard for all relationship states        | One component with props instead of separate components                |
+| 15    | 500ms debounce for user search in Requests tab        | Balance UX responsiveness with Firestore query efficiency              |
+| 15    | Long press to remove friend                           | Consistent with other list interaction patterns in app                 |
 
 ### Deferred Issues
 
@@ -249,9 +254,26 @@ None yet.
   - Define how long stories stay visible in stories bar
   - Define how long feed pictures remain visible in feed tab
   - Clarify visibility rules for friends' content
+- Phase 19 added: Delete Account Fallback
+  - Ensure delete account function works properly
+  - Proper fallback handling for errors and edge cases
+- Phase 20 added: Friend Suggestions via Contacts Sync
+  - Suggest friends based on synced phone contacts
+  - Permissions handling and contact matching
+- Phase 21 added: Remove/Block Friends
+  - Add ability to remove or block friends
+- Phase 22 added: Ability to Edit Profile
+  - Edit profile screen for updating display name, username, bio, profile photo, and profile song
+- Phase 23 added: Photo Deletion & Archiving
+  - Delete photos permanently or archive/remove from journal
+  - Access archived photos from profile or settings
+  - Cascade handling for albums, selects, reactions, comments
+- Phase 24 added: Social Media Feature Audit
+  - Full audit to ensure all expected social media app features are present
+  - Identify gaps compared to standard social media functionality
 
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 14-01-PLAN.md - Phase 14 complete
+Stopped at: Completed 15-01-PLAN.md - Unified FriendsScreen
 Resume file: None
