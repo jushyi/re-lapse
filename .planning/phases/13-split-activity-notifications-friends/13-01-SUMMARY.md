@@ -66,7 +66,7 @@ Each task was committed atomically:
 1. **Task 1: Add friend icon to FeedScreen header** - `a4bc545` (feat)
 2. **Task 2: Add back navigation to FriendsListScreen** - `08a23c8` (feat)
 
-**Plan metadata:** TBD (docs: complete plan)
+**Plan metadata:** `3d748fe` (docs: complete plan)
 
 ## Files Created/Modified
 
