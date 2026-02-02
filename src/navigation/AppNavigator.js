@@ -21,9 +21,7 @@ import DarkroomScreen from '../screens/DarkroomScreen';
 import SuccessScreen from '../screens/SuccessScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SongSearchScreen from '../screens/SongSearchScreen';
-import FriendsListScreen from '../screens/FriendsListScreen';
-import UserSearchScreen from '../screens/UserSearchScreen';
-import FriendRequestsScreen from '../screens/FriendRequestsScreen';
+import FriendsScreen from '../screens/FriendsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -314,8 +312,6 @@ const linking = {
       Darkroom: 'darkroom',
       Activity: 'notifications',
       FriendsList: 'friends',
-      UserSearch: 'friends/search',
-      FriendRequests: 'friends/requests',
       PhoneInput: 'phone-input',
       Verification: 'verification',
       Onboarding: {
@@ -457,23 +453,7 @@ const AppNavigator = () => {
               />
               <Stack.Screen
                 name="FriendsList"
-                component={FriendsListScreen}
-                options={{
-                  presentation: 'card',
-                  animation: 'slide_from_right',
-                }}
-              />
-              <Stack.Screen
-                name="UserSearch"
-                component={UserSearchScreen}
-                options={{
-                  presentation: 'card',
-                  animation: 'slide_from_right',
-                }}
-              />
-              <Stack.Screen
-                name="FriendRequests"
-                component={FriendRequestsScreen}
+                component={FriendsScreen}
                 options={{
                   presentation: 'card',
                   animation: 'slide_from_right',
