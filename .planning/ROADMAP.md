@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Feed Reaction Emoji Enhancements** - Curated 5-emoji rotation per photo, custom emoji picker with rn-emoji-keyboard
 - [x] **Phase 12: Own Snaps in Stories Bar** - User's journaled snaps persist on left of stories bar, can comment but not react to own photos
 - [x] **Phase 13: Split Activity into Notifications & Friends** - Separate activity page into two screens: heart icon → notifications, new friend icon on header left → friends list
-- [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (16), username (16), bio (160)
+- [ ] **Phase 14: Profile Field Character Limits** - Enforce max lengths: display name (24), username (24), bio (240)
 - [ ] **Phase 15: Friends Screen & Other Profiles** - Friends screen refactor and wiring up the ability to view other peoples profile
 - [ ] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [ ] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
@@ -363,7 +363,7 @@ Plans:
 
 ### Phase 14: Profile Field Character Limits
 
-**Goal**: Enforce maximum character lengths for profile fields - display name (16 chars), username (16 chars), bio (160 chars)
+**Goal**: Enforce maximum character lengths for profile fields - display name (24 chars), username (24 chars), bio (240 chars)
 **Depends on**: Phase 13
 **Research**: Unlikely (input validation patterns)
 **Plans**: TBD
@@ -374,11 +374,12 @@ Plans:
 
 **Details:**
 
-1. Display name: maximum 16 characters
-2. Username: maximum 16 characters
-3. Bio: maximum 160 characters
+1. Display name: maximum 24 characters
+2. Username: maximum 24 characters
+3. Bio: maximum 240 characters
 4. Apply limits in ProfileSetupScreen and any edit profile screens
-5. Show character count feedback to users
+5. Show subtle character counter on focus (e.g., "12/24")
+6. Subtle shake animation when hitting limit
 
 ### Phase 15: Friends Screen & Other Profiles
 
