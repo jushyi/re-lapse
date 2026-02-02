@@ -1,6 +1,6 @@
 # Phase 16: Color & Style Constants Standardization - Context
 
-**Gathered:** 2026-01-29
+**Gathered:** 2026-02-02 (updated)
 **Status:** Ready for planning
 
 <vision>
@@ -18,8 +18,8 @@ Navigation should be seamless with no white flashes at screen edges. Every scree
 ## What Must Be Nailed
 
 - **Consistent black backgrounds** — Every screen has the same pure black, no white flash during navigation
-- **Subtle content blocks** — Cards and info sections get a dark gray that's barely visible but creates hierarchy
-- **Accent purple throughout** — Used for interactive elements (buttons, toggles), highlights (active tabs, selections), and subtle touches (borders, icons)
+- **Subtle content blocks** — Cards and info sections get a very dark gray (~#111111) — clearly cards but barely visible lift from pure black
+- **Accent purple = interactive + highlights** — Buttons, toggles, tappable elements, plus active states (selected tabs, focused inputs, selections). **NOT for icons** — icons stay white/gray
 - **Text hierarchy** — Primary white for important text, dimmed gray for secondary/labels
 - **Error/success colors** — Standardized red and green for feedback states
 - **No hardcoded values** — Every hex/rgb replaced with a constant for easy palette changes
@@ -42,8 +42,9 @@ Navigation should be seamless with no white flashes at screen edges. Every scree
 **Colors:**
 
 - Pure black (#000000) for all screen backgrounds
-- Subtle dark gray for content blocks — just barely visible lift from background
-- Brand purple for accents across interactive elements, focus states, and subtle touches
+- Subtle dark gray (~#111111 or #121212) for content blocks — clearly a card but very dark, barely visible lift from pure black
+- Brand purple for accents: interactive elements (buttons, toggles) AND highlights (active tabs, focused inputs, selected items)
+- **Purple is NOT for icons** — icons stay white or gray to keep iconography clean; purple is for shapes and highlights only
 - White for primary text, dimmed gray for secondary text
 - Standard red/green for error/success states
 
@@ -82,4 +83,4 @@ The goal is maintainability and cohesion, not new features. After this phase, ad
 ---
 
 _Phase: 16-color-constants-standardization_
-_Context gathered: 2026-01-29_
+_Context gathered: 2026-01-29, updated 2026-02-02_
