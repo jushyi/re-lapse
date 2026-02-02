@@ -63,6 +63,7 @@ const ProfileScreen = () => {
   const [friendshipStatus, setFriendshipStatus] = useState('none'); // 'none' | 'friends' | 'pending_sent' | 'pending_received'
   const [friendshipId, setFriendshipId] = useState(null);
   const [friendshipLoading, setFriendshipLoading] = useState(false);
+  const [friendshipStatusLoaded, setFriendshipStatusLoaded] = useState(false);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -96,7 +97,10 @@ const ProfileScreen = () => {
 
   // Fetch friendship status between current user and profile user
   const fetchFriendshipStatus = useCallback(async () => {
-    if (isOwnProfile || !userId || !user?.uid) return;
+    if (isOwnProfile || !userId || !user?.uid) {
+      setFriendshipStatusLoaded(true); // Mark as loaded for own profile
+      return;
+    }
 
     try {
       const result = await checkFriendshipStatus(user.uid, userId);
@@ -107,6 +111,8 @@ const ProfileScreen = () => {
       }
     } catch (error) {
       logger.error('ProfileScreen: Error fetching friendship status', { error: error.message });
+    } finally {
+      setFriendshipStatusLoaded(true); // Mark as loaded even on error
     }
   }, [isOwnProfile, userId, user?.uid]);
 
@@ -175,11 +181,15 @@ const ProfileScreen = () => {
   };
 
   // Fetch albums when screen gains focus (refreshes after editing albums)
-  // Also refetch when friendship status changes to 'friends'
+  // For other profiles, wait until friendship status is determined to avoid race condition
   useFocusEffect(
     useCallback(() => {
-      fetchAlbums();
-    }, [isOwnProfile, user?.uid, userId, isFriend])
+      // For own profile, fetch immediately
+      // For other profiles, wait until friendship status is determined
+      if (isOwnProfile || friendshipStatusLoaded) {
+        fetchAlbums();
+      }
+    }, [isOwnProfile, user?.uid, userId, friendshipStatus, friendshipStatusLoaded])
   );
 
   // Run new album animation sequence
@@ -668,10 +678,11 @@ const ProfileScreen = () => {
               onAddPress={handleAddAlbumPress}
             />
 
-            {/* 6. Monthly Albums - Only for own profile (Firestore rules need update for friend access) */}
-            {isOwnProfile && (
-              <MonthlyAlbumsSection userId={user?.uid} onMonthPress={handleMonthPress} />
-            )}
+            {/* 6. Monthly Albums - Visible for own profile and friends */}
+            <MonthlyAlbumsSection
+              userId={isOwnProfile ? user?.uid : userId}
+              onMonthPress={handleMonthPress}
+            />
           </>
         )}
       </ScrollView>
