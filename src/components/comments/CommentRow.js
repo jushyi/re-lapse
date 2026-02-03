@@ -18,6 +18,7 @@ import { getTimeAgo } from '../../utils/timeUtils';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
 import { styles } from '../../styles/CommentRow.styles';
+import MentionText from './MentionText';
 
 /**
  * CommentRow Component
@@ -33,6 +34,7 @@ import { styles } from '../../styles/CommentRow.styles';
  * @param {boolean} canDelete - Whether current user can delete this comment
  * @param {boolean} isLiked - Whether current user liked this comment (Plan 04)
  * @param {boolean} isTopLevel - Whether this is a top-level comment (shows Reply button)
+ * @param {function} onMentionPress - Callback when @mention is tapped (username, mentionedCommentId)
  */
 const CommentRow = ({
   comment,
@@ -46,6 +48,7 @@ const CommentRow = ({
   canDelete = false,
   isLiked = false,
   isTopLevel = true,
+  onMentionPress,
 }) => {
   logger.debug('CommentRow: Rendering', {
     commentId: comment?.id,
@@ -180,8 +183,15 @@ const CommentRow = ({
           )}
         </View>
 
-        {/* Comment Text */}
-        {text ? <Text style={styles.commentText}>{text}</Text> : null}
+        {/* Comment Text - uses MentionText for @mention parsing */}
+        {text ? (
+          <MentionText
+            text={text}
+            onMentionPress={onMentionPress}
+            mentionedCommentId={comment.mentionedCommentId}
+            style={styles.commentText}
+          />
+        ) : null}
 
         {/* Media Thumbnail (if exists) */}
         {mediaUrl && (
