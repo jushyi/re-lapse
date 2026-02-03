@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { colors } from '../constants/colors';
 
 /**
  * ReactionDisplay - Detailed reaction list with user info
@@ -114,12 +115,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666666',
+    color: colors.text.secondary,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999999',
+    color: colors.text.tertiary,
   },
 
   // Compact mode
@@ -134,14 +135,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.pill.background,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.pill.border,
   },
   compactPillHighlighted: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: colors.overlay.purpleTint,
+    borderColor: colors.brand.purple,
   },
   compactEmoji: {
     fontSize: 16,
@@ -150,10 +151,10 @@ const styles = StyleSheet.create({
   compactCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: colors.text.primary,
   },
   compactCountHighlighted: {
-    color: '#2196F3',
+    color: colors.brand.purple,
   },
 
   // Full mode
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.text.primary,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
@@ -176,15 +177,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.pill.background,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: colors.pill.border,
     minWidth: 80,
   },
   reactionCardHighlighted: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: colors.overlay.purpleTint,
+    borderColor: colors.brand.purple,
   },
   reactionEmoji: {
     fontSize: 32,
@@ -193,10 +194,10 @@ const styles = StyleSheet.create({
   reactionCount: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333333',
+    color: colors.text.primary,
   },
   reactionCountHighlighted: {
-    color: '#2196F3',
+    color: colors.brand.purple,
   },
 });
 
