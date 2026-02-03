@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBarHovering: {
-    backgroundColor: '#FF6666',
+    backgroundColor: colors.status.dangerHover,
     opacity: 1,
   },
   deleteBarIcon: {

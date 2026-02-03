@@ -64,6 +64,7 @@ export const colors = {
     ready: '#22C55E', // Green - ready/success state
     developing: '#EF4444', // Red - developing state (status dot color)
     danger: '#FF3B30', // iOS red - danger/delete actions
+    dangerHover: '#FF6666', // Lighter red for hover/active danger states
   },
 
   // Brand - Rewind palette
