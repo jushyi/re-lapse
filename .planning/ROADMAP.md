@@ -542,11 +542,12 @@ Plans:
 **Goal**: Enable users to reply to existing replies with Instagram-style inline threading - all replies stay flat/inline, but replying to someone's reply adds @mention tag at the front of the comment
 **Depends on**: Phase 16
 **Research**: Unlikely (extending existing comment system)
-**Plans**: TBD
+**Plans**: 0/2
 
 Plans:
 
-- [ ] 17-01: TBD (run /gsd:plan-phase 17 to break down)
+- [ ] 17-01: Reply infrastructure (service update + auto @mention insertion)
+- [ ] 17-02: @Mention rendering and scroll-to-comment navigation
 
 **Details:**
 
