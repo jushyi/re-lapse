@@ -195,7 +195,7 @@ const CommentRow = ({
 
         {/* Footer Row - Reply and Timestamp */}
         <View style={styles.footerRow}>
-          {isTopLevel && (
+          {onReply && (
             <>
               <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
                 <Text style={styles.replyButtonText}>Reply</Text>

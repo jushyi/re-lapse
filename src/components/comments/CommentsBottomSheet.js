@@ -189,6 +189,7 @@ const CommentsBottomSheet = ({
     loading,
     error,
     replyingTo,
+    initialMention,
     addComment,
     deleteComment,
     toggleLike,
@@ -549,6 +550,7 @@ const CommentsBottomSheet = ({
                   }}
                   replyingTo={replyingTo}
                   onCancelReply={cancelReply}
+                  initialMention={initialMention}
                   placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
                 />
               </View>

@@ -93,14 +93,14 @@ const CommentWithReplies = ({
             </Text>
           </TouchableOpacity>
 
-          {/* Replies (when expanded) */}
+          {/* Replies (when expanded) - reply button enabled for nested replies */}
           {showReplies &&
             replies.map(reply => (
               <View key={reply.id} style={styles.replyItem}>
                 <CommentRow
                   comment={reply}
                   user={reply.user}
-                  onReply={null}
+                  onReply={onReply}
                   onLike={onLike}
                   onDelete={onDelete}
                   onAvatarPress={onAvatarPress}

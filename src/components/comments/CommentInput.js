@@ -10,7 +10,14 @@
  * - Reply banner showing "Replying to @name" with cancel
  * - forwardRef for external focus control
  */
-import React, { useState, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useEffect,
+} from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +36,7 @@ import { styles } from '../../styles/CommentInput.styles';
  * @param {function} onSubmit - Callback with (text, mediaUrl, mediaType) when sent
  * @param {object} replyingTo - Comment object if replying (shows "Replying to @name")
  * @param {function} onCancelReply - Callback to cancel reply mode
+ * @param {string} initialMention - @username to pre-fill in input when replying
  * @param {string} placeholder - Custom placeholder text
  * @param {boolean} autoFocus - Whether to auto-focus input
  * @param {ref} ref - Ref forwarded to TextInput for external focus control
@@ -39,6 +47,7 @@ const CommentInput = forwardRef(
       onSubmit,
       replyingTo = null,
       onCancelReply,
+      initialMention = null,
       placeholder = 'Add a comment...',
       autoFocus = false,
     },
@@ -49,6 +58,14 @@ const CommentInput = forwardRef(
     const [selectedMedia, setSelectedMedia] = useState(null); // { uri, type: 'image' | 'gif' }
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef(null);
+
+    // Pre-fill input with @mention when replying
+    useEffect(() => {
+      if (initialMention) {
+        logger.debug('CommentInput: Pre-filling with @mention', { initialMention });
+        setText(`@${initialMention} `);
+      }
+    }, [initialMention]);
 
     // Note: GIF functionality disabled for Expo Go compatibility
     // Uncomment when using dev client build:

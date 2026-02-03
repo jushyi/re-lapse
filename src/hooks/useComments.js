@@ -31,6 +31,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [initialMention, setInitialMention] = useState(null); // @username to pre-fill in input
   const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
   const unsubscribeRef = useRef(null);
 
@@ -109,22 +110,34 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
       }
 
       const parentId = replyingTo?.id || null;
+      // mentionedCommentId is the same as parentId for replies (tracks which comment was replied to)
+      const mentionedCommentId = parentId;
 
       logger.info('useComments.addComment: Adding comment', {
         photoId,
         textLength: text?.length,
         hasMedia: !!mediaUrl,
         isReply: !!parentId,
+        mentionedCommentId,
       });
 
-      const result = await addComment(photoId, currentUserId, text, mediaUrl, mediaType, parentId);
+      const result = await addComment(
+        photoId,
+        currentUserId,
+        text,
+        mediaUrl,
+        mediaType,
+        parentId,
+        mentionedCommentId
+      );
 
       if (result.success) {
         logger.info('useComments.addComment: Success', {
           commentId: result.commentId,
         });
-        // Clear reply state after successful comment
+        // Clear reply state and initial mention after successful comment
         setReplyingTo(null);
+        setInitialMention(null);
       } else {
         logger.error('useComments.addComment: Failed', {
           error: result.error,
@@ -273,7 +286,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   );
 
   /**
-   * Set reply target
+   * Set reply target and initial @mention for input
    *
    * @param {object|null} comment - Comment to reply to, or null to cancel
    */
@@ -281,16 +294,26 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     logger.debug('useComments.setReplyingTo', {
       commentId: comment?.id,
       isCancel: !comment,
+      username: comment?.user?.username,
     });
     setReplyingTo(comment);
+
+    // Set initial mention for auto-fill in input
+    if (comment) {
+      const username = comment.user?.username || comment.user?.displayName;
+      setInitialMention(username || null);
+    } else {
+      setInitialMention(null);
+    }
   }, []);
 
   /**
-   * Cancel reply mode
+   * Cancel reply mode and clear initial mention
    */
   const handleCancelReply = useCallback(() => {
     logger.debug('useComments.cancelReply');
     setReplyingTo(null);
+    setInitialMention(null);
   }, []);
 
   /**
@@ -360,6 +383,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     loading,
     error,
     replyingTo,
+    initialMention,
     userLikes,
     // Actions
     addComment: handleAddComment,
