@@ -635,6 +635,13 @@ const FeedScreen = () => {
       topPhotos: updatedPhotos,
     };
 
+    // Update friendStories state so data persists after close/reopen
+    setFriendStories(prevStories =>
+      prevStories.map(friend =>
+        friend.userId === selectedFriend.userId ? { ...friend, topPhotos: updatedPhotos } : friend
+      )
+    );
+
     // Update context photos for PhotoDetailScreen re-render
     updatePhotoAtIndex(
       storiesCurrentIndexRef.current,
