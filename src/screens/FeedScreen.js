@@ -961,7 +961,7 @@ const FeedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Pure black to match stories section
+    backgroundColor: colors.background.primary,
   },
   statusBarMask: {
     position: 'absolute',
@@ -969,7 +969,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 11, // Above header (zIndex: 10)
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   header: {
     position: 'absolute',
@@ -982,9 +982,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
     fontSize: 24,
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF3B30', // iOS red
+    backgroundColor: colors.status.danger,
   },
   feedList: {
     // paddingTop set dynamically with insets.top
@@ -1081,13 +1081,13 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   // Stories row styles
   storiesContainer: {
     paddingTop: 20,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   storiesScrollContent: {
     paddingHorizontal: 12,
@@ -1106,14 +1106,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.tertiary,
     marginBottom: 6,
   },
   storySkeletonText: {
     width: 50,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.tertiary,
   },
 });
 
