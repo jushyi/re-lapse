@@ -13,36 +13,6 @@ Enhancements discovered during execution. Not critical - address in future phase
 - **Effort:** Medium (requires camera capture settings adjustment and potentially migration for existing photos)
 - **Suggested phase:** Future
 
-### ~~ISS-002: Comment avatar profile navigation not working~~ (FIXED)
-
-- **Discovered:** Phase 15.2 FIX2 verification (2026-02-02)
-- **Fixed:** Phase 15.3 Plan 02 (2026-02-02)
-- **Type:** Bug
-- **Description:** Tapping commenter avatars in CommentsBottomSheet doesn't navigate to their profile. The simplified handler calls `onAvatarPress(userId, userName)` but the navigation may not be firing correctly.
-- **Resolution:** Fixed by wiring up `handleCommentAvatarPress` in PhotoDetailScreen to call `contextAvatarPress` which routes through FeedScreen's callback to navigate to OtherUserProfile. Navigation now works correctly.
-- **Related:** ISS-004 tracks the follow-up issue where comments close during this navigation
-
-### ISS-003: Modal stacking architecture - underlying modals hidden on profile navigation
-
-- **Discovered:** Phase 15.2 FIX2 verification (2026-02-02)
-- **Type:** Architecture
-- **Description:** When navigating to OtherUserProfile from PhotoDetailModal or Stories, the underlying modal/viewer is hidden. This is because `fullScreenModal` presentation hides the parent screen. Instagram and TikTok keep their interfaces open by either:
-  1. Using `transparentModal` or `containedTransparentModal` presentation (keeps parent visible)
-  2. Using navigation screens instead of Modal components for photo viewers
-  3. Using portal-based rendering to decouple UI from navigation hierarchy
-- **Research findings:**
-  - `fullScreenModal` = parent hidden, no gesture dismiss
-  - `transparentModal` = parent visible and mounted
-  - `containedTransparentModal` = parent visible on both iOS/Android
-  - Warning: Mixing modal types in one stack can cause freezes/crashes on iOS
-- **Impact:** High (core UX expectation - return to where you were)
-- **Effort:** High (may require architectural change to PhotoDetailModal/Stories)
-- **Options:**
-  1. Change OtherUserProfile to `transparentModal` (quick but may have issues)
-  2. Convert PhotoDetailModal to a navigation screen instead of Modal component
-  3. Use portal-based approach (react-native-portal) to render modals outside nav hierarchy
-- **Suggested phase:** 15.3 or dedicated architectural phase
-
 ### ISS-004: Comments sheet closes when navigating to profile
 
 - **Discovered:** Phase 15.3 Plan 02 verification (2026-02-02)
@@ -58,7 +28,7 @@ Enhancements discovered during execution. Not critical - address in future phase
   3. Change OtherUserProfile from fullScreenModal to card presentation
 - **Impact:** Medium (users lose their place in comments thread)
 - **Effort:** Medium-High (may require CommentsBottomSheet refactor)
-- **Suggested phase:** 15.4 or 16
+- **Suggested phase:** Phase 16 (natural fit with modal/navigation architecture work)
 
 ### ISS-005: Swipe up on photo to open comments
 
@@ -72,8 +42,55 @@ Enhancements discovered during execution. Not critical - address in future phase
   4. Already have swipe down to dismiss - this complements it
 - **Impact:** Low (UX enhancement, not blocking functionality)
 - **Effort:** Low (simple gesture addition)
-- **Suggested phase:** 15.4 or 16
+- **Suggested phase:** Phase 16 (touches same PhotoDetailScreen gesture handling)
+
+### ISS-006: Own story ring indicator doesn't update after viewing
+
+- **Discovered:** Phase 15.4 FIX verification (2026-02-03)
+- **Type:** Bug
+- **Description:** After viewing own story photos and closing, the MeStoryCard purple ring doesn't change to gray. The viewedPhotoCount dependency fix was attempted but ring still doesn't update properly.
+- **Root cause:** TBD - viewedPhotoCount approach may not be triggering re-render as expected, or the hasViewedAllPhotos check for own photos has a different issue
+- **Impact:** High (visual feedback broken for own content)
+- **Effort:** Medium (needs debugging of re-render flow)
+- **Related:** 15.4-01-FIX Task 2 attempted fix
+- **Suggested phase:** 15.4 (needs immediate follow-up FIX)
+
+### ISS-007: Own story doesn't resume at correct position
+
+- **Discovered:** Phase 15.4 FIX verification (2026-02-03)
+- **Type:** Bug
+- **Description:** When reopening own story after partial viewing, it always starts from the beginning instead of resuming at the first unviewed photo. Friends' stories resume correctly but own stories don't.
+- **Root cause:** TBD - getFirstUnviewedIndex may not be called correctly for own stories, or the viewedPhotosRef isn't updated in time for own story flow
+- **Impact:** High (UX broken for own content viewing)
+- **Effort:** Medium (needs debugging of own story flow vs friend story flow)
+- **Related:** ISS-006 (likely same root cause)
+- **Suggested phase:** 15.4 (needs immediate follow-up FIX)
+
+### ISS-008: Reactions not sorting by count (highest left)
+
+- **Discovered:** Phase 15.4 FIX verification (2026-02-03)
+- **Type:** Bug (Regression)
+- **Description:** Emoji reactions on photos should be sorted by count with highest count on the left. This was working before but is no longer sorting correctly.
+- **Expected:** Reactions displayed left-to-right in descending order by count
+- **Actual:** Reactions appear in arbitrary order
+- **Root cause:** TBD - need to check ReactionBar or similar component for sorting logic
+- **Impact:** Medium (visual consistency issue)
+- **Effort:** Low (likely simple sort fix)
+- **Suggested phase:** 15.4 (needs immediate follow-up FIX)
 
 ## Closed Enhancements
 
-[Moved here when addressed]
+### ISS-002: Comment avatar profile navigation not working
+
+- **Discovered:** Phase 15.2 FIX2 verification (2026-02-02)
+- **Closed:** 2026-02-03
+- **Type:** Bug
+- **Resolution:** Fixed in Phase 15.3-02 by wiring up `handleCommentAvatarPress` in PhotoDetailScreen to call `contextAvatarPress` which routes through FeedScreen's callback to navigate to OtherUserProfile. Navigation now works correctly.
+- **Related:** ISS-004 tracks the follow-up issue where comments close during this navigation
+
+### ISS-003: Modal stacking architecture - underlying modals hidden on profile navigation
+
+- **Discovered:** Phase 15.2 FIX2 verification (2026-02-02)
+- **Closed:** 2026-02-03
+- **Type:** Architecture
+- **Resolution:** Fixed in Phase 15.3-02 by converting PhotoDetailModal from Modal component to navigation screen using `transparentModal` presentation. Previous screens now stay visible underneath when navigating to profiles.

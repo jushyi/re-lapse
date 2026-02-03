@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 Phase: 15.4 of 26 (Story Viewed State Fix)
 Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 — Completed 15.4-01-FIX (UAT fixes)
+Status: In progress
+Last activity: 2026-02-03 — Created 15.4-02-FIX plan
 
-Progress: █████░░░░░░░░░░░░░ 67% (Phase 15.4 complete)
+Progress: █████░░░░░░░░░░░░░ 67% (Phase 15.4 in progress)
 
 ## Performance Metrics
 
