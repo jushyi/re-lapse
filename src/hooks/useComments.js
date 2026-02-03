@@ -33,7 +33,9 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [initialMention, setInitialMention] = useState(null); // @username to pre-fill in input
   const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null); // Comment ID to highlight (17-02)
   const unsubscribeRef = useRef(null);
+  const highlightTimeoutRef = useRef(null); // Timeout ref for auto-clear (17-02)
 
   logger.debug('useComments: Hook initialized', {
     photoId,
@@ -317,6 +319,30 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   }, []);
 
   /**
+   * Highlight a comment temporarily (17-02)
+   * Sets highlightedCommentId and auto-clears after 1.5s
+   *
+   * @param {string} commentId - Comment ID to highlight
+   */
+  const highlightComment = useCallback(commentId => {
+    logger.debug('useComments.highlightComment', { commentId });
+
+    // Clear any existing timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
+    // Set the highlighted comment
+    setHighlightedCommentId(commentId);
+
+    // Auto-clear after 1.5s
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedCommentId(null);
+      highlightTimeoutRef.current = null;
+    }, 1500);
+  }, []);
+
+  /**
    * Check if current user can delete a comment
    *
    * @param {object} comment - Comment object
@@ -385,12 +411,14 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     replyingTo,
     initialMention,
     userLikes,
+    highlightedCommentId, // 17-02: Currently highlighted comment
     // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
     toggleLike: handleToggleLike,
     setReplyingTo: handleSetReplyingTo,
     cancelReply: handleCancelReply,
+    highlightComment, // 17-02: Set highlighted comment with auto-clear
     // Utilities
     canDeleteComment,
     isOwnerComment,

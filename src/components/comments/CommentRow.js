@@ -9,8 +9,8 @@
  * - Author badge for photo owner's comments
  * - Long-press to delete when canDelete
  */
-import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useCallback, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -35,6 +35,7 @@ import MentionText from './MentionText';
  * @param {boolean} isLiked - Whether current user liked this comment (Plan 04)
  * @param {boolean} isTopLevel - Whether this is a top-level comment (shows Reply button)
  * @param {function} onMentionPress - Callback when @mention is tapped (username, mentionedCommentId)
+ * @param {boolean} isHighlighted - Whether this comment is currently highlighted (17-02)
  */
 const CommentRow = ({
   comment,
@@ -49,7 +50,35 @@ const CommentRow = ({
   isLiked = false,
   isTopLevel = true,
   onMentionPress,
+  isHighlighted = false,
 }) => {
+  // 17-02: Animated value for highlight effect
+  const highlightAnim = useRef(new Animated.Value(0)).current;
+
+  // 17-02: Trigger highlight animation when isHighlighted changes
+  useEffect(() => {
+    if (isHighlighted) {
+      // Animate: transparent -> purple tint -> transparent over 1.5s
+      Animated.sequence([
+        Animated.timing(highlightAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: false, // backgroundColor doesn't support native driver
+        }),
+        Animated.timing(highlightAnim, {
+          toValue: 0,
+          duration: 1300,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  }, [isHighlighted, highlightAnim]);
+
+  // 17-02: Interpolate background color for highlight
+  const highlightBackgroundColor = highlightAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', 'rgba(139, 92, 246, 0.2)'], // colors.brand.purple with 20% opacity
+  });
   logger.debug('CommentRow: Rendering', {
     commentId: comment?.id,
     hasMedia: !!comment?.mediaUrl,
@@ -142,91 +171,93 @@ const CommentRow = ({
   const initials = displayName ? displayName[0].toUpperCase() : '?';
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      activeOpacity={canDelete ? 0.7 : 1}
-      onLongPress={handleLongPress}
-      delayLongPress={500}
-    >
-      {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments) */}
+    <Animated.View style={{ backgroundColor: highlightBackgroundColor, borderRadius: 8 }}>
       <TouchableOpacity
-        style={styles.profilePhotoContainer}
-        onPress={handleAvatarPress}
-        activeOpacity={isOwnComment ? 1 : 0.7}
-        disabled={isOwnComment}
+        style={styles.container}
+        activeOpacity={canDelete ? 0.7 : 1}
+        onLongPress={handleLongPress}
+        delayLongPress={500}
       >
-        {profilePhotoURL ? (
-          <Image
-            source={{ uri: profilePhotoURL }}
-            style={styles.profilePhoto}
-            contentFit="cover"
-            transition={200}
-          />
-        ) : (
-          <View style={styles.profilePhotoPlaceholder}>
-            <Text style={styles.profilePhotoInitial}>{initials}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-
-      {/* Content - Name, Text, Reply */}
-      <View style={styles.contentContainer}>
-        {/* Name Row with optional Author badge */}
-        <View style={styles.nameRow}>
-          <Text style={styles.displayName} numberOfLines={1}>
-            {displayName || 'Unknown User'}
-          </Text>
-          {isOwnerComment && (
-            <View style={styles.authorBadge}>
-              <Text style={styles.authorBadgeText}>Author</Text>
+        {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments) */}
+        <TouchableOpacity
+          style={styles.profilePhotoContainer}
+          onPress={handleAvatarPress}
+          activeOpacity={isOwnComment ? 1 : 0.7}
+          disabled={isOwnComment}
+        >
+          {profilePhotoURL ? (
+            <Image
+              source={{ uri: profilePhotoURL }}
+              style={styles.profilePhoto}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View style={styles.profilePhotoPlaceholder}>
+              <Text style={styles.profilePhotoInitial}>{initials}</Text>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
-        {/* Comment Text - uses MentionText for @mention parsing */}
-        {text ? (
-          <MentionText
-            text={text}
-            onMentionPress={onMentionPress}
-            mentionedCommentId={comment.mentionedCommentId}
-            style={styles.commentText}
-          />
-        ) : null}
+        {/* Content - Name, Text, Reply */}
+        <View style={styles.contentContainer}>
+          {/* Name Row with optional Author badge */}
+          <View style={styles.nameRow}>
+            <Text style={styles.displayName} numberOfLines={1}>
+              {displayName || 'Unknown User'}
+            </Text>
+            {isOwnerComment && (
+              <View style={styles.authorBadge}>
+                <Text style={styles.authorBadgeText}>Author</Text>
+              </View>
+            )}
+          </View>
 
-        {/* Media Thumbnail (if exists) */}
-        {mediaUrl && (
-          <Image
-            source={{ uri: mediaUrl }}
-            style={styles.mediaThumbnail}
-            contentFit="cover"
-            transition={200}
-          />
-        )}
+          {/* Comment Text - uses MentionText for @mention parsing */}
+          {text ? (
+            <MentionText
+              text={text}
+              onMentionPress={onMentionPress}
+              mentionedCommentId={comment.mentionedCommentId}
+              style={styles.commentText}
+            />
+          ) : null}
 
-        {/* Footer Row - Reply and Timestamp */}
-        <View style={styles.footerRow}>
-          {onReply && (
-            <>
-              <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
-                <Text style={styles.replyButtonText}>Reply</Text>
-              </TouchableOpacity>
-              <Text style={styles.dot}>·</Text>
-            </>
+          {/* Media Thumbnail (if exists) */}
+          {mediaUrl && (
+            <Image
+              source={{ uri: mediaUrl }}
+              style={styles.mediaThumbnail}
+              contentFit="cover"
+              transition={200}
+            />
           )}
-          <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
-        </View>
-      </View>
 
-      {/* Heart Icon */}
-      <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
-        <Ionicons
-          name={isLiked ? 'heart' : 'heart-outline'}
-          size={18}
-          color={isLiked ? colors.status.danger : colors.text.secondary}
-        />
-        {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
+          {/* Footer Row - Reply and Timestamp */}
+          <View style={styles.footerRow}>
+            {onReply && (
+              <>
+                <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
+                  <Text style={styles.replyButtonText}>Reply</Text>
+                </TouchableOpacity>
+                <Text style={styles.dot}>·</Text>
+              </>
+            )}
+            <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
+          </View>
+        </View>
+
+        {/* Heart Icon */}
+        <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={18}
+            color={isLiked ? colors.status.danger : colors.text.secondary}
+          />
+          {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </Animated.View>
   );
 };
 

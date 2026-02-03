@@ -190,15 +190,20 @@ const CommentsBottomSheet = ({
     error,
     replyingTo,
     initialMention,
+    highlightedCommentId, // 17-02: Currently highlighted comment
     addComment,
     deleteComment,
     toggleLike,
     setReplyingTo,
     cancelReply,
+    highlightComment, // 17-02: Set highlighted comment with auto-clear
     canDeleteComment,
     isOwnerComment,
     isLikedByUser,
   } = useComments(photoId, currentUserId, photoOwnerId);
+
+  // 17-02: Track which reply sections to auto-expand for @mention navigation
+  const [expandedReplyParents, setExpandedReplyParents] = useState({});
 
   logger.debug('CommentsBottomSheet: Render', {
     visible,
@@ -343,6 +348,151 @@ const CommentsBottomSheet = ({
   );
 
   /**
+   * Handle @mention press - scroll to referenced comment (17-02)
+   * Finds the comment in threadedComments, scrolls to it, and highlights it.
+   *
+   * @param {string} username - The @mentioned username
+   * @param {string|null} mentionedCommentId - The comment ID this @mention refers to
+   */
+  const handleMentionPress = useCallback(
+    (username, mentionedCommentId) => {
+      logger.info('CommentsBottomSheet: @mention pressed', {
+        username,
+        mentionedCommentId,
+      });
+
+      // If no mentionedCommentId, this is a manually typed @mention - silent no-op
+      if (!mentionedCommentId) {
+        logger.debug('CommentsBottomSheet: No mentionedCommentId, skipping scroll');
+        return;
+      }
+
+      // Don't scroll to own comments (prevent circular scroll if replying to self)
+      // Find the target comment to check ownership
+      let targetComment = null;
+      let targetIndex = -1;
+      let isReply = false;
+      let parentIndex = -1;
+
+      // Search for the comment in threadedComments (top-level and replies)
+      for (let i = 0; i < threadedComments.length; i++) {
+        const comment = threadedComments[i];
+
+        // Check if this is the target comment (top-level)
+        if (comment.id === mentionedCommentId) {
+          targetComment = comment;
+          targetIndex = i;
+          isReply = false;
+          break;
+        }
+
+        // Check replies
+        if (comment.replies) {
+          for (let j = 0; j < comment.replies.length; j++) {
+            if (comment.replies[j].id === mentionedCommentId) {
+              targetComment = comment.replies[j];
+              targetIndex = i; // FlatList index is the parent
+              isReply = true;
+              parentIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (targetComment) break;
+      }
+
+      // If not found, search by username (fallback for manually typed @mentions)
+      if (!targetComment) {
+        for (let i = 0; i < threadedComments.length; i++) {
+          const comment = threadedComments[i];
+          const commentUsername = comment.user?.username || comment.user?.displayName;
+
+          if (commentUsername && commentUsername.toLowerCase() === username.toLowerCase()) {
+            targetComment = comment;
+            targetIndex = i;
+            isReply = false;
+            break;
+          }
+        }
+      }
+
+      // If still not found, silent fail
+      if (!targetComment || targetIndex === -1) {
+        logger.debug('CommentsBottomSheet: Target comment not found', {
+          mentionedCommentId,
+          username,
+        });
+        return;
+      }
+
+      // Skip scroll-to if this is the current user's own comment
+      if (targetComment.userId === currentUserId) {
+        logger.debug('CommentsBottomSheet: Skipping scroll to own comment');
+        return;
+      }
+
+      // If the target is a reply in a collapsed section, expand it
+      if (isReply && parentIndex !== -1) {
+        setExpandedReplyParents(prev => ({
+          ...prev,
+          [threadedComments[parentIndex].id]: true,
+        }));
+        // Small delay to allow expansion before scrolling
+        setTimeout(() => {
+          scrollToComment(targetIndex, mentionedCommentId);
+        }, 100);
+      } else {
+        scrollToComment(targetIndex, mentionedCommentId);
+      }
+
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [threadedComments, currentUserId, highlightComment]
+  );
+
+  /**
+   * Scroll to a comment and highlight it (17-02)
+   */
+  const scrollToComment = useCallback(
+    (index, commentId) => {
+      if (flatListRef.current && index >= 0) {
+        flatListRef.current.scrollToIndex({
+          index,
+          animated: true,
+          viewPosition: 0.3, // Position in upper third of view
+        });
+      }
+
+      // Highlight the comment
+      highlightComment(commentId);
+    },
+    [highlightComment]
+  );
+
+  /**
+   * Handle scrollToIndex failure (item not yet rendered)
+   */
+  const handleScrollToIndexFailed = useCallback(info => {
+    logger.warn('CommentsBottomSheet: scrollToIndex failed', {
+      index: info.index,
+      averageItemLength: info.averageItemLength,
+    });
+
+    // Scroll to approximate position then retry
+    setTimeout(() => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({
+          offset: info.averageItemLength * info.index,
+          animated: true,
+        });
+      }
+    }, 100);
+  }, []);
+
+  /**
    * Render individual comment row with replies
    */
   const renderCommentItem = useCallback(
@@ -358,6 +508,9 @@ const CommentsBottomSheet = ({
           isOwnerComment={isOwnerComment}
           canDeleteComment={canDeleteComment}
           isLikedByUser={isLikedByUser}
+          onMentionPress={handleMentionPress}
+          highlightedCommentId={highlightedCommentId}
+          forceExpanded={expandedReplyParents[comment.id]}
         />
       );
     },
@@ -370,6 +523,9 @@ const CommentsBottomSheet = ({
       isOwnerComment,
       canDeleteComment,
       isLikedByUser,
+      handleMentionPress,
+      highlightedCommentId,
+      expandedReplyParents,
     ]
   );
 
@@ -537,6 +693,7 @@ const CommentsBottomSheet = ({
                   onScroll={handleScroll}
                   onScrollEndDrag={handleScrollEndDrag}
                   scrollEventThrottle={16}
+                  onScrollToIndexFailed={handleScrollToIndexFailed}
                 />
               )}
 
