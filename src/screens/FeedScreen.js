@@ -104,6 +104,10 @@ const FeedScreen = () => {
   // Track current index in stories modal (ref to avoid closure capture issues in callbacks)
   const storiesCurrentIndexRef = useRef(0);
 
+  // Refs to hold latest close handlers (avoids stale closures in setCallbacks effect)
+  const handleCloseMyStoriesRef = useRef(() => {});
+  const handleCloseStoriesRef = useRef(() => {});
+
   /**
    * Load friend stories data
    * Reusable function for initial load and refresh
@@ -209,9 +213,11 @@ const FeedScreen = () => {
       onClose: () => {
         if (isInStoriesModeRef.current) {
           if (isOwnStoriesRef.current) {
-            handleCloseMyStories();
+            // Use ref to get latest handler (avoids stale closure capturing old myStories)
+            handleCloseMyStoriesRef.current();
           } else {
-            handleCloseStories();
+            // Use ref to get latest handler (avoids stale closure capturing old selectedFriend)
+            handleCloseStoriesRef.current();
           }
         } else {
           // Feed mode close
@@ -502,6 +508,10 @@ const FeedScreen = () => {
     selectedFriendRef.current = null;
     // Mode flags are cleared in the onClose callback
   };
+
+  // Update close handler refs on each render (ensures callbacks get latest handlers)
+  handleCloseMyStoriesRef.current = handleCloseMyStories;
+  handleCloseStoriesRef.current = handleCloseStories;
 
   /**
    * Handle photo card press - Navigate to PhotoDetail screen
