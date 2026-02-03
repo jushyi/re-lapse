@@ -50,7 +50,7 @@ const FeedScreen = () => {
   const insets = useSafeAreaInsets();
 
   // Photo detail context for feed mode navigation
-  const { openPhotoDetail, setCallbacks } = usePhotoDetail();
+  const { openPhotoDetail, setCallbacks, updatePhotoAtIndex } = usePhotoDetail();
 
   // Track current feed photo for reaction updates (ref to avoid re-renders)
   const currentFeedPhotoRef = useRef(null);
@@ -634,6 +634,12 @@ const FeedScreen = () => {
       ...selectedFriend,
       topPhotos: updatedPhotos,
     };
+
+    // Update context photos for PhotoDetailScreen re-render
+    updatePhotoAtIndex(
+      storiesCurrentIndexRef.current,
+      updatedPhotos[storiesCurrentIndexRef.current]
+    );
 
     // Persist to Firebase
     try {

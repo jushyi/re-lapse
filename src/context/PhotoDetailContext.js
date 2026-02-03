@@ -155,6 +155,19 @@ export const PhotoDetailProvider = ({ children }) => {
   }, []);
 
   /**
+   * Update a photo at a specific index - for real-time reaction updates
+   * This allows FeedScreen to update a photo in the photos array
+   * so PhotoDetailScreen sees the change immediately
+   */
+  const updatePhotoAtIndex = useCallback((index, updatedPhoto) => {
+    setPhotos(prevPhotos => {
+      const newPhotos = [...prevPhotos];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  }, []);
+
+  /**
    * Update hasNextFriend state
    */
   const updateHasNextFriend = useCallback(hasNext => {
@@ -236,6 +249,7 @@ export const PhotoDetailProvider = ({ children }) => {
     setCallbacks,
     getCallbacks,
     updateCurrentPhoto,
+    updatePhotoAtIndex,
     updateHasNextFriend,
     setShowComments,
 
