@@ -457,6 +457,7 @@ const AppNavigator = () => {
                     presentation: 'card',
                     animation: 'slide_from_bottom',
                     gestureEnabled: false, // Disable back swipe to prevent accidental exit
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -466,6 +467,7 @@ const AppNavigator = () => {
                     presentation: 'card',
                     animation: 'slide_from_right',
                     gestureEnabled: false, // Prevent accidental back swipe
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -475,6 +477,7 @@ const AppNavigator = () => {
                     presentation: 'card',
                     animation: 'slide_from_right',
                     headerShown: false,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -483,6 +486,7 @@ const AppNavigator = () => {
                   options={{
                     presentation: 'card',
                     animation: 'slide_from_right',
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -492,6 +496,7 @@ const AppNavigator = () => {
                     presentation: 'fullScreenModal', // Modal overlay - keeps parent mounted
                     headerShown: false,
                     gestureEnabled: true,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -501,6 +506,7 @@ const AppNavigator = () => {
                     presentation: 'card',
                     animation: 'slide_from_right',
                     headerShown: false,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -510,6 +516,7 @@ const AppNavigator = () => {
                     presentation: 'card',
                     animation: 'slide_from_right',
                     headerShown: false,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
               </>
