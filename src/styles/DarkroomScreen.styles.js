@@ -148,7 +148,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#8E8E93',
+    backgroundColor: colors.text.secondary, // iOS gray
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -172,24 +172,24 @@ export const styles = StyleSheet.create({
   },
   triageButtonIcon: {
     fontSize: 18,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontWeight: 'bold',
     marginRight: 4,
   },
   deleteButtonIcon: {
     fontSize: 24,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontWeight: 'bold',
   },
   archiveButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   journalButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   // Inline success state styles
   successContainer: {
