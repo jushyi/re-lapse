@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { successNotification } from '../utils/haptics';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -172,7 +173,7 @@ const SuccessScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   confettiContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -197,18 +198,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#CCCCCC',
+    color: colors.text.secondary,
   },
   button: {
     marginTop: 48,
   },
   buttonInner: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.interactive.primary,
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderRadius: 24,
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
 });
 

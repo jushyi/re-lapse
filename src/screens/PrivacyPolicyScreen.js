@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRIVACY_POLICY_CONTENT } from '../constants/legalContent';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 /**
@@ -26,7 +27,7 @@ const PrivacyPolicyScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy Policy</Text>
         <View style={styles.headerSpacer} />
@@ -47,7 +48,7 @@ const PrivacyPolicyScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: colors.border.subtle,
   },
   backButton: {
     padding: 4,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   headerSpacer: {
     width: 36,
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
 });
 
