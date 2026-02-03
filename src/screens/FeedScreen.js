@@ -91,12 +91,15 @@ const FeedScreen = () => {
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
   // View tracking state
+  // Note: viewedPhotoCount creates render dependency - FeedScreen re-renders when viewed state changes
+  // This ensures MeStoryCard and FriendStoryCard ring indicators update after viewing photos
   const {
     markAsViewed,
     markPhotosAsViewed,
     getFirstUnviewedIndex,
     hasViewedAllPhotos,
     loading: viewedStoriesLoading,
+    viewedPhotoCount, // Forces re-render when count changes (updates ring indicators)
   } = useViewedStories();
   // Track current index in stories modal (ref to avoid closure capture issues in callbacks)
   const storiesCurrentIndexRef = useRef(0);

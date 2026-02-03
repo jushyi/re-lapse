@@ -191,5 +191,6 @@ export const useViewedStories = () => {
     getFirstUnviewedIndex,
     hasViewedAllPhotos,
     loading,
+    viewedPhotoCount: viewedPhotos.size, // Exposes count to trigger re-renders in consumers
   };
 };
