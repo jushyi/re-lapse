@@ -98,8 +98,8 @@ const FeedScreen = () => {
     hasViewedAllPhotos,
     loading: viewedStoriesLoading,
   } = useViewedStories();
-  // Track current index in stories modal (updated via onPhotoChange)
-  const [storiesCurrentIndex, setStoriesCurrentIndex] = useState(0);
+  // Track current index in stories modal (ref to avoid closure capture issues in callbacks)
+  const storiesCurrentIndexRef = useRef(0);
 
   /**
    * Load friend stories data
@@ -302,7 +302,7 @@ const FeedScreen = () => {
     // Store friend info in refs for callbacks
     selectedFriendRef.current = friend;
     selectedFriendIndexRef.current = friendIdx;
-    setStoriesCurrentIndex(startIndex);
+    storiesCurrentIndexRef.current = startIndex;
 
     // Set mode flags
     isInStoriesModeRef.current = true;
@@ -337,7 +337,7 @@ const FeedScreen = () => {
       photoCount: myStories.topPhotos?.length || 0,
     });
 
-    setStoriesCurrentIndex(startIndex);
+    storiesCurrentIndexRef.current = startIndex;
 
     // Set mode flags
     isInStoriesModeRef.current = true;
@@ -363,7 +363,7 @@ const FeedScreen = () => {
     logger.debug('FeedScreen: Closing own stories viewer');
     if (myStories) {
       const allPhotos = myStories.topPhotos || [];
-      const isAtEnd = storiesCurrentIndex >= allPhotos.length - 1;
+      const isAtEnd = storiesCurrentIndexRef.current >= allPhotos.length - 1;
 
       if (isAtEnd) {
         // User viewed all photos - mark all as viewed
@@ -374,7 +374,9 @@ const FeedScreen = () => {
         }
       } else {
         // User closed mid-story - only mark photos up to current index as viewed
-        const viewedPhotoIds = allPhotos.slice(0, storiesCurrentIndex + 1).map(p => p.id);
+        const viewedPhotoIds = allPhotos
+          .slice(0, storiesCurrentIndexRef.current + 1)
+          .map(p => p.id);
         if (viewedPhotoIds.length > 0) {
           markPhotosAsViewed(viewedPhotoIds);
         }
@@ -389,7 +391,7 @@ const FeedScreen = () => {
    */
   const handleStoriesPhotoChange = (photo, index) => {
     logger.debug('FeedScreen: Stories photo changed', { photoId: photo?.id, index });
-    setStoriesCurrentIndex(index);
+    storiesCurrentIndexRef.current = index;
   };
 
   /**
@@ -445,7 +447,7 @@ const FeedScreen = () => {
     // Update refs for next friend
     selectedFriendRef.current = nextFriend;
     selectedFriendIndexRef.current = nextFriendIdx;
-    setStoriesCurrentIndex(nextStartIndex);
+    storiesCurrentIndexRef.current = nextStartIndex;
 
     // Note: PhotoDetailScreen will need to update its photos via context
     // This is handled by the cube animation callback in the screen
@@ -458,11 +460,13 @@ const FeedScreen = () => {
    * (called via context close callback)
    */
   const handleCloseStories = () => {
-    logger.debug('FeedScreen: Closing stories viewer');
+    logger.debug('FeedScreen: Closing stories viewer', {
+      currentIndex: storiesCurrentIndexRef.current,
+    });
     const selectedFriend = selectedFriendRef.current;
     if (selectedFriend) {
       const allPhotos = selectedFriend.topPhotos || [];
-      const isAtEnd = storiesCurrentIndex >= allPhotos.length - 1;
+      const isAtEnd = storiesCurrentIndexRef.current >= allPhotos.length - 1;
 
       if (isAtEnd) {
         // User viewed all photos - mark friend as viewed (gray ring) and all photos
@@ -478,13 +482,15 @@ const FeedScreen = () => {
       } else {
         // User closed mid-story - only mark photos up to current index as viewed
         // Don't mark friend as viewed (ring stays gradient)
-        const viewedPhotoIds = allPhotos.slice(0, storiesCurrentIndex + 1).map(p => p.id);
+        const viewedPhotoIds = allPhotos
+          .slice(0, storiesCurrentIndexRef.current + 1)
+          .map(p => p.id);
         if (viewedPhotoIds.length > 0) {
           markPhotosAsViewed(viewedPhotoIds);
         }
         logger.info('FeedScreen: Partial view - marking photos up to current index', {
           friendId: selectedFriend.userId,
-          currentIndex: storiesCurrentIndex,
+          currentIndex: storiesCurrentIndexRef.current,
           markedCount: viewedPhotoIds.length,
           totalCount: allPhotos.length,
         });
@@ -588,7 +594,7 @@ const FeedScreen = () => {
 
     const userId = user.uid;
     const topPhotos = selectedFriend.topPhotos || [];
-    const currentPhoto = topPhotos[storiesCurrentIndex];
+    const currentPhoto = topPhotos[storiesCurrentIndexRef.current];
 
     if (!currentPhoto) {
       logger.warn('FeedScreen: No current photo for stories reaction');
@@ -617,7 +623,7 @@ const FeedScreen = () => {
 
     // Update the photo in the array
     const updatedPhotos = [...topPhotos];
-    updatedPhotos[storiesCurrentIndex] = {
+    updatedPhotos[storiesCurrentIndexRef.current] = {
       ...currentPhoto,
       reactions: updatedReactions,
       reactionCount: newTotalCount,
