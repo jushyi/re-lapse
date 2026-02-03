@@ -44,6 +44,28 @@ Enhancements discovered during execution. Not critical - address in future phase
 - **Effort:** Low (simple gesture addition)
 - **Suggested phase:** Phase 16 (touches same PhotoDetailScreen gesture handling)
 
+### ISS-009: Reactions still not sorting by count (highest left)
+
+- **Discovered:** Phase 15.4-02-FIX verification (2026-02-03)
+- **Type:** Bug
+- **Description:** Despite the frozenOrder reset fix in 15.4-02-FIX, reactions are still not displaying sorted by count (highest count should be leftmost). The sorting logic in `orderedEmojis` memo appears correct but isn't producing the expected result.
+- **Current sorting code in usePhotoDetailModal.js:**
+  ```javascript
+  const sortedCurated = [...curatedData]
+    .sort((a, b) => b.totalCount - a.totalCount)
+    .map(item => item.emoji);
+  ```
+- **Possible causes to investigate:**
+  1. `groupedReactions` not returning correct counts
+  2. `orderedEmojis` memo not recalculating when reactions change
+  3. UI component not using `orderedEmojis` correctly
+  4. Reactions data structure issue (reactions[userId][emoji] = count)
+- **Debug approach:** Add logging to trace groupedReactions counts and orderedEmojis output
+- **Impact:** Medium (visual consistency issue)
+- **Effort:** Medium (needs debugging of data flow)
+- **Related:** ISS-008 was marked closed prematurely
+- **Suggested phase:** 15.4 (needs immediate follow-up FIX)
+
 ## Closed Enhancements
 
 ### ISS-002: Comment avatar profile navigation not working
@@ -79,5 +101,6 @@ Enhancements discovered during execution. Not critical - address in future phase
 
 - **Discovered:** Phase 15.4 FIX verification (2026-02-03)
 - **Closed:** 2026-02-03
+- **Reopened as:** ISS-009
 - **Type:** Bug (Regression)
-- **Resolution:** Fixed in Phase 15.4-02-FIX by resetting `frozenOrder` state when photo changes. Root cause was that `frozenOrder` (which freezes emoji order briefly after tapping) persisted across photo changes. Added `setFrozenOrder(null)` to the existing photo change useEffect in `usePhotoDetailModal.js`.
+- **Resolution:** Attempted fix in Phase 15.4-02-FIX by resetting `frozenOrder` state when photo changes. However, verification showed reactions still not sorting correctly. Issue reopened as ISS-009 for further investigation.
