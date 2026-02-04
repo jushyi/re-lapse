@@ -643,18 +643,24 @@ Plans:
 
 ### Phase 22: Ability to Edit Profile
 
-**Goal**: Edit profile screen for updating display name, username, bio, profile photo, and profile song
+**Goal**: Edit profile screen for updating display name, username, bio, and profile photo (NOT selects or song - those already have edit flows)
 **Depends on**: Phase 21
 **Research**: Unlikely (internal UI patterns, reusing existing components)
-**Plans**: TBD
+**Plans**: 0/2
 
 Plans:
 
-- [ ] 22-01: TBD (run /gsd:plan-phase 22 to break down)
+- [ ] 22-01: Data Layer + Settings Integration (updateUserProfile service, Edit Profile menu item)
+- [ ] 22-02: EditProfileScreen Implementation (photo editing, form fields, 14-day username restriction, save flow)
 
 **Details:**
 
-[To be added during planning]
+1. Access: Settings → Edit Profile
+2. Edit display name (24 char), username (24 char), bio (240 char), profile photo
+3. 14-day username change restriction with disabled field + tooltip
+4. Real-time username availability check (500ms debounce)
+5. Photo options: Take New Picture, Choose New Picture, Remove Photo
+6. Navigate to Profile screen after save
 
 ### Phase 23: Photo Deletion & Archiving
 
