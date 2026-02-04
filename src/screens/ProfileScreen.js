@@ -26,6 +26,8 @@ import {
   generateFriendshipId,
   removeFriend,
   blockUser,
+  unblockUser,
+  isBlocked,
 } from '../services/firebase';
 import logger from '../utils/logger';
 
@@ -72,6 +74,10 @@ const ProfileScreen = () => {
   const [friendshipLoading, setFriendshipLoading] = useState(false);
   const [friendshipStatusLoaded, setFriendshipStatusLoaded] = useState(false);
 
+  // Block status state
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
+  const [hasBlockedMe, setHasBlockedMe] = useState(false);
+
   // Track if initial data fetch is done (to avoid re-fetching on focus for other user profiles)
   const initialFetchDoneRef = useRef(false);
   const albumsFetchedRef = useRef(false);
@@ -106,7 +112,7 @@ const ProfileScreen = () => {
     }
   }, [isOwnProfile, userId]);
 
-  // Fetch friendship status between current user and profile user
+  // Fetch friendship and block status between current user and profile user
   const fetchFriendshipStatus = useCallback(async () => {
     if (isOwnProfile || !userId || !user?.uid) {
       setFriendshipStatusLoaded(true); // Mark as loaded for own profile
@@ -114,14 +120,30 @@ const ProfileScreen = () => {
     }
 
     try {
+      // Check friendship status
       const result = await checkFriendshipStatus(user.uid, userId);
       if (result.success) {
         setFriendshipStatus(result.status);
         setFriendshipId(result.friendshipId);
         logger.info('ProfileScreen: Fetched friendship status', { status: result.status });
       }
+
+      // Check if I blocked this user
+      const blockedByMeResult = await isBlocked(user.uid, userId);
+      setIsBlockedByMe(blockedByMeResult.success && blockedByMeResult.isBlocked);
+
+      // Check if this user blocked me
+      const blockedMeResult = await isBlocked(userId, user.uid);
+      setHasBlockedMe(blockedMeResult.success && blockedMeResult.isBlocked);
+
+      logger.info('ProfileScreen: Fetched block status', {
+        isBlockedByMe: blockedByMeResult.success && blockedByMeResult.isBlocked,
+        hasBlockedMe: blockedMeResult.success && blockedMeResult.isBlocked,
+      });
     } catch (error) {
-      logger.error('ProfileScreen: Error fetching friendship status', { error: error.message });
+      logger.error('ProfileScreen: Error fetching friendship/block status', {
+        error: error.message,
+      });
     } finally {
       setFriendshipStatusLoaded(true); // Mark as loaded even on error
     }
@@ -400,6 +422,31 @@ const ProfileScreen = () => {
     );
   };
 
+  const handleUnblockUser = () => {
+    Alert.alert('Unblock User', `Unblock ${otherUserProfile?.displayName || routeUsername}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Unblock',
+        onPress: async () => {
+          try {
+            const result = await unblockUser(user.uid, userId);
+            if (result.success) {
+              setIsBlockedByMe(false);
+              // Re-fetch friendship status (may have been friends before block)
+              fetchFriendshipStatus();
+              logger.info('ProfileScreen: User unblocked', { userId });
+            } else {
+              Alert.alert('Error', result.error || 'Could not unblock user');
+            }
+          } catch (error) {
+            logger.error('ProfileScreen: Error unblocking user', { error: error.message });
+            Alert.alert('Error', 'Could not unblock user');
+          }
+        },
+      },
+    ]);
+  };
+
   const handleReportUserFromProfile = () => {
     navigation.navigate('ReportUser', {
       userId,
@@ -412,8 +459,17 @@ const ProfileScreen = () => {
   const getProfileMenuOptions = () => {
     const options = [];
 
-    // Only show Remove Friend if they are friends
-    if (friendshipStatus === 'friends') {
+    // Show Unblock option if I've blocked this user
+    if (isBlockedByMe) {
+      options.push({
+        label: 'Unblock User',
+        icon: 'checkmark-circle-outline',
+        onPress: handleUnblockUser,
+      });
+    }
+
+    // Only show Remove Friend if they are friends and not blocked
+    if (friendshipStatus === 'friends' && !isBlockedByMe) {
       options.push({
         label: 'Remove Friend',
         icon: 'person-remove-outline',
@@ -421,13 +477,16 @@ const ProfileScreen = () => {
       });
     }
 
-    // Block and Report always available for other users
-    options.push({
-      label: 'Block User',
-      icon: 'ban-outline',
-      onPress: handleBlockUserFromProfile,
-    });
+    // Block option only if not already blocked
+    if (!isBlockedByMe) {
+      options.push({
+        label: 'Block User',
+        icon: 'ban-outline',
+        onPress: handleBlockUserFromProfile,
+      });
+    }
 
+    // Report always available
     options.push({
       label: 'Report User',
       icon: 'flag-outline',
@@ -661,6 +720,24 @@ const ProfileScreen = () => {
         </View>
         <View style={[styles.loadingContainer, { paddingTop: insets.top + HEADER_HEIGHT }]}>
           <Text style={styles.loadingText}>{otherUserError}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Handle blocked state - show "User not found" if they blocked me
+  if (!isOwnProfile && hasBlockedMe) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top }]}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={styles.headerButton} />
+        </View>
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + HEADER_HEIGHT }]}>
+          <Text style={styles.loadingText}>User not found</Text>
         </View>
       </View>
     );

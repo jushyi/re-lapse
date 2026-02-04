@@ -42,7 +42,7 @@ import {
   dismissSuggestion,
   markContactsSyncCompleted,
 } from '../services/firebase/contactSyncService';
-import { blockUser } from '../services/firebase/blockService';
+import { blockUser, getBlockedByUserIds } from '../services/firebase/blockService';
 import { mediumImpact } from '../utils/haptics';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendsScreen.styles';
@@ -316,9 +316,14 @@ const FriendsScreen = ({ navigation }) => {
       );
       const querySnapshot = await getDocs(usersQuery);
 
+      // Get users who have blocked the current user
+      const blockedByResult = await getBlockedByUserIds(user.uid);
+      const blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
+
       const results = [];
       querySnapshot.forEach(docSnap => {
-        if (docSnap.id !== user.uid) {
+        // Exclude self and users who have blocked current user
+        if (docSnap.id !== user.uid && !blockedByUserIds.includes(docSnap.id)) {
           results.push({
             userId: docSnap.id,
             ...docSnap.data(),
