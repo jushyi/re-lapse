@@ -619,18 +619,27 @@ Plans:
 
 ### Phase 21: Remove/Block Friends
 
-**Goal**: Add ability to remove or block friends
+**Goal**: Add ability to remove or block friends, with user reporting functionality
 **Depends on**: Phase 20
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 0/4
 
 Plans:
 
-- [ ] 21-01: TBD (run /gsd:plan-phase 21 to break down)
+- [ ] 21-01: Block & Report Data Layer (blockService.js, reportService.js)
+- [ ] 21-02: Menu Integration & Actions (three-dot menus in FriendCard and ProfileScreen)
+- [ ] 21-03: Report User Screen (full-screen reason picker with details field)
+- [ ] 21-04: Block Enforcement (filter blocked users from feed, stories, search, profiles)
 
 **Details:**
 
-[To be added during planning]
+1. Three-dot menu on friend cards and profile headers with Remove, Block, Report options
+2. Remove Friend: Simple confirmation dialog, silent removal
+3. Block User: Makes you invisible to blocked person, removes their comments/reactions from your photos
+4. Block and remove are independent actions (can block without removing)
+5. Report User: Full-screen reason picker (Spam, Harassment, Inappropriate, Impersonation, Other) with optional details
+6. Reports stored with profile snapshot for evidence, reviewed in Firebase Console
+7. Unblocking restores friendship if it existed
 
 ### Phase 22: Ability to Edit Profile
 
