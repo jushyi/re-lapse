@@ -44,21 +44,17 @@ We recommend [VS Code](https://code.visualstudio.com/) with these extensions:
 - Prettier - Code formatter
 - ESLint
 
-### 4. Expo Go App (on your device)
+### 4. Development Build (on your device)
 
-You'll run the app on your physical device, not a simulator.
+You'll run the app on your physical device using a development build (not Expo Go). This gives you access to all native features like the camera.
 
-**iOS:**
+**Getting the build:**
 
-1. Download "Expo Go" from the App Store
-2. Sign in with your Expo account (or create one)
+1. Contact the project owner to register your device
+2. You'll receive a link to install the development build
+3. Install the app on your device (you may need to trust the developer certificate in Settings)
 
-**Android:**
-
-1. Download "Expo Go" from the Google Play Store
-2. Sign in with your Expo account (or create one)
-
-> **Note:** Your device must be registered with the project's Expo build. Contact the project owner to add your device if you haven't already.
+> **Note:** The development build is different from Expo Go. It's a custom build of the actual app with developer tools enabled.
 
 ## Project Setup
 
@@ -81,7 +77,7 @@ This may take a few minutes. You should see no errors at the end.
 ### Start the Development Server
 
 ```bash
-npx expo start
+npx expo start --dev-client
 ```
 
 You'll see a QR code in the terminal.
@@ -89,10 +85,8 @@ You'll see a QR code in the terminal.
 **To run on your device:**
 
 1. Make sure your phone is on the same WiFi network as your computer
-2. Open the Expo Go app on your device
-3. Scan the QR code:
-   - **iOS:** Use the Camera app, then tap the Expo notification
-   - **Android:** Use the scanner built into Expo Go
+2. Open the development build app on your device
+3. The app will automatically connect to the dev server, or scan the QR code if prompted
 
 ### Verify It Works
 
@@ -104,13 +98,13 @@ You should see the Rewind app load with:
 
 **Troubleshooting:**
 
-| Issue                         | Solution                                                   |
-| ----------------------------- | ---------------------------------------------------------- |
-| "command not found: npx"      | Reinstall Node.js                                          |
-| QR code won't scan            | Ensure phone and computer are on the same WiFi network     |
-| "Unable to connect" on device | Try running `npx expo start --tunnel`                      |
-| App crashes on open           | Your device may need to be added to the Expo build profile |
-| Metro bundler crashes         | Delete `node_modules` and run `npm install` again          |
+| Issue                         | Solution                                                     |
+| ----------------------------- | ------------------------------------------------------------ |
+| "command not found: npx"      | Reinstall Node.js                                            |
+| App won't connect to server   | Ensure phone and computer are on the same WiFi network       |
+| "Unable to connect" on device | Try running `npx expo start --dev-client --tunnel`           |
+| App not installed             | Contact project owner to add your device and get a new build |
+| Metro bundler crashes         | Delete `node_modules` and run `npm install` again            |
 
 ## Development Workflow
 
