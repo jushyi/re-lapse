@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
 - [x] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
 - [x] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
-- [ ] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
+- [x] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
 - [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
 - [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
@@ -622,14 +622,14 @@ Plans:
 **Goal**: Add ability to remove or block friends, with user reporting functionality
 **Depends on**: Phase 20
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 3/4
+**Plans**: 4/4 complete
 
 Plans:
 
 - [x] 21-01: Block & Report Data Layer (blockService.js, reportService.js)
 - [x] 21-02: Menu Integration & Actions (three-dot menus in FriendCard and ProfileScreen)
 - [x] 21-03: Report User Screen (full-screen reason picker with details field)
-- [ ] 21-04: Block Enforcement (filter blocked users from feed, stories, search, profiles)
+- [x] 21-04: Block Enforcement (filter blocked users from feed, stories, search, profiles)
 
 **Details:**
 

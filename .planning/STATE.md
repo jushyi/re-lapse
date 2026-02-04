@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 21 of 26 (Remove/Block Friends)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-04 — Completed 21-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-04 — Completed 21-04-PLAN.md
 
 Progress: ██████████████████ 100%
 
@@ -20,9 +20,9 @@ Progress: ██████████████████ 100%
 
 **Velocity:**
 
-- Total plans completed: 91 (including 18 FIX plans)
+- Total plans completed: 92 (including 18 FIX plans)
 - Average duration: 10 min
-- Total execution time: 919 min
+- Total execution time: 924 min
 
 **By Phase:**
 
@@ -58,13 +58,13 @@ Progress: ██████████████████ 100%
 | 18    | 2     | 12 min | 6 min    |
 | 19    | 5     | 50 min | 10 min   |
 | 20    | 3     | 20 min | 7 min    |
-| 21    | 3     | 28 min | 9 min    |
+| 21    | 4     | 33 min | 8 min    |
 | 25    | 5     | 15 min | 3 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 8 min, 8 min, 8 min, 12 min, 8 min
-- Trend: Phase 21 Remove/Block Friends in progress
+- Last 5 plans: 8 min, 8 min, 12 min, 8 min, 5 min
+- Trend: Phase 21 Remove/Block Friends complete
 
 ## Accumulated Context
 
@@ -227,6 +227,7 @@ Recent decisions affecting current work:
 | 21    | Block ID uses {blockerId}\_{blockedId} format         | Direction matters for blocks (unlike symmetric friendship IDs)          |
 | 21    | Cascade delete comments/reactions on block            | Removes blocked user's content from blocker's photos immediately        |
 | 21    | Reports include profile snapshot                      | Captures user profile state at report time for evidence preservation    |
+| 21    | Client-side block filtering for feed/stories          | Firestore lacks efficient NOT IN queries; filter after fetch            |
 
 ### Deferred Issues
 
@@ -342,5 +343,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Completed 21-03-PLAN.md
+Stopped at: Completed 21-04-PLAN.md (Phase 21 complete)
 Resume file: None
