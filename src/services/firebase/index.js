@@ -87,3 +87,12 @@ export {
   hasUserSyncedContacts,
   clearDismissedSuggestions,
 } from './contactSyncService';
+
+// Export Block service functions (user blocking)
+export {
+  blockUser,
+  unblockUser,
+  isBlocked,
+  getBlockedByUserIds,
+  getBlockedUserIds,
+} from './blockService';
