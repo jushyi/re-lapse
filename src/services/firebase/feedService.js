@@ -45,13 +45,14 @@ const getCutoffTimestamp = days => {
 };
 
 /**
- * Get feed photos (journaled photos from friends + current user)
- * Week 9: Filters by friendUserIds (friends-only + current user's own photos)
+ * Get feed photos (journaled photos from friends only)
+ * Feed shows friend activity from the last 1 day (FEED_VISIBILITY_DAYS)
+ * Own posts excluded - feed is 100% friend activity
  *
  * @param {number} limitCount - Number of photos to fetch (default: 20)
  * @param {object} lastDoc - Last document for pagination (optional)
  * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
- * @param {string} currentUserId - Current user ID (to include own photos)
+ * @param {string} currentUserId - Current user ID (to exclude own photos)
  * @returns {Promise} - Feed photos array and last document
  */
 export const getFeedPhotos = async (
@@ -61,10 +62,13 @@ export const getFeedPhotos = async (
   currentUserId = null
 ) => {
   try {
-    // Simplified query: Only filter by photoState = 'journal'
-    // Status will be implicitly 'triaged' since only triaged photos have photoState
-    // We'll sort in JavaScript to avoid composite index requirement
-    const q = query(collection(db, 'photos'), where('photoState', '==', 'journal'));
+    // Query: photoState = 'journal' AND capturedAt >= cutoff (server-side time filter)
+    const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
+    const q = query(
+      collection(db, 'photos'),
+      where('photoState', '==', 'journal'),
+      where('capturedAt', '>=', cutoff)
+    );
     const snapshot = await getDocs(q);
 
     // Fetch all photos with user data
@@ -90,11 +94,10 @@ export const getFeedPhotos = async (
       })
     );
 
-    // Filter by friends + current user if friendUserIds provided
+    // Filter by friends only (exclude current user's own photos from feed)
     let filteredPhotos = allPhotos;
-    if (friendUserIds !== null && currentUserId) {
-      const allowedUserIds = [...friendUserIds, currentUserId];
-      filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+    if (friendUserIds !== null) {
+      filteredPhotos = allPhotos.filter(photo => friendUserIds.includes(photo.userId));
     }
 
     // Sort by capturedAt in descending order (newest first) - client-side
@@ -126,12 +129,13 @@ export const getFeedPhotos = async (
 
 /**
  * Subscribe to real-time feed updates
- * Listens for new journaled photos (filtered by friends)
+ * Listens for friend posts from the last 1 day (FEED_VISIBILITY_DAYS)
+ * Own posts excluded - feed is 100% friend activity
  *
  * @param {function} callback - Callback function to handle updates
  * @param {number} limitCount - Number of photos to watch (default: 20)
  * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
- * @param {string} currentUserId - Current user ID (to include own photos)
+ * @param {string} currentUserId - Current user ID (to exclude own photos)
  * @returns {function} - Unsubscribe function
  */
 export const subscribeFeedPhotos = (
@@ -141,8 +145,13 @@ export const subscribeFeedPhotos = (
   currentUserId = null
 ) => {
   try {
-    // Set up real-time listener
-    const q = query(collection(db, 'photos'), where('photoState', '==', 'journal'));
+    // Set up real-time listener with server-side time filter
+    const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
+    const q = query(
+      collection(db, 'photos'),
+      where('photoState', '==', 'journal'),
+      where('capturedAt', '>=', cutoff)
+    );
     const unsubscribe = onSnapshot(
       q,
       async snapshot => {
@@ -168,11 +177,10 @@ export const subscribeFeedPhotos = (
           })
         );
 
-        // Filter by friends + current user if friendUserIds provided
+        // Filter by friends only (exclude current user's own photos from feed)
         let filteredPhotos = allPhotos;
-        if (friendUserIds !== null && currentUserId) {
-          const allowedUserIds = [...friendUserIds, currentUserId];
-          filteredPhotos = allPhotos.filter(photo => allowedUserIds.includes(photo.userId));
+        if (friendUserIds !== null) {
+          filteredPhotos = allPhotos.filter(photo => friendUserIds.includes(photo.userId));
         }
 
         // Sort by capturedAt in descending order (newest first)
@@ -443,7 +451,7 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
 
 /**
  * Get current user's own stories data for the Stories UI
- * Fetches all journaled photos for the current user in chronological order
+ * Fetches journaled photos from the last 7 days (STORIES_VISIBILITY_DAYS)
  *
  * @param {string} userId - User's ID
  * @returns {Promise<{success: boolean, userStory?: Object, error?: string}>}
@@ -462,11 +470,13 @@ export const getUserStoriesData = async userId => {
     const userDocSnap = await getDoc(userDocRef);
     const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-    // Query photos where userId matches AND photoState == 'journal'
+    // Query photos where userId matches AND photoState == 'journal' AND within visibility window
+    const cutoff = getCutoffTimestamp(STORIES_VISIBILITY_DAYS);
     const photosQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('photoState', '==', 'journal')
+      where('photoState', '==', 'journal'),
+      where('capturedAt', '>=', cutoff)
     );
     const photosSnapshot = await getDocs(photosQuery);
 
@@ -525,7 +535,7 @@ export const getUserStoriesData = async userId => {
 
 /**
  * Get friend stories data for the Stories UI
- * Fetches all friends with ALL their journal photos in chronological order
+ * Fetches friends with photos from the last 7 days (STORIES_VISIBILITY_DAYS)
  *
  * @param {string} currentUserId - Current user's ID
  * @returns {Promise<{success: boolean, friendStories?: Array, error?: string}>}
@@ -558,18 +568,22 @@ export const getFriendStoriesData = async currentUserId => {
       return { success: true, friendStories: [], totalFriendCount: 0 };
     }
 
-    // Step 2: Fetch user profile and ALL photos for each friend in parallel
+    // Calculate cutoff timestamp once for all queries
+    const cutoff = getCutoffTimestamp(STORIES_VISIBILITY_DAYS);
+
+    // Step 2: Fetch user profile and photos within visibility window for each friend in parallel
     const friendDataPromises = friendUserIds.map(async friendId => {
       // Fetch user profile
       const userDocRef = doc(db, 'users', friendId);
       const userDocSnap = await getDoc(userDocRef);
       const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-      // Fetch ALL journal photos for this friend (not just top 5)
+      // Fetch journal photos from last 7 days for this friend
       const photosQuery = query(
         collection(db, 'photos'),
         where('userId', '==', friendId),
-        where('photoState', '==', 'journal')
+        where('photoState', '==', 'journal'),
+        where('capturedAt', '>=', cutoff)
       );
       const photosSnapshot = await getDocs(photosQuery);
 
