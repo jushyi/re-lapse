@@ -23,11 +23,26 @@ import {
   where,
   orderBy,
   onSnapshot,
+  Timestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 import { getFriendUserIds } from './friendshipService';
 
 const db = getFirestore();
+
+// Content visibility duration constants
+const STORIES_VISIBILITY_DAYS = 7; // Stories visible for 7 days
+const FEED_VISIBILITY_DAYS = 1; // Feed posts visible for 1 day
+
+/**
+ * Get a Firestore Timestamp for the cutoff date
+ * @param {number} days - Number of days back from now
+ * @returns {Timestamp} - Firestore Timestamp for use in queries
+ */
+const getCutoffTimestamp = days => {
+  const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return Timestamp.fromDate(cutoffDate);
+};
 
 /**
  * Get feed photos (journaled photos from friends + current user)
