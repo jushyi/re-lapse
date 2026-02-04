@@ -683,7 +683,7 @@ Plans:
 
 - [x] 25-01: Developer onboarding documentation (setup, codebase tour)
 - [x] 25-02: ThemeCard component guide + theme system guide
-- [ ] 25-03: Settings UI guide
+- [x] 25-03: Settings UI guide
 - [ ] 25-04: Custom palette editor guide
 - [ ] 25-05: Onboarding integration guide
 
@@ -738,4 +738,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 22. Ability to Edit Profile      | 0/?            | Not started | -          |
 | 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
 | 24. Social Media Feature Audit   | 0/?            | Not started | -          |
-| 25. Color Palette Selection      | 2/5            | In progress | -          |
+| 25. Color Palette Selection      | 3/5            | In progress | -          |
