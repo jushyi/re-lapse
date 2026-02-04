@@ -309,16 +309,19 @@ const fetchUserData = async userIds => {
           const userData = userDocSnap.data();
           userDataMap[userId] = {
             uid: userId,
-            username: userData.username || 'unknown',
-            displayName: userData.displayName || 'Unknown User',
+            username: userData.username || 'deleted',
+            displayName: userData.displayName || 'Deleted User',
             profilePhotoURL: userData.profilePhotoURL || null,
+            isDeleted: false,
           };
         } else {
+          // User document doesn't exist - account was deleted
           userDataMap[userId] = {
             uid: userId,
-            username: 'unknown',
-            displayName: 'Unknown User',
+            username: 'deleted',
+            displayName: 'Deleted User',
             profilePhotoURL: null,
+            isDeleted: true,
           };
         }
       } catch (err) {
@@ -326,11 +329,13 @@ const fetchUserData = async userIds => {
           userId,
           error: err.message,
         });
+        // Treat fetch errors as deleted user to avoid crashes
         userDataMap[userId] = {
           uid: userId,
-          username: 'unknown',
-          displayName: 'Unknown User',
+          username: 'deleted',
+          displayName: 'Deleted User',
           profilePhotoURL: null,
+          isDeleted: true,
         };
       }
     })
@@ -385,9 +390,10 @@ export const getComments = async (photoId, limitCount = 50) => {
         ...data,
         user: userDataMap[data.userId] || {
           uid: data.userId,
-          username: 'unknown',
-          displayName: 'Unknown User',
+          username: 'deleted',
+          displayName: 'Deleted User',
           profilePhotoURL: null,
+          isDeleted: true,
         },
       };
     });
@@ -456,9 +462,10 @@ export const subscribeToComments = (photoId, callback, limitCount = 50) => {
             ...data,
             user: userDataMap[data.userId] || {
               uid: data.userId,
-              username: 'unknown',
-              displayName: 'Unknown User',
+              username: 'deleted',
+              displayName: 'Deleted User',
               profilePhotoURL: null,
+              isDeleted: true,
             },
           };
         });
@@ -565,9 +572,10 @@ export const getPreviewComments = async (photoId, photoOwnerId) => {
       ...comment,
       user: userDataMap[comment.userId] || {
         uid: comment.userId,
-        username: 'unknown',
-        displayName: 'Unknown User',
+        username: 'deleted',
+        displayName: 'Deleted User',
         profilePhotoURL: null,
+        isDeleted: true,
       },
     }));
 

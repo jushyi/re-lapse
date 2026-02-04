@@ -112,19 +112,23 @@ const CommentRow = ({
   // Check if this is the current user's own comment
   const isOwnComment = comment?.userId === currentUserId;
 
+  // Check if this is a deleted user (no profile navigation)
+  const isDeletedUser = user?.isDeleted === true || user?.displayName === 'Deleted User';
+
   /**
    * Handle avatar press - navigate to user's profile
    * Disabled for own comments (comment.userId === currentUserId)
+   * Disabled for deleted users (user no longer exists)
    */
   const handleAvatarPress = useCallback(() => {
-    // Don't allow tap on own avatar
-    if (isOwnComment) return;
+    // Don't allow tap on own avatar or deleted user avatar
+    if (isOwnComment || isDeletedUser) return;
     logger.info('CommentRow: Avatar pressed', { commentId: comment?.id, userId: comment?.userId });
     if (onAvatarPress && comment?.userId) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onAvatarPress(comment.userId, user?.displayName);
     }
-  }, [comment?.id, comment?.userId, user?.displayName, onAvatarPress, isOwnComment]);
+  }, [comment?.id, comment?.userId, user?.displayName, onAvatarPress, isOwnComment, isDeletedUser]);
 
   /**
    * Handle long press for delete
@@ -178,12 +182,12 @@ const CommentRow = ({
         onLongPress={handleLongPress}
         delayLongPress={500}
       >
-        {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments) */}
+        {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments and deleted users) */}
         <TouchableOpacity
           style={styles.profilePhotoContainer}
           onPress={handleAvatarPress}
-          activeOpacity={isOwnComment ? 1 : 0.7}
-          disabled={isOwnComment}
+          activeOpacity={isOwnComment || isDeletedUser ? 1 : 0.7}
+          disabled={isOwnComment || isDeletedUser}
         >
           {profilePhotoURL ? (
             <Image
