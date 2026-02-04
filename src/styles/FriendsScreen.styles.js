@@ -201,14 +201,4 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Suggestion card dismiss button
-  suggestionCardContainer: {
-    position: 'relative',
-  },
-  suggestionDismiss: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    padding: 4,
-  },
 });

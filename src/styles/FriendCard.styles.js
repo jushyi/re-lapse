@@ -67,6 +67,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
+  // Dismiss button (X) for suggestions
+  dismissButton: {
+    padding: 8,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 8,
+  },
   // Pending button (gray)
   pendingButton: {
     backgroundColor: colors.background.tertiary,

@@ -740,32 +740,24 @@ const FriendsScreen = ({ navigation }) => {
    * Render suggestion card with dismiss option
    */
   const renderSuggestionCard = suggestion => (
-    <View style={styles.suggestionCardContainer}>
-      <FriendCard
-        user={{
+    <FriendCard
+      user={{
+        userId: suggestion.id,
+        displayName: suggestion.displayName,
+        username: suggestion.username,
+        profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
+      }}
+      relationshipStatus="none"
+      onAction={userId => handleAddFriend(userId)}
+      onDismiss={userId => handleDismissSuggestion(userId)}
+      loading={actionLoading[suggestion.id]}
+      onPress={() => {
+        navigation.navigate('OtherUserProfile', {
           userId: suggestion.id,
-          displayName: suggestion.displayName,
           username: suggestion.username,
-          profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
-        }}
-        relationshipStatus="none"
-        onAction={userId => handleAddFriend(userId)}
-        loading={actionLoading[suggestion.id]}
-        onPress={() => {
-          navigation.navigate('OtherUserProfile', {
-            userId: suggestion.id,
-            username: suggestion.username,
-          });
-        }}
-      />
-      <TouchableOpacity
-        style={styles.suggestionDismiss}
-        onPress={() => handleDismissSuggestion(suggestion.id)}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="close" size={18} color={colors.text.tertiary} />
-      </TouchableOpacity>
-    </View>
+        });
+      }}
+    />
   );
 
   /**

@@ -37,6 +37,7 @@ const FriendCard = ({
   onRemove,
   onBlock,
   onReport,
+  onDismiss, // Optional: renders X button next to Add for suggestions
 }) => {
   const { userId, displayName, username, profilePhotoURL } = user || {};
 
@@ -138,13 +139,24 @@ const FriendCard = ({
     switch (relationshipStatus) {
       case 'none':
         return (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => onAction && onAction(userId, 'add')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => onAction && onAction(userId, 'add')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+            {onDismiss && (
+              <TouchableOpacity
+                style={styles.dismissButton}
+                onPress={() => onDismiss(userId)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
         );
 
       case 'pending_sent':
