@@ -1014,6 +1014,78 @@ exports.cancelUserAccountDeletion = onCall({ cors: true }, async request => {
 });
 
 /**
+ * Cloud Function: Send reminder notification 3 days before account deletion
+ * Runs daily at 9 AM UTC to check for accounts approaching deletion
+ */
+exports.sendDeletionReminderNotification = functions.pubsub
+  .schedule('0 9 * * *') // Daily at 9 AM UTC
+  .onRun(async context => {
+    try {
+      const now = admin.firestore.Timestamp.now();
+
+      // Calculate 3 days from now window (check accounts deleting in ~3 days)
+      const threeDaysFromNow = admin.firestore.Timestamp.fromMillis(
+        now.toMillis() + 3 * 24 * 60 * 60 * 1000
+      );
+      const threeDaysFromNowEnd = admin.firestore.Timestamp.fromMillis(
+        now.toMillis() + 4 * 24 * 60 * 60 * 1000
+      );
+
+      // Query users scheduled for deletion in ~3 days
+      // (between 3 and 4 days from now to avoid duplicate notifications)
+      const usersSnapshot = await admin
+        .firestore()
+        .collection('users')
+        .where('scheduledForDeletionAt', '>=', threeDaysFromNow)
+        .where('scheduledForDeletionAt', '<', threeDaysFromNowEnd)
+        .get();
+
+      if (usersSnapshot.empty) {
+        logger.info('sendDeletionReminderNotification: No users approaching deletion');
+        return null;
+      }
+
+      logger.info('sendDeletionReminderNotification: Found users', {
+        count: usersSnapshot.size,
+      });
+
+      let sentCount = 0;
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        const fcmToken = userData.fcmToken;
+
+        if (!fcmToken) {
+          logger.debug('sendDeletionReminderNotification: No FCM token', {
+            userId: userDoc.id,
+          });
+          continue;
+        }
+
+        // Send reminder notification
+        const title = '⚠️ Account Deletion Reminder';
+        const body =
+          "Your account will be permanently deleted in 3 days. Log in to cancel if you've changed your mind.";
+
+        await sendPushNotification(fcmToken, title, body, {
+          type: 'deletion_reminder',
+        });
+
+        sentCount++;
+      }
+
+      logger.info('sendDeletionReminderNotification: Complete', {
+        found: usersSnapshot.size,
+        sent: sentCount,
+      });
+
+      return { found: usersSnapshot.size, sent: sentCount };
+    } catch (error) {
+      logger.error('sendDeletionReminderNotification: Error', { error: error.message });
+      return null;
+    }
+  });
+
+/**
  * Process scheduled account deletions
  * Runs daily at 3 AM UTC to find and delete accounts past their scheduled date
  * Uses the same deletion cascade as deleteUserAccount
