@@ -46,6 +46,15 @@ Enhancements discovered during execution. Not critical - address in future phase
 
 ## Closed Enhancements
 
+### ISS-010: Duplicate day headers in monthly albums when journaling old photos
+
+- **Discovered:** Phase 18 testing (2026-02-04)
+- **Closed:** 2026-02-04
+- **Type:** Bug
+- **Resolution:** Fixed by adding `getMonthFromTimestamp()` helper and updating `triagePhoto()` to recalculate `month` from `capturedAt` when journaling. Now photos are assigned to the correct month based on when they were taken, not when they were triaged.
+- **Files modified:** `src/services/firebase/photoService.js`
+- **Note:** Existing photos with incorrect `month` fields are not auto-migrated. New triage actions will use correct month. Manual data fix may be needed for already-affected photos.
+
 ### ISS-002: Comment avatar profile navigation not working
 
 - **Discovered:** Phase 15.2 FIX2 verification (2026-02-02)

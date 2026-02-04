@@ -527,15 +527,25 @@ export const batchTriagePhotos = async decisions => {
  * Migrate older photos that have photoState: null
  * One-time migration to fix photos triaged before photoState was added
  * Sets photoState to 'journal' and ensures triagedAt is set
+ * Only migrates photos belonging to the specified user (required for security rules)
  *
+ * @param {string} userId - The user ID whose photos to migrate
  * @returns {Promise<{success: boolean, migratedCount?: number, error?: string}>}
  */
-export const migratePhotoStateField = async () => {
-  logger.info('PhotoService.migratePhotoStateField: Starting migration');
+export const migratePhotoStateField = async userId => {
+  logger.info('PhotoService.migratePhotoStateField: Starting migration', { userId });
+
+  if (!userId) {
+    return { success: false, error: 'User ID is required' };
+  }
 
   try {
-    // Query all triaged photos
-    const q = query(collection(db, 'photos'), where('status', '==', 'triaged'));
+    // Query user's triaged photos (security rules allow reading own photos)
+    const q = query(
+      collection(db, 'photos'),
+      where('userId', '==', userId),
+      where('status', '==', 'triaged')
+    );
     const snapshot = await getDocs(q);
 
     logger.info('PhotoService.migratePhotoStateField: Found triaged photos', {
