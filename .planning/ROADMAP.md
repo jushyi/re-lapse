@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [x] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
 - [x] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
-- [ ] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
+- [ ] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback (In progress)
 - [ ] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
 - [ ] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
 - [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
@@ -583,15 +583,18 @@ Plans:
 **Goal**: Ensure delete account function works properly with proper fallback handling for errors and edge cases
 **Depends on**: Phase 18
 **Research**: Unlikely (internal account management)
-**Plans**: TBD
+**Plans**: 1/? complete
 
 Plans:
 
-- [ ] 19-01: TBD (run /gsd:plan-phase 19 to break down)
+- [x] 19-01: Scheduled deletion infrastructure (accountService + Cloud Functions)
 
 **Details:**
 
-[To be added during planning]
+1. 30-day grace period for account deletion (industry standard)
+2. scheduleAccountDeletion, cancelAccountDeletion, checkDeletionStatus in accountService
+3. Cloud Functions: scheduleUserAccountDeletion, cancelUserAccountDeletion, processScheduledDeletions
+4. Daily cron job at 3 AM UTC processes expired deletion schedules
 
 ### Phase 20: Friend Suggestions via Contacts Sync
 
@@ -732,7 +735,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 16. Color Constants              | 10/10          | Complete    | 2026-02-03 |
 | 17. Nested Reply Comments        | 2/2            | Complete    | 2026-02-03 |
 | 18. Content Visibility Duration  | 1/1 + 1 FIX    | Complete    | 2026-02-04 |
-| 19. Delete Account Fallback      | 0/?            | Not started | -          |
+| 19. Delete Account Fallback      | 1/?            | In progress | -          |
 | 20. Friend Suggestions Contacts  | 0/?            | Not started | -          |
 | 21. Remove/Block Friends         | 0/?            | Not started | -          |
 | 22. Ability to Edit Profile      | 0/?            | Not started | -          |
