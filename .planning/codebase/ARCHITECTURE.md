@@ -86,11 +86,12 @@
 **Feed Display Flow:**
 
 1. FeedScreen mounts, useFeedPhotos hook initializes
-2. Hook subscribes to Firestore photos collection (photoState='journal')
-3. Client-side filters by friend user IDs
-4. FeedPhotoCard components render with reactions
-5. PhotoDetailModal opens on card tap
-6. Reactions update via toggleReaction in feedService
+2. Hook subscribes to Firestore photos collection via feedService
+3. Server-side Firestore queries filter by photoState, capturedAt (visibility window), and other fields using composite indexes
+4. Additional client-side filtering for user-specific logic (e.g., excluding own photos from feed)
+5. FeedPhotoCard components render with reactions
+6. PhotoDetailModal opens on card tap
+7. Reactions update via toggleReaction in feedService
 
 **State Management:**
 
@@ -154,6 +155,27 @@
 - Screens/hooks check success and show appropriate UI
 - ErrorBoundary component catches React render errors
 - Logger utility sanitizes and logs errors (console in dev, future Sentry)
+
+## Firestore Query Patterns
+
+**Server-Side Filtering:**
+
+- Use Firestore `where()` clauses for filtering whenever possible
+- Composite indexes are defined in `firestore.indexes.json` and deployed to Firebase
+- Time-based queries (e.g., `where('capturedAt', '>=', cutoffTimestamp)`) are server-side
+- This is more efficient than fetching all data and filtering client-side
+
+**When to Use Client-Side Filtering:**
+
+- User-specific exclusions (e.g., excluding current user's own photos from feed)
+- Complex logic that can't be expressed in Firestore queries
+- Small result sets where performance difference is negligible
+
+**Index Management:**
+
+- Composite indexes defined in `firestore.indexes.json`
+- Deploy with `firebase deploy --only firestore:indexes`
+- Required for queries with multiple `where()` clauses or `where()` + `orderBy()`
 
 ## Cross-Cutting Concerns
 

@@ -180,6 +180,40 @@ logger.error('PhotoService.uploadPhoto: Failed', { error: error.message });
 - Helper components can be in same file if small
 - Export default for main component
 
+## Firestore Service Patterns
+
+**Query Construction:**
+
+- Use server-side `where()` clauses for filtering - don't fetch all data and filter client-side
+- Composite indexes are defined in `firestore.indexes.json` for multi-field queries
+- Use `Timestamp.fromDate()` for date comparisons in queries
+
+**Example (correct):**
+
+```javascript
+// Server-side filtering with composite index
+const cutoff = Timestamp.fromDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+const q = query(
+  collection(db, 'photos'),
+  where('userId', '==', userId),
+  where('photoState', '==', 'journal'),
+  where('capturedAt', '>=', cutoff)
+);
+```
+
+**Anti-pattern (avoid):**
+
+```javascript
+// DON'T: Fetch all data then filter client-side
+const snapshot = await getDocs(collection(db, 'photos'));
+const filtered = snapshot.docs.filter(doc => doc.data().capturedAt >= cutoff);
+```
+
+**Client-Side Filtering:**
+
+- Only for user-specific logic that can't be expressed in Firestore (e.g., `userId !== currentUserId`)
+- Only for small result sets where index complexity isn't justified
+
 ## React/React Native Patterns
 
 **State Management:**
