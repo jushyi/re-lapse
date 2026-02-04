@@ -44,13 +44,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15.4: Story Viewed State Fix** - Restore story viewed tracking broken by 15.3 navigation changes (INSERTED)
 - [x] **Phase 16: Color Constants Standardization** - Standardize all colors to use constants, eliminate hardcoded values, enable future theming
 - [x] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
-- [ ] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
+- [x] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
 - [ ] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
 - [ ] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
 - [ ] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
 - [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
 - [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
+- [ ] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 
 ## Phase Details
 
@@ -558,24 +559,23 @@ Plans:
 
 ### Phase 18: Content Visibility Duration
 
-**Goal**: Define and implement visibility duration rules for stories and feed pictures - clarify how long content stays visible in the stories bar and feed tab for friends
+**Goal**: Implement visibility duration rules for stories (7 days) and feed posts (1 day), with own posts excluded from feed
 **Depends on**: Phase 17
-**Research**: Likely (clarify desired behavior with user before planning)
-**Plans**: TBD
+**Research**: Complete (user clarified during discuss-phase)
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 18-01: TBD (run /gsd:plan-phase 18 to break down)
+- [x] 18-01: Server-side Firestore filtering for visibility duration
 
 **Details:**
 
-[To be clarified during planning - key questions:]
-
-1. How long should stories stay visible in the stories bar? (e.g., 24 hours like Instagram/Snapchat?)
-2. How long should feed pictures remain visible in the feed tab?
-3. Should content disappear entirely or just move to a different view (e.g., archive)?
-4. Different rules for own content vs friends' content?
-5. Visual indicators for content expiration?
+1. Stories visible for 7 days in stories bar
+2. Feed posts visible for 1 day in feed tab
+3. Own posts excluded from feed (feed is 100% friend activity)
+4. Own photos appear in "Me" story card and profile views
+5. Expired content stays in albums/monthly albums (just drops from active views)
+6. No visual countdown indicators - seamless expiration
 
 ### Phase 19: Delete Account Fallback
 
@@ -671,10 +671,31 @@ Plans:
 
 [To be added during planning]
 
+### Phase 25: Color Palette Selection & Customization
+
+**Goal**: Enable users to select and customize color palettes/themes in the app, leveraging the centralized color constants system from Phase 16
+**Depends on**: Phase 24
+**Research**: Unlikely (extending existing color system)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 25-01: TBD (run /gsd:plan-phase 25 to break down)
+
+**Details:**
+
+[To be added during planning]
+
+1. Build on Phase 16's color constants foundation
+2. Theme selection UI in Settings
+3. Predefined palette options (dark, light, custom themes)
+4. User preference persistence
+5. Real-time theme switching across all screens
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -705,10 +726,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 15.4 Story Viewed State Fix      | 1/1 + 2 FIX    | Complete    | 2026-02-03 |
 | 16. Color Constants              | 10/10          | Complete    | 2026-02-03 |
 | 17. Nested Reply Comments        | 2/2            | Complete    | 2026-02-03 |
-| 18. Content Visibility Duration  | 0/?            | Not started | -          |
+| 18. Content Visibility Duration  | 1/1            | Complete    | 2026-02-04 |
 | 19. Delete Account Fallback      | 0/?            | Not started | -          |
 | 20. Friend Suggestions Contacts  | 0/?            | Not started | -          |
 | 21. Remove/Block Friends         | 0/?            | Not started | -          |
 | 22. Ability to Edit Profile      | 0/?            | Not started | -          |
 | 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
 | 24. Social Media Feature Audit   | 0/?            | Not started | -          |
+| 25. Color Palette Selection      | 0/?            | Not started | -          |

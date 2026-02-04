@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 17 — Nested Reply Comments
+**Current focus:** Phase 18 — Content Visibility Duration
 
 ## Current Position
 
-Phase: 17 of 26 (Nested Reply Comments)
-Plan: 2 of 2 in current phase
+Phase: 18 of 26 (Content Visibility Duration)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-03 — Completed 17-02-PLAN.md
+Last activity: 2026-02-04 — Completed 18-01-PLAN.md
 
-Progress: ██████████░░░░░░░░ 65% (Phase 17 complete)
+Progress: ███████████░░░░░░░ 69% (Phase 18 complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 73 (including 17 FIX plans)
+- Total plans completed: 74 (including 17 FIX plans)
 - Average duration: 11 min
-- Total execution time: 794 min
+- Total execution time: 798 min
 
 **By Phase:**
 
@@ -55,11 +55,12 @@ Progress: ██████████░░░░░░░░ 65% (Phase 17 c
 | 15.4  | 3     | 28 min | 9 min    |
 | 16    | 10    | 68 min | 7 min    |
 | 17    | 2     | 21 min | 10.5 min |
+| 18    | 1     | 4 min  | 4 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 5 min, 8 min, 10 min, 12 min, 9 min
-- Trend: Phase 17 complete - nested reply comments fully functional
+- Last 5 plans: 8 min, 10 min, 12 min, 9 min, 4 min
+- Trend: Phase 18 complete - content visibility filtering implemented
 
 ## Accumulated Context
 
@@ -214,6 +215,9 @@ Recent decisions affecting current work:
 | 17    | First @mention gets mentionedCommentId                | Only auto-inserted @mentions get linked comment, manual get null        |
 | 17    | Purple highlight 20% opacity for 1.5s animation       | Subtle visual feedback without being intrusive                          |
 | 17    | Auto-expand collapsed replies when target inside      | User sees target comment without manual expansion                       |
+| 18    | Feed shows friends only (no own posts)                | Feed is 100% friend activity, own posts on profile/stories              |
+| 18    | Stories 7-day, feed 1-day visibility                  | Stories get more time to be seen, feed stays fresh with recent activity |
+| 18    | Profile views unaffected by visibility rules          | Albums and monthly albums show all photos regardless of age             |
 
 ### Deferred Issues
 
@@ -320,9 +324,14 @@ None yet.
   - Story viewed tracking broken by 15.3 navigation changes
   - Feed screen not updating to reflect viewed stories
   - Regression from PhotoDetailScreen/navigation architecture changes
+- Phase 25 added: Color Palette Selection & Customization
+  - Theme selection and customization UI in Settings
+  - Build on Phase 16's centralized color constants foundation
+  - Predefined palettes (dark, light, custom themes)
+  - Real-time theme switching across all screens
 
 ## Session Continuity
 
-Last session: 2026-02-03
-Stopped at: Completed 17-02-PLAN.md - Phase 17 complete
+Last session: 2026-02-04
+Stopped at: Completed 18-01-PLAN.md - Phase 18 complete
 Resume file: None
