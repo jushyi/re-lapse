@@ -46,7 +46,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Nested Reply Comments** - Reply to replies with @mention tagging, Instagram-style inline threading
 - [x] **Phase 18: Content Visibility Duration** - Define how long stories and feed pictures stay visible for friends
 - [x] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
-- [ ] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
+- [x] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
 - [ ] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
 - [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
@@ -605,13 +605,13 @@ Plans:
 **Goal**: Suggest potential friends to users based on phone contacts synced from their device
 **Depends on**: Phase 19
 **Research**: Likely (permissions handling, contact matching algorithms)
-**Plans**: 2/3 complete
+**Plans**: 3/3 complete
 
 Plans:
 
 - [x] 20-01: Contact sync data layer (contactSyncService.js)
 - [x] 20-02: ContactsSyncScreen + Onboarding integration
-- [ ] 20-03: Suggestions UI in Requests tab
+- [x] 20-03: Suggestions UI in Requests tab
 
 **Details:**
 
@@ -742,7 +742,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 17. Nested Reply Comments        | 2/2            | Complete    | 2026-02-03 |
 | 18. Content Visibility Duration  | 1/1 + 1 FIX    | Complete    | 2026-02-04 |
 | 19. Delete Account Fallback      | 5/5            | Complete    | 2026-02-04 |
-| 20. Friend Suggestions Contacts  | 2/3            | In progress | -          |
+| 20. Friend Suggestions Contacts  | 3/3            | Complete    | 2026-02-04 |
 | 21. Remove/Block Friends         | 0/?            | Not started | -          |
 | 22. Ability to Edit Profile      | 0/?            | Not started | -          |
 | 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
