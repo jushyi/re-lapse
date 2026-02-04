@@ -78,4 +78,8 @@ export {
   checkContactsPermission,
   getAllContactPhoneNumbers,
   findUsersByPhoneNumbers,
+  getUserCountryCode,
+  syncContactsAndFindSuggestions,
+  getDismissedSuggestionIds,
+  filterDismissedSuggestions,
 } from './contactSyncService';

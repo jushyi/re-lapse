@@ -28,6 +28,13 @@ import { Alert, Linking } from 'react-native';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import logger from '../../utils/logger';
 
+// =============================================================================
+// SYNC ORCHESTRATION AND SUGGESTION FILTERING
+// =============================================================================
+
+// Import friendship service functions for filtering existing relationships
+import { getFriendships, getPendingRequests, getSentRequests } from './friendshipService';
+
 // Initialize Firestore once at module level
 const db = getFirestore();
 
@@ -216,4 +223,156 @@ export const findUsersByPhoneNumbers = async phoneNumbers => {
     logger.error('contactSyncService.findUsersByPhoneNumbers: Error', error);
     return [];
   }
+};
+
+/**
+ * Get user's country code from their E.164 phone number
+ * Used as default country for parsing contact phone numbers
+ *
+ * @param {string} userPhoneNumber - User's phone number in E.164 format
+ * @returns {string} ISO country code (e.g., 'US', 'GB') or 'US' as default
+ */
+export const getUserCountryCode = userPhoneNumber => {
+  if (!userPhoneNumber) return 'US';
+  try {
+    const parsed = parsePhoneNumberFromString(userPhoneNumber);
+    return parsed?.country || 'US';
+  } catch (error) {
+    logger.debug('contactSyncService.getUserCountryCode: Parse error', {
+      error: error.message,
+    });
+    return 'US';
+  }
+};
+
+/**
+ * Get user IDs of existing relationships (friends, pending requests)
+ * Used to filter out users that shouldn't appear as suggestions
+ *
+ * @param {string} userId - Current user's ID
+ * @returns {Promise<Set<string>>} Set of user IDs with existing relationships
+ */
+const getExistingRelationshipIds = async userId => {
+  const [friendsResult, incomingResult, sentResult] = await Promise.all([
+    getFriendships(userId),
+    getPendingRequests(userId),
+    getSentRequests(userId),
+  ]);
+
+  const ids = new Set();
+
+  // Add friend user IDs
+  if (friendsResult.success) {
+    friendsResult.friendships.forEach(f => {
+      ids.add(f.user1Id === userId ? f.user2Id : f.user1Id);
+    });
+  }
+
+  // Add incoming request user IDs
+  if (incomingResult.success) {
+    incomingResult.requests.forEach(r => {
+      ids.add(r.user1Id === userId ? r.user2Id : r.user1Id);
+    });
+  }
+
+  // Add sent request user IDs
+  if (sentResult.success) {
+    sentResult.requests.forEach(r => {
+      ids.add(r.user1Id === userId ? r.user2Id : r.user1Id);
+    });
+  }
+
+  return ids;
+};
+
+/**
+ * Main sync orchestration: Get contacts, find matching users, filter suggestions
+ * This is the primary entry point for contact sync flow
+ *
+ * @param {string} currentUserId - Current user's ID
+ * @param {string} userPhoneNumber - Current user's phone number in E.164 format
+ * @returns {Promise<{success: boolean, suggestions?: Array, noContacts?: boolean, error?: string}>}
+ */
+export const syncContactsAndFindSuggestions = async (currentUserId, userPhoneNumber) => {
+  try {
+    logger.debug('contactSyncService.syncContactsAndFindSuggestions: Starting', {
+      currentUserId,
+    });
+
+    // 1. Request permission
+    const { granted, permanent } = await requestContactsPermission();
+    if (!granted) {
+      return {
+        success: false,
+        error: permanent ? 'permission_denied_permanent' : 'permission_denied',
+      };
+    }
+
+    // 2. Get user's country for phone parsing
+    const defaultCountry = getUserCountryCode(userPhoneNumber);
+
+    // 3. Get all contact phone numbers (normalized)
+    const contactPhoneNumbers = await getAllContactPhoneNumbers(defaultCountry);
+
+    // 4. Remove user's own phone number
+    const filteredPhoneNumbers = contactPhoneNumbers.filter(phone => phone !== userPhoneNumber);
+
+    if (filteredPhoneNumbers.length === 0) {
+      logger.info('contactSyncService.syncContactsAndFindSuggestions: No contacts found');
+      return { success: true, suggestions: [], noContacts: true };
+    }
+
+    // 5. Find matching users in database
+    const matchedUsers = await findUsersByPhoneNumbers(filteredPhoneNumbers);
+
+    // 6. Filter out self, existing friends, pending requests
+    const existingIds = await getExistingRelationshipIds(currentUserId);
+
+    const suggestions = matchedUsers.filter(
+      user => user.id !== currentUserId && !existingIds.has(user.id)
+    );
+
+    logger.info('contactSyncService.syncContactsAndFindSuggestions: Complete', {
+      matched: matchedUsers.length,
+      filtered: suggestions.length,
+    });
+
+    return { success: true, suggestions };
+  } catch (error) {
+    logger.error('contactSyncService.syncContactsAndFindSuggestions: Error', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get list of dismissed suggestion user IDs for a user
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<string[]>} Array of dismissed user IDs
+ */
+export const getDismissedSuggestionIds = async userId => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      return userDoc.data().dismissedSuggestions || [];
+    }
+    return [];
+  } catch (error) {
+    logger.error('contactSyncService.getDismissedSuggestionIds: Error', error);
+    return [];
+  }
+};
+
+/**
+ * Filter out dismissed suggestions from suggestions list
+ *
+ * @param {Array} suggestions - Array of suggestion user objects
+ * @param {string[]} dismissedIds - Array of dismissed user IDs
+ * @returns {Array} Filtered suggestions array
+ */
+export const filterDismissedSuggestions = (suggestions, dismissedIds = []) => {
+  const dismissedSet = new Set(dismissedIds);
+  return suggestions.filter(s => !dismissedSet.has(s.id));
 };
