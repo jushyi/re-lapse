@@ -164,4 +164,51 @@ export const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
   },
+  // Sync contacts prompt
+  syncPromptContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  syncPromptIcon: {
+    marginBottom: 12,
+  },
+  syncPromptTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  syncPromptText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  syncPromptButton: {
+    backgroundColor: colors.brand.purple,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  syncPromptButtonText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Suggestion card dismiss button
+  suggestionCardContainer: {
+    position: 'relative',
+  },
+  suggestionDismiss: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    padding: 4,
+  },
 });

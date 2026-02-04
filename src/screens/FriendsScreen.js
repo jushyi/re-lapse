@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -607,6 +607,66 @@ const FriendsScreen = ({ navigation }) => {
   );
 
   /**
+   * Render sync contacts prompt
+   */
+  const renderSyncPrompt = () => (
+    <View style={styles.syncPromptContainer}>
+      <Ionicons
+        name="people-outline"
+        size={40}
+        color={colors.brand.purple}
+        style={styles.syncPromptIcon}
+      />
+      <Text style={styles.syncPromptTitle}>Find Friends from Contacts</Text>
+      <Text style={styles.syncPromptText}>See which of your contacts are on REWIND</Text>
+      <TouchableOpacity
+        style={styles.syncPromptButton}
+        onPress={handleSyncContacts}
+        activeOpacity={0.7}
+        disabled={suggestionsLoading}
+      >
+        {suggestionsLoading ? (
+          <ActivityIndicator size="small" color={colors.text.primary} />
+        ) : (
+          <Text style={styles.syncPromptButtonText}>Sync Contacts</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
+  /**
+   * Render suggestion card with dismiss option
+   */
+  const renderSuggestionCard = suggestion => (
+    <View style={styles.suggestionCardContainer}>
+      <FriendCard
+        user={{
+          userId: suggestion.id,
+          displayName: suggestion.displayName,
+          username: suggestion.username,
+          profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
+        }}
+        relationshipStatus="none"
+        onAction={userId => handleAddFriend(userId)}
+        loading={actionLoading[suggestion.id]}
+        onPress={() => {
+          navigation.navigate('OtherUserProfile', {
+            userId: suggestion.id,
+            username: suggestion.username,
+          });
+        }}
+      />
+      <TouchableOpacity
+        style={styles.suggestionDismiss}
+        onPress={() => handleDismissSuggestion(suggestion.id)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="close" size={18} color={colors.text.tertiary} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  /**
    * Render Friends tab content
    */
   const renderFriendsTab = () => {
@@ -731,16 +791,20 @@ const FriendsScreen = ({ navigation }) => {
     // Show incoming and sent request sections
     const hasIncoming = incomingRequests.length > 0;
     const hasSent = sentRequests.length > 0;
-    const hasRequests = hasIncoming || hasSent;
+    const hasSuggestions = suggestions.length > 0;
 
     // Build sections data
     const sections = [];
+
+    // Add incoming requests section
     if (hasIncoming) {
       sections.push({ type: 'header', title: 'Incoming' });
       incomingRequests.forEach(request => {
         sections.push({ type: 'incoming', data: request });
       });
     }
+
+    // Add sent requests section
     if (hasSent) {
       sections.push({ type: 'header', title: 'Sent' });
       sentRequests.forEach(request => {
@@ -748,56 +812,88 @@ const FriendsScreen = ({ navigation }) => {
       });
     }
 
+    // Add suggestions section (or sync prompt)
+    if (hasSyncedContacts) {
+      if (hasSuggestions) {
+        sections.push({ type: 'header', title: 'Suggestions' });
+        suggestions.forEach(suggestion => {
+          sections.push({ type: 'suggestion', data: suggestion });
+        });
+      }
+    } else {
+      // User hasn't synced contacts - show prompt
+      sections.push({ type: 'sync_prompt' });
+    }
+
+    // Render function for items
+    const renderItem = ({ item }) => {
+      if (item.type === 'header') {
+        return renderSectionHeader(item.title);
+      }
+
+      if (item.type === 'sync_prompt') {
+        return renderSyncPrompt();
+      }
+
+      if (item.type === 'incoming') {
+        return (
+          <FriendCard
+            user={item.data}
+            relationshipStatus="pending_received"
+            friendshipId={item.data.id}
+            onAccept={handleAcceptRequest}
+            onDeny={handleDenyRequest}
+            loading={actionLoading[item.data.id]}
+            onPress={() => {
+              navigation.navigate('OtherUserProfile', {
+                userId: item.data.userId,
+                username: item.data.username,
+              });
+            }}
+          />
+        );
+      }
+
+      if (item.type === 'sent') {
+        return (
+          <FriendCard
+            user={item.data}
+            relationshipStatus="pending_sent"
+            friendshipId={item.data.id}
+            onAction={handleCancelRequest}
+            loading={actionLoading[item.data.id]}
+            onPress={() => {
+              navigation.navigate('OtherUserProfile', {
+                userId: item.data.userId,
+                username: item.data.username,
+              });
+            }}
+          />
+        );
+      }
+
+      if (item.type === 'suggestion') {
+        return renderSuggestionCard(item.data);
+      }
+
+      return null;
+    };
+
+    // Key extractor
+    const keyExtractor = (item, index) => {
+      if (item.type === 'header') return `header-${item.title}`;
+      if (item.type === 'sync_prompt') return 'sync-prompt';
+      return item.data?.id || `item-${index}`;
+    };
+
     return (
       <>
         {renderSearchBar(requestsSearchQuery, setRequestsSearchQuery, 'Search users to add...')}
-        {hasRequests ? (
+        {sections.length > 0 ? (
           <FlatList
             data={sections}
-            renderItem={({ item }) => {
-              if (item.type === 'header') {
-                return renderSectionHeader(item.title);
-              }
-              if (item.type === 'incoming') {
-                return (
-                  <FriendCard
-                    user={item.data}
-                    relationshipStatus="pending_received"
-                    friendshipId={item.data.id}
-                    onAccept={handleAcceptRequest}
-                    onDeny={handleDenyRequest}
-                    loading={actionLoading[item.data.id]}
-                    onPress={() => {
-                      navigation.navigate('OtherUserProfile', {
-                        userId: item.data.userId,
-                        username: item.data.username,
-                      });
-                    }}
-                  />
-                );
-              }
-              if (item.type === 'sent') {
-                return (
-                  <FriendCard
-                    user={item.data}
-                    relationshipStatus="pending_sent"
-                    friendshipId={item.data.id}
-                    onAction={handleCancelRequest}
-                    loading={actionLoading[item.data.id]}
-                    onPress={() => {
-                      navigation.navigate('OtherUserProfile', {
-                        userId: item.data.userId,
-                        username: item.data.username,
-                      });
-                    }}
-                  />
-                );
-              }
-              return null;
-            }}
-            keyExtractor={(item, index) =>
-              item.type === 'header' ? `header-${item.title}` : item.data.id
-            }
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -810,11 +906,6 @@ const FriendsScreen = ({ navigation }) => {
           />
         ) : (
           <View style={{ flex: 1 }}>
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.text.primary}
-            />
             {renderEmptyState(
               'mail-outline',
               'No friend requests',
