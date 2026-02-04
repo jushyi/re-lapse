@@ -34,6 +34,14 @@ import {
   removeFriend,
   checkFriendshipStatus,
 } from '../services/firebase/friendshipService';
+import {
+  hasUserSyncedContacts,
+  syncContactsAndFindSuggestions,
+  getDismissedSuggestionIds,
+  filterDismissedSuggestions,
+  dismissSuggestion,
+  markContactsSyncCompleted,
+} from '../services/firebase/contactSyncService';
 import { mediumImpact } from '../utils/haptics';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendsScreen.styles';
@@ -51,7 +59,7 @@ const db = getFirestore();
  * - Real-time updates via subscribeFriendships
  */
 const FriendsScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('requests');
 
   // Friends tab state
@@ -72,6 +80,11 @@ const FriendsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
+
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState([]);
+  const [hasSyncedContacts, setHasSyncedContacts] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   /**
    * Fetch all friends data
@@ -191,12 +204,43 @@ const FriendsScreen = ({ navigation }) => {
   };
 
   /**
+   * Fetch contact-based friend suggestions
+   */
+  const fetchSuggestions = async () => {
+    try {
+      // Check if user has synced contacts
+      const synced = await hasUserSyncedContacts(user.uid);
+      setHasSyncedContacts(synced);
+
+      if (!synced) {
+        setSuggestions([]);
+        return;
+      }
+
+      // Get suggestions from contacts
+      const result = await syncContactsAndFindSuggestions(user.uid, userProfile?.phoneNumber);
+
+      if (result.success && result.suggestions) {
+        // Filter out dismissed suggestions
+        const dismissedIds = await getDismissedSuggestionIds(user.uid);
+        const filteredSuggestions = filterDismissedSuggestions(result.suggestions, dismissedIds);
+        setSuggestions(filteredSuggestions);
+      } else {
+        setSuggestions([]);
+      }
+    } catch (err) {
+      logger.error('Error fetching suggestions', err);
+      setSuggestions([]);
+    }
+  };
+
+  /**
    * Load all data
    */
   const loadData = async () => {
     setError(null);
     try {
-      await Promise.all([fetchFriends(), fetchRequests()]);
+      await Promise.all([fetchFriends(), fetchRequests(), fetchSuggestions()]);
     } catch (err) {
       logger.error('Error loading data', err);
       setError('Failed to load data');
