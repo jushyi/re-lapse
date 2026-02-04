@@ -583,12 +583,13 @@ Plans:
 **Goal**: Ensure delete account function works properly with proper fallback handling for errors and edge cases
 **Depends on**: Phase 18
 **Research**: Unlikely (internal account management)
-**Plans**: 2/5 complete
+**Plans**: 3/5 complete
 
 Plans:
 
 - [x] 19-01: Scheduled deletion infrastructure (accountService + Cloud Functions)
 - [x] 19-02: Download all photos feature (downloadPhotosService + DownloadProgress)
+- [x] 19-03: Redesigned DeleteAccountScreen with 30-day scheduling
 
 **Details:**
 
