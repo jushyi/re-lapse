@@ -5,3 +5,4 @@ export { default as VerificationScreen } from './VerificationScreen';
 export { default as NotificationsScreen } from './NotificationsScreen';
 export { default as ActivityScreen } from './ActivityScreen';
 export { default as SelectsScreen } from './SelectsScreen';
+export { default as ContactsSyncScreen } from './ContactsSyncScreen';
