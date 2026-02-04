@@ -249,8 +249,8 @@ const FeedScreen = () => {
     }
     logger.debug('FeedScreen: Pull-to-refresh triggered');
     canRefresh.current = false;
-    // Refresh both in parallel
-    await Promise.all([refreshFeed(), loadFriendStories()]);
+    // Refresh all data sources in parallel
+    await Promise.all([refreshFeed(), loadFriendStories(), loadMyStories()]);
   };
 
   /**
