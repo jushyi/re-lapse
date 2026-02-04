@@ -126,4 +126,9 @@ export const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.5,
   },
+  // Three-dot menu button for friends
+  menuButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
 });

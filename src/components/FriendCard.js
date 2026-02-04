@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendCard.styles';
+import DropdownMenu from './DropdownMenu';
 
 /**
  * FriendCard - Unified card component for all friend-related displays
@@ -32,8 +34,16 @@ const FriendCard = ({
   showFriendsSince = false,
   friendsSince,
   loading = false,
+  onRemove,
+  onBlock,
+  onReport,
 }) => {
   const { userId, displayName, username, profilePhotoURL } = user || {};
+
+  // Menu state
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const menuButtonRef = useRef(null);
 
   /**
    * Format friends since date
@@ -62,6 +72,55 @@ const FriendCard = ({
         onPress: () => onAction && onAction(friendshipId, 'cancel'),
       },
     ]);
+  };
+
+  /**
+   * Handle menu button press - capture position and show menu
+   */
+  const handleMenuPress = () => {
+    menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+      setMenuAnchor({ x, y, width, height });
+      setMenuVisible(true);
+    });
+  };
+
+  /**
+   * Handle remove friend action with confirmation
+   */
+  const handleRemoveFriend = () => {
+    Alert.alert('Remove Friend', `Remove ${displayName || username} from your friends?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => onRemove && onRemove(userId),
+      },
+    ]);
+  };
+
+  /**
+   * Handle block user action with confirmation
+   */
+  const handleBlockUser = () => {
+    Alert.alert(
+      'Block User',
+      `Block ${displayName || username}? They won't be able to see your profile or contact you.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () => onBlock && onBlock(userId),
+        },
+      ]
+    );
+  };
+
+  /**
+   * Handle report user action - navigates directly (no confirmation needed)
+   */
+  const handleReportUser = () => {
+    onReport && onReport(userId);
   };
 
   /**
@@ -120,8 +179,17 @@ const FriendCard = ({
         );
 
       case 'friends':
-        // No action button for friends - long press to remove (handled at parent level)
-        return null;
+        // Three-dot menu for friend management actions
+        return (
+          <TouchableOpacity
+            ref={menuButtonRef}
+            style={styles.menuButton}
+            onPress={handleMenuPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        );
 
       default:
         return null;
@@ -163,6 +231,23 @@ const FriendCard = ({
 
       {/* Action buttons */}
       {renderActions()}
+
+      {/* Friend management menu */}
+      <DropdownMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        anchorPosition={menuAnchor}
+        options={[
+          { label: 'Remove Friend', icon: 'person-remove-outline', onPress: handleRemoveFriend },
+          { label: 'Block User', icon: 'ban-outline', onPress: handleBlockUser },
+          {
+            label: 'Report User',
+            icon: 'flag-outline',
+            onPress: handleReportUser,
+            destructive: true,
+          },
+        ]}
+      />
     </CardWrapper>
   );
 };
