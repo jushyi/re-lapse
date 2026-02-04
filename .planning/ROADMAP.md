@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
 - [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
-- [ ] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
+- [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 
 ## Phase Details
 
@@ -677,7 +677,7 @@ Plans:
 **Goal**: Enable users to select and customize color palettes/themes in the app, leveraging the centralized color constants system from Phase 16
 **Depends on**: Phase 24
 **Research**: Unlikely (extending existing color system)
-**Plans**: 4/5 complete
+**Plans**: 5/5 complete
 
 Plans:
 
@@ -685,7 +685,7 @@ Plans:
 - [x] 25-02: ThemeCard component guide + theme system guide
 - [x] 25-03: Settings UI guide
 - [x] 25-04: Custom palette editor guide
-- [ ] 25-05: Onboarding integration guide
+- [x] 25-05: Onboarding integration guide
 
 **Details:**
 
@@ -738,4 +738,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 22. Ability to Edit Profile      | 0/?            | Not started | -          |
 | 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
 | 24. Social Media Feature Audit   | 0/?            | Not started | -          |
-| 25. Color Palette Selection      | 4/5            | In progress | -          |
+| 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |
