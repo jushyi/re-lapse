@@ -139,7 +139,7 @@ Before moving on, find in the codebase:
 <summary>Answers</summary>
 
 1. `src/screens/SettingsScreen.js`
-2. 4 tabs (Feed, Camera, Darkroom, Profile)
+2. 3 tabs (Feed, Camera, Profile)
 3. `{ theme, currentPalette, setPalette, palettes, initializing }`
 4. In `src/navigation/AppNavigator.js` inside `Stack.Navigator`
 

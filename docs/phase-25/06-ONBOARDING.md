@@ -31,7 +31,6 @@ We'll add theme picker as step 2, making it:
 1. Profile info
 2. **Theme Picker (NEW)** - optional
 3. Selects/highlights
-4. Profile song
 
 ## Step 1: Create ThemePickerStep Component
 
@@ -368,7 +367,7 @@ Test the full onboarding flow (requires fresh account or logout):
 ### Step Indicator
 
 - [ ] Verify step dots/numbers show correct position
-- [ ] "Step 2 of 4" (or appropriate count) displayed
+- [ ] "Step 2 of 3" (or appropriate count) displayed
 
 ## Key Learnings
 
@@ -427,4 +426,4 @@ Congratulations! You've completed the entire Color Palette Selection & Customiza
 
 ---
 
-**Great work!** You've completed Phase 25 and built a production-ready theming feature.
+**HOOOOOOOOOOORAY!** You've completed Phase 25 and built a production-ready theming feature.

@@ -110,7 +110,7 @@ You should see the Rewind app load with:
 
 ### Hot Reload
 
-When you save a file, the app automatically reloads. This is called "hot reload" and makes development fast.
+When you save a file, the app automatically reloads. This is called "hot reload" and makes development fast. You can also manually reload by shaking the phone or long pressing the screen with three fingers which opens the dev menu.
 
 ### Viewing Logs
 

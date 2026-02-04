@@ -8,6 +8,8 @@ Now we'll upgrade the theme system to support full theming with 5 customizable c
 
 **Goal:** Full theming with background, card, text, and accent colors
 
+**Note:** I put in my own colors here, they're just kinda random so add your own color palletes instead.
+
 ## Step 1: Create Theme Definitions
 
 Create a new file `src/constants/themes.js`:

@@ -60,7 +60,7 @@ This component shows a color label and swatch. Tapping opens a modal with a colo
 - What props does this component need?
 
 <details>
-<summary>💡 Hints</summary>
+<summary>Hints</summary>
 
 - Props: `label`, `color`, `onColorChange`
 - State: `modalVisible`, `tempColor`
@@ -248,7 +248,7 @@ Create `src/screens/CustomThemeEditorScreen.js`:
 - What does Reset do?
 
 <details>
-<summary>💡 Hints</summary>
+<summary>Hints</summary>
 
 - State: `customColors` object with all 5 colors, `hasChanges` boolean
 - Load from AsyncStorage on mount
@@ -491,7 +491,7 @@ Update `src/context/ThemeContext.js` to support custom themes:
 - Use custom colors when custom theme is selected
 
 <details>
-<summary>💡 Hints</summary>
+<summary>Hints</summary>
 
 ```javascript
 const CUSTOM_THEME_KEY = '@rewind_custom_theme';
@@ -506,7 +506,7 @@ const [customColors, setCustomColors] = useState(null);
 </details>
 
 <details>
-<summary>✅ Key Additions</summary>
+<summary>Key Additions</summary>
 
 ```javascript
 const CUSTOM_THEME_KEY = '@rewind_custom_theme';
