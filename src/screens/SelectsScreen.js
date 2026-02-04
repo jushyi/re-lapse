@@ -649,13 +649,19 @@ const SelectsScreen = ({ navigation }) => {
       const result = await updateUserDocumentNative(user.uid, updateData);
 
       if (result.success) {
-        // Update local profile state - triggers navigation via AppNavigator
+        // Update local profile state
         updateUserProfile({
           ...userProfile,
           ...updateData,
         });
         logger.info('SelectsScreen: Profile updated with selects');
-        // Navigation will be handled automatically by AuthContext state change
+
+        // Navigate to ContactsSync screen (next step in onboarding)
+        // Only navigate if user hasn't completed contacts sync yet
+        if (userProfile?.contactsSyncCompleted === undefined) {
+          navigation.navigate('ContactsSync');
+        }
+        // Otherwise, auth state listener will handle navigation to main app
       } else {
         Alert.alert('Error', 'Could not save your selects. Please try again.');
       }
