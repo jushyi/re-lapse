@@ -54,7 +54,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
 - [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 - [ ] **Phase 26: Feed Pull-to-Refresh & Loading Skeleton** - Pulldown to refresh feed behavior and loading skeleton update
-- [ ] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
+- [x] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
 - [ ] **Phase 28: Blocked Users Management** - Blocked users list UI (from audit)
 - [ ] **Phase 29: Settings & Help Enhancements** - Notification preferences, help link, app version (from audit)
 - [ ] **Phase 30: Social Login Options (BACKLOG)** - Apple/Google sign-in (from audit)
@@ -778,21 +778,19 @@ Plans:
 **Goal**: Document the color constants requirement in CONVENTIONS.md to ensure all new screens, modals, and components use centralized color constants instead of hardcoded values
 **Depends on**: Phase 26
 **Research**: Unlikely (documentation task)
-**Plans**: 0/? plans
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 27-01: TBD (run /gsd:plan-phase 27 to break down)
+- [x] 27-01: Add Color System section to CONVENTIONS.md
 
 **Details:**
 
-[To be added during planning]
-
-1. Update CONVENTIONS.md with color usage guidelines
-2. Document the colors.js constants system from Phase 16
-3. Provide examples of correct color constant usage
-4. Add checklist for new screen/modal/component creation
-5. Reference existing color standardization patterns
+1. Added Color System section after React/React Native Patterns in CONVENTIONS.md
+2. Documented colors.js as single source of truth with reference to COLOR_REFERENCE.md
+3. Created hierarchy tables for background, text, icon, and interactive colors
+4. Included correct usage examples showing proper imports and patterns
+5. Documented anti-patterns showing what NOT to do (hardcoded hex values)
 
 ### Phase 28: Blocked Users Management
 
@@ -911,7 +909,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 24. Social Media Feature Audit   | 1/1            | Complete    | 2026-02-05 |
 | 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |
 | 26. Feed Pull-to-Refresh         | 0/?            | Not started | -          |
-| 27. Color Constants Convention   | 0/?            | Not started | -          |
+| 27. Color Constants Convention   | 1/1            | Complete    | 2026-02-05 |
 | 28. Blocked Users Management     | 0/?            | Not started | -          |
 | 29. Settings & Help              | 0/?            | Not started | -          |
 | 30. Social Login (BACKLOG)       | 0/?            | Not started | -          |
