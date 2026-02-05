@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
 - [x] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
 - [x] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
-- [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
+- [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive) - 1/2 plans
 - [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
 - [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 
@@ -667,11 +667,12 @@ Plans:
 **Goal**: Enable users to delete photos entirely or remove them from their journal (archive for later access)
 **Depends on**: Phase 22
 **Research**: Unlikely (internal data management patterns)
-**Plans**: TBD
+**Plans**: 1/2 complete
 
 Plans:
 
-- [ ] 23-01: TBD (run /gsd:plan-phase 23 to break down)
+- [x] 23-01: Photo Service Data Layer (deletePhotoCompletely, archivePhoto, restorePhoto)
+- [ ] 23-02: TBD
 
 **Details:**
 
@@ -760,6 +761,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 20. Friend Suggestions Contacts  | 3/3            | Complete    | 2026-02-04 |
 | 21. Remove/Block Friends         | 4/4            | Complete    | 2026-02-04 |
 | 22. Ability to Edit Profile      | 2/2            | Complete    | 2026-02-05 |
-| 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
+| 23. Photo Deletion & Archiving   | 1/2            | In progress | -          |
 | 24. Social Media Feature Audit   | 0/?            | Not started | -          |
 | 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |
