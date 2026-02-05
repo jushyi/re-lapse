@@ -233,6 +233,119 @@ const filtered = snapshot.docs.filter(doc => doc.data().capturedAt >= cutoff);
 - React Navigation hooks: useNavigation, useRoute
 - navigationRef for programmatic navigation
 
+## Color System
+
+**Source of Truth:** `src/constants/colors.js`
+**Reference Documentation:** `src/constants/COLOR_REFERENCE.md`
+
+**Rule:** ALWAYS use color constants from `colors.js`. NEVER hardcode hex, rgb, or rgba values.
+
+**Import Pattern:**
+
+```javascript
+import { colors } from '../constants/colors';
+// or from deeper directories:
+import { colors } from '../../constants/colors';
+```
+
+**Background Hierarchy:**
+
+| Constant                      | Usage                                       |
+| ----------------------------- | ------------------------------------------- |
+| `colors.background.primary`   | All screen backgrounds (pure black #000000) |
+| `colors.background.secondary` | Cards, sheets, bottom sheets, modals        |
+| `colors.background.card`      | Alias for secondary (explicit card usage)   |
+| `colors.background.tertiary`  | Nested elements needing more contrast       |
+
+**Text Hierarchy:**
+
+| Constant                | Usage                            |
+| ----------------------- | -------------------------------- |
+| `colors.text.primary`   | Main text, headings, titles      |
+| `colors.text.secondary` | Labels, descriptions, muted text |
+| `colors.text.tertiary`  | Very muted helper text           |
+
+**Icon Colors (NOT purple):**
+
+| Constant                | Usage                   |
+| ----------------------- | ----------------------- |
+| `colors.icon.primary`   | Default icons (white)   |
+| `colors.icon.secondary` | Muted/secondary icons   |
+| `colors.icon.tertiary`  | Very muted icons        |
+| `colors.icon.inactive`  | Disabled/inactive icons |
+
+**Interactive Elements:**
+
+| Constant                       | Usage                                        |
+| ------------------------------ | -------------------------------------------- |
+| `colors.interactive.primary`   | Primary buttons, active tabs, focused inputs |
+| `colors.brand.purple`          | Accent color for highlights                  |
+| `colors.interactive.secondary` | Secondary buttons                            |
+
+**Correct Usage Examples:**
+
+```javascript
+// Screen container - REQUIRED for all screens
+container: {
+  flex: 1,
+  backgroundColor: colors.background.primary, // ✓ Pure black
+}
+
+// Card or bottom sheet
+cardContainer: {
+  backgroundColor: colors.background.secondary, // ✓ Subtle lift
+  borderRadius: 12,
+}
+
+// Text
+titleText: {
+  color: colors.text.primary, // ✓ White text
+}
+
+// Icon - use icon colors, NOT purple
+<Ionicons
+  name="settings-outline"
+  size={24}
+  color={colors.icon.primary} // ✓ White icon
+/>
+```
+
+**Anti-patterns (DO NOT DO):**
+
+```javascript
+// ✗ WRONG: Hardcoded hex values
+container: {
+  backgroundColor: '#000000', // ✗ Use colors.background.primary
+}
+
+cardContainer: {
+  backgroundColor: '#111111', // ✗ Use colors.background.secondary
+}
+
+titleText: {
+  color: '#FFFFFF', // ✗ Use colors.text.primary
+}
+
+// ✗ WRONG: Purple icons
+<Ionicons
+  name="settings-outline"
+  color="#8B5CF6" // ✗ Icons use colors.icon.*, NOT purple
+/>
+
+// ✗ WRONG: Inline rgba
+overlay: {
+  backgroundColor: 'rgba(0, 0, 0, 0.5)', // ✗ Use colors.overlay.dark
+}
+```
+
+**Key Rules:**
+
+1. Every screen must have `backgroundColor: colors.background.primary`
+2. Cards/sheets use `colors.background.secondary`
+3. Icons use `colors.icon.*` (white/gray), NEVER purple
+4. Purple is reserved for interactive elements and highlights only
+5. No hardcoded color values anywhere - always use constants
+
 ---
 
 _Convention analysis: 2026-01-26_
