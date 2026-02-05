@@ -741,3 +741,103 @@ export const deletePhotoCompletely = async (photoId, userId) => {
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Archive a photo (hide from active views while preserving in albums)
+ * Updates photoState to 'archive' and resets triagedAt timestamp
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (for ownership verification)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const archivePhoto = async (photoId, userId) => {
+  logger.info('PhotoService.archivePhoto: Starting', { photoId, userId });
+
+  try {
+    // Get photo document and verify ownership
+    const photoRef = doc(db, 'photos', photoId);
+    const photoDoc = await getDoc(photoRef);
+
+    if (!photoDoc.exists()) {
+      logger.warn('PhotoService.archivePhoto: Photo not found', { photoId });
+      return { success: false, error: 'Photo not found' };
+    }
+
+    const photoData = photoDoc.data();
+
+    if (photoData.userId !== userId) {
+      logger.warn('PhotoService.archivePhoto: Unauthorized - user does not own photo', {
+        photoId,
+        photoOwnerId: photoData.userId,
+        requestingUserId: userId,
+      });
+      return { success: false, error: 'Unauthorized: You do not own this photo' };
+    }
+
+    // Update photo state to archive
+    await updateDoc(photoRef, {
+      photoState: 'archive',
+      triagedAt: serverTimestamp(), // Reset visibility window
+    });
+
+    logger.info('PhotoService.archivePhoto: Photo archived successfully', { photoId, userId });
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.archivePhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Restore an archived photo back to the journal (active views)
+ * Updates photoState to 'journal' and resets triagedAt timestamp
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (for ownership verification)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const restorePhoto = async (photoId, userId) => {
+  logger.info('PhotoService.restorePhoto: Starting', { photoId, userId });
+
+  try {
+    // Get photo document and verify ownership
+    const photoRef = doc(db, 'photos', photoId);
+    const photoDoc = await getDoc(photoRef);
+
+    if (!photoDoc.exists()) {
+      logger.warn('PhotoService.restorePhoto: Photo not found', { photoId });
+      return { success: false, error: 'Photo not found' };
+    }
+
+    const photoData = photoDoc.data();
+
+    if (photoData.userId !== userId) {
+      logger.warn('PhotoService.restorePhoto: Unauthorized - user does not own photo', {
+        photoId,
+        photoOwnerId: photoData.userId,
+        requestingUserId: userId,
+      });
+      return { success: false, error: 'Unauthorized: You do not own this photo' };
+    }
+
+    // Update photo state to journal
+    await updateDoc(photoRef, {
+      photoState: 'journal',
+      triagedAt: serverTimestamp(), // Reset visibility window for re-sharing
+    });
+
+    logger.info('PhotoService.restorePhoto: Photo restored successfully', { photoId, userId });
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.restorePhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
