@@ -402,7 +402,7 @@ const EditProfileScreen = ({ navigation }) => {
             disabled={!saveEnabled}
           >
             {saving ? (
-              <ActivityIndicator size="small" color={colors.brand.primary} />
+              <ActivityIndicator size="small" color={colors.brand.purple} />
             ) : (
               <Text style={[styles.saveText, !saveEnabled && styles.saveTextDisabled]}>Save</Text>
             )}
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   saveText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.brand.primary,
+    color: colors.brand.purple,
     textAlign: 'right',
   },
   saveTextDisabled: {
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.brand.primary,
+    color: colors.brand.purple,
   },
   form: {
     width: '100%',
