@@ -20,6 +20,7 @@ import {
   query,
   where,
   getDocs,
+  Timestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 
@@ -209,6 +210,7 @@ export const getUserProfile = async userId => {
       profilePhotoURL: userData.profilePhotoURL || null,
       selects: userData.selects || [],
       profileSong: userData.profileSong || null,
+      lastUsernameChange: userData.lastUsernameChange || null,
     };
 
     logger.info('UserService.getUserProfile: Fetched profile', {
@@ -220,6 +222,95 @@ export const getUserProfile = async userId => {
     return { success: true, profile };
   } catch (error) {
     logger.error('UserService.getUserProfile: Error', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Check if user can change username (14-day restriction)
+ * @param {Date|Timestamp|null} lastUsernameChange - Last change timestamp
+ * @returns {{canChange: boolean, daysRemaining?: number}}
+ */
+export const canChangeUsername = lastUsernameChange => {
+  if (!lastUsernameChange) {
+    return { canChange: true };
+  }
+
+  // Convert Timestamp to Date if needed
+  const lastChangeDate =
+    lastUsernameChange instanceof Date
+      ? lastUsernameChange
+      : lastUsernameChange.toDate
+        ? lastUsernameChange.toDate()
+        : new Date(lastUsernameChange);
+
+  const now = new Date();
+  const daysSinceChange = Math.floor((now - lastChangeDate) / (1000 * 60 * 60 * 24));
+  const daysRemaining = Math.max(0, 14 - daysSinceChange);
+
+  if (daysSinceChange >= 14) {
+    return { canChange: true };
+  }
+
+  return { canChange: false, daysRemaining };
+};
+
+/**
+ * Update user profile with optional username change tracking
+ * If username is changed, updates lastUsernameChange timestamp
+ *
+ * @param {string} userId - User ID
+ * @param {object} updates - Profile fields to update (displayName, username, bio, photoURL)
+ * @param {string} currentUsername - Current username for comparison
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const updateUserProfile = async (userId, updates, currentUsername) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    logger.info('UserService.updateUserProfile: Starting', {
+      userId,
+      updatingUsername: !!updates.username && updates.username !== currentUsername,
+    });
+
+    const userRef = doc(db, 'users', userId);
+    const updateData = { ...updates };
+
+    // Check if username is being changed
+    if (updates.username && updates.username !== currentUsername) {
+      // Normalize username for comparison
+      const normalizedNewUsername = updates.username.toLowerCase().trim();
+      const normalizedCurrentUsername = currentUsername?.toLowerCase().trim();
+
+      if (normalizedNewUsername !== normalizedCurrentUsername) {
+        // Validate username availability
+        const availabilityResult = await checkUsernameAvailability(normalizedNewUsername, userId);
+        if (!availabilityResult.success) {
+          return { success: false, error: 'Failed to check username availability' };
+        }
+        if (!availabilityResult.available) {
+          return { success: false, error: 'Username is already taken' };
+        }
+
+        // Add timestamp for username change tracking
+        updateData.lastUsernameChange = Timestamp.now();
+        updateData.username = normalizedNewUsername;
+
+        logger.info('UserService.updateUserProfile: Username change detected', {
+          oldUsername: normalizedCurrentUsername,
+          newUsername: normalizedNewUsername,
+        });
+      }
+    }
+
+    await updateDoc(userRef, updateData);
+
+    logger.info('UserService.updateUserProfile: Success', { userId });
+    return { success: true };
+  } catch (error) {
+    logger.error('UserService.updateUserProfile: Error', error);
     return { success: false, error: error.message };
   }
 };
