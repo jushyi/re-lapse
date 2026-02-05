@@ -57,8 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
 - [ ] **Phase 28: Blocked Users Management** - Blocked users list UI (from audit)
 - [ ] **Phase 29: Settings & Help Enhancements** - Notification preferences, help link, app version (from audit)
-- [ ] **Phase 30: Social Login Options (BACKLOG)** - Apple/Google sign-in (from audit)
-- [ ] **Phase 31: Optimization and Performance Enhancements** - App-wide performance improvements
+- [ ] **Phase 30: Optimization and Performance Enhancements** - App-wide performance improvements
 
 ## Phase Details
 
@@ -831,11 +830,11 @@ Plans:
 
 **Source:** Phase 24 Social Media Feature Audit - T2 gaps + T3
 
-### Phase 30: Social Login Options (BACKLOG)
+### Phase 30: Optimization and Performance Enhancements
 
-**Goal:** Add alternative authentication methods
+**Goal**: Improve app-wide performance through optimizations, reducing load times, memory usage, and improving rendering efficiency
 **Depends on**: Phase 29
-**Research**: Likely (Firebase Auth social providers)
+**Research**: Likely (profiling, identifying bottlenecks)
 **Plans**: 0/? plans
 
 Plans:
@@ -844,31 +843,12 @@ Plans:
 
 **Details:**
 
-1. Sign in with Apple
-2. Sign in with Google
-3. Link existing account to social login
-
-**Source:** Phase 24 Social Media Feature Audit - T3 gap (nice-to-have)
-
-### Phase 31: Optimization and Performance Enhancements
-
-**Goal**: Improve app-wide performance through optimizations, reducing load times, memory usage, and improving rendering efficiency
-**Depends on**: Phase 30
-**Research**: Likely (profiling, identifying bottlenecks)
-**Plans**: 0/? plans
-
-Plans:
-
-- [ ] 31-01: TBD (run /gsd:plan-phase 31 to break down)
-
-**Details:**
-
 [To be added during planning]
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 23.1 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 23.1 → 24 → 25 → 26 → 27 → 28 → 29 → 30
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -912,5 +892,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 27. Color Constants Convention   | 1/1            | Complete    | 2026-02-05 |
 | 28. Blocked Users Management     | 0/?            | Not started | -          |
 | 29. Settings & Help              | 0/?            | Not started | -          |
-| 30. Social Login (BACKLOG)       | 0/?            | Not started | -          |
-| 31. Optimization & Performance   | 0/?            | Not started | -          |
+| 30. Optimization & Performance   | 0/?            | Not started | -          |

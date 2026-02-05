@@ -365,13 +365,11 @@ None yet.
   - Notification preferences screen (granular control)
   - Help/Support link (external URL or email)
   - App version display in Settings, Clear cache option
-- Phase 30 added (from Phase 24 Audit): Social Login Options (BACKLOG)
-  - Sign in with Apple, Sign in with Google
-  - Link existing account to social login
-- Phase 31 renumbered (was 28): Optimization and Performance Enhancements
+- Phase 30 renumbered (was 31): Optimization and Performance Enhancements
   - App-wide performance improvements and optimizations
   - Profiling and bottleneck identification
   - Reduce load times, memory usage, improve rendering efficiency
+- Phase 30 (Social Login) removed: Phone-only authentication preferred for simplicity
 
 ## Session Continuity
 
