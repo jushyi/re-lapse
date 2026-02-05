@@ -23,11 +23,7 @@ import ReanimatedModule, {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import { deleteAlbum } from '../services/firebase';
-import {
-  deletePhotoCompletely,
-  archivePhoto,
-  restorePhoto,
-} from '../services/firebase/photoService';
+import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
 import DropdownMenu from './DropdownMenu';
 
 const ReanimatedView = ReanimatedModule.View;
@@ -314,22 +310,22 @@ const AlbumPhotoViewer = ({
     }
   }, [photos, currentIndex, currentUserId, onPhotoStateChanged]);
 
-  // Handle delete photo permanently
-  const handleDeleteForever = useCallback(() => {
+  // Handle delete photo (soft delete with 30-day grace period)
+  const handleDelete = useCallback(() => {
     const currentPhoto = photos[currentIndex];
     if (!currentPhoto) return;
 
     setMenuVisible(false);
     Alert.alert(
-      'Delete Forever',
-      'This will permanently delete this photo from your account, including all albums, comments, and reactions. This cannot be undone.',
+      'Delete Photo',
+      'This photo will be moved to Recently Deleted. You can restore it within 30 days from Settings.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const result = await deletePhotoCompletely(currentPhoto.id, currentUserId);
+            const result = await softDeletePhoto(currentPhoto.id, currentUserId);
             if (result.success) {
               onPhotoStateChanged?.();
               onClose?.();
@@ -378,9 +374,9 @@ const AlbumPhotoViewer = ({
       }
 
       options.push({
-        label: 'Delete Forever',
+        label: 'Delete',
         icon: 'trash-outline',
-        onPress: handleDeleteForever,
+        onPress: handleDelete,
         destructive: true,
       });
     }
@@ -396,7 +392,7 @@ const AlbumPhotoViewer = ({
     handleRemovePhoto,
     handleArchive,
     handleRestore,
-    handleDeleteForever,
+    handleDelete,
   ]);
 
   // Render individual photo

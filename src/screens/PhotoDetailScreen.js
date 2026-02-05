@@ -36,11 +36,7 @@ import { styles } from '../styles/PhotoDetailScreen.styles';
 import CommentsBottomSheet from '../components/comments/CommentsBottomSheet';
 import CommentPreview from '../components/comments/CommentPreview';
 import { getPreviewComments } from '../services/firebase/commentService';
-import {
-  deletePhotoCompletely,
-  archivePhoto,
-  restorePhoto,
-} from '../services/firebase/photoService';
+import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
 import DropdownMenu from '../components/DropdownMenu';
 import { colors } from '../constants/colors';
 
@@ -263,20 +259,20 @@ const PhotoDetailScreen = () => {
   }, [currentPhoto?.id, contextUserId, handlePhotoStateChanged]);
 
   /**
-   * Handle delete - show serious confirmation before permanent deletion
+   * Handle delete - moves photo to Recently Deleted (30-day grace period)
    */
   const handleDeleteConfirm = useCallback(() => {
     setShowPhotoMenu(false);
     Alert.alert(
-      'Delete Forever',
-      'This will permanently delete this photo from your account, including all albums, comments, and reactions. This cannot be undone.',
+      'Delete Photo',
+      'This photo will be moved to Recently Deleted. You can restore it within 30 days from Settings.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const result = await deletePhotoCompletely(currentPhoto.id, contextUserId);
+            const result = await softDeletePhoto(currentPhoto.id, contextUserId);
             if (result.success) {
               handlePhotoStateChanged?.(); // Refresh feed/stories
               handleClose(); // Close viewer - photo is deleted
@@ -312,7 +308,7 @@ const PhotoDetailScreen = () => {
     }
 
     options.push({
-      label: 'Delete Forever',
+      label: 'Delete',
       icon: 'trash-outline',
       onPress: handleDeleteConfirm,
       destructive: true,

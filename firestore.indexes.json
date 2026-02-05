@@ -15,6 +15,15 @@
         { "fieldPath": "photoState", "order": "ASCENDING" },
         { "fieldPath": "scheduledForPermanentDeletionAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "photoState", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "deletionScheduledAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
