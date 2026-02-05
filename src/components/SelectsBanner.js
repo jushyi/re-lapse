@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -139,7 +140,14 @@ const SelectsBanner = ({ selects = [], isOwnProfile = true, onTap }) => {
     <GestureHandlerRootView style={styles.gestureRoot}>
       <GestureDetector gesture={composedGesture}>
         <Animated.View style={[styles.container, animatedStyle]}>
-          <Image source={{ uri: selects[currentIndex] }} style={styles.image} resizeMode="cover" />
+          <Image
+            source={{ uri: selects[currentIndex] }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={150}
+          />
         </Animated.View>
       </GestureDetector>
     </GestureHandlerRootView>
