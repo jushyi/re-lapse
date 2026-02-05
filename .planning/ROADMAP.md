@@ -57,7 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
 - [x] **Phase 28: Blocked Users Management** - Blocked users list UI (from audit)
 - [x] **Phase 29: Settings & Help Enhancements** - Help link, app version (from audit)
-- [ ] **Phase 30: Optimization and Performance Enhancements** - App-wide performance improvements (3/5 plans)
+- [ ] **Phase 30: Optimization and Performance Enhancements** - App-wide performance improvements (4/5 plans)
 
 ## Phase Details
 
@@ -834,14 +834,14 @@ Plans:
 **Goal**: Improve app-wide performance through optimizations, reducing load times, memory usage, and improving rendering efficiency
 **Depends on**: Phase 29
 **Research**: Complete
-**Plans**: 3/5 complete
+**Plans**: 4/5 complete
 
 Plans:
 
 - [x] 30-01: MonthlyAlbumGridScreen expo-image migration + FlatList optimization
 - [x] 30-02: AlbumPhotoViewer expo-image migration (fullscreen + thumbnails)
 - [x] 30-03: AlbumGridScreen + AlbumPhotoPickerScreen expo-image migration
-- [ ] 30-04: RecentlyDeletedScreen, SelectsScreen, SelectsBanner expo-image migration
+- [x] 30-04: RecentlyDeletedScreen, SelectsScreen, SelectsBanner expo-image migration
 - [ ] 30-05: Performance verification and documentation
 
 **Details:**
@@ -895,4 +895,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 27. Color Constants Convention   | 1/1            | Complete    | 2026-02-05 |
 | 28. Blocked Users Management     | 1/1            | Complete    | 2026-02-05 |
 | 29. Settings & Help              | 1/1            | Complete    | 2026-02-05 |
-| 30. Optimization & Performance   | 3/5            | In progress | -          |
+| 30. Optimization & Performance   | 4/5            | In progress | -          |
