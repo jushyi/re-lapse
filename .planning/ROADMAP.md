@@ -834,12 +834,12 @@ Plans:
 **Goal**: Improve app-wide performance through optimizations, reducing load times, memory usage, and improving rendering efficiency
 **Depends on**: Phase 29
 **Research**: Complete
-**Plans**: 1/5 complete
+**Plans**: 2/5 complete
 
 Plans:
 
 - [x] 30-01: MonthlyAlbumGridScreen expo-image migration + FlatList optimization
-- [ ] 30-02: AlbumPhotoViewer expo-image migration (fullscreen + thumbnails)
+- [x] 30-02: AlbumPhotoViewer expo-image migration (fullscreen + thumbnails)
 - [ ] 30-03: AlbumGridScreen + AlbumPhotoPickerScreen expo-image migration
 - [ ] 30-04: RecentlyDeletedScreen, SelectsScreen, SelectsBanner expo-image migration
 - [ ] 30-05: Performance verification and documentation
@@ -895,4 +895,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 27. Color Constants Convention   | 1/1            | Complete    | 2026-02-05 |
 | 28. Blocked Users Management     | 1/1            | Complete    | 2026-02-05 |
 | 29. Settings & Help              | 1/1            | Complete    | 2026-02-05 |
-| 30. Optimization & Performance   | 1/5            | In progress | -          |
+| 30. Optimization & Performance   | 2/5            | In progress | -          |
