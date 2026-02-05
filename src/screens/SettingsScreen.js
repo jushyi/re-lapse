@@ -65,6 +65,12 @@ const SettingsScreen = () => {
       onPress: () => handleNavigate('TermsOfService'),
     },
     {
+      id: 'recentlyDeleted',
+      label: 'Recently Deleted',
+      icon: 'trash-outline',
+      onPress: () => handleNavigate('RecentlyDeleted'),
+    },
+    {
       id: 'signout',
       label: 'Sign Out',
       icon: 'log-out-outline',
