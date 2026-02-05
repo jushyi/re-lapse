@@ -51,10 +51,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [x] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive) - 2/2 plans
 - [x] **Phase 23.1: Recently Deleted Photos** - 30-day grace period with Settings recovery screen (INSERTED)
-- [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
+- [x] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
 - [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 - [ ] **Phase 26: Feed Pull-to-Refresh & Loading Skeleton** - Pulldown to refresh feed behavior and loading skeleton update
 - [ ] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
+- [ ] **Phase 28: Profile Privacy & Blocked Users Management** - Privacy toggle and blocked users UI (from audit)
+- [ ] **Phase 29: Settings & Help Enhancements** - Notification preferences, help link, app version (from audit)
+- [ ] **Phase 30: Social Login Options (BACKLOG)** - Apple/Google sign-in (from audit)
+- [ ] **Phase 31: Optimization and Performance Enhancements** - App-wide performance improvements
+- [ ] **Phase 28: Optimization and Performance Enhancements** - App-wide performance improvements and optimizations
 
 ## Phase Details
 
@@ -711,16 +716,23 @@ Plans:
 
 **Goal**: Full audit to ensure all expected social media app features are present and identify any gaps
 **Depends on**: Phase 23
-**Research**: Likely (competitive analysis of social media apps)
-**Plans**: TBD
+**Research**: Complete (competitive analysis + codebase verification)
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 24-01: TBD (run /gsd:plan-phase 24 to break down)
+- [x] 24-01: Systematic feature verification and gap analysis
 
 **Details:**
 
-[To be added during planning]
+1. Verified 95 features across 15 categories (T1-T3 tiers)
+2. All T1 (Critical) features present - no critical gaps
+3. Identified 4 T2 gaps: profile privacy, notification settings, privacy settings, help/support
+4. Identified 8 partial T2 features needing enhancement
+5. Generated 3 new phases (28-30) to address gaps
+6. Coverage: 78% present, 8% partial, 14% missing
+
+**Output:** `.planning/phases/24-social-media-audit/24-AUDIT.md`
 
 ### Phase 25: Color Palette Selection & Customization
 
@@ -783,10 +795,83 @@ Plans:
 4. Add checklist for new screen/modal/component creation
 5. Reference existing color standardization patterns
 
+### Phase 28: Profile Privacy & Blocked Users Management
+
+**Goal:** Add profile privacy toggle and blocked users management UI
+**Depends on**: Phase 27
+**Research**: Unlikely (internal UI patterns)
+**Plans**: 0/? plans
+
+Plans:
+
+- [ ] 28-01: TBD (run /gsd:plan-phase 28 to break down)
+
+**Details:**
+
+1. Profile privacy toggle (public/private) in Edit Profile
+2. Blocked users list screen (view and unblock)
+3. Privacy controls in Settings
+
+**Source:** Phase 24 Social Media Feature Audit - T2 gaps
+
+### Phase 29: Settings & Help Enhancements
+
+**Goal:** Complete settings screen with notification preferences, help/support, and app info
+**Depends on**: Phase 28
+**Research**: Unlikely
+**Plans**: 0/? plans
+
+Plans:
+
+- [ ] 29-01: TBD (run /gsd:plan-phase 29 to break down)
+
+**Details:**
+
+1. Notification preferences screen (granular control)
+2. Help/Support link (external URL or email)
+3. App version display in Settings
+4. Clear cache option
+
+**Source:** Phase 24 Social Media Feature Audit - T2 gaps + T3
+
+### Phase 30: Social Login Options (BACKLOG)
+
+**Goal:** Add alternative authentication methods
+**Depends on**: Phase 29
+**Research**: Likely (Firebase Auth social providers)
+**Plans**: 0/? plans
+
+Plans:
+
+- [ ] 30-01: TBD (run /gsd:plan-phase 30 to break down)
+
+**Details:**
+
+1. Sign in with Apple
+2. Sign in with Google
+3. Link existing account to social login
+
+**Source:** Phase 24 Social Media Feature Audit - T3 gap (nice-to-have)
+
+### Phase 31: Optimization and Performance Enhancements
+
+**Goal**: Improve app-wide performance through optimizations, reducing load times, memory usage, and improving rendering efficiency
+**Depends on**: Phase 30
+**Research**: Likely (profiling, identifying bottlenecks)
+**Plans**: 0/? plans
+
+Plans:
+
+- [ ] 31-01: TBD (run /gsd:plan-phase 31 to break down)
+
+**Details:**
+
+[To be added during planning]
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 23.1 → 24 → 25 → 26 → 27
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6 → 7 → 7.2 → 7.3 → 8 → 8.1 → 8.2 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 15.1 → 15.2 → 15.3 → 15.4 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 23.1 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31
 
 | Phase                            | Plans Complete | Status      | Completed  |
 | -------------------------------- | -------------- | ----------- | ---------- |
@@ -824,7 +909,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 22. Ability to Edit Profile      | 2/2            | Complete    | 2026-02-05 |
 | 23. Photo Deletion & Archiving   | 2/2            | Complete    | 2026-02-05 |
 | 23.1 Recently Deleted Photos     | 2/2            | Complete    | 2026-02-05 |
-| 24. Social Media Feature Audit   | 0/?            | Not started | -          |
+| 24. Social Media Feature Audit   | 1/1            | Complete    | 2026-02-05 |
 | 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |
 | 26. Feed Pull-to-Refresh         | 0/?            | Not started | -          |
 | 27. Color Constants Convention   | 0/?            | Not started | -          |
+| 28. Profile Privacy & Blocked    | 0/?            | Not started | -          |
+| 29. Settings & Help              | 0/?            | Not started | -          |
+| 30. Social Login (BACKLOG)       | 0/?            | Not started | -          |
+| 31. Optimization & Performance   | 0/?            | Not started | -          |
