@@ -174,13 +174,15 @@ const FriendCard = ({
       case 'none':
         return (
           <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => onAction && onAction(userId, 'add')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.addButtonText}>Add</Text>
-            </TouchableOpacity>
+            {onAction && (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => onAction(userId, 'add')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            )}
             {onDismiss && (
               <TouchableOpacity
                 style={styles.dismissButton}
