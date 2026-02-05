@@ -40,6 +40,7 @@ import PhotoDetailScreen from '../screens/PhotoDetailScreen';
 import ReportUserScreen from '../screens/ReportUserScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import RecentlyDeletedScreen from '../screens/RecentlyDeletedScreen';
+import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 
 // Create navigation reference for programmatic navigation
 export const navigationRef = createRef();
@@ -103,6 +104,7 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="RecentlyDeleted" component={RecentlyDeletedScreen} />
+      <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
       <Stack.Screen name="CreateAlbum" component={CreateAlbumScreen} />
       <Stack.Screen name="AlbumPhotoPicker" component={AlbumPhotoPickerScreen} />
       <Stack.Screen name="AlbumGrid" component={AlbumGridScreen} />

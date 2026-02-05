@@ -71,6 +71,12 @@ const SettingsScreen = () => {
       onPress: () => handleNavigate('RecentlyDeleted'),
     },
     {
+      id: 'blockedUsers',
+      label: 'Blocked Users',
+      icon: 'ban-outline',
+      onPress: () => handleNavigate('BlockedUsers'),
+    },
+    {
       id: 'signout',
       label: 'Sign Out',
       icon: 'log-out-outline',
