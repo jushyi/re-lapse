@@ -55,7 +55,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
 - [x] **Phase 26: Feed Pull-to-Refresh & Loading Skeleton** - Pulldown to refresh feed behavior and loading skeleton update
 - [x] **Phase 27: Color Constants Convention Documentation** - Document color constants requirement in CONVENTIONS.md
-- [ ] **Phase 28: Blocked Users Management** - Blocked users list UI (from audit)
+- [x] **Phase 28: Blocked Users Management** - Blocked users list UI (from audit)
 - [ ] **Phase 29: Settings & Help Enhancements** - Notification preferences, help link, app version (from audit)
 - [ ] **Phase 30: Optimization and Performance Enhancements** - App-wide performance improvements
 
@@ -796,11 +796,11 @@ Plans:
 **Goal:** Add blocked users management UI
 **Depends on**: Phase 27
 **Research**: Unlikely (internal UI patterns)
-**Plans**: 0/? plans
+**Plans**: 1/1 complete
 
 Plans:
 
-- [ ] 28-01: TBD (run /gsd:plan-phase 28 to break down)
+- [x] 28-01: BlockedUsersScreen with Settings integration
 
 **Details:**
 
@@ -890,6 +890,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |
 | 26. Feed Pull-to-Refresh         | 1/1            | Complete    | 2026-02-05 |
 | 27. Color Constants Convention   | 1/1            | Complete    | 2026-02-05 |
-| 28. Blocked Users Management     | 0/?            | Not started | -          |
+| 28. Blocked Users Management     | 1/1            | Complete    | 2026-02-05 |
 | 29. Settings & Help              | 0/?            | Not started | -          |
 | 30. Optimization & Performance   | 0/?            | Not started | -          |
