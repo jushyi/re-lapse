@@ -95,6 +95,7 @@ export {
   isBlocked,
   getBlockedByUserIds,
   getBlockedUserIds,
+  getBlockedUsersWithProfiles,
 } from './blockService';
 
 // Export Report service functions (user reporting)

@@ -29,6 +29,7 @@ import {
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { getUserProfile } from './userService';
 
 const db = getFirestore();
 
@@ -267,6 +268,59 @@ export const getBlockedUserIds = async userId => {
     return { success: true, blockedUserIds };
   } catch (error) {
     logger.error('Error getting blocked user IDs', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get blocked users with their profile information
+ * Fetches blocked user IDs and resolves each to a profile object
+ *
+ * @param {string} userId - User ID to get blocked users for
+ * @returns {Promise<{success: boolean, blockedUsers?: object[], error?: string}>}
+ */
+export const getBlockedUsersWithProfiles = async userId => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    // Get list of blocked user IDs
+    const blockedResult = await getBlockedUserIds(userId);
+    if (!blockedResult.success) {
+      return { success: false, error: blockedResult.error };
+    }
+
+    const { blockedUserIds } = blockedResult;
+
+    if (blockedUserIds.length === 0) {
+      return { success: true, blockedUsers: [] };
+    }
+
+    // Fetch profile for each blocked user
+    const blockedUsers = [];
+    for (const blockedUserId of blockedUserIds) {
+      const profileResult = await getUserProfile(blockedUserId);
+
+      // Skip users that no longer exist (deleted accounts)
+      if (!profileResult.success) {
+        logger.debug('getBlockedUsersWithProfiles: Skipping non-existent user', {
+          blockedUserId,
+        });
+        continue;
+      }
+
+      blockedUsers.push(profileResult.profile);
+    }
+
+    logger.info('getBlockedUsersWithProfiles: Fetched profiles', {
+      userId,
+      blockedCount: blockedUsers.length,
+    });
+
+    return { success: true, blockedUsers };
+  } catch (error) {
+    logger.error('Error getting blocked users with profiles', error);
     return { success: false, error: error.message };
   }
 };
