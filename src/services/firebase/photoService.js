@@ -28,6 +28,7 @@ import {
   serverTimestamp,
   writeBatch,
   Timestamp,
+  FieldValue,
 } from '@react-native-firebase/firestore';
 import { uploadPhoto, deletePhoto } from './storageService';
 import { ensureDarkroomInitialized } from './darkroomService';
@@ -366,15 +367,17 @@ export const triagePhoto = async (photoId, action) => {
     const photoRef = doc(db, 'photos', photoId);
 
     if (action === 'delete') {
-      // Get photo document to retrieve userId for storage path
-      const photoDoc = await getDoc(photoRef);
-      if (photoDoc.exists()) {
-        const { userId } = photoDoc.data();
-        // Delete photo from Storage (path: photos/{userId}/{photoId}.jpg)
-        await deletePhoto(userId, photoId);
-      }
-      // Delete photo document
-      await deleteDoc(photoRef);
+      // Soft delete: Set photoState to 'deleted' with 30-day grace period
+      // Photo will be permanently deleted by Cloud Function after grace period
+      const scheduledForPermanentDeletionAt = Timestamp.fromDate(
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      );
+      await updateDoc(photoRef, {
+        status: 'triaged',
+        photoState: 'deleted',
+        scheduledForPermanentDeletionAt,
+        deletionScheduledAt: serverTimestamp(),
+      });
       return { success: true };
     }
 
@@ -834,6 +837,324 @@ export const restorePhoto = async (photoId, userId) => {
     return { success: true };
   } catch (error) {
     logger.error('PhotoService.restorePhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Soft delete a photo (move to Recently Deleted with 30-day grace period)
+ * Used by PhotoDetailScreen and Album menu for non-Darkroom deletion
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (for ownership verification)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const softDeletePhoto = async (photoId, userId) => {
+  logger.info('PhotoService.softDeletePhoto: Starting', { photoId, userId });
+
+  try {
+    // Get photo document and verify ownership
+    const photoRef = doc(db, 'photos', photoId);
+    const photoDoc = await getDoc(photoRef);
+
+    if (!photoDoc.exists()) {
+      logger.warn('PhotoService.softDeletePhoto: Photo not found', { photoId });
+      return { success: false, error: 'Photo not found' };
+    }
+
+    const photoData = photoDoc.data();
+
+    if (photoData.userId !== userId) {
+      logger.warn('PhotoService.softDeletePhoto: Unauthorized - user does not own photo', {
+        photoId,
+        photoOwnerId: photoData.userId,
+        requestingUserId: userId,
+      });
+      return { success: false, error: 'Unauthorized: You do not own this photo' };
+    }
+
+    // Set soft delete fields with 30-day grace period
+    const scheduledForPermanentDeletionAt = Timestamp.fromDate(
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    );
+
+    await updateDoc(photoRef, {
+      status: 'triaged',
+      photoState: 'deleted',
+      scheduledForPermanentDeletionAt,
+      deletionScheduledAt: serverTimestamp(),
+    });
+
+    logger.info('PhotoService.softDeletePhoto: Photo soft deleted successfully', {
+      photoId,
+      userId,
+      scheduledForPermanentDeletionAt: scheduledForPermanentDeletionAt.toDate(),
+    });
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.softDeletePhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Restore a deleted photo from Recently Deleted back to the journal
+ * Clears deletion fields and resets visibility window
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (for ownership verification)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const restoreDeletedPhoto = async (photoId, userId) => {
+  logger.info('PhotoService.restoreDeletedPhoto: Starting', { photoId, userId });
+
+  try {
+    // Get photo document and verify ownership
+    const photoRef = doc(db, 'photos', photoId);
+    const photoDoc = await getDoc(photoRef);
+
+    if (!photoDoc.exists()) {
+      logger.warn('PhotoService.restoreDeletedPhoto: Photo not found', { photoId });
+      return { success: false, error: 'Photo not found' };
+    }
+
+    const photoData = photoDoc.data();
+
+    if (photoData.userId !== userId) {
+      logger.warn('PhotoService.restoreDeletedPhoto: Unauthorized - user does not own photo', {
+        photoId,
+        photoOwnerId: photoData.userId,
+        requestingUserId: userId,
+      });
+      return { success: false, error: 'Unauthorized: You do not own this photo' };
+    }
+
+    // Can only restore photos in 'deleted' state
+    if (photoData.photoState !== 'deleted') {
+      logger.warn('PhotoService.restoreDeletedPhoto: Photo is not in deleted state', {
+        photoId,
+        currentState: photoData.photoState,
+      });
+      return { success: false, error: 'Photo is not in deleted state' };
+    }
+
+    // Restore to journal and clear deletion fields
+    await updateDoc(photoRef, {
+      photoState: 'journal',
+      scheduledForPermanentDeletionAt: FieldValue.delete(),
+      deletionScheduledAt: FieldValue.delete(),
+      triagedAt: serverTimestamp(), // Reset visibility window
+    });
+
+    logger.info('PhotoService.restoreDeletedPhoto: Photo restored successfully', {
+      photoId,
+      userId,
+    });
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.restoreDeletedPhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get all deleted photos for a user (Recently Deleted)
+ * Returns photos with photoState === 'deleted', ordered by deletion date
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, photos?: object[], error?: string}>}
+ */
+export const getDeletedPhotos = async userId => {
+  logger.info('PhotoService.getDeletedPhotos: Starting', { userId });
+
+  try {
+    // Query photos where userId matches AND photoState === 'deleted'
+    const deletedQuery = query(
+      collection(db, 'photos'),
+      where('userId', '==', userId),
+      where('photoState', '==', 'deleted'),
+      orderBy('deletionScheduledAt', 'desc')
+    );
+    const snapshot = await getDocs(deletedQuery);
+
+    const photos = snapshot.docs.map(photoDoc => ({
+      id: photoDoc.id,
+      ...photoDoc.data(),
+    }));
+
+    logger.info('PhotoService.getDeletedPhotos: Retrieved deleted photos', {
+      userId,
+      count: photos.length,
+    });
+
+    return { success: true, photos };
+  } catch (error) {
+    logger.error('PhotoService.getDeletedPhotos: Failed', {
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Permanently delete a photo immediately (bypasses 30-day grace period)
+ * Full cascade deletion: albums, comments, storage, document
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (for ownership verification)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const permanentlyDeletePhoto = async (photoId, userId) => {
+  logger.info('PhotoService.permanentlyDeletePhoto: Starting', { photoId, userId });
+
+  try {
+    // Get photo document and verify ownership
+    const photoRef = doc(db, 'photos', photoId);
+    const photoDoc = await getDoc(photoRef);
+
+    if (!photoDoc.exists()) {
+      logger.warn('PhotoService.permanentlyDeletePhoto: Photo not found', { photoId });
+      return { success: false, error: 'Photo not found' };
+    }
+
+    const photoData = photoDoc.data();
+
+    if (photoData.userId !== userId) {
+      logger.warn('PhotoService.permanentlyDeletePhoto: Unauthorized - user does not own photo', {
+        photoId,
+        photoOwnerId: photoData.userId,
+        requestingUserId: userId,
+      });
+      return { success: false, error: 'Unauthorized: You do not own this photo' };
+    }
+
+    // Use internal cascade delete (ownership already verified)
+    return await cascadeDeletePhoto(photoId, userId);
+  } catch (error) {
+    logger.error('PhotoService.permanentlyDeletePhoto: Failed', {
+      photoId,
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Internal cascade delete function
+ * Removes photo from albums, deletes comments, storage, and document
+ * Called by permanentlyDeletePhoto (after ownership check)
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string} userId - User ID (ownership already verified by caller)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+const cascadeDeletePhoto = async (photoId, userId) => {
+  logger.debug('PhotoService.cascadeDeletePhoto: Starting cascade delete', { photoId, userId });
+
+  try {
+    const photoRef = doc(db, 'photos', photoId);
+
+    // Step 1: Remove from all albums containing this photo
+    logger.debug('PhotoService.cascadeDeletePhoto: Removing from albums', { photoId });
+    const albumsResult = await getUserAlbums(userId);
+
+    if (albumsResult.success && albumsResult.albums) {
+      for (const album of albumsResult.albums) {
+        if (album.photoIds && album.photoIds.includes(photoId)) {
+          if (album.photoIds.length === 1) {
+            // Delete the album entirely since it would be empty
+            logger.debug('PhotoService.cascadeDeletePhoto: Deleting album (last photo)', {
+              albumId: album.id,
+              albumName: album.name,
+            });
+            const deleteAlbumResult = await deleteAlbum(album.id);
+            if (!deleteAlbumResult.success) {
+              logger.warn('PhotoService.cascadeDeletePhoto: Failed to delete album', {
+                albumId: album.id,
+                error: deleteAlbumResult.error,
+              });
+            }
+          } else {
+            // Remove photo from album
+            logger.debug('PhotoService.cascadeDeletePhoto: Removing from album', {
+              albumId: album.id,
+              albumName: album.name,
+            });
+            const removeResult = await removePhotoFromAlbum(album.id, photoId);
+            if (!removeResult.success) {
+              logger.warn('PhotoService.cascadeDeletePhoto: Failed to remove from album', {
+                albumId: album.id,
+                error: removeResult.error,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Step 2: Delete all comments in the photo's subcollection
+    logger.debug('PhotoService.cascadeDeletePhoto: Deleting comments', { photoId });
+    const commentsRef = collection(db, 'photos', photoId, 'comments');
+    const commentsSnapshot = await getDocs(commentsRef);
+
+    if (!commentsSnapshot.empty) {
+      logger.debug('PhotoService.cascadeDeletePhoto: Found comments to delete', {
+        photoId,
+        commentCount: commentsSnapshot.size,
+      });
+
+      for (const commentDoc of commentsSnapshot.docs) {
+        // Delete likes subcollection for this comment
+        const likesRef = collection(db, 'photos', photoId, 'comments', commentDoc.id, 'likes');
+        const likesSnapshot = await getDocs(likesRef);
+
+        for (const likeDoc of likesSnapshot.docs) {
+          await deleteDoc(likeDoc.ref);
+        }
+
+        // Delete the comment itself
+        await deleteDoc(commentDoc.ref);
+      }
+
+      logger.debug('PhotoService.cascadeDeletePhoto: Comments deleted', {
+        photoId,
+        deletedCount: commentsSnapshot.size,
+      });
+    }
+
+    // Step 3: Delete photo from Firebase Storage
+    logger.debug('PhotoService.cascadeDeletePhoto: Deleting from storage', { photoId, userId });
+    const storageResult = await deletePhoto(userId, photoId);
+
+    if (!storageResult.success) {
+      logger.warn('PhotoService.cascadeDeletePhoto: Storage delete failed (continuing)', {
+        photoId,
+        error: storageResult.error,
+      });
+    }
+
+    // Step 4: Delete photo document from Firestore
+    logger.debug('PhotoService.cascadeDeletePhoto: Deleting document', { photoId });
+    await deleteDoc(photoRef);
+
+    logger.info('PhotoService.cascadeDeletePhoto: Cascade delete complete', { photoId, userId });
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.cascadeDeletePhoto: Failed', {
       photoId,
       userId,
       error: error.message,
