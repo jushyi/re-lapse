@@ -1,13 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Image,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -170,7 +163,15 @@ const MonthlyAlbumGridScreen = () => {
         onPress={() => handlePhotoPress(item.photoIndex)}
         activeOpacity={0.8}
       >
-        <Image source={{ uri: item.photo.imageURL }} style={styles.photoImage} />
+        <Image
+          source={{ uri: item.photo.imageURL }}
+          style={styles.photoImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="normal"
+          recyclingKey={item.key}
+          transition={150}
+        />
       </TouchableOpacity>
     );
   };
@@ -193,7 +194,15 @@ const MonthlyAlbumGridScreen = () => {
         onPress={() => handlePhotoPress(item.photoIndex)}
         activeOpacity={0.8}
       >
-        <Image source={{ uri: item.photo.imageURL }} style={styles.photoImage} />
+        <Image
+          source={{ uri: item.photo.imageURL }}
+          style={styles.photoImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="normal"
+          recyclingKey={item.key}
+          transition={150}
+        />
       </TouchableOpacity>
     );
   };
@@ -248,7 +257,15 @@ const MonthlyAlbumGridScreen = () => {
             onPress={() => handlePhotoPress(photoItem.photoIndex)}
             activeOpacity={0.8}
           >
-            <Image source={{ uri: photoItem.photo.imageURL }} style={styles.photoImage} />
+            <Image
+              source={{ uri: photoItem.photo.imageURL }}
+              style={styles.photoImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="normal"
+              recyclingKey={photoItem.key}
+              transition={150}
+            />
           </TouchableOpacity>
         ))}
       </View>
