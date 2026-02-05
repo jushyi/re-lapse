@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Image,
   Alert,
   Dimensions,
   Animated,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -275,31 +275,52 @@ const AlbumGridScreen = () => {
     return data;
   }, [photos, isOwnProfile]);
 
-  const renderItem = ({ item, index }) => {
-    if (item.type === 'addButton') {
+  // FlatList optimization: pre-calculate item layout for faster scrolling
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: CELL_HEIGHT + GRID_GAP,
+      offset: (CELL_HEIGHT + GRID_GAP) * Math.floor(index / NUM_COLUMNS),
+      index,
+    }),
+    []
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }) => {
+      if (item.type === 'addButton') {
+        return (
+          <TouchableOpacity
+            style={styles.addButtonCell}
+            onPress={handleAddPhotosPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={32} color={colors.text.secondary} />
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        );
+      }
+
       return (
         <TouchableOpacity
-          style={styles.addButtonCell}
-          onPress={handleAddPhotosPress}
-          activeOpacity={0.7}
+          style={styles.photoCell}
+          onPress={() => handlePhotoPress(item.photo, index)}
+          onLongPress={event => handlePhotoLongPress(item.photo, event)}
+          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={32} color={colors.text.secondary} />
-          <Text style={styles.addButtonText}>Add</Text>
+          <Image
+            source={{ uri: item.photo.imageURL }}
+            style={styles.photoImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="normal"
+            recyclingKey={item.photo.id}
+            transition={150}
+          />
         </TouchableOpacity>
       );
-    }
-
-    return (
-      <TouchableOpacity
-        style={styles.photoCell}
-        onPress={() => handlePhotoPress(item.photo, index)}
-        onLongPress={event => handlePhotoLongPress(item.photo, event)}
-        activeOpacity={0.8}
-      >
-        <Image source={{ uri: item.photo.imageURL }} style={styles.photoImage} />
-      </TouchableOpacity>
-    );
-  };
+    },
+    [handlePhotoPress, handlePhotoLongPress, handleAddPhotosPress]
+  );
 
   if (loading) {
     return (
@@ -368,6 +389,10 @@ const AlbumGridScreen = () => {
         contentContainerStyle={[styles.gridContent, { paddingTop: insets.top + HEADER_HEIGHT }]}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={styles.columnWrapper}
+        getItemLayout={getItemLayout}
+        initialNumToRender={9}
+        maxToRenderPerBatch={6}
+        windowSize={5}
       />
 
       {/* Photo Viewer Modal */}
