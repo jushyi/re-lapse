@@ -36,8 +36,10 @@ const FriendCard = ({
   loading = false,
   onRemove,
   onBlock,
+  onUnblock,
   onReport,
   onDismiss, // Optional: renders X button next to Add for suggestions
+  isBlocked = false, // Whether current user has blocked this user
 }) => {
   const { userId, displayName, username, profilePhotoURL } = user || {};
 
@@ -118,10 +120,42 @@ const FriendCard = ({
   };
 
   /**
+   * Handle unblock user action with confirmation
+   */
+  const handleUnblockUser = () => {
+    Alert.alert('Unblock User', `Unblock ${displayName || username}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Unblock',
+        onPress: () => onUnblock && onUnblock(userId),
+      },
+    ]);
+  };
+
+  /**
    * Handle report user action - navigates directly (no confirmation needed)
    */
   const handleReportUser = () => {
     onReport && onReport(userId);
+  };
+
+  /**
+   * Render the 3-dot menu button (shared across statuses)
+   */
+  const renderMenuButton = () => {
+    // Only show menu if we have block or report handlers
+    if (!onBlock && !onUnblock && !onReport) return null;
+
+    return (
+      <TouchableOpacity
+        ref={menuButtonRef}
+        style={styles.menuButton}
+        onPress={handleMenuPress}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+      </TouchableOpacity>
+    );
   };
 
   /**
@@ -156,18 +190,22 @@ const FriendCard = ({
                 <Ionicons name="close" size={18} color={colors.text.tertiary} />
               </TouchableOpacity>
             )}
+            {renderMenuButton()}
           </View>
         );
 
       case 'pending_sent':
         return (
-          <TouchableOpacity
-            style={styles.pendingButton}
-            onPress={handlePendingPress}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.pendingButtonText}>Pending</Text>
-          </TouchableOpacity>
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.pendingButton}
+              onPress={handlePendingPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.pendingButtonText}>Pending</Text>
+            </TouchableOpacity>
+            {renderMenuButton()}
+          </View>
         );
 
       case 'pending_received':
@@ -187,11 +225,12 @@ const FriendCard = ({
             >
               <Text style={styles.denyButtonText}>Deny</Text>
             </TouchableOpacity>
+            {renderMenuButton()}
           </View>
         );
 
       case 'friends':
-        // Three-dot menu for friend management actions
+        // Three-dot menu only for friend management actions
         return (
           <TouchableOpacity
             ref={menuButtonRef}
@@ -250,14 +289,35 @@ const FriendCard = ({
         onClose={() => setMenuVisible(false)}
         anchorPosition={menuAnchor}
         options={[
-          { label: 'Remove Friend', icon: 'person-remove-outline', onPress: handleRemoveFriend },
-          { label: 'Block User', icon: 'ban-outline', onPress: handleBlockUser },
-          {
-            label: 'Report User',
-            icon: 'flag-outline',
-            onPress: handleReportUser,
-            destructive: true,
-          },
+          // Only show Remove Friend option for actual friends
+          ...(relationshipStatus === 'friends' && onRemove
+            ? [
+                {
+                  label: 'Remove Friend',
+                  icon: 'person-remove-outline',
+                  onPress: handleRemoveFriend,
+                },
+              ]
+            : []),
+          // Block/Unblock option
+          ...(onBlock || onUnblock
+            ? [
+                isBlocked
+                  ? { label: 'Unblock User', icon: 'ban-outline', onPress: handleUnblockUser }
+                  : { label: 'Block User', icon: 'ban-outline', onPress: handleBlockUser },
+              ]
+            : []),
+          // Report option
+          ...(onReport
+            ? [
+                {
+                  label: 'Report User',
+                  icon: 'flag-outline',
+                  onPress: handleReportUser,
+                  destructive: true,
+                },
+              ]
+            : []),
         ]}
       />
     </CardWrapper>

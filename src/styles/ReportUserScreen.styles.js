@@ -31,7 +31,10 @@ export const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 16,
+    flexGrow: 1,
   },
   sectionTitle: {
     fontSize: 14,

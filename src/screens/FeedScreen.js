@@ -195,8 +195,8 @@ const FeedScreen = () => {
         return;
       }
 
-      // Load random historical photos from friends
-      const result = await getRandomFriendPhotos(friendsResult.friendUserIds, 10);
+      // Load random historical photos from friends (excluding blocked users)
+      const result = await getRandomFriendPhotos(friendsResult.friendUserIds, 10, user.uid);
       if (result.success) {
         logger.info('FeedScreen: Archive photos loaded', { count: result.photos.length });
         setArchivePhotos(result.photos);

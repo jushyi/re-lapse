@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   LayoutAnimation,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,6 +49,15 @@ const ReportUserScreen = () => {
   const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [detailsFocused, setDetailsFocused] = useState(false);
+  const scrollViewRef = useRef(null);
+
+  const handleDetailsFocus = () => {
+    setDetailsFocused(true);
+    // Auto-scroll to bottom after a brief delay to ensure layout is updated
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
 
   const handleSelectReason = reason => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -103,7 +113,12 @@ const ReportUserScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Reason Picker */}
         <Text style={styles.sectionTitle}>Why are you reporting this user?</Text>
 
@@ -142,7 +157,7 @@ const ReportUserScreen = () => {
               onChangeText={setDetails}
               multiline
               maxLength={500}
-              onFocus={() => setDetailsFocused(true)}
+              onFocus={handleDetailsFocus}
               onBlur={() => setDetailsFocused(false)}
             />
             {detailsFocused && <Text style={styles.charCount}>{details.length}/500</Text>}
@@ -164,8 +179,8 @@ const ReportUserScreen = () => {
           </TouchableOpacity>
         )}
 
-        {/* Bottom spacing for keyboard */}
-        <View style={{ height: 40 }} />
+        {/* Bottom spacing for keyboard - extra height for iOS keyboard suggestions bar */}
+        <View style={{ height: Platform.OS === 'ios' ? 100 : 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

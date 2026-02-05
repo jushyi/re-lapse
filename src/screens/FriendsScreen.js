@@ -42,7 +42,12 @@ import {
   dismissSuggestion,
   markContactsSyncCompleted,
 } from '../services/firebase/contactSyncService';
-import { blockUser, getBlockedByUserIds } from '../services/firebase/blockService';
+import {
+  blockUser,
+  unblockUser,
+  getBlockedByUserIds,
+  getBlockedUserIds,
+} from '../services/firebase/blockService';
 import { mediumImpact } from '../utils/haptics';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendsScreen.styles';
@@ -86,6 +91,9 @@ const FriendsScreen = ({ navigation }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [hasSyncedContacts, setHasSyncedContacts] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
+  // Block tracking state
+  const [blockedUserIds, setBlockedUserIds] = useState([]);
 
   /**
    * Fetch all friends data
@@ -236,12 +244,26 @@ const FriendsScreen = ({ navigation }) => {
   };
 
   /**
+   * Fetch users current user has blocked
+   */
+  const fetchBlockedUsers = async () => {
+    try {
+      const result = await getBlockedUserIds(user.uid);
+      if (result.success) {
+        setBlockedUserIds(result.blockedUserIds);
+      }
+    } catch (err) {
+      logger.error('Error fetching blocked users', err);
+    }
+  };
+
+  /**
    * Load all data
    */
   const loadData = async () => {
     setError(null);
     try {
-      await Promise.all([fetchFriends(), fetchRequests(), fetchSuggestions()]);
+      await Promise.all([fetchFriends(), fetchRequests(), fetchSuggestions(), fetchBlockedUsers()]);
     } catch (err) {
       logger.error('Error loading data', err);
       setError('Failed to load data');
@@ -619,10 +641,11 @@ const FriendsScreen = ({ navigation }) => {
       mediumImpact();
       const result = await blockUser(user.uid, userId);
       if (result.success) {
-        // Remove from all lists
+        // Remove from all lists and track as blocked
         setFriends(prev => prev.filter(f => f.userId !== userId));
         setFilteredFriends(prev => prev.filter(f => f.userId !== userId));
         setSuggestions(prev => prev.filter(s => s.id !== userId));
+        setBlockedUserIds(prev => [...prev, userId]);
         logger.info('FriendsScreen: User blocked via menu', { userId });
       } else {
         Alert.alert('Error', result.error || 'Could not block user');
@@ -630,6 +653,26 @@ const FriendsScreen = ({ navigation }) => {
     } catch (err) {
       logger.error('FriendsScreen: Error blocking user via menu', { error: err.message });
       Alert.alert('Error', 'Could not block user');
+    }
+  };
+
+  /**
+   * Handle unblock user from menu (confirmation already shown in FriendCard)
+   */
+  const handleUnblockUser = async userId => {
+    try {
+      mediumImpact();
+      const result = await unblockUser(user.uid, userId);
+      if (result.success) {
+        // Remove from blocked list
+        setBlockedUserIds(prev => prev.filter(id => id !== userId));
+        logger.info('FriendsScreen: User unblocked via menu', { userId });
+      } else {
+        Alert.alert('Error', result.error || 'Could not unblock user');
+      }
+    } catch (err) {
+      logger.error('FriendsScreen: Error unblocking user via menu', { error: err.message });
+      Alert.alert('Error', 'Could not unblock user');
     }
   };
 
@@ -757,6 +800,10 @@ const FriendsScreen = ({ navigation }) => {
           username: suggestion.username,
         });
       }}
+      onBlock={handleBlockUser}
+      onUnblock={handleUnblockUser}
+      onReport={handleReportUser}
+      isBlocked={blockedUserIds.includes(suggestion.id)}
     />
   );
 
@@ -793,7 +840,9 @@ const FriendsScreen = ({ navigation }) => {
                 }}
                 onRemove={handleRemoveFriendFromMenu}
                 onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
                 onReport={handleReportUser}
+                isBlocked={blockedUserIds.includes(item.userId)}
               />
             </TouchableOpacity>
           )}
@@ -868,6 +917,11 @@ const FriendsScreen = ({ navigation }) => {
                         username: item.username,
                       });
                     }}
+                    onRemove={handleRemoveFriendFromMenu}
+                    onBlock={handleBlockUser}
+                    onUnblock={handleUnblockUser}
+                    onReport={handleReportUser}
+                    isBlocked={blockedUserIds.includes(item.userId)}
                   />
                 );
               }}
@@ -947,6 +1001,10 @@ const FriendsScreen = ({ navigation }) => {
                 username: item.data.username,
               });
             }}
+            onBlock={handleBlockUser}
+            onUnblock={handleUnblockUser}
+            onReport={handleReportUser}
+            isBlocked={blockedUserIds.includes(item.data.userId)}
           />
         );
       }
@@ -965,6 +1023,10 @@ const FriendsScreen = ({ navigation }) => {
                 username: item.data.username,
               });
             }}
+            onBlock={handleBlockUser}
+            onUnblock={handleUnblockUser}
+            onReport={handleReportUser}
+            isBlocked={blockedUserIds.includes(item.data.userId)}
           />
         );
       }

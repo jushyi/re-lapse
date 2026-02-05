@@ -729,10 +729,15 @@ export const getFriendStoriesData = async currentUserId => {
  * @param {number} limitCount - Maximum number of photos to return (default: 10)
  * @returns {Promise<{success: boolean, photos?: Array, error?: string}>}
  */
-export const getRandomFriendPhotos = async (friendUserIds, limitCount = 10) => {
+export const getRandomFriendPhotos = async (
+  friendUserIds,
+  limitCount = 10,
+  currentUserId = null
+) => {
   logger.debug('feedService.getRandomFriendPhotos: Starting', {
     friendCount: friendUserIds?.length,
     limitCount,
+    currentUserId,
   });
 
   try {
@@ -740,14 +745,24 @@ export const getRandomFriendPhotos = async (friendUserIds, limitCount = 10) => {
       return { success: true, photos: [] };
     }
 
+    // Get users who have blocked the current user
+    let blockedByUserIds = [];
+    if (currentUserId) {
+      const blockedByResult = await getBlockedByUserIds(currentUserId);
+      blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
+    }
+
     // Query all journaled photos (no time filter)
     const q = query(collection(db, 'photos'), where('photoState', '==', 'journal'));
     const snapshot = await getDocs(q);
 
-    // Filter to only friend photos
+    // Filter to only friend photos, excluding blocked users
     const friendPhotos = await Promise.all(
       snapshot.docs
-        .filter(photoDoc => friendUserIds.includes(photoDoc.data().userId))
+        .filter(photoDoc => {
+          const userId = photoDoc.data().userId;
+          return friendUserIds.includes(userId) && !blockedByUserIds.includes(userId);
+        })
         .map(async photoDoc => {
           const photoData = photoDoc.data();
 

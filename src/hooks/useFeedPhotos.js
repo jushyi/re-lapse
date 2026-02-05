@@ -113,17 +113,22 @@ const useFeedPhotos = (enableRealtime = true, hotOnly = false) => {
 
   /**
    * Fetch friend user IDs
+   * Returns the friend IDs directly (in addition to updating state)
+   * so callers can use the fresh value immediately
    */
   const fetchFriendships = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!user?.uid) return [];
 
     try {
       const result = await getFriendUserIds(user.uid);
       if (result.success) {
         setFriendUserIds(result.friendUserIds);
+        return result.friendUserIds;
       }
+      return [];
     } catch (err) {
       logger.error('Error fetching friendships', err);
+      return [];
     }
   }, [user]);
 
@@ -141,11 +146,12 @@ const useFeedPhotos = (enableRealtime = true, hotOnly = false) => {
       setLoading(true);
       setError(null);
 
-      // Fetch friendships first
-      await fetchFriendships();
+      // Fetch friendships and use returned value directly
+      // (can't use state value as it hasn't updated yet due to closure)
+      const freshFriendIds = await fetchFriendships();
 
       // Then fetch feed photos with friend filter
-      const result = await getFeedPhotos(20, null, friendUserIds, user.uid);
+      const result = await getFeedPhotos(20, null, freshFriendIds, user.uid);
 
       if (result.success) {
         // Curate feed to top 5 photos per friend
@@ -165,7 +171,7 @@ const useFeedPhotos = (enableRealtime = true, hotOnly = false) => {
     } finally {
       setLoading(false);
     }
-  }, [fetchFriendships, friendUserIds, user, hotOnly]);
+  }, [fetchFriendships, user, hotOnly]);
 
   /**
    * Load more photos (pagination)
@@ -208,10 +214,11 @@ const useFeedPhotos = (enableRealtime = true, hotOnly = false) => {
       setRefreshing(true);
       setError(null);
 
-      // Refresh friendships too
-      await fetchFriendships();
+      // Refresh friendships and use the returned value directly
+      // (can't use state value as it hasn't updated yet due to closure)
+      const freshFriendIds = await fetchFriendships();
 
-      const result = await getFeedPhotos(20, null, friendUserIds, user?.uid);
+      const result = await getFeedPhotos(20, null, freshFriendIds, user?.uid);
 
       if (result.success) {
         // Curate feed to top 5 photos per friend
@@ -230,7 +237,7 @@ const useFeedPhotos = (enableRealtime = true, hotOnly = false) => {
     } finally {
       setRefreshing(false);
     }
-  }, [fetchFriendships, friendUserIds, user, hotOnly]);
+  }, [fetchFriendships, user, hotOnly]);
 
   /**
    * Update a single photo in state (for optimistic UI updates)
