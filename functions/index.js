@@ -1217,3 +1217,126 @@ exports.processScheduledDeletions = functions.pubsub
       return null;
     }
   });
+
+/**
+ * Process scheduled photo deletions
+ * Runs daily at 3:15 AM UTC to permanently delete photos past their 30-day grace period
+ * Offset from account deletion (3 AM) to avoid resource contention
+ */
+exports.processScheduledPhotoDeletions = functions.pubsub
+  .schedule('15 3 * * *') // 3:15 AM UTC daily
+  .onRun(async context => {
+    const db = admin.firestore();
+    const bucket = getStorage().bucket();
+    const now = admin.firestore.Timestamp.now();
+
+    logger.info('processScheduledPhotoDeletions: Starting', { checkTime: now.toDate() });
+
+    try {
+      // Query photos where scheduledForPermanentDeletionAt has passed
+      const photosSnapshot = await db
+        .collection('photos')
+        .where('photoState', '==', 'deleted')
+        .where('scheduledForPermanentDeletionAt', '<=', now)
+        .get();
+
+      if (photosSnapshot.empty) {
+        logger.info('processScheduledPhotoDeletions: No photos to delete');
+        return { processed: 0, deleted: 0, failed: 0 };
+      }
+
+      logger.info('processScheduledPhotoDeletions: Found photos', {
+        count: photosSnapshot.size,
+      });
+
+      let deleted = 0;
+      let failed = 0;
+
+      for (const photoDoc of photosSnapshot.docs) {
+        const photoId = photoDoc.id;
+        const photoData = photoDoc.data();
+        const userId = photoData.userId;
+
+        try {
+          // Step 1: Remove from user's albums
+          const albumsSnapshot = await db.collection('albums').where('userId', '==', userId).get();
+
+          for (const albumDoc of albumsSnapshot.docs) {
+            const albumData = albumDoc.data();
+            if (albumData.photoIds && albumData.photoIds.includes(photoId)) {
+              if (albumData.photoIds.length === 1) {
+                // Last photo - delete album
+                await albumDoc.ref.delete();
+              } else {
+                // Remove photo from album
+                const newPhotoIds = albumData.photoIds.filter(id => id !== photoId);
+                const updateData = { photoIds: newPhotoIds };
+                // Update cover if needed
+                if (albumData.coverPhotoId === photoId && newPhotoIds.length > 0) {
+                  updateData.coverPhotoId = newPhotoIds[0];
+                }
+                await albumDoc.ref.update(updateData);
+              }
+            }
+          }
+
+          // Step 2: Delete comments subcollection
+          const commentsSnapshot = await db
+            .collection('photos')
+            .doc(photoId)
+            .collection('comments')
+            .get();
+
+          for (const commentDoc of commentsSnapshot.docs) {
+            // Delete comment likes subcollection
+            const likesSnapshot = await commentDoc.ref.collection('likes').get();
+            for (const likeDoc of likesSnapshot.docs) {
+              await likeDoc.ref.delete();
+            }
+            await commentDoc.ref.delete();
+          }
+
+          // Step 3: Delete from Storage
+          if (photoData.imageURL) {
+            try {
+              const decodedUrl = decodeURIComponent(photoData.imageURL);
+              const pathMatch = decodedUrl.match(/\/o\/(.+?)\?/);
+              if (pathMatch) {
+                await bucket.file(pathMatch[1]).delete();
+              }
+            } catch (storageError) {
+              logger.warn('processScheduledPhotoDeletions: Storage delete failed', {
+                photoId,
+                error: storageError.message,
+              });
+              // Continue - file might not exist
+            }
+          }
+
+          // Step 4: Delete photo document
+          await photoDoc.ref.delete();
+
+          logger.debug('processScheduledPhotoDeletions: Photo deleted', { photoId });
+          deleted++;
+        } catch (photoError) {
+          logger.error('processScheduledPhotoDeletions: Failed to delete photo', {
+            photoId,
+            error: photoError.message,
+          });
+          failed++;
+          // Continue to next photo
+        }
+      }
+
+      logger.info('processScheduledPhotoDeletions: Completed', {
+        processed: photosSnapshot.size,
+        deleted,
+        failed,
+      });
+
+      return { processed: photosSnapshot.size, deleted, failed };
+    } catch (error) {
+      logger.error('processScheduledPhotoDeletions: Fatal error', { error: error.message });
+      return null;
+    }
+  });

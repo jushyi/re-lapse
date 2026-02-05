@@ -7,6 +7,14 @@
         { "fieldPath": "parentId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "photoState", "order": "ASCENDING" },
+        { "fieldPath": "scheduledForPermanentDeletionAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
