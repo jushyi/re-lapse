@@ -48,7 +48,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 19: Delete Account Fallback** - Ensure delete account function works properly with proper fallback
 - [x] **Phase 20: Friend Suggestions via Contacts Sync** - Suggest friends based on synced phone contacts
 - [x] **Phase 21: Remove/Block Friends** - Add ability to remove or block friends
-- [ ] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
+- [x] **Phase 22: Ability to Edit Profile** - Edit profile screen for updating user info
 - [ ] **Phase 23: Photo Deletion & Archiving** - Delete photos or remove from journal (archive)
 - [ ] **Phase 24: Social Media Feature Audit** - Full audit to ensure all expected social media app features are present
 - [x] **Phase 25: Color Palette Selection & Customization** - Theme selection and customization using color constants system
@@ -646,12 +646,12 @@ Plans:
 **Goal**: Edit profile screen for updating display name, username, bio, and profile photo (NOT selects or song - those already have edit flows)
 **Depends on**: Phase 21
 **Research**: Unlikely (internal UI patterns, reusing existing components)
-**Plans**: 1/2
+**Plans**: 2/2 complete
 
 Plans:
 
 - [x] 22-01: Data Layer + Settings Integration (updateUserProfile service, Edit Profile menu item)
-- [ ] 22-02: EditProfileScreen Implementation (photo editing, form fields, 14-day username restriction, save flow)
+- [x] 22-02: EditProfileScreen Implementation (photo editing, form fields, 14-day username restriction, save flow)
 
 **Details:**
 
@@ -759,7 +759,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 4.1 → 5 → 6
 | 19. Delete Account Fallback      | 5/5            | Complete    | 2026-02-04 |
 | 20. Friend Suggestions Contacts  | 3/3            | Complete    | 2026-02-04 |
 | 21. Remove/Block Friends         | 4/4            | Complete    | 2026-02-04 |
-| 22. Ability to Edit Profile      | 1/2            | In progress | -          |
+| 22. Ability to Edit Profile      | 2/2            | Complete    | 2026-02-05 |
 | 23. Photo Deletion & Archiving   | 0/?            | Not started | -          |
 | 24. Social Media Feature Audit   | 0/?            | Not started | -          |
 | 25. Color Palette Selection      | 5/5            | Complete    | 2026-02-04 |

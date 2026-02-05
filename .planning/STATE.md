@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Phase 21 — Remove/Block Friends
+**Current focus:** Phase 23 — Photo Deletion & Archiving
 
 ## Current Position
 
 Phase: 22 of 26 (Ability to Edit Profile)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 — Completed 22-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 — Completed 22-02-PLAN.md
 
 Progress: ██████████████████ 100%
 
@@ -20,9 +20,9 @@ Progress: ██████████████████ 100%
 
 **Velocity:**
 
-- Total plans completed: 93 (including 18 FIX plans)
+- Total plans completed: 94 (including 18 FIX plans)
 - Average duration: 10 min
-- Total execution time: 932 min
+- Total execution time: 944 min
 
 **By Phase:**
 
@@ -59,13 +59,13 @@ Progress: ██████████████████ 100%
 | 19    | 5     | 50 min | 10 min   |
 | 20    | 3     | 20 min | 7 min    |
 | 21    | 4     | 33 min | 8 min    |
-| 22    | 1     | 8 min  | 8 min    |
+| 22    | 2     | 20 min | 10 min   |
 | 25    | 5     | 15 min | 3 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 8 min, 12 min, 8 min, 5 min, 8 min
-- Trend: Phase 22 Edit Profile in progress
+- Last 5 plans: 12 min, 8 min, 5 min, 8 min, 12 min
+- Trend: Phase 22 Edit Profile complete
 
 ## Accumulated Context
 
@@ -235,6 +235,7 @@ Recent decisions affecting current work:
 - ISS-001: Optimize photo capture for full-screen display
 - ISS-004: Comments sheet closes when navigating to profile (suggested: Phase 16)
 - ISS-005: Swipe up on photo to open comments (suggested: Phase 16)
+- ISS-011: Custom profile photo crop UI with circular preview and edit capability
 
 **Closed (2026-02-03):** ISS-002, ISS-003, ISS-006, ISS-007, ISS-008
 
@@ -344,5 +345,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 22-01-PLAN.md (Phase 22 in progress)
+Stopped at: Completed 22-02-PLAN.md (Phase 22 complete)
 Resume file: None
