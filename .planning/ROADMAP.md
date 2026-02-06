@@ -119,11 +119,11 @@ Plans:
 **Goal**: Add notification triggers for likes, comments, follows, and friend requests
 **Depends on**: Phase 34
 **Research**: Unlikely (building on infrastructure)
-**Plans**: TBD
+**Plans**: 2
 
 Plans:
 
-- [ ] 35-01: TBD
+- [x] 35-01: Notification settings UI (master toggle + per-type toggles)
 
 #### Phase 36: Photo Notification Events
 
@@ -209,7 +209,7 @@ Plans:
 | 32. Photo Issues Fix       | v1.7      | 2/2   | Complete    | 2026-02-06 |
 | 33. Navigation Issues Fix  | v1.7      | 1/1   | Complete    | 2026-02-06 |
 | 34. Push Infrastructure    | v1.7      | 2/2   | Complete    | 2026-02-06 |
-| 35. Social Notifications   | v1.7      | 0/?   | Not started | -          |
+| 35. Social Notifications   | v1.7      | 1/2   | In progress | -          |
 | 36. Photo Notifications    | v1.7      | 0/?   | Not started | -          |
 | 37. Darkroom Notifications | v1.7      | 0/?   | Not started | -          |
 | 38. Notification UI Polish | v1.7      | 0/?   | Not started | -          |
