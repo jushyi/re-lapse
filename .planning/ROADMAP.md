@@ -107,11 +107,12 @@ Plans:
 **Depends on**: Phase 33
 **Research**: Likely (Expo Push API, notification services)
 **Research topics**: Expo push notification setup, APNs/FCM configuration, notification tokens
-**Plans**: TBD
+**Plans**: 2
 
 Plans:
 
-- [ ] 34-01: TBD
+- [x] 34-01: Reliability foundation (expo-server-sdk, token refresh)
+- [ ] 34-02: Receipt checking
 
 #### Phase 35: Social Notification Events
 
@@ -207,7 +208,7 @@ Plans:
 | -------------------------- | --------- | ----- | ----------- | ---------- |
 | 32. Photo Issues Fix       | v1.7      | 2/2   | Complete    | 2026-02-06 |
 | 33. Navigation Issues Fix  | v1.7      | 1/1   | Complete    | 2026-02-06 |
-| 34. Push Infrastructure    | v1.7      | 0/?   | Not started | -          |
+| 34. Push Infrastructure    | v1.7      | 1/2   | In progress | -          |
 | 35. Social Notifications   | v1.7      | 0/?   | Not started | -          |
 | 36. Photo Notifications    | v1.7      | 0/?   | Not started | -          |
 | 37. Darkroom Notifications | v1.7      | 0/?   | Not started | -          |
