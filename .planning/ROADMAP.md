@@ -143,11 +143,11 @@ Plans:
 **Goal**: Audit and update existing darkroom ready notification — ensure reliable delivery and clear messaging
 **Depends on**: Phase 34
 **Research**: Unlikely (audit existing implementation)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 37-01: TBD
+- [x] 37-01: Audit and clean darkroom notification (dead code removal, simplified messaging, push enable banner)
 
 #### Phase 38: Notification UI Polish
 
@@ -212,7 +212,7 @@ Plans:
 | 34. Push Infrastructure    | v1.7      | 2/2   | Complete    | 2026-02-06 |
 | 35. Social Notifications   | v1.7      | 2/2   | Complete    | 2026-02-06 |
 | 36. Photo Notifications    | v1.7      | 2/2   | Complete    | 2026-02-06 |
-| 37. Darkroom Notifications | v1.7      | 0/?   | Not started | -          |
+| 37. Darkroom Notifications | v1.7      | 1/1   | Complete    | 2026-02-06 |
 | 38. Notification UI Polish | v1.7      | 0/?   | Not started | -          |
 | 39. Darkroom Tagging       | v1.7      | 0/?   | Not started | -          |
 | 40. Feed Tagging           | v1.7      | 0/?   | Not started | -          |
