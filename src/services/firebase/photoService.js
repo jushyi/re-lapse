@@ -509,18 +509,24 @@ export const getPhotosByIds = async photoIds => {
  * Batch triage multiple photos at once
  * Used by darkroom when user taps Done to save all decisions
  * @param {Array} decisions - Array of { photoId, action } objects
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @returns {Promise<{success: boolean, journaledCount?: number, error?: string}>}
  */
 export const batchTriagePhotos = async decisions => {
   try {
     logger.debug('PhotoService.batchTriagePhotos: Starting batch', { count: decisions.length });
 
+    // Count how many photos are being journaled (posted to story)
+    const journaledCount = decisions.filter(d => d.action === 'journal').length;
+
     for (const { photoId, action } of decisions) {
       await triagePhoto(photoId, action);
     }
 
-    logger.info('PhotoService.batchTriagePhotos: Batch complete', { count: decisions.length });
-    return { success: true };
+    logger.info('PhotoService.batchTriagePhotos: Batch complete', {
+      count: decisions.length,
+      journaledCount,
+    });
+    return { success: true, journaledCount };
   } catch (error) {
     logger.error('PhotoService.batchTriagePhotos: Failed', { error: error.message });
     return { success: false, error: error.message };

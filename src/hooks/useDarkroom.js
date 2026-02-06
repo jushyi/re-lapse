@@ -26,7 +26,11 @@ import {
   revealPhotos,
   batchTriagePhotos,
 } from '../services/firebase/photoService';
-import { isDarkroomReadyToReveal, scheduleNextReveal } from '../services/firebase/darkroomService';
+import {
+  isDarkroomReadyToReveal,
+  scheduleNextReveal,
+  recordTriageCompletion,
+} from '../services/firebase/darkroomService';
 import { successNotification } from '../utils/haptics';
 import { playSuccessSound } from '../utils/soundUtils';
 import logger from '../utils/logger';
@@ -270,6 +274,14 @@ const useDarkroom = () => {
       setSaving(false);
       Alert.alert('Save Failed', 'Could not save your decisions. Please try again.');
       return;
+    }
+
+    // Record triage completion if any photos were journaled (triggers story notifications)
+    if (result.journaledCount > 0) {
+      logger.debug('useDarkroom: Recording triage completion for story notifications', {
+        journaledCount: result.journaledCount,
+      });
+      await recordTriageCompletion(user.uid, result.journaledCount);
     }
 
     // Success - close immediately
