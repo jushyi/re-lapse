@@ -80,14 +80,15 @@ _v1.6 phases complete. See [v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md) for arc
 
 #### Phase 32: Photo Issues Fix
 
-**Goal**: Fix ISS-001 (photo capture optimization) and ISS-011 (custom profile photo crop UI)
+**Goal**: Fix ISS-001 (photo display optimization) and ISS-011 (custom profile photo crop UI)
 **Depends on**: v1.6 complete
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 2
 
 Plans:
 
-- [ ] 32-01: TBD (run /gsd:plan-phase 32 to break down)
+- [x] 32-01: Photo display fix (AlbumPhotoViewer contentFit=contain)
+- [ ] 32-02: Profile photo crop UI
 
 #### Phase 33: Navigation Issues Fix
 
@@ -204,7 +205,7 @@ Plans:
 
 | Phase                      | Milestone | Plans | Status      | Completed |
 | -------------------------- | --------- | ----- | ----------- | --------- |
-| 32. Photo Issues Fix       | v1.7      | 0/?   | Not started | -         |
+| 32. Photo Issues Fix       | v1.7      | 1/2   | In progress | -         |
 | 33. Navigation Issues Fix  | v1.7      | 0/?   | Not started | -         |
 | 34. Push Infrastructure    | v1.7      | 0/?   | Not started | -         |
 | 35. Social Notifications   | v1.7      | 0/?   | Not started | -         |

@@ -4,15 +4,6 @@ Enhancements discovered during execution. Not critical - address in future phase
 
 ## Open Enhancements
 
-### ISS-001: Optimize photo capture for full-screen display
-
-- **Discovered:** Phase 8 Task 1 (2026-01-29)
-- **Type:** UX
-- **Description:** Photos taken in the app should be captured at an aspect ratio that fills the full screen when viewed in AlbumPhotoViewer (and other full-screen viewers). Currently photos may have different aspect ratios causing black bars or cropping when displayed full-screen.
-- **Impact:** Low (works correctly with cover/contain modes, this would enhance visual experience)
-- **Effort:** Medium (requires camera capture settings adjustment and potentially migration for existing photos)
-- **Suggested phase:** Future
-
 ### ISS-004: Comments sheet closes when navigating to profile
 
 - **Discovered:** Phase 15.3 Plan 02 verification (2026-02-02)
@@ -66,6 +57,14 @@ Enhancements discovered during execution. Not critical - address in future phase
 - **Suggested phase:** Phase 16 (touches same PhotoDetailScreen gesture handling)
 
 ## Closed Enhancements
+
+### ISS-001: Optimize photo display for full viewing in albums
+
+- **Discovered:** Phase 8 Task 1 (2026-01-29)
+- **Closed:** 2026-02-06
+- **Type:** UX
+- **Resolution:** Fixed in Phase 32-01 by changing `contentFit` from `cover` to `contain` in AlbumPhotoViewer. Photos now display in full without cropping, with letterboxing if aspect ratio differs from screen. Feed/stories views kept `cover` mode per user preference for immersive full-screen experience.
+- **Files modified:** `src/components/AlbumPhotoViewer.js`
 
 ### ISS-010: Duplicate day headers in monthly albums when journaling old photos
 
