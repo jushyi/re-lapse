@@ -29,7 +29,9 @@
   - Connection: @react-native-firebase/firestore ^23.8.2
   - Collections: users, photos, darkrooms, friendships, notifications, photoViews
   - Security: `firestore.rules` (comprehensive rules)
-  - Indexes: `firestore.indexes.json`
+  - Indexes: `firestore.indexes.json` (composite indexes for efficient queries)
+  - Query pattern: Server-side filtering via `where()` clauses with composite indexes
+  - Avoid client-side filtering for large datasets; use Firestore queries instead
 
 **File Storage:**
 

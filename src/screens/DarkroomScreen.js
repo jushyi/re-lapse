@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import useDarkroom from '../hooks/useDarkroom';
 import { SwipeablePhotoCard } from '../components';
 import { styles } from '../styles/DarkroomScreen.styles';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const DarkroomScreen = () => {
@@ -55,7 +56,7 @@ const DarkroomScreen = () => {
       <GestureHandlerRootView style={styles.gestureRootView}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" />
+            <ActivityIndicator size="large" color={colors.icon.primary} />
             <Text style={styles.loadingText}>Loading darkroom...</Text>
           </View>
         </SafeAreaView>
@@ -93,7 +94,12 @@ const DarkroomScreen = () => {
                 onPress={handleUndo}
                 disabled={undoStack.length === 0 || undoingPhoto !== null}
               >
-                <Ionicons name="arrow-undo" size={16} color="#FFFFFF" style={styles.undoIcon} />
+                <Ionicons
+                  name="arrow-undo"
+                  size={16}
+                  color={colors.icon.primary}
+                  style={styles.undoIcon}
+                />
                 <Text
                   style={[
                     styles.undoText,
@@ -202,7 +208,12 @@ const DarkroomScreen = () => {
               onPress={handleUndo}
               disabled={undoStack.length === 0 || undoingPhoto !== null}
             >
-              <Ionicons name="arrow-undo" size={16} color="#FFFFFF" style={styles.undoIcon} />
+              <Ionicons
+                name="arrow-undo"
+                size={16}
+                color={colors.icon.primary}
+                style={styles.undoIcon}
+              />
               <Text
                 style={[
                   styles.undoText,

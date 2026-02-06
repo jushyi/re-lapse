@@ -1,7 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Application from 'expo-application';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 /**
@@ -13,6 +16,25 @@ import logger from '../utils/logger';
  */
 const SettingsScreen = () => {
   const navigation = useNavigation();
+  const { signOut } = useAuth();
+
+  const handleSignOut = () => {
+    logger.info('SettingsScreen: Sign out pressed');
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            logger.error('SettingsScreen: Sign out failed', { error: error.message });
+          }
+        },
+      },
+    ]);
+  };
 
   const handleNavigate = screenName => {
     logger.debug('SettingsScreen: Navigating to screen', { screenName });
@@ -24,18 +46,76 @@ const SettingsScreen = () => {
     navigation.navigate('DeleteAccount');
   };
 
-  const menuItems = [
+  const handleHelpSupport = () => {
+    logger.debug('SettingsScreen: Help & Support pressed');
+    Linking.openURL('mailto:support@rewind.app?subject=Rewind%20Support%20Request');
+  };
+
+  const sections = [
     {
-      id: 'privacy',
-      label: 'Privacy Policy',
-      icon: 'document-text-outline',
-      onPress: () => handleNavigate('PrivacyPolicy'),
+      title: 'Account',
+      items: [
+        {
+          id: 'editProfile',
+          label: 'Edit Profile',
+          icon: 'person-outline',
+          onPress: () => handleNavigate('EditProfile'),
+        },
+      ],
     },
     {
-      id: 'terms',
-      label: 'Terms of Service',
-      icon: 'document-outline',
-      onPress: () => handleNavigate('TermsOfService'),
+      title: 'Privacy',
+      items: [
+        {
+          id: 'blockedUsers',
+          label: 'Blocked Users',
+          icon: 'ban-outline',
+          onPress: () => handleNavigate('BlockedUsers'),
+        },
+        {
+          id: 'recentlyDeleted',
+          label: 'Recently Deleted',
+          icon: 'trash-outline',
+          onPress: () => handleNavigate('RecentlyDeleted'),
+        },
+      ],
+    },
+    {
+      title: 'Legal',
+      items: [
+        {
+          id: 'privacy',
+          label: 'Privacy Policy',
+          icon: 'document-text-outline',
+          onPress: () => handleNavigate('PrivacyPolicy'),
+        },
+        {
+          id: 'terms',
+          label: 'Terms of Service',
+          icon: 'document-outline',
+          onPress: () => handleNavigate('TermsOfService'),
+        },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        {
+          id: 'helpSupport',
+          label: 'Help & Support',
+          icon: 'help-circle-outline',
+          onPress: handleHelpSupport,
+        },
+      ],
+    },
+  ];
+
+  const actionItems = [
+    {
+      id: 'signout',
+      label: 'Sign Out',
+      icon: 'log-out-outline',
+      onPress: handleSignOut,
     },
     {
       id: 'delete',
@@ -57,15 +137,44 @@ const SettingsScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Menu Items */}
+      {/* Sectioned Menu Items */}
       <View style={styles.menuContainer}>
-        {menuItems.map(item => (
+        {sections.map(section => (
+          <View key={section.title}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{section.title}</Text>
+            </View>
+            {section.items.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuItem}
+                onPress={item.onPress}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={item.danger ? colors.status.danger : colors.icon.primary}
+                  />
+                  <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
+                    {item.label}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.icon.tertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
+
+        {/* Action Items (Sign Out, Delete Account) - no header */}
+        {actionItems.map(item => (
           <TouchableOpacity
             key={item.id}
             style={styles.menuItem}
@@ -73,14 +182,25 @@ const SettingsScreen = () => {
             activeOpacity={0.7}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name={item.icon} size={22} color={item.danger ? '#FF3B30' : '#FFFFFF'} />
+              <Ionicons
+                name={item.icon}
+                size={22}
+                color={item.danger ? colors.status.danger : colors.icon.primary}
+              />
               <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
                 {item.label}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666666" />
+            <Ionicons name="chevron-forward" size={20} color={colors.icon.tertiary} />
           </TouchableOpacity>
         ))}
+      </View>
+
+      {/* App Version */}
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>
+          Version {Application.nativeApplicationVersion || '0.1.0'}
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -89,7 +209,7 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -98,7 +218,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: colors.border.subtle,
   },
   backButton: {
     padding: 4,
@@ -106,13 +226,27 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   headerSpacer: {
     width: 36, // Balance the back button width
   },
   menuContainer: {
     marginTop: 24,
+  },
+  sectionHeader: {
+    backgroundColor: colors.background.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   menuItem: {
     flexDirection: 'row',
@@ -121,7 +255,7 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: colors.border.subtle,
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -129,11 +263,20 @@ const styles = StyleSheet.create({
   },
   menuItemLabel: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginLeft: 16,
   },
   menuItemLabelDanger: {
-    color: '#FF3B30',
+    color: colors.status.danger,
+  },
+  versionContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  versionText: {
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
 });
 

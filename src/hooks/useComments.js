@@ -31,8 +31,11 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [initialMention, setInitialMention] = useState(null); // @username to pre-fill in input
   const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null); // Comment ID to highlight (17-02)
   const unsubscribeRef = useRef(null);
+  const highlightTimeoutRef = useRef(null); // Timeout ref for auto-clear (17-02)
 
   logger.debug('useComments: Hook initialized', {
     photoId,
@@ -109,22 +112,34 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
       }
 
       const parentId = replyingTo?.id || null;
+      // mentionedCommentId is the same as parentId for replies (tracks which comment was replied to)
+      const mentionedCommentId = parentId;
 
       logger.info('useComments.addComment: Adding comment', {
         photoId,
         textLength: text?.length,
         hasMedia: !!mediaUrl,
         isReply: !!parentId,
+        mentionedCommentId,
       });
 
-      const result = await addComment(photoId, currentUserId, text, mediaUrl, mediaType, parentId);
+      const result = await addComment(
+        photoId,
+        currentUserId,
+        text,
+        mediaUrl,
+        mediaType,
+        parentId,
+        mentionedCommentId
+      );
 
       if (result.success) {
         logger.info('useComments.addComment: Success', {
           commentId: result.commentId,
         });
-        // Clear reply state after successful comment
+        // Clear reply state and initial mention after successful comment
         setReplyingTo(null);
+        setInitialMention(null);
       } else {
         logger.error('useComments.addComment: Failed', {
           error: result.error,
@@ -273,7 +288,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   );
 
   /**
-   * Set reply target
+   * Set reply target and initial @mention for input
    *
    * @param {object|null} comment - Comment to reply to, or null to cancel
    */
@@ -281,16 +296,50 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     logger.debug('useComments.setReplyingTo', {
       commentId: comment?.id,
       isCancel: !comment,
+      username: comment?.user?.username,
     });
     setReplyingTo(comment);
+
+    // Set initial mention for auto-fill in input
+    if (comment) {
+      const username = comment.user?.username || comment.user?.displayName;
+      setInitialMention(username || null);
+    } else {
+      setInitialMention(null);
+    }
   }, []);
 
   /**
-   * Cancel reply mode
+   * Cancel reply mode and clear initial mention
    */
   const handleCancelReply = useCallback(() => {
     logger.debug('useComments.cancelReply');
     setReplyingTo(null);
+    setInitialMention(null);
+  }, []);
+
+  /**
+   * Highlight a comment temporarily (17-02)
+   * Sets highlightedCommentId and auto-clears after 1.5s
+   *
+   * @param {string} commentId - Comment ID to highlight
+   */
+  const highlightComment = useCallback(commentId => {
+    logger.debug('useComments.highlightComment', { commentId });
+
+    // Clear any existing timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
+    // Set the highlighted comment
+    setHighlightedCommentId(commentId);
+
+    // Auto-clear after 1.5s
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedCommentId(null);
+      highlightTimeoutRef.current = null;
+    }, 1500);
   }, []);
 
   /**
@@ -360,13 +409,16 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     loading,
     error,
     replyingTo,
+    initialMention,
     userLikes,
+    highlightedCommentId, // 17-02: Currently highlighted comment
     // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
     toggleLike: handleToggleLike,
     setReplyingTo: handleSetReplyingTo,
     cancelReply: handleCancelReply,
+    highlightComment, // 17-02: Set highlighted comment with auto-clear
     // Utilities
     canDeleteComment,
     isOwnerComment,

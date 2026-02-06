@@ -12,13 +12,13 @@
 - Impact: Production errors only visible in device/Expo logs
 - Fix approach: Implement Sentry SDK integration in logger.js and ErrorBoundary
 
-**Client-Side Friend Filtering:**
+**Outdated Code Comments in feedService.js:**
 
-- Issue: Feed queries all journaled photos, filters friends client-side
-- Files: `src/services/firebase/feedService.js`, `src/hooks/useFeedPhotos.js`
-- Why: Firestore doesn't support `in` queries with dynamic friend lists efficiently
-- Impact: Fetches more data than needed, potential performance concern at scale
-- Fix approach: Denormalize friend IDs into photo documents or use Firebase Extensions
+- Issue: Comments in feedService.js mention "avoiding composite index requirement" which is outdated
+- Files: `src/services/firebase/feedService.js` (lines ~51-52, ~130-131)
+- Why: Code was refactored to use server-side Firestore filtering with composite indexes
+- Impact: Misleading documentation for future developers
+- Fix approach: Update comments to reflect current server-side filtering pattern
 
 ## Known Bugs
 
@@ -52,11 +52,11 @@ _No critical bugs identified during analysis._
 
 **Feed Loading:**
 
-- Problem: Fetches all friends' journaled photos, then filters
+- Status: RESOLVED - Uses server-side Firestore filtering with composite indexes
 - Files: `src/services/firebase/feedService.js`, `src/hooks/useFeedPhotos.js`
-- Measurement: Not profiled, potential concern with many friends
-- Cause: Client-side filtering after Firestore query
-- Improvement path: Pagination, denormalization, or Firebase Extensions
+- Pattern: `where()` clauses filter by photoState, capturedAt, userId at Firestore level
+- Indexes: Defined in `firestore.indexes.json`
+- Remaining concern: Very large friend lists may still benefit from pagination
 
 **Darkroom Polling:**
 

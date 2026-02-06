@@ -6,33 +6,97 @@ import {
   Modal,
   TouchableOpacity,
   Animated,
-  Dimensions,
   Platform,
   Easing,
+  Dimensions,
 } from 'react-native';
-import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
 
-// Radial gradient background component for hold button
-const RadialGradientButton = ({ centerColor, edgeColor, width, height, children, style }) => (
-  <View style={[{ width, height, position: 'relative' }, style]}>
-    <Svg width={width} height={height} style={{ position: 'absolute' }}>
-      <Defs>
-        <RadialGradient id="holdButtonGrad" cx="50%" cy="50%" rx="95%" ry="95%">
-          <Stop offset="0%" stopColor={centerColor} />
-          <Stop offset="40%" stopColor={centerColor} />
-          <Stop offset="100%" stopColor={edgeColor} />
-        </RadialGradient>
-      </Defs>
-      <Rect x="0" y="0" width={width} height={height} rx="16" fill="url(#holdButtonGrad)" />
-    </Svg>
-    {children}
-  </View>
-);
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Card with gradient border effect - consistent edge highlight using stroke
+const GradientCard = ({ centerColor, width, height, borderRadius = 8, children }) => {
+  const strokeWidth = 1.5;
+  const inset = strokeWidth / 2;
+
+  return (
+    <View style={{ width, height, position: 'relative' }}>
+      <Svg width={width} height={height} style={{ position: 'absolute' }}>
+        <Defs>
+          <LinearGradient id="cardStrokeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.6" />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          rx={borderRadius}
+          ry={borderRadius}
+          fill={centerColor}
+        />
+        <Rect
+          x={inset}
+          y={inset}
+          width={width - strokeWidth}
+          height={height - strokeWidth}
+          rx={borderRadius - 1}
+          ry={borderRadius - 1}
+          fill="none"
+          stroke="url(#cardStrokeGrad)"
+          strokeWidth={strokeWidth}
+        />
+      </Svg>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>{children}</View>
+    </View>
+  );
+};
+
+// Hold button with gradient border effect
+const GradientButton = ({ centerColor, width, height, borderRadius = 16, children, style }) => {
+  const strokeWidth = 2;
+  const inset = strokeWidth / 2;
+
+  return (
+    <View style={[{ width, height, position: 'relative' }, style]}>
+      <Svg width={width} height={height} style={{ position: 'absolute' }}>
+        <Defs>
+          <LinearGradient id="buttonStrokeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.5" />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          rx={borderRadius}
+          ry={borderRadius}
+          fill={centerColor}
+        />
+        <Rect
+          x={inset}
+          y={inset}
+          width={width - strokeWidth}
+          height={height - strokeWidth}
+          rx={borderRadius - 1}
+          ry={borderRadius - 1}
+          fill="none"
+          stroke="url(#buttonStrokeGrad)"
+          strokeWidth={strokeWidth}
+        />
+      </Svg>
+      {children}
+    </View>
+  );
+};
+
 const SHEET_HEIGHT = 320; // Increased height for new button design
 
 // Card dimensions for darkroom card stack (matching CameraScreen)
@@ -64,13 +128,14 @@ const HAPTIC_CONFIG = {
 
 // Colors - using design tokens from constants/colors.js
 const COLORS = {
-  sheetBackground: colors.background.secondary, // '#1A1A1A'
+  sheetBackground: colors.background.secondary, // '#111111'
   textPrimary: colors.text.primary, // '#FFFFFF'
   textSecondary: colors.text.secondary, // '#888888'
   statusReady: colors.status.ready, // '#22C55E'
   statusDeveloping: colors.status.developing, // '#EF4444'
   cardBackground: colors.background.tertiary, // '#2A2A2A'
-  cardBorder: 'rgba(255, 255, 255, 0.3)', // Keep as-is
+  cardBorder: colors.overlay.light, // rgba(255, 255, 255, 0.1)
+  overlayDark: colors.overlay.dark, // rgba(0, 0, 0, 0.5)
   // Gradient colors from design tokens
   buttonGradientStart: colors.brand.gradient.button[0], // '#4C1D95'
   buttonGradientEnd: colors.brand.gradient.button[1], // '#7C3AED'
@@ -387,7 +452,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
         <View
           key={i}
           style={[
-            styles.cardStackCard,
+            styles.cardStackCardWrapper,
             {
               position: 'absolute',
               transform: [{ rotate: `${baseRotation}deg` }, { translateX: baseOffset }],
@@ -395,9 +460,16 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
             },
           ]}
         >
-          {isTopCard && (
-            <Text style={styles.cardStackText}>{totalCount > 99 ? '99+' : totalCount}</Text>
-          )}
+          <GradientCard
+            centerColor={COLORS.cardBackground}
+            width={CARD_WIDTH}
+            height={CARD_HEIGHT}
+            borderRadius={8}
+          >
+            {isTopCard && (
+              <Text style={styles.cardStackText}>{totalCount > 99 ? '99+' : totalCount}</Text>
+            )}
+          </GradientCard>
         </View>
       );
     }
@@ -461,19 +533,19 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
               onResponderRelease={handlePressOut}
               onResponderTerminate={handlePressOut}
             >
-              {/* Base radial gradient button - pink center, white edges */}
-              <RadialGradientButton
-                centerColor="#DB2777"
-                edgeColor="#FFFFFF"
+              {/* Purple button with gradient border */}
+              <GradientButton
+                centerColor={COLORS.buttonGradientEnd}
                 width={SCREEN_WIDTH - 48}
                 height={64}
+                borderRadius={16}
                 style={styles.holdButtonBase}
               >
-                {/* Fill overlay that darkens the gradient left-to-right */}
+                {/* Fill overlay that darkens left-to-right */}
                 <Animated.View
                   style={[
                     styles.fillOverlay,
-                    { width: progressWidth, backgroundColor: 'rgba(0, 0, 0, 0.35)' },
+                    { width: progressWidth, backgroundColor: COLORS.overlayDark },
                   ]}
                 />
 
@@ -484,7 +556,7 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
                     {isPressing ? 'Revealing...' : 'Hold to reveal photos'}
                   </Text>
                 </View>
-              </RadialGradientButton>
+              </GradientButton>
             </View>
           )}
 
@@ -503,7 +575,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: COLORS.overlayDark,
   },
   sheet: {
     backgroundColor: COLORS.sheetBackground,
@@ -545,25 +617,22 @@ const styles = StyleSheet.create({
   },
   // Card stack container
   cardStackContainer: {
-    width: CARD_WIDTH + 20,
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH + 40,
+    height: CARD_HEIGHT + 32,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
-  cardStackCard: {
+  cardStackCardWrapper: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 8,
-    backgroundColor: COLORS.cardBackground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    // White glow effect emanating from card edges
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   cardStackText: {
     color: COLORS.textPrimary,
@@ -578,20 +647,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   holdButtonBase: {
-    width: '100%',
-    height: 64,
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    // backgroundColor provided by LinearGradient
   },
   fillOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    overflow: 'hidden',
+    top: 2,
+    left: 2,
+    bottom: 2,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   holdButtonContent: {
     flexDirection: 'row',

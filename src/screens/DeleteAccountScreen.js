@@ -10,39 +10,53 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from '@react-native-firebase/auth';
 import { sendVerificationCode, verifyCode } from '../services/firebase/phoneAuthService';
-import { deleteUserAccount } from '../services/firebase/accountService';
+import { scheduleAccountDeletion } from '../services/firebase/accountService';
+import {
+  downloadAllPhotos,
+  requestMediaLibraryPermission,
+} from '../services/downloadPhotosService';
 import { formatPhoneWithCountry } from '../utils/phoneUtils';
 import { usePhoneAuth } from '../context/PhoneAuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components';
+import DownloadProgress from '../components/DownloadProgress';
+import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 /**
  * DeleteAccountScreen
  *
- * Multi-step account deletion flow:
- * 1. Warning - Explain what will be deleted
+ * Multi-step account deletion scheduling flow with 30-day grace period:
+ * 1. Warning - Explain 30-day grace period, offer photo download, show what will be deleted
  * 2. Verify - Re-authenticate via phone
  * 3. Code - Enter verification code
- * 4. Deleting - Show progress and call deletion
+ * 4. Scheduling - Show progress and schedule deletion (not immediate)
  *
- * Requires phone re-authentication before deletion for security.
+ * After scheduling, user is signed out. Logging back in cancels the deletion.
+ * Requires phone re-authentication before scheduling for security.
  */
 const DeleteAccountScreen = () => {
   const navigation = useNavigation();
   const { confirmationRef } = usePhoneAuth();
+  const { signOut, user } = useAuth();
 
-  // Step state: 'warning' | 'verify' | 'code' | 'deleting'
+  // Step state: 'warning' | 'verify' | 'code' | 'scheduling'
   const [step, setStep] = useState('warning');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [code, setCode] = useState('');
   const [retryDelay, setRetryDelay] = useState(0);
+
+  // Download state
+  const [downloadStatus, setDownloadStatus] = useState('idle'); // 'idle' | 'downloading' | 'complete' | 'error'
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
 
   const inputRef = useRef(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -182,9 +196,9 @@ const DeleteAccountScreen = () => {
       const result = await verifyCode(confirmation, code);
 
       if (result.success) {
-        logger.info('DeleteAccountScreen: Verification successful, proceeding to deletion');
-        setStep('deleting');
-        await handleDeleteAccount();
+        logger.info('DeleteAccountScreen: Verification successful, proceeding to scheduling');
+        setStep('scheduling');
+        await handleScheduleDeletion();
       } else {
         logger.warn('DeleteAccountScreen: Verification failed', { error: result.error });
         setError(result.error);
@@ -205,24 +219,45 @@ const DeleteAccountScreen = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    logger.info('DeleteAccountScreen: Starting account deletion');
+  const handleScheduleDeletion = async () => {
+    logger.info('DeleteAccountScreen: Scheduling account deletion');
 
     try {
-      const result = await deleteUserAccount();
+      const result = await scheduleAccountDeletion();
 
       if (result.success) {
-        logger.info('DeleteAccountScreen: Account deleted successfully');
-        // User is automatically signed out when auth user is deleted
-        // AuthContext listener will handle navigation to login
+        logger.info('DeleteAccountScreen: Account scheduled for deletion', {
+          scheduledDate: result.scheduledDate,
+        });
+
+        // Format the scheduled date for display
+        const formattedDate = result.scheduledDate.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        });
+
+        Alert.alert(
+          'Account Scheduled for Deletion',
+          `Your account will be deleted on ${formattedDate}. You can cancel anytime by logging back in.`,
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                logger.info('DeleteAccountScreen: Signing out after scheduling');
+                await signOut();
+              },
+            },
+          ]
+        );
       } else {
-        logger.error('DeleteAccountScreen: Deletion failed', { error: result.error });
-        Alert.alert('Deletion Failed', result.error || 'Failed to delete account.', [
+        logger.error('DeleteAccountScreen: Scheduling failed', { error: result.error });
+        Alert.alert('Scheduling Failed', result.error || 'Failed to schedule account deletion.', [
           { text: 'OK', onPress: () => setStep('warning') },
         ]);
       }
     } catch (err) {
-      logger.error('DeleteAccountScreen: Unexpected error during deletion', {
+      logger.error('DeleteAccountScreen: Unexpected error during scheduling', {
         error: err.message,
       });
       Alert.alert('Error', 'An unexpected error occurred. Please try again.', [
@@ -231,35 +266,142 @@ const DeleteAccountScreen = () => {
     }
   };
 
+  // Handle download all photos
+  const handleDownloadPhotos = async () => {
+    logger.info('DeleteAccountScreen: Starting download all photos');
+
+    // Request permission first
+    const hasPermission = await requestMediaLibraryPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Required',
+        'To download your photos, we need access to your photo library. Please enable this in your device settings.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setDownloadStatus('downloading');
+    setDownloadProgress({ current: 0, total: 0 });
+
+    try {
+      const result = await downloadAllPhotos(user?.uid, progress => {
+        setDownloadProgress(progress);
+      });
+
+      if (result.success) {
+        setDownloadStatus('complete');
+        logger.info('DeleteAccountScreen: Download complete', {
+          downloaded: result.downloaded,
+          failed: result.failed,
+        });
+      } else {
+        setDownloadStatus('error');
+        logger.warn('DeleteAccountScreen: Download failed', { error: result.error });
+      }
+    } catch (err) {
+      logger.error('DeleteAccountScreen: Download error', { error: err.message });
+      setDownloadStatus('error');
+    }
+  };
+
+  // Format date 30 days from now
+  const getScheduledDateText = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
   // Render warning step
   const renderWarningStep = () => (
-    <View style={styles.content}>
+    <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
       <View style={styles.warningIconContainer}>
-        <Ionicons name="warning-outline" size={64} color="#FF3B30" />
+        <Ionicons name="warning-outline" size={64} color={colors.status.danger} />
       </View>
 
       <Text style={styles.title}>Delete Account</Text>
 
       <View style={styles.warningBox}>
-        <Text style={styles.warningText}>This will permanently delete:</Text>
+        <Text style={styles.warningText}>
+          Your account will be scheduled for deletion in{' '}
+          <Text style={styles.warningTextBold}>30 days</Text>
+        </Text>
+        <Text style={styles.warningSubtext}>
+          During this time, you can cancel by logging back in.
+        </Text>
+        <Text style={[styles.warningText, styles.warningTextMargin]}>
+          After 30 days, the following will be permanently deleted:
+        </Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>All your photos</Text>
-          <Text style={styles.bulletItem}>Your friend connections</Text>
-          <Text style={styles.bulletItem}>Your profile and account data</Text>
+          <View style={styles.bulletRow}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>All your photos</Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>Your friend connections</Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>Your profile and account data</Text>
+          </View>
         </View>
-        <Text style={styles.warningTextBold}>This action cannot be undone.</Text>
+      </View>
+
+      {/* Download section */}
+      <View style={styles.downloadSection}>
+        <Text style={styles.downloadHeading}>Save Your Memories</Text>
+        <Text style={styles.downloadSubtext}>
+          Download all your photos to your camera roll before deleting
+        </Text>
+
+        {downloadStatus === 'idle' && (
+          <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPhotos}>
+            <Ionicons
+              name="download-outline"
+              size={20}
+              color={colors.brand.purple}
+              style={styles.downloadIcon}
+            />
+            <Text style={styles.downloadButtonText}>Download All Photos</Text>
+          </TouchableOpacity>
+        )}
+
+        {(downloadStatus === 'downloading' ||
+          downloadStatus === 'complete' ||
+          downloadStatus === 'error') && (
+          <DownloadProgress
+            current={downloadProgress.current}
+            total={downloadProgress.total}
+            status={downloadStatus === 'downloading' ? 'downloading' : downloadStatus}
+          />
+        )}
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.dangerButton} onPress={handleUnderstand}>
-          <Text style={styles.dangerButtonText}>I understand, delete my account</Text>
+        <TouchableOpacity
+          style={[
+            styles.dangerButton,
+            downloadStatus === 'downloading' && styles.dangerButtonDisabled,
+          ]}
+          onPress={handleUnderstand}
+          disabled={downloadStatus === 'downloading'}
+        >
+          <Text
+            style={[
+              styles.dangerButtonText,
+              downloadStatus === 'downloading' && styles.dangerButtonTextDisabled,
+            ]}
+          >
+            Schedule Deletion
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 
   // Render verify step
@@ -314,7 +456,7 @@ const DeleteAccountScreen = () => {
             textContentType="oneTimeCode"
             autoComplete="sms-otp"
             placeholder="000000"
-            placeholderTextColor="#666666"
+            placeholderTextColor={colors.text.tertiary}
             editable={!loading && retryDelay === 0}
           />
         </Animated.View>
@@ -335,22 +477,22 @@ const DeleteAccountScreen = () => {
     </KeyboardAvoidingView>
   );
 
-  // Render deleting step
-  const renderDeletingStep = () => (
+  // Render scheduling step
+  const renderSchedulingStep = () => (
     <View style={styles.contentCentered}>
-      <ActivityIndicator size="large" color="#FF3B30" />
-      <Text style={styles.deletingText}>Deleting account...</Text>
-      <Text style={styles.deletingSubtext}>Please wait while we remove your data</Text>
+      <ActivityIndicator size="large" color={colors.status.danger} />
+      <Text style={styles.deletingText}>Scheduling deletion...</Text>
+      <Text style={styles.deletingSubtext}>Please wait while we process your request</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header - hide during deleting */}
-      {step !== 'deleting' && (
+      {/* Header - hide during scheduling */}
+      {step !== 'scheduling' && (
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Delete Account</Text>
           <View style={styles.headerSpacer} />
@@ -361,7 +503,7 @@ const DeleteAccountScreen = () => {
       {step === 'warning' && renderWarningStep()}
       {step === 'verify' && renderVerifyStep()}
       {step === 'code' && renderCodeStep()}
-      {step === 'deleting' && renderDeletingStep()}
+      {step === 'scheduling' && renderSchedulingStep()}
     </SafeAreaView>
   );
 };
@@ -369,7 +511,7 @@ const DeleteAccountScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   keyboardAvoid: {
     flex: 1,
@@ -381,7 +523,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: colors.border.subtle,
   },
   backButton: {
     padding: 4,
@@ -389,7 +531,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   headerSpacer: {
     width: 36,
@@ -398,6 +540,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 40,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
   },
   contentCentered: {
     flex: 1,
@@ -412,25 +563,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#999999',
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
   phoneNumber: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 32,
   },
   warningBox: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.background.secondary,
     borderRadius: 12,
     padding: 20,
     marginTop: 24,
@@ -438,23 +589,40 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 16,
+    color: colors.text.primary,
+    lineHeight: 22,
   },
   warningTextBold: {
-    fontSize: 16,
-    color: '#FF3B30',
-    fontWeight: '600',
-    marginTop: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  warningSubtext: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  warningTextMargin: {
+    marginTop: 8,
+    marginBottom: 12,
   },
   bulletList: {
-    marginLeft: 8,
+    marginLeft: 4,
   },
-  bulletItem: {
+  bulletRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  bulletDot: {
     fontSize: 16,
-    color: '#CCCCCC',
-    marginBottom: 8,
-    paddingLeft: 8,
+    color: colors.text.secondary,
+    marginRight: 8,
+    width: 12,
+  },
+  bulletText: {
+    fontSize: 15,
+    color: colors.text.secondary,
+    flex: 1,
   },
   buttonContainer: {
     marginTop: 'auto',
@@ -462,16 +630,55 @@ const styles = StyleSheet.create({
   },
   dangerButton: {
     borderWidth: 2,
-    borderColor: '#FF3B30',
+    borderColor: colors.status.danger,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 16,
   },
+  dangerButtonDisabled: {
+    borderColor: colors.text.tertiary,
+    opacity: 0.5,
+  },
   dangerButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF3B30',
+    color: colors.status.danger,
+  },
+  dangerButtonTextDisabled: {
+    color: colors.text.tertiary,
+  },
+  downloadSection: {
+    marginBottom: 32,
+  },
+  downloadHeading: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  downloadSubtext: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: 16,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.brand.purple,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  downloadIcon: {
+    marginRight: 8,
+  },
+  downloadButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.brand.purple,
   },
   cancelButton: {
     paddingVertical: 16,
@@ -479,7 +686,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#999999',
+    color: colors.text.secondary,
   },
   primaryButton: {
     marginBottom: 16,
@@ -496,13 +703,13 @@ const styles = StyleSheet.create({
     letterSpacing: 16,
     textAlign: 'center',
     borderWidth: 2,
-    borderColor: '#333333',
+    borderColor: colors.border.subtle,
     borderRadius: 12,
-    backgroundColor: '#1A1A1A',
-    color: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
+    color: colors.text.primary,
   },
   codeInputError: {
-    borderColor: '#FF3B30',
+    borderColor: colors.status.danger,
   },
   errorContainer: {
     alignItems: 'center',
@@ -510,31 +717,31 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#FF3B30',
+    color: colors.status.danger,
     textAlign: 'center',
     fontWeight: '600',
   },
   retryDelayText: {
     fontSize: 12,
-    color: '#666666',
+    color: colors.text.tertiary,
     textAlign: 'center',
     marginTop: 4,
   },
   loadingText: {
     fontSize: 16,
-    color: '#999999',
+    color: colors.text.secondary,
     textAlign: 'center',
     marginTop: 16,
   },
   deletingText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginTop: 24,
   },
   deletingSubtext: {
     fontSize: 14,
-    color: '#999999',
+    color: colors.text.secondary,
     marginTop: 8,
   },
 });

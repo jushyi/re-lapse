@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, Input } from '../components';
+import { Button, Input, StepIndicator, ProfileSongCard } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto } from '../services/firebase/storageService';
 import {
@@ -20,19 +21,142 @@ import {
   getNotificationToken,
   storeNotificationToken,
 } from '../services/firebase/notificationService';
-import { validateLength, sanitizeDisplayName, sanitizeBio } from '../utils/validation';
+import {
+  validateLength,
+  validateUsername,
+  sanitizeDisplayName,
+  sanitizeBio,
+} from '../utils/validation';
+import { checkUsernameAvailability, cancelProfileSetup } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation }) => {
-  const { user, userProfile, updateUserProfile, updateUserDocumentNative } = useAuth();
+  const { user, userProfile, updateUserProfile, updateUserDocumentNative, signOut } = useAuth();
 
-  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  // Detect default placeholder values and use empty string instead
+  // AuthContext sets 'New User' and 'user_{timestamp}' for new users
+  const isDefaultDisplayName = !userProfile?.displayName || userProfile.displayName === 'New User';
+  const isDefaultUsername = !userProfile?.username || /^user_\d+$/.test(userProfile.username);
+
+  const [displayName, setDisplayName] = useState(
+    isDefaultDisplayName ? '' : userProfile.displayName
+  );
+  const [username, setUsername] = useState(isDefaultUsername ? '' : userProfile.username);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
 
   const [errors, setErrors] = useState({});
+  const usernameCheckTimeout = useRef(null);
+
+  // Handle cancel profile setup
+  const handleCancel = () => {
+    Alert.alert(
+      'Cancel Setup?',
+      "Your profile won't be saved. You'll need to verify your phone number again to sign up.",
+      [
+        {
+          text: 'Keep Setting Up',
+          style: 'cancel',
+        },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await cancelProfileSetup(user.uid);
+              if (result.success) {
+                await signOut();
+                // Auth state listener will navigate to PhoneInput
+              } else {
+                Alert.alert('Error', result.error || 'Could not cancel profile setup');
+              }
+            } catch (error) {
+              logger.error('ProfileSetupScreen.handleCancel: Error', error);
+              Alert.alert('Error', 'An unexpected error occurred');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Debounced username availability check
+  const checkUsername = useCallback(
+    async usernameToCheck => {
+      const normalizedUsername = usernameToCheck.toLowerCase().trim();
+
+      // Skip check if username hasn't changed from original
+      if (normalizedUsername === userProfile?.username?.toLowerCase()) {
+        setUsernameAvailable(true);
+        setCheckingUsername(false);
+        return;
+      }
+
+      // Validate format first
+      const formatError = validateUsername(normalizedUsername);
+      if (formatError) {
+        setErrors(prev => ({ ...prev, username: formatError }));
+        setCheckingUsername(false);
+        return;
+      }
+
+      setCheckingUsername(true);
+      const result = await checkUsernameAvailability(normalizedUsername, user.uid);
+
+      if (result.success) {
+        setUsernameAvailable(result.available);
+        if (!result.available) {
+          setErrors(prev => ({ ...prev, username: 'Username is already taken' }));
+        } else {
+          setErrors(prev => ({ ...prev, username: null }));
+        }
+      } else {
+        logger.error('Username availability check failed', { error: result.error });
+      }
+      setCheckingUsername(false);
+    },
+    [user.uid, userProfile?.username]
+  );
+
+  // Handle username change with debounce
+  const handleUsernameChange = useCallback(
+    text => {
+      const normalizedText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      setUsername(normalizedText);
+      setErrors(prev => ({ ...prev, username: null }));
+
+      // Clear previous timeout
+      if (usernameCheckTimeout.current) {
+        clearTimeout(usernameCheckTimeout.current);
+      }
+
+      // Don't check empty or very short usernames
+      if (normalizedText.length < 3) {
+        setUsernameAvailable(true);
+        return;
+      }
+
+      // Debounce the availability check
+      usernameCheckTimeout.current = setTimeout(() => {
+        checkUsername(normalizedText);
+      }, 500);
+    },
+    [checkUsername]
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout.current) {
+        clearTimeout(usernameCheckTimeout.current);
+      }
+    };
+  }, []);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -81,18 +205,40 @@ const ProfileSetupScreen = ({ navigation }) => {
     ]);
   };
 
+  const handleSongPress = () => {
+    navigation.navigate('SongSearch', {
+      onSongSelected: songWithClip => {
+        setSelectedSong(songWithClip);
+        logger.info('ProfileSetupScreen: Song selected', { songId: songWithClip.id });
+      },
+    });
+  };
+
   const validate = () => {
     const newErrors = {};
 
-    // Display name validation using centralized utility
-    const displayNameError = validateLength(displayName.trim(), 2, 50, 'Display name');
-    if (displayNameError) {
-      newErrors.displayName = displayNameError;
+    // Username validation
+    const usernameError = validateUsername(username.trim());
+    if (usernameError) {
+      newErrors.username = usernameError;
+    } else if (!usernameAvailable) {
+      newErrors.username = 'Username is already taken';
+    }
+
+    // Display name validation - check required first, then length
+    const trimmedDisplayName = displayName.trim();
+    if (!trimmedDisplayName) {
+      newErrors.displayName = 'Display name is required';
+    } else {
+      const displayNameError = validateLength(trimmedDisplayName, 2, 24, 'Display name');
+      if (displayNameError) {
+        newErrors.displayName = displayNameError;
+      }
     }
 
     // Bio validation (optional field)
     if (bio && bio.trim().length > 0) {
-      const bioError = validateLength(bio.trim(), 1, 150, 'Bio');
+      const bioError = validateLength(bio.trim(), 1, 240, 'Bio');
       if (bioError) {
         newErrors.bio = bioError;
       }
@@ -128,8 +274,15 @@ const ProfileSetupScreen = ({ navigation }) => {
     }
   };
 
-  const handleCompleteSetup = async () => {
+  const handleNextStep = async () => {
     if (!validate()) {
+      Alert.alert('Required Fields', 'Please fill in all required fields before continuing.');
+      return;
+    }
+
+    // Check if username is still being validated
+    if (checkingUsername) {
+      Alert.alert('Please Wait', 'Still checking username availability...');
       return;
     }
 
@@ -153,16 +306,18 @@ const ProfileSetupScreen = ({ navigation }) => {
 
       // Update user document with sanitized data
       const updateData = {
+        username: username.toLowerCase().trim(),
         displayName: sanitizeDisplayName(displayName.trim()),
         bio: sanitizeBio(bio.trim()),
         photoURL,
+        profileSong: selectedSong,
         profileSetupCompleted: true,
       };
 
       const updateResult = await updateUserDocumentNative(user.uid, updateData);
 
       if (updateResult.success) {
-        // Update local profile state - this will trigger navigation via AppNavigator
+        // Update local profile state
         updateUserProfile({
           ...userProfile,
           ...updateData,
@@ -172,7 +327,8 @@ const ProfileSetupScreen = ({ navigation }) => {
         // This runs in background, doesn't block navigation
         requestNotificationPermissionsAsync();
 
-        // Navigation will be handled automatically by AuthContext state change
+        // Navigate to Selects screen (now in same Onboarding stack)
+        navigation.navigate('Selects');
       } else {
         Alert.alert('Update Failed', 'Could not save profile information');
       }
@@ -181,25 +337,6 @@ const ProfileSetupScreen = ({ navigation }) => {
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleSkip = () => {
-    // Set profile as completed even if user skips
-    const skipData = {
-      displayName: userProfile?.username || 'User',
-      bio: '',
-      photoURL: null,
-      profileSetupCompleted: true,
-    };
-
-    updateUserDocumentNative(user.uid, skipData).then(result => {
-      if (result.success) {
-        updateUserProfile({
-          ...userProfile,
-          ...skipData,
-        });
-      }
-    });
   };
 
   return (
@@ -213,6 +350,12 @@ const ProfileSetupScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
+                <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            <StepIndicator currentStep={1} totalSteps={2} style={styles.stepIndicator} />
             <Text style={styles.title}>Complete Your Profile</Text>
             <Text style={styles.subtitle}>Help your friends recognize you</Text>
 
@@ -224,7 +367,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                 />
               ) : (
                 <View style={styles.placeholderPhoto}>
-                  <Text style={styles.placeholderIcon}>📷</Text>
+                  <Ionicons name="camera-outline" size={40} color={colors.text.secondary} />
                   <Text style={styles.placeholderText}>Add Photo</Text>
                 </View>
               )}
@@ -240,14 +383,27 @@ const ProfileSetupScreen = ({ navigation }) => {
                   if (errors.displayName) setErrors({ ...errors, displayName: null });
                 }}
                 error={errors.displayName}
+                maxLength={24}
+                showCharacterCount={true}
               />
 
               <Input
                 label="Username"
-                placeholder={userProfile?.username || 'username'}
-                value={userProfile?.username || ''}
-                editable={false}
-                style={styles.disabledInput}
+                placeholder="Choose a unique username"
+                value={username}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.username}
+                rightIcon={
+                  checkingUsername
+                    ? 'loading'
+                    : usernameAvailable && username.length >= 3 && !errors.username
+                      ? 'check'
+                      : null
+                }
+                maxLength={24}
+                showCharacterCount={true}
               />
 
               <Input
@@ -258,19 +414,38 @@ const ProfileSetupScreen = ({ navigation }) => {
                 multiline
                 numberOfLines={3}
                 style={styles.bioInput}
+                maxLength={240}
+                showCharacterCount={true}
               />
+
+              <View style={styles.songSection}>
+                <Text style={styles.songLabel}>Profile Song (Optional)</Text>
+                <ProfileSongCard
+                  song={selectedSong}
+                  isOwnProfile={true}
+                  onPress={handleSongPress}
+                  onLongPress={() => {
+                    if (selectedSong) {
+                      Alert.alert('Remove Song', 'Remove this song from your profile?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove',
+                          style: 'destructive',
+                          onPress: () => setSelectedSong(null),
+                        },
+                      ]);
+                    }
+                  }}
+                />
+              </View>
 
               <Button
-                title="Complete Setup"
+                title="Next step"
                 variant="primary"
-                onPress={handleCompleteSetup}
+                onPress={handleNextStep}
                 loading={uploading}
-                style={styles.completeButton}
+                style={styles.nextButton}
               />
-
-              <Text style={styles.skipText} onPress={handleSkip}>
-                Skip for now
-              </Text>
             </View>
           </View>
         </ScrollView>
@@ -293,8 +468,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 16,
     paddingBottom: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  backButton: {
+    padding: 4,
   },
   title: {
     fontSize: 28,
@@ -329,11 +512,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
   },
-  placeholderIcon: {
-    fontSize: 40,
-    marginBottom: 4,
-  },
   placeholderText: {
+    marginTop: 8,
     fontSize: 14,
     color: colors.text.secondary,
   },
@@ -347,15 +527,21 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-  completeButton: {
-    marginTop: 8,
-  },
-  skipText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
+  songSection: {
     marginTop: 16,
-    textDecorationLine: 'underline',
+    marginBottom: 8,
+  },
+  songLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: 8,
+  },
+  stepIndicator: {
+    marginBottom: 16,
+  },
+  nextButton: {
+    marginTop: 8,
   },
 });
 

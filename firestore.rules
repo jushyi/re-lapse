@@ -1,10 +1,13 @@
 rules_version = '2';
 // Hardened: 2026-01-24 - Phase 23 Security Audit
+// Updated: 2026-02-04 - Phase 21 UAT Fix (blocks + reports collections)
 // Changes:
 //   - Self-reaction prevention (request.auth.uid != resource.data.userId)
 //   - Immutable field protection on photos (userId, capturedAt, imageURL)
 //   - Friendship accept restricted to recipient only
 //   - Notification update restricted to read/readAt fields only
+//   - Blocks collection: blocker/blocked can read, blocker can create/delete
+//   - Reports collection: reporter can create, immutable after creation
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -111,11 +114,13 @@ service cloud.firestore {
       // Read access:
       // - Owner can always read their own photos
       // - Any authenticated user can read journaled photos (client-side filters by friends)
-      // Note: areFriends() cannot be used in collection queries due to Firestore limitations
-      // The feedService filters by friends client-side for the MVP
+      // - Friends can read each other's photos (for monthly albums, profile views)
+      // Note: areFriends() works for bounded queries (e.g., where userId == X)
       allow read: if isOwner(resource.data.userId) ||
                      (isAuthenticated() &&
-                      resource.data.photoState == 'journal');
+                      resource.data.photoState == 'journal') ||
+                     (isAuthenticated() &&
+                      areFriends(resource.data.userId));
 
       // Create: Only authenticated users can create photos for themselves
       allow create: if isAuthenticated() &&
@@ -261,6 +266,27 @@ service cloud.firestore {
     }
 
     // =============================================================================
+    // ALBUMS COLLECTION
+    // =============================================================================
+    match /albums/{albumId} {
+      // Users can read their own albums OR friends can read each other's albums
+      allow read: if isAuthenticated() &&
+                     (resource.data.userId == request.auth.uid ||
+                      areFriends(resource.data.userId));
+
+      // Users can create albums for themselves
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['userId', 'name', 'photoIds', 'coverPhotoId', 'createdAt']);
+
+      // Users can update their own albums
+      allow update: if isOwner(resource.data.userId);
+
+      // Users can delete their own albums
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // =============================================================================
     // PHOTO VIEWS COLLECTION (for "NEW" indicator tracking)
     // =============================================================================
     match /photoViews/{viewId} {
@@ -277,6 +303,61 @@ service cloud.firestore {
 
       // Users can delete their own view records
       allow delete: if isOwner(resource.data.userId);
+    }
+
+    // =============================================================================
+    // BLOCKS COLLECTION (user blocking)
+    // =============================================================================
+    // Document ID format: {blockerId}_{blockedId}
+    // Helper function to check if user is part of a block by parsing document ID
+    // This allows reading non-existent documents to check if a block exists
+    function isBlockMemberById(blockId) {
+      let parts = blockId.split('_');
+      return isAuthenticated() &&
+             parts.size() == 2 &&
+             (parts[0] == request.auth.uid || parts[1] == request.auth.uid);
+    }
+
+    match /blocks/{blockId} {
+      // Read: Users can read blocks where they are blocker or blocked
+      // - Blocker needs to see who they've blocked (for Unblock option)
+      // - Blocked user needs to filter content from people who blocked them
+      // Two cases:
+      // 1. Document exists: check resource.data fields
+      // 2. Document doesn't exist: check ID to allow "does block exist?" queries
+      allow read: if (isAuthenticated() &&
+                      (resource.data.blockerId == request.auth.uid ||
+                       resource.data.blockedId == request.auth.uid)) ||
+                     isBlockMemberById(blockId);
+
+      // Create: Users can create blocks where they are the blocker
+      allow create: if isAuthenticated() &&
+                       request.resource.data.blockerId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['blockerId', 'blockedId', 'createdAt']);
+
+      // Delete: Users can delete (unblock) blocks where they are the blocker
+      allow delete: if isAuthenticated() &&
+                       resource.data.blockerId == request.auth.uid;
+
+      // Update: Not allowed (blocks are created/deleted, not updated)
+      allow update: if false;
+    }
+
+    // =============================================================================
+    // REPORTS COLLECTION (user reports)
+    // =============================================================================
+    // Document ID format: {reporterId}_{reportedUserId}_{timestamp}
+    match /reports/{reportId} {
+      // Read: Only admins/Cloud Functions (users cannot read reports)
+      allow read: if false;
+
+      // Create: Users can create reports with themselves as reporter
+      allow create: if isAuthenticated() &&
+                       request.resource.data.reporterId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['reporterId', 'reportedUserId', 'reason', 'createdAt']);
+
+      // Update/Delete: Not allowed (reports are immutable once created)
+      allow update, delete: if false;
     }
 
     // =============================================================================

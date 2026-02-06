@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { colors } from './src/constants/colors';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { getAuth } from '@react-native-firebase/auth';
@@ -170,16 +171,18 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppNavigator />
-            <StatusBar style="auto" />
-            {showAnimatedSplash && <AnimatedSplash onAnimationComplete={handleSplashComplete} />}
-          </AuthProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppNavigator />
+              <StatusBar style="auto" />
+              {showAnimatedSplash && <AnimatedSplash onAnimationComplete={handleSplashComplete} />}
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </View>
   );
 }

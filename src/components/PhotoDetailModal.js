@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import EmojiPicker from 'rn-emoji-keyboard';
 import { getTimeAgo } from '../utils/timeUtils';
 import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
 import { styles } from '../styles/PhotoDetailModal.styles';
@@ -54,6 +55,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
  * @param {string} currentUserId - Current user's ID
  * @param {function} onRequestNextFriend - Callback for friend-to-friend transition (stories mode)
  * @param {boolean} hasNextFriend - Whether there's another friend's stories after this
+ * @param {boolean} isOwnStory - Whether viewing user's own story (disables reactions)
+ * @param {function} onAvatarPress - Callback when avatar is tapped (userId, username) -> navigate to profile
  */
 const PhotoDetailModal = ({
   mode = 'feed',
@@ -68,6 +71,8 @@ const PhotoDetailModal = ({
   onRequestNextFriend,
   hasNextFriend = false,
   initialShowComments = false,
+  isOwnStory = false,
+  onAvatarPress,
 }) => {
   // Cube transition animation for friend-to-friend
   const cubeRotation = useRef(new Animated.Value(0)).current;
@@ -79,6 +84,12 @@ const PhotoDetailModal = ({
 
   // Progress bar scroll ref for auto-scrolling
   const progressScrollRef = useRef(null);
+
+  // Emoji scroll ref for auto-scrolling when new emoji added
+  const emojiScrollRef = useRef(null);
+
+  // Highlight fade animation for newly added emoji (1 second fade)
+  const highlightOpacity = useRef(new Animated.Value(1)).current;
 
   // Track previous visibility for initialShowComments logic (UAT-009 fix)
   const wasVisible = useRef(false);
@@ -127,6 +138,7 @@ const PhotoDetailModal = ({
 
     return true;
   }, [hasNextFriend, onRequestNextFriend, cubeRotation, isTransitioning]);
+
   const {
     // Mode
     showProgressBar,
@@ -153,6 +165,13 @@ const PhotoDetailModal = ({
     orderedEmojis,
     getUserReactionCount,
     handleEmojiPress,
+
+    // Custom emoji picker
+    showEmojiPicker,
+    setShowEmojiPicker,
+    handleOpenEmojiPicker,
+    handleEmojiPickerSelect,
+    newlyAddedEmoji,
   } = usePhotoDetailModal({
     mode,
     photo,
@@ -165,6 +184,35 @@ const PhotoDetailModal = ({
     currentUserId,
     onFriendTransition: hasNextFriend ? handleFriendTransition : null,
   });
+
+  // Check if viewing own photo (disable avatar tap)
+  // Must be after hook call since currentPhoto comes from the hook
+  const isOwnPhoto = currentPhoto?.userId === currentUserId;
+
+  /**
+   * Handle avatar press - navigate to user's profile
+   * Disabled for own photos (currentPhoto.userId === currentUserId)
+   * Profile opens as modal overlay - this modal stays mounted underneath
+   */
+  const handleAvatarPress = useCallback(() => {
+    if (isOwnPhoto) return;
+    if (onAvatarPress && currentPhoto) {
+      onAvatarPress(currentPhoto.userId, displayName);
+    }
+  }, [onAvatarPress, currentPhoto, displayName, isOwnPhoto]);
+
+  /**
+   * Handle avatar press from comments - navigate to user's profile
+   * Profile opens as modal overlay - this modal stays mounted underneath
+   */
+  const handleCommentAvatarPress = useCallback(
+    (userId, userName) => {
+      if (onAvatarPress) {
+        onAvatarPress(userId, userName);
+      }
+    },
+    [onAvatarPress]
+  );
 
   // Fetch preview comments when photo changes
   useEffect(() => {
@@ -208,6 +256,24 @@ const PhotoDetailModal = ({
 
     return { segmentWidth: calculatedWidth, needsScroll: false };
   }, [totalPhotos]);
+
+  // Auto-scroll emoji row to start and fade highlight when new emoji is added
+  useEffect(() => {
+    if (newlyAddedEmoji) {
+      // Scroll to start to show the new emoji
+      if (emojiScrollRef.current) {
+        emojiScrollRef.current.scrollTo({ x: 0, animated: true });
+      }
+
+      // Start fade animation: fully visible, then fade to 0 over 1 second
+      highlightOpacity.setValue(1);
+      Animated.timing(highlightOpacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [newlyAddedEmoji, highlightOpacity]);
 
   // Auto-scroll progress bar to keep current segment visible
   useEffect(() => {
@@ -287,8 +353,13 @@ const PhotoDetailModal = ({
             </View>
           </TouchableWithoutFeedback>
 
-          {/* Profile photo - overlapping top left of photo */}
-          <View style={styles.profilePicContainer}>
+          {/* Profile photo - overlapping top left of photo, tappable to navigate to profile (disabled for own photos) */}
+          <TouchableOpacity
+            style={styles.profilePicContainer}
+            onPress={handleAvatarPress}
+            activeOpacity={isOwnPhoto ? 1 : 0.7}
+            disabled={isOwnPhoto}
+          >
             {profilePhotoURL ? (
               <Image
                 source={{ uri: profilePhotoURL }}
@@ -300,7 +371,7 @@ const PhotoDetailModal = ({
                 <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* User info - bottom left of photo
               Stories mode: raised 15px (UAT-034 fix)
@@ -383,30 +454,64 @@ const PhotoDetailModal = ({
               </Text>
             </TouchableOpacity>
 
-            {/* Emoji pills - right side */}
+            {/* Emoji pills - right side (custom + curated emojis + add button) */}
+            {/* When isOwnStory, show reactions as read-only with reduced opacity */}
             <ScrollView
+              ref={emojiScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.emojiPickerContainer}
-              style={styles.emojiPickerScrollView}
+              style={[styles.emojiPickerScrollView, isOwnStory && styles.disabledEmojiRow]}
             >
               {orderedEmojis.map(emoji => {
                 const totalCount = groupedReactions[emoji] || 0;
                 const userCount = getUserReactionCount(emoji);
                 const isSelected = userCount > 0;
+                const isNewlyAdded = emoji === newlyAddedEmoji;
+
+                // For own stories, render as non-interactive View
+                if (isOwnStory) {
+                  return (
+                    <View key={emoji} style={{ position: 'relative' }}>
+                      <View style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}>
+                        <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                        {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                      </View>
+                    </View>
+                  );
+                }
 
                 return (
-                  <TouchableOpacity
-                    key={emoji}
-                    style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
-                    onPress={() => handleEmojiPress(emoji)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.emojiPillEmoji}>{emoji}</Text>
-                    {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
-                  </TouchableOpacity>
+                  <View key={emoji} style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
+                      onPress={() => handleEmojiPress(emoji)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                      {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                    </TouchableOpacity>
+                    {/* Purple highlight overlay that fades out */}
+                    {isNewlyAdded && (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[styles.emojiHighlightOverlay, { opacity: highlightOpacity }]}
+                      />
+                    )}
+                  </View>
                 );
               })}
+
+              {/* Add custom emoji button - hidden for own stories */}
+              {!isOwnStory && (
+                <TouchableOpacity
+                  style={[styles.emojiPill, styles.addEmojiButton]}
+                  onPress={handleOpenEmojiPicker}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.addEmojiText}>+</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         </Animated.View>
@@ -419,6 +524,38 @@ const PhotoDetailModal = ({
         photoId={currentPhoto?.id}
         photoOwnerId={currentPhoto?.userId}
         currentUserId={currentUserId}
+        onAvatarPress={handleCommentAvatarPress}
+      />
+
+      {/* Custom Emoji Picker */}
+      <EmojiPicker
+        onEmojiSelected={handleEmojiPickerSelect}
+        open={showEmojiPicker}
+        onClose={() => setShowEmojiPicker(false)}
+        enableRecentlyUsed={false}
+        enableSearchBar={true}
+        theme={{
+          backdrop: colors.overlay.dark,
+          knob: colors.text.secondary,
+          container: colors.background.secondary,
+          header: colors.text.primary,
+          skinTonesContainer: colors.background.secondary,
+          category: {
+            icon: colors.text.secondary,
+            iconActive: colors.text.primary,
+            container: colors.background.secondary,
+            containerActive: colors.brand.purple,
+          },
+          search: {
+            text: colors.text.primary,
+            placeholder: colors.text.secondary,
+            icon: colors.text.secondary,
+            background: colors.background.tertiary,
+          },
+          emoji: {
+            selected: colors.brand.purple,
+          },
+        }}
       />
     </Modal>
   );

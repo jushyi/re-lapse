@@ -26,6 +26,7 @@ import React, { Component } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import logger from '../utils/logger';
+import { colors } from '../constants/colors';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -122,7 +123,7 @@ class ErrorBoundary extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,
@@ -134,8 +135,8 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FF4444',
-    color: '#FFFFFF',
+    backgroundColor: colors.status.danger,
+    color: colors.text.primary,
     fontSize: 48,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -146,44 +147,44 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: '#666666',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
   },
   button: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.brand.purple,
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderRadius: 12,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   debugContainer: {
     marginTop: 32,
     padding: 16,
-    backgroundColor: '#FFF3CD',
+    backgroundColor: '#FFF3CD', // Warning yellow (dev-only)
     borderRadius: 8,
     width: '100%',
   },
   debugTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#856404',
+    color: '#856404', // Warning text (dev-only)
     marginBottom: 8,
   },
   debugText: {
     fontSize: 12,
-    color: '#856404',
+    color: '#856404', // Warning text (dev-only)
     fontFamily: 'monospace',
   },
 });

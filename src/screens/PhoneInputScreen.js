@@ -135,15 +135,25 @@ const PhoneInputScreen = ({ navigation }) => {
   };
 
   const handlePhoneChange = text => {
-    // Remove any non-numeric characters except for formatting
-    const cleaned = text.replace(/[^0-9]/g, '');
-    setPhoneNumber(cleaned);
+    // Extract digits only
+    const digits = text.replace(/[^0-9]/g, '');
 
-    // Update formatted display as user types
-    const formatted = formatAsUserTypes(cleaned, selectedCountry.country);
-    setFormattedPhone(formatted);
+    // Detect deletion by comparing input text length to what we're currently displaying
+    // This catches both digit deletion AND formatting character deletion (space, parens)
+    const isDeleting = text.length < formattedPhone.length;
 
-    if (error) setError(''); // Clear error on change
+    setPhoneNumber(digits);
+
+    // When deleting, show raw digits to avoid re-adding formatting chars that trap cursor
+    // When typing, format normally for nice display
+    if (isDeleting) {
+      setFormattedPhone(digits);
+    } else {
+      const formatted = formatAsUserTypes(digits, selectedCountry.country);
+      setFormattedPhone(formatted);
+    }
+
+    if (error) setError('');
   };
 
   const handleBack = () => {
@@ -170,7 +180,7 @@ const PhoneInputScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.logo}>LAPSE</Text>
+            <Text style={styles.logo}>REWIND</Text>
             <Text style={styles.subtitle}>Enter your phone number</Text>
             <Text style={styles.description}>
               We&apos;ll send you a verification code to confirm your number.
@@ -200,7 +210,7 @@ const PhoneInputScreen = ({ navigation }) => {
                 <View style={styles.phoneInputWrapper}>
                   <Input
                     placeholder="(555) 555-5555"
-                    value={formattedPhone || phoneNumber}
+                    value={formattedPhone}
                     onChangeText={handlePhoneChange}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
@@ -219,14 +229,6 @@ const PhoneInputScreen = ({ navigation }) => {
                 loading={loading}
                 disabled={loading || !phoneNumber.trim()}
               />
-
-              {/* Back to Login Link */}
-              <Text style={styles.loginText}>
-                Already have an account?{' '}
-                <Text style={styles.loginLink} onPress={handleBack}>
-                  Login
-                </Text>
-              </Text>
             </View>
           </View>
         </ScrollView>
@@ -359,17 +361,6 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     marginBottom: 0,
-  },
-  loginText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: 24,
-  },
-  loginLink: {
-    color: colors.text.primary,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
   // Modal styles
   modalOverlay: {

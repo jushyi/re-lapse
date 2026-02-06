@@ -40,3 +40,63 @@ export { getSignedPhotoUrl, convertToSignedUrl } from './signedUrlService';
 
 // Export Account service functions (account deletion)
 export { deleteUserAccount } from './accountService';
+
+// Export Album service functions (user-created photo albums)
+export {
+  createAlbum,
+  getAlbum,
+  getUserAlbums,
+  updateAlbum,
+  deleteAlbum,
+  addPhotosToAlbum,
+  removePhotoFromAlbum,
+  setCoverPhoto,
+} from './albumService';
+
+// Export Photo service functions
+export { getPhotosByIds } from './photoService';
+
+// Export Monthly Album service functions (auto-generated monthly albums)
+export { getUserPhotosByMonth, getMonthPhotos } from './monthlyAlbumService';
+
+// Export User service functions
+export { getUserProfile, cancelProfileSetup } from './userService';
+
+// Export Friendship service functions
+export {
+  checkFriendshipStatus,
+  sendFriendRequest,
+  acceptFriendRequest,
+  declineFriendRequest,
+  generateFriendshipId,
+} from './friendshipService';
+
+// Export Contact Sync service functions (friend suggestions via contacts)
+export {
+  normalizeToE164,
+  requestContactsPermission,
+  checkContactsPermission,
+  getAllContactPhoneNumbers,
+  findUsersByPhoneNumbers,
+  getUserCountryCode,
+  syncContactsAndFindSuggestions,
+  getDismissedSuggestionIds,
+  filterDismissedSuggestions,
+  dismissSuggestion,
+  markContactsSyncCompleted,
+  hasUserSyncedContacts,
+  clearDismissedSuggestions,
+} from './contactSyncService';
+
+// Export Block service functions (user blocking)
+export {
+  blockUser,
+  unblockUser,
+  isBlocked,
+  getBlockedByUserIds,
+  getBlockedUserIds,
+  getBlockedUsersWithProfiles,
+} from './blockService';
+
+// Export Report service functions (user reporting)
+export { submitReport, REPORT_REASONS } from './reportService';

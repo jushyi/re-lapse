@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
 import { clearLocalNotificationToken } from '../services/firebase/notificationService';
 import { secureStorage } from '../services/secureStorageService';
+import { cancelAccountDeletion } from '../services/firebase/accountService';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -100,6 +101,8 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [pendingDeletion, setPendingDeletion] = useState(null);
+  // { isScheduled: boolean, scheduledDate: Date } or null
 
   // Listen to React Native Firebase auth state changes
   useEffect(() => {
@@ -129,11 +132,32 @@ export const AuthProvider = ({ children }) => {
           error: profileResult.error,
         });
         if (profileResult.success) {
-          logger.info('AuthContext: User profile loaded - checking profileSetupCompleted', {
+          logger.info('AuthContext: User profile loaded - checking setup status', {
             profileSetupCompleted: profileResult.data?.profileSetupCompleted,
-            willShowProfileSetup: profileResult.data?.profileSetupCompleted === false,
+            selectsCompleted: profileResult.data?.selectsCompleted,
+            willShowProfileSetup: profileResult.data?.profileSetupCompleted !== true,
+            willShowSelects:
+              profileResult.data?.profileSetupCompleted === true &&
+              profileResult.data?.selectsCompleted !== true,
           });
           setUserProfile(profileResult.data);
+
+          // Check for pending deletion
+          if (profileResult.data?.scheduledForDeletionAt) {
+            const scheduledDate = profileResult.data.scheduledForDeletionAt.toDate
+              ? profileResult.data.scheduledForDeletionAt.toDate()
+              : new Date(profileResult.data.scheduledForDeletionAt);
+
+            setPendingDeletion({
+              isScheduled: true,
+              scheduledDate: scheduledDate,
+            });
+            logger.info('AuthContext: User has pending deletion', {
+              scheduledDate: scheduledDate.toISOString(),
+            });
+          } else {
+            setPendingDeletion(null);
+          }
         } else {
           // New user via phone auth - create profile using native Firestore
           logger.debug('AuthContext: No user profile found, creating for new user');
@@ -147,6 +171,7 @@ export const AuthProvider = ({ children }) => {
             bio: '',
             friends: [],
             profileSetupCompleted: false,
+            selectsCompleted: false,
           };
 
           const createResult = await createUserDocumentNative(firebaseUser.uid, userDoc);
@@ -263,8 +288,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const cancelDeletion = async () => {
+    try {
+      const result = await cancelAccountDeletion();
+      if (result.success) {
+        setPendingDeletion(null);
+        // Refresh user profile to clear the field
+        const refreshedProfile = await getUserDocumentNative(user.uid);
+        if (refreshedProfile.success) {
+          setUserProfile(refreshedProfile.data);
+        }
+        logger.info('AuthContext: Deletion canceled');
+        return { success: true };
+      }
+      return result;
+    } catch (error) {
+      logger.error('AuthContext: Failed to cancel deletion', { error: error.message });
+      return { success: false, error: error.message };
+    }
+  };
+
   const updateUserProfile = updatedProfile => {
     setUserProfile(updatedProfile);
+  };
+
+  const refreshUserProfile = async () => {
+    if (!user?.uid) {
+      logger.warn('refreshUserProfile: No user to refresh');
+      return { success: false, error: 'No user' };
+    }
+    try {
+      logger.debug('refreshUserProfile: Fetching latest user profile', { userId: user.uid });
+      const profileResult = await getUserDocumentNative(user.uid);
+      if (profileResult.success) {
+        logger.info('refreshUserProfile: Profile refreshed', {
+          contactsSyncCompleted: profileResult.data?.contactsSyncCompleted,
+        });
+        setUserProfile(profileResult.data);
+        return { success: true, data: profileResult.data };
+      }
+      logger.error('refreshUserProfile: Failed to fetch', { error: profileResult.error });
+      return profileResult;
+    } catch (error) {
+      logger.error('refreshUserProfile: Error', { error: error.message });
+      return { success: false, error: error.message };
+    }
   };
 
   const value = {
@@ -272,9 +340,12 @@ export const AuthProvider = ({ children }) => {
     userProfile,
     loading,
     initializing,
+    pendingDeletion,
     // Phone-only auth
     signOut,
+    cancelDeletion,
     updateUserProfile,
+    refreshUserProfile,
     // Native Firestore operations (required for phone auth users)
     updateUserDocumentNative,
   };

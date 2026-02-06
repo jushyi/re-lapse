@@ -125,30 +125,34 @@ export const useViewedStories = () => {
    * Get the index of the first unviewed photo in an array
    * Returns 0 if all photos are viewed (start from beginning)
    * Uses ref for immediate sync access (avoids React state async issues)
+   * Note: viewedPhotos dependency ensures callback updates when data loads from Firestore
    *
    * @param {Array<object>} photos - Array of photo objects with id property
    * @returns {number} Index of first unviewed photo, or 0 if all viewed
    */
-  const getFirstUnviewedIndex = useCallback(photos => {
-    if (!photos || photos.length === 0) return 0;
+  const getFirstUnviewedIndex = useCallback(
+    photos => {
+      if (!photos || photos.length === 0) return 0;
 
-    // Use ref for immediate access (sync) instead of state (async)
-    const viewed = viewedPhotosRef.current;
-    const firstUnviewedIdx = photos.findIndex(photo => !viewed.has(photo.id));
+      // Use ref for immediate access (sync) instead of state (async)
+      const viewed = viewedPhotosRef.current;
+      const firstUnviewedIdx = photos.findIndex(photo => !viewed.has(photo.id));
 
-    // If all are viewed, start from beginning
-    if (firstUnviewedIdx === -1) {
-      logger.debug('useViewedStories: All photos viewed, starting from 0');
-      return 0;
-    }
+      // If all are viewed, start from beginning
+      if (firstUnviewedIdx === -1) {
+        logger.debug('useViewedStories: All photos viewed, starting from 0');
+        return 0;
+      }
 
-    logger.debug('useViewedStories: First unviewed photo', {
-      index: firstUnviewedIdx,
-      total: photos.length,
-      viewedCount: viewed.size,
-    });
-    return firstUnviewedIdx;
-  }, []);
+      logger.debug('useViewedStories: First unviewed photo', {
+        index: firstUnviewedIdx,
+        total: photos.length,
+        viewedCount: viewed.size,
+      });
+      return firstUnviewedIdx;
+    },
+    [viewedPhotos]
+  );
 
   /**
    * Check if a friend's stories have been viewed
@@ -166,15 +170,19 @@ export const useViewedStories = () => {
   /**
    * Check if all photos in an array have been viewed
    * Uses ref for immediate sync access (avoids React state async issues)
+   * Note: viewedPhotos dependency ensures callback updates when data loads from Firestore
    * @param {Array<object>} photos - Array of photo objects with id property
    * @returns {boolean} True if ALL photos have been viewed
    */
-  const hasViewedAllPhotos = useCallback(photos => {
-    if (!photos || photos.length === 0) return false;
-    // Use ref for immediate access (sync) instead of state (async)
-    const viewed = viewedPhotosRef.current;
-    return photos.every(photo => viewed.has(photo.id));
-  }, []);
+  const hasViewedAllPhotos = useCallback(
+    photos => {
+      if (!photos || photos.length === 0) return false;
+      // Use ref for immediate access (sync) instead of state (async)
+      const viewed = viewedPhotosRef.current;
+      return photos.every(photo => viewed.has(photo.id));
+    },
+    [viewedPhotos]
+  );
 
   return {
     isViewed,
@@ -183,5 +191,6 @@ export const useViewedStories = () => {
     getFirstUnviewedIndex,
     hasViewedAllPhotos,
     loading,
+    viewedPhotoCount: viewedPhotos.size, // Exposes count to trigger re-renders in consumers
   };
 };

@@ -13,13 +13,9 @@ import { Animated, PanResponder, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { reactionHaptic } from '../utils/haptics';
 import logger from '../utils/logger';
+import { getCuratedEmojis } from '../utils/emojiRotation';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-/**
- * Available reaction emojis (8 options)
- */
-const REACTION_EMOJIS = ['😂', '❤️', '🔥', '😍', '👏', '😮', '😢', '💯'];
 
 /**
  * Custom hook for PhotoDetailModal logic
@@ -54,6 +50,14 @@ export const usePhotoDetailModal = ({
   const [frozenOrder, setFrozenOrder] = useState(null);
   const sortTimerRef = useRef(null);
 
+  // Custom emoji picker state
+  const [customEmoji, setCustomEmoji] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Track custom emojis that have been confirmed (persist in reaction row)
+  const [activeCustomEmojis, setActiveCustomEmojis] = useState([]);
+  // Track newly added emoji for highlight animation (null when no highlight needed)
+  const [newlyAddedEmoji, setNewlyAddedEmoji] = useState(null);
+
   // Minimum display time tracking for rapid taps (ensures each photo is briefly visible)
   const lastTapTimeRef = useRef(0);
   const MIN_DISPLAY_TIME = 80; // ms - minimum time each photo is displayed
@@ -84,16 +88,51 @@ export const usePhotoDetailModal = ({
     return photo;
   }, [mode, photo, photos, currentIndex]);
 
+  // Get curated emojis based on current photo ID (deterministic per photo)
+  const curatedEmojis = useMemo(() => {
+    return getCuratedEmojis(currentPhoto?.id, 5);
+  }, [currentPhoto?.id]);
+
+  // Reset emoji state when photo changes
+  // - Reset frozenOrder so emojis sort correctly by count for new photo (ISS-008 fix)
+  // - Initialize activeCustomEmojis with any custom emojis already in the photo's reactions
+  // ISS-009 fix: Read reactions directly from currentPhoto to avoid stale closure issue
+  useEffect(() => {
+    if (currentPhoto?.id) {
+      // Reset frozen order so new photo shows emojis sorted by count
+      setFrozenOrder(null);
+
+      // Find custom emojis already in reactions (emojis that are NOT in curated list)
+      // Read directly from currentPhoto to get fresh data
+      const photoReactions = currentPhoto?.reactions || {};
+      const reactionEmojis = new Set();
+      Object.values(photoReactions).forEach(userReactions => {
+        if (typeof userReactions === 'object') {
+          Object.keys(userReactions).forEach(emoji => reactionEmojis.add(emoji));
+        }
+      });
+      const existingEmojis = [...reactionEmojis].filter(emoji => !curatedEmojis.includes(emoji));
+      setActiveCustomEmojis(existingEmojis);
+      setCustomEmoji(null);
+    }
+  }, [currentPhoto?.id, currentPhoto?.reactions, curatedEmojis]); // Include reactions to ensure fresh data
+
   // Extract photo data from currentPhoto
   const { imageURL, capturedAt, reactions = {}, user = {} } = currentPhoto || {};
   const { username, displayName, profilePhotoURL } = user;
 
   /**
    * Get grouped reactions (emoji -> count)
+   * ISS-009 fix: Read reactions directly from currentPhoto inside useMemo
+   * and depend on currentPhoto instead of destructured reactions variable.
+   * This ensures recalculation when photo changes, as React's dependency
+   * comparison on the destructured variable was unreliable.
    */
   const groupedReactions = useMemo(() => {
+    // Read reactions directly from currentPhoto to ensure fresh data
+    const photoReactions = currentPhoto?.reactions || {};
     const grouped = {};
-    Object.entries(reactions).forEach(([userId, userReactions]) => {
+    Object.entries(photoReactions).forEach(([userId, userReactions]) => {
       // userReactions is now an object: { '😂': 2, '❤️': 1 }
       if (typeof userReactions === 'object') {
         Object.entries(userReactions).forEach(([emoji, count]) => {
@@ -105,21 +144,24 @@ export const usePhotoDetailModal = ({
       }
     });
     return grouped;
-  }, [reactions]);
+  }, [currentPhoto]);
 
   /**
    * Get current user's reaction count for a specific emoji
+   * ISS-009 fix: Read from currentPhoto?.reactions directly for consistency
    */
   const getUserReactionCount = useCallback(
     emoji => {
-      if (!currentUserId || !reactions[currentUserId]) return 0;
-      return reactions[currentUserId][emoji] || 0;
+      const photoReactions = currentPhoto?.reactions || {};
+      if (!currentUserId || !photoReactions[currentUserId]) return 0;
+      return photoReactions[currentUserId][emoji] || 0;
     },
-    [currentUserId, reactions]
+    [currentUserId, currentPhoto]
   );
 
   /**
-   * Handle emoji button press
+   * Handle emoji button press (curated or custom emoji)
+   * Triggers highlight animation (purple border that fades over 1 second)
    */
   const handleEmojiPress = useCallback(
     emoji => {
@@ -127,13 +169,15 @@ export const usePhotoDetailModal = ({
       const currentCount = getUserReactionCount(emoji);
       onReactionToggle(emoji, currentCount);
 
-      // If not frozen yet, freeze the current sorted order
+      // If not frozen yet, freeze the current sorted order (all emojis, not just curated)
       if (!frozenOrder) {
-        const emojiData = REACTION_EMOJIS.map(e => ({
+        const customToAdd = activeCustomEmojis.filter(e => !curatedEmojis.includes(e));
+        const allEmojis = [...customToAdd, ...curatedEmojis];
+        const allEmojiData = allEmojis.map(e => ({
           emoji: e,
           totalCount: groupedReactions[e] || 0,
         }));
-        const currentSortedOrder = [...emojiData]
+        const currentSortedOrder = [...allEmojiData]
           .sort((a, b) => b.totalCount - a.totalCount)
           .map(item => item.emoji);
         setFrozenOrder(currentSortedOrder);
@@ -148,24 +192,116 @@ export const usePhotoDetailModal = ({
       sortTimerRef.current = setTimeout(() => {
         setFrozenOrder(null);
       }, 1500);
+
+      // Trigger highlight animation (purple border that fades over 1 second)
+      setNewlyAddedEmoji(emoji);
+      setTimeout(() => {
+        setNewlyAddedEmoji(null);
+      }, 2000);
     },
-    [getUserReactionCount, onReactionToggle, frozenOrder, groupedReactions]
+    [
+      getUserReactionCount,
+      onReactionToggle,
+      frozenOrder,
+      groupedReactions,
+      curatedEmojis,
+      activeCustomEmojis,
+    ]
   );
 
   /**
    * Get ordered emoji list (frozen or sorted by count)
+   * ALL emojis (custom + curated) are sorted by total count (highest first)
    */
   const orderedEmojis = useMemo(() => {
-    if (frozenOrder) {
-      return frozenOrder;
-    }
-    // Sort by count (highest to lowest)
-    const emojiData = REACTION_EMOJIS.map(emoji => ({
+    // Get custom emojis that aren't in curated list
+    const customToAdd = activeCustomEmojis.filter(e => !curatedEmojis.includes(e));
+
+    // Combine all emojis and map to count data
+    const allEmojis = [...customToAdd, ...curatedEmojis];
+    const allEmojiData = allEmojis.map(emoji => ({
       emoji,
       totalCount: groupedReactions[emoji] || 0,
     }));
-    return [...emojiData].sort((a, b) => b.totalCount - a.totalCount).map(item => item.emoji);
-  }, [frozenOrder, groupedReactions]);
+
+    // Sort all emojis by count (highest first)
+    const sortedAll = [...allEmojiData]
+      .sort((a, b) => b.totalCount - a.totalCount)
+      .map(item => item.emoji);
+
+    if (frozenOrder) {
+      // When frozen, keep emojis in frozen order
+      // Only include emojis that are in current set (in case emoji was removed)
+      const validFrozen = frozenOrder.filter(e => allEmojis.includes(e));
+      // Add any new emojis that weren't in frozen order (at the end, sorted by count)
+      const newEmojis = sortedAll.filter(e => !frozenOrder.includes(e));
+      return [...validFrozen, ...newEmojis];
+    }
+
+    return sortedAll;
+  }, [frozenOrder, groupedReactions, curatedEmojis, activeCustomEmojis]);
+
+  /**
+   * Open the custom emoji picker
+   */
+  const handleOpenEmojiPicker = useCallback(() => {
+    setShowEmojiPicker(true);
+  }, []);
+
+  /**
+   * Handle emoji selection from picker
+   * Immediately adds emoji to front of row, reacts, and shows highlight for 2 seconds
+   */
+  const handleEmojiPickerSelect = useCallback(
+    emojiObject => {
+      const selectedEmoji = emojiObject.emoji;
+      setShowEmojiPicker(false);
+
+      // Immediately react with the selected emoji
+      reactionHaptic();
+      const currentCount = getUserReactionCount(selectedEmoji);
+      onReactionToggle(selectedEmoji, currentCount);
+
+      // Add to FRONT of activeCustomEmojis if not already there (and not in curated list)
+      if (!activeCustomEmojis.includes(selectedEmoji) && !curatedEmojis.includes(selectedEmoji)) {
+        setActiveCustomEmojis(prev => [selectedEmoji, ...prev]);
+      }
+
+      // Set for highlight animation (purple border for 2 seconds)
+      setNewlyAddedEmoji(selectedEmoji);
+      setTimeout(() => {
+        setNewlyAddedEmoji(null);
+      }, 2000);
+    },
+    [getUserReactionCount, onReactionToggle, activeCustomEmojis, curatedEmojis]
+  );
+
+  /**
+   * Confirm and commit the custom emoji reaction
+   * Adds emoji to FRONT of activeCustomEmojis so it appears first in the row
+   * Sets newlyAddedEmoji for highlight animation
+   */
+  const handleCustomEmojiConfirm = useCallback(() => {
+    if (customEmoji) {
+      reactionHaptic();
+      const currentCount = getUserReactionCount(customEmoji);
+      onReactionToggle(customEmoji, currentCount);
+
+      // Add to FRONT of activeCustomEmojis if not already there (and not in curated list)
+      if (!activeCustomEmojis.includes(customEmoji) && !curatedEmojis.includes(customEmoji)) {
+        setActiveCustomEmojis(prev => [customEmoji, ...prev]);
+        // Set for highlight animation
+        setNewlyAddedEmoji(customEmoji);
+        // Clear highlight after animation completes
+        setTimeout(() => {
+          setNewlyAddedEmoji(null);
+        }, 600);
+      }
+
+      // Clear preview state so "+" button shows "+" again
+      setCustomEmoji(null);
+    }
+  }, [customEmoji, getUserReactionCount, onReactionToggle, activeCustomEmojis, curatedEmojis]);
 
   /**
    * Navigate to previous photo in stories mode
@@ -412,12 +548,21 @@ export const usePhotoDetailModal = ({
     // Reactions
     groupedReactions,
     orderedEmojis,
+    curatedEmojis,
     getUserReactionCount,
     handleEmojiPress,
+
+    // Custom emoji picker
+    customEmoji,
+    setCustomEmoji,
+    showEmojiPicker,
+    setShowEmojiPicker,
+    handleOpenEmojiPicker,
+    handleEmojiPickerSelect,
+    handleCustomEmojiConfirm,
+    newlyAddedEmoji,
 
     // Close handler
     handleClose: onClose,
   };
 };
-
-export { REACTION_EMOJIS };

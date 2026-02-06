@@ -6,6 +6,7 @@
  */
 
 import { StyleSheet, Dimensions } from 'react-native';
+import { colors } from '../constants/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,7 +25,7 @@ const CARD_HEIGHT = 84; // ~95% of capture button diameter (88 * 0.95)
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
   },
   // Camera container - edge-to-edge with rounded bottom corners only
   cameraContainer: {
@@ -37,7 +38,7 @@ export const styles = StyleSheet.create({
     borderBottomRightRadius: CAMERA_BORDER_RADIUS,
     overflow: 'hidden',
     borderWidth: 0, // Explicitly remove any border
-    backgroundColor: '#000000', // Match container background to prevent outline artifacts
+    backgroundColor: colors.background.primary, // Match container background to prevent outline artifacts
   },
   // Camera - fills the container
   camera: {
@@ -70,7 +71,7 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: FOOTER_HEIGHT,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -111,7 +112,7 @@ export const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.5)',
   },
   zoomButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   zoomSuffix: {
     fontSize: 12, // Slightly smaller for the 'x'
@@ -120,7 +121,7 @@ export const styles = StyleSheet.create({
   // Permission screens
   permissionContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background.primary,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
@@ -128,18 +129,18 @@ export const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 16,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: '#CCCCCC',
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 32,
   },
   permissionButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -147,14 +148,15 @@ export const styles = StyleSheet.create({
   permissionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.inverse,
   },
   // Darkroom card stack container - holds fanned cards
   darkroomCardContainer: {
-    width: CARD_WIDTH + 20, // Extra space for fanning offset (increased for larger cards)
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH + 40, // Extra space for fanning offset + glow
+    height: CARD_HEIGHT + 32, // Extra space for glow
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
   darkroomCardDisabled: {
     opacity: 0.4,
@@ -164,15 +166,14 @@ export const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 8,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    // Card shadow for depth
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    // White glow effect emanating from card edges
+    shadowColor: colors.text.primary,
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   // Gradient background for the card (fills wrapper)
   darkroomCardGradient: {
@@ -182,14 +183,14 @@ export const styles = StyleSheet.create({
   },
   // Number displayed inside the top card
   darkroomCardText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
   },
   // Invisible spacer to balance darkroom button and center capture button
   footerSpacer: {
-    width: CARD_WIDTH + 20, // Match container width
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH + 40, // Match container width
+    height: CARD_HEIGHT + 32, // Match container height
     opacity: 0,
   },
   // Flash auto indicator (small letter on button)
@@ -197,7 +198,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     fontSize: 8,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontWeight: '700',
   },
   // Capture button - 88px (10% larger) with thin spaced ring
@@ -214,10 +215,10 @@ export const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000000',
+    shadowColor: colors.text.inverse,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -233,12 +234,12 @@ export const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
   // Flash overlay for camera shutter effect - contained within camera preview
   flashOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
     borderBottomLeftRadius: CAMERA_BORDER_RADIUS,
     borderBottomRightRadius: CAMERA_BORDER_RADIUS,
     zIndex: 100,

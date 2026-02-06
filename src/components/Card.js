@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors } from '../constants/colors';
 
 /**
  * Reusable Card Component
@@ -24,13 +25,13 @@ const Card = ({ children, onPress, style, elevated = true }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
   elevated: {
-    shadowColor: '#000',
+    shadowColor: colors.background.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

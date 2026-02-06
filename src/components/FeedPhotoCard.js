@@ -16,8 +16,10 @@ import { getPreviewComments } from '../services/firebase/commentService';
  * @param {object} photo - Photo object with user data
  * @param {function} onPress - Callback when card is tapped
  * @param {function} onCommentPress - Callback when comment preview is tapped (opens modal with comments sheet)
+ * @param {function} onAvatarPress - Callback when avatar is tapped (userId, displayName) -> navigate to profile
+ * @param {string} currentUserId - Current user's ID (to disable tap on own avatar)
  */
-const FeedPhotoCard = ({ photo, onPress, onCommentPress }) => {
+const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentUserId }) => {
   const {
     id,
     imageURL,
@@ -77,6 +79,21 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress }) => {
 
   const topReactions = getTopReactions();
 
+  /**
+   * Handle avatar press - navigate to user's profile
+   * Disabled for own photos (userId === currentUserId)
+   */
+  const handleAvatarPress = () => {
+    // Don't allow tap on own avatar
+    if (userId === currentUserId) return;
+    if (onAvatarPress && userId) {
+      onAvatarPress(userId, displayName);
+    }
+  };
+
+  // Check if this is the current user's own photo
+  const isOwnPhoto = userId === currentUserId;
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
       {/* Photo - full width with rounded top corners */}
@@ -86,14 +103,20 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress }) => {
 
       {/* User info row - profile photo + name + timestamp */}
       <View style={styles.infoRow}>
-        {/* Profile photo or fallback icon */}
-        {profilePhotoURL ? (
-          <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
-        ) : (
-          <View style={styles.profilePhotoFallback}>
-            <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
-          </View>
-        )}
+        {/* Profile photo or fallback icon - tappable to navigate to profile (disabled for own photos) */}
+        <TouchableOpacity
+          onPress={handleAvatarPress}
+          activeOpacity={isOwnPhoto ? 1 : 0.7}
+          disabled={isOwnPhoto}
+        >
+          {profilePhotoURL ? (
+            <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+          ) : (
+            <View style={styles.profilePhotoFallback}>
+              <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Name and timestamp */}
         <View style={styles.textContainer}>

@@ -44,7 +44,7 @@ export const validateEmail = email => {
 // =============================================================================
 
 const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 20;
+const USERNAME_MAX_LENGTH = 24;
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/; // Alphanumeric + underscore only
 
 /**
@@ -266,7 +266,7 @@ export const sanitizeInput = input => {
  * @param {number} maxLength - Maximum length (default 50)
  * @returns {string} Sanitized display name
  */
-export const sanitizeDisplayName = (displayName, maxLength = 50) => {
+export const sanitizeDisplayName = (displayName, maxLength = 24) => {
   if (!displayName) {
     return '';
   }
@@ -287,7 +287,7 @@ export const sanitizeDisplayName = (displayName, maxLength = 50) => {
  * @param {number} maxLength - Maximum length (default 150)
  * @returns {string} Sanitized bio
  */
-export const sanitizeBio = (bio, maxLength = 150) => {
+export const sanitizeBio = (bio, maxLength = 240) => {
   if (!bio) {
     return '';
   }
