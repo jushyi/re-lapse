@@ -434,7 +434,6 @@ const EditProfileScreen = ({ navigation }) => {
               <Ionicons name="camera" size={16} color={colors.text.primary} />
             </View>
           </TouchableOpacity>
-          <Text style={styles.changePhotoText}>Change Photo</Text>
 
           {/* Form Fields */}
           <View style={styles.form}>
@@ -582,16 +581,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.background.primary,
   },
-  changePhotoText: {
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 32,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.brand.purple,
-  },
   form: {
     width: '100%',
+    marginTop: 24,
   },
   usernameContainer: {
     marginBottom: 0,

@@ -8,7 +8,7 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
-import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Svg, { Defs, Rect, Mask, Circle } from 'react-native-svg';
 import { colors } from '../constants/colors';
@@ -48,9 +48,10 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
-  // Calculate initial scale and constraints based on image dimensions
-  const [minScale, setMinScale] = useState(1);
-  const [baseScale, setBaseScale] = useState(1);
+  // Shared values for image dimensions (needed in worklets)
+  const imageWidth = useSharedValue(0);
+  const imageHeight = useSharedValue(0);
+  const minScaleValue = useSharedValue(1);
 
   // Load image dimensions
   useEffect(() => {
@@ -63,6 +64,10 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
         imageUri,
         (width, height) => {
           setImageSize({ width, height });
+
+          // Also set shared values for use in worklets
+          imageWidth.value = width;
+          imageHeight.value = height;
 
           // Calculate base scale so image fills the circle
           // The smaller dimension should fill the circle diameter
@@ -77,8 +82,7 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
             initialScale = CIRCLE_SIZE / width;
           }
 
-          setBaseScale(initialScale);
-          setMinScale(initialScale);
+          minScaleValue.value = initialScale;
           scale.value = initialScale;
           savedScale.value = initialScale;
           setLoading(false);
@@ -95,25 +99,7 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
         }
       );
     });
-  }, [imageUri, scale, savedScale]);
-
-  // Clamp translation to keep image covering the circle
-  const clampTranslation = useCallback(
-    (tx, ty, currentScale) => {
-      const scaledWidth = imageSize.width * currentScale;
-      const scaledHeight = imageSize.height * currentScale;
-
-      // Calculate how much the image extends beyond the circle
-      const maxTranslateX = Math.max(0, (scaledWidth - CIRCLE_SIZE) / 2);
-      const maxTranslateY = Math.max(0, (scaledHeight - CIRCLE_SIZE) / 2);
-
-      return {
-        x: Math.max(-maxTranslateX, Math.min(maxTranslateX, tx)),
-        y: Math.max(-maxTranslateY, Math.min(maxTranslateY, ty)),
-      };
-    },
-    [imageSize]
-  );
+  }, [imageUri, scale, savedScale, imageWidth, imageHeight, minScaleValue]);
 
   // Pinch gesture for zooming
   const pinchGesture = Gesture.Pinch()
@@ -122,18 +108,25 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
       // Direct response: new scale = saved scale * pinch scale
       const newScale = savedScale.value * event.scale;
       // Clamp between minScale and 4x
-      scale.value = Math.max(minScale, Math.min(4, newScale));
+      scale.value = Math.max(minScaleValue.value, Math.min(4, newScale));
     })
     .onEnd(() => {
       'worklet';
       savedScale.value = scale.value;
 
-      // Re-clamp translation after zoom
-      const clamped = clampTranslation(translateX.value, translateY.value, scale.value);
-      translateX.value = clamped.x;
-      translateY.value = clamped.y;
-      savedTranslateX.value = clamped.x;
-      savedTranslateY.value = clamped.y;
+      // Re-clamp translation after zoom (inline clamping logic)
+      const scaledWidth = imageWidth.value * scale.value;
+      const scaledHeight = imageHeight.value * scale.value;
+      const maxTranslateX = Math.max(0, (scaledWidth - CIRCLE_SIZE) / 2);
+      const maxTranslateY = Math.max(0, (scaledHeight - CIRCLE_SIZE) / 2);
+
+      const clampedX = Math.max(-maxTranslateX, Math.min(maxTranslateX, translateX.value));
+      const clampedY = Math.max(-maxTranslateY, Math.min(maxTranslateY, translateY.value));
+
+      translateX.value = clampedX;
+      translateY.value = clampedY;
+      savedTranslateX.value = clampedX;
+      savedTranslateY.value = clampedY;
     });
 
   // Pan gesture for positioning
@@ -144,10 +137,14 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
       const newX = savedTranslateX.value + event.translationX;
       const newY = savedTranslateY.value + event.translationY;
 
-      // Clamp to keep image covering the circle
-      const clamped = clampTranslation(newX, newY, scale.value);
-      translateX.value = clamped.x;
-      translateY.value = clamped.y;
+      // Clamp to keep image covering the circle (inline clamping logic)
+      const scaledWidth = imageWidth.value * scale.value;
+      const scaledHeight = imageHeight.value * scale.value;
+      const maxTranslateX = Math.max(0, (scaledWidth - CIRCLE_SIZE) / 2);
+      const maxTranslateY = Math.max(0, (scaledHeight - CIRCLE_SIZE) / 2);
+
+      translateX.value = Math.max(-maxTranslateX, Math.min(maxTranslateX, newX));
+      translateY.value = Math.max(-maxTranslateY, Math.min(maxTranslateY, newY));
     })
     .onEnd(() => {
       'worklet';
