@@ -460,6 +460,16 @@ export const usePhotoDetailModal = ({
     onSwipeUpRef.current = onSwipeUp;
   }, [onSwipeUp]);
 
+  // Track if comments are visible (to disable swipe-to-dismiss when scrolling comments)
+  const [commentsVisible, setCommentsVisible] = useState(false);
+  const commentsVisibleRef = useRef(false);
+
+  // Expose setter for parent to call when comments open/close
+  const updateCommentsVisible = useCallback(visible => {
+    commentsVisibleRef.current = visible;
+    setCommentsVisible(visible);
+  }, []);
+
   /**
    * Pan responder for swipe gestures:
    * - Swipe DOWN: dismiss photo detail (existing behavior)
@@ -478,6 +488,9 @@ export const usePhotoDetailModal = ({
         return false;
       },
       onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Don't respond if comments sheet is open (let it handle its own scrolling)
+        if (commentsVisibleRef.current) return false;
+
         // Don't respond if touch started in footer area
         const touchY = evt.nativeEvent.pageY;
         const footerThreshold = SCREEN_HEIGHT - 100;
@@ -491,6 +504,9 @@ export const usePhotoDetailModal = ({
         return isVerticalSwipe && (isDownward || isUpward);
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        // Don't capture if comments sheet is open (let it handle its own scrolling)
+        if (commentsVisibleRef.current) return false;
+
         // Don't capture if touch is in footer area
         const touchY = evt.nativeEvent.pageY;
         const footerThreshold = SCREEN_HEIGHT - 100;
@@ -590,5 +606,8 @@ export const usePhotoDetailModal = ({
 
     // Close handler
     handleClose: onClose,
+
+    // Comments visibility (for disabling swipe-to-dismiss during comment scroll)
+    updateCommentsVisible,
   };
 };

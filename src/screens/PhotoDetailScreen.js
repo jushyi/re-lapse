@@ -185,6 +185,9 @@ const PhotoDetailScreen = () => {
     handleOpenEmojiPicker,
     handleEmojiPickerSelect,
     newlyAddedEmoji,
+
+    // Comments visibility (for disabling swipe-to-dismiss during comment scroll)
+    updateCommentsVisible,
   } = usePhotoDetailModal({
     mode: contextMode,
     photo: contextPhoto,
@@ -198,6 +201,11 @@ const PhotoDetailScreen = () => {
     onFriendTransition: contextHasNextFriend ? handleFriendTransition : null,
     onSwipeUp: handleSwipeUpToOpenComments, // ISS-005: swipe up to open comments
   });
+
+  // Sync comments visibility with hook (so panResponder knows not to capture gestures)
+  useEffect(() => {
+    updateCommentsVisible(showComments);
+  }, [showComments, updateCommentsVisible]);
 
   // Check if viewing own photo (disable avatar tap)
   const isOwnPhoto = currentPhoto?.userId === contextUserId;

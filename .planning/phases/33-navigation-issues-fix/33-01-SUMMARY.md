@@ -67,6 +67,7 @@ Each task was committed atomically:
 
 1. **Task 1: Convert CommentsBottomSheet from Modal to Animated.View** - `2c785a6` (feat)
 2. **Task 2: Add swipe-up gesture to open comments** - `97651e5` (feat)
+3. **Fix: Disable swipe-to-dismiss when comments open** - `99e0811` (fix)
 
 ## Files Created/Modified
 
@@ -83,7 +84,21 @@ Each task was committed atomically:
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Fixed gesture conflict between comment scrolling and swipe-to-dismiss**
+
+- **Found during:** UAT verification
+- **Issue:** Scrolling up in comments FlatList triggered swipe-to-dismiss gesture on parent view, closing the photo detail
+- **Fix:** Added `commentsVisibleRef` to track when comments are open; panResponder now checks this and ignores gestures when comments sheet is visible
+- **Files modified:** `src/hooks/usePhotoDetailModal.js`, `src/screens/PhotoDetailScreen.js`
+- **Verification:** Can now scroll comments without closing photo view
+- **Commit:** `99e0811`
+
+---
+
+**Total deviations:** 1 auto-fixed (bug)
+**Impact on plan:** Required fix for usability. No scope creep.
 
 ## Issues Encountered
 
