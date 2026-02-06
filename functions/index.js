@@ -1,7 +1,12 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logger = require('./logger');
-const { sendPushNotification } = require('./notifications/sender');
+const { sendPushNotification, expo } = require('./notifications/sender');
+const {
+  getPendingReceipts,
+  deletePendingReceipt,
+  removeInvalidToken,
+} = require('./notifications/receipts');
 const {
   validateOrNull,
   DarkroomDocSchema,
@@ -156,6 +161,106 @@ exports.processDarkroomReveals = functions.pubsub
   });
 
 /**
+ * Cloud Function: Check push notification receipts and clean up invalid tokens
+ * Runs every 15 minutes to match Expo's recommended receipt check timing
+ *
+ * Flow:
+ * 1. Get all pending receipts from Firestore
+ * 2. Chunk receipt IDs for Expo API
+ * 3. Check each receipt's delivery status
+ * 4. Remove invalid tokens when DeviceNotRegistered error detected
+ * 5. Clean up processed receipts
+ */
+exports.checkPushReceipts = functions.pubsub.schedule('every 15 minutes').onRun(async context => {
+  try {
+    logger.info('checkPushReceipts: Starting receipt check');
+
+    // Get all pending receipts from Firestore
+    const pendingReceipts = await getPendingReceipts();
+
+    if (pendingReceipts.length === 0) {
+      logger.info('checkPushReceipts: No pending receipts');
+      return null;
+    }
+
+    logger.info('checkPushReceipts: Found pending receipts', {
+      count: pendingReceipts.length,
+    });
+
+    // Create lookup map for quick access to receipt data
+    const receiptMap = {};
+    for (const receipt of pendingReceipts) {
+      receiptMap[receipt.ticketId] = receipt;
+    }
+
+    // Extract receipt IDs
+    const receiptIds = pendingReceipts.map(r => r.ticketId);
+
+    // Chunk receipt IDs for Expo API (handles batching automatically)
+    const chunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+
+    let checkedCount = 0;
+    let removedTokens = 0;
+    let errorCount = 0;
+
+    // Process each chunk
+    for (const chunk of chunks) {
+      try {
+        const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+        // Process each receipt in the response
+        for (const [ticketId, receipt] of Object.entries(receipts)) {
+          const pendingData = receiptMap[ticketId];
+
+          if (receipt.status === 'ok') {
+            // Notification delivered successfully - clean up
+            await deletePendingReceipt(ticketId);
+            checkedCount++;
+          } else if (receipt.status === 'error') {
+            const { message, details } = receipt;
+
+            logger.warn('checkPushReceipts: Receipt error', {
+              ticketId,
+              message,
+              details,
+              userId: pendingData?.userId,
+            });
+
+            // Check if device is no longer registered
+            if (details?.error === 'DeviceNotRegistered') {
+              if (pendingData?.userId) {
+                await removeInvalidToken(pendingData.userId);
+                removedTokens++;
+              }
+            }
+
+            // Clean up receipt regardless of error type
+            await deletePendingReceipt(ticketId);
+            errorCount++;
+          }
+        }
+      } catch (chunkError) {
+        logger.error('checkPushReceipts: Chunk fetch failed', {
+          error: chunkError.message,
+        });
+        // Continue with next chunk - let next run handle failed ones
+      }
+    }
+
+    logger.info('checkPushReceipts: Complete', {
+      checked: checkedCount + errorCount,
+      removed: removedTokens,
+      errors: errorCount,
+    });
+
+    return { checked: checkedCount + errorCount, removed: removedTokens, errors: errorCount };
+  } catch (error) {
+    logger.error('checkPushReceipts: Fatal error', { error: error.message });
+    return null;
+  }
+});
+
+/**
  * Cloud Function: Send notification when photos are revealed in darkroom
  * Triggered when darkroom document is updated with new revealedAt timestamp
  *
@@ -251,11 +356,17 @@ exports.sendPhotoRevealNotification = functions.firestore
           ? 'Your photo is ready to view in the darkroom'
           : `${photosRevealed} photos are ready to view in the darkroom`;
 
-      const result = await sendPushNotification(fcmToken, title, body, {
-        type: 'photo_reveal',
-        revealedCount: String(photosRevealed),
-        revealAll: 'true',
-      });
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'photo_reveal',
+          revealedCount: String(photosRevealed),
+          revealAll: 'true',
+        },
+        userId
+      );
 
       // Update lastNotifiedAt AFTER successfully sending notification
       await admin.firestore().collection('darkrooms').doc(userId).update({
@@ -353,10 +464,16 @@ exports.sendFriendRequestNotification = functions.firestore
       const title = '👋 Friend Request';
       const body = `${senderName} sent you a friend request`;
 
-      const result = await sendPushNotification(fcmToken, title, body, {
-        type: 'friend_request',
-        friendshipId: friendshipId,
-      });
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'friend_request',
+          friendshipId: friendshipId,
+        },
+        recipientId
+      );
 
       logger.debug('sendFriendRequestNotification: Notification sent to:', recipientId, result);
       return result;
@@ -407,10 +524,16 @@ async function sendBatchedReactionNotification(pendingKey) {
   });
 
   // Send push notification
-  const result = await sendPushNotification(fcmToken, title, body, {
-    type: 'reaction',
-    photoId: photoId,
-  });
+  const result = await sendPushNotification(
+    fcmToken,
+    title,
+    body,
+    {
+      type: 'reaction',
+      photoId: photoId,
+    },
+    photoOwnerId
+  );
 
   // Write to notifications collection for in-app display
   await admin
@@ -749,12 +872,18 @@ exports.sendCommentNotification = functions.firestore
       const title = '💬 New Comment';
       const body = `${commenterName}: ${commentPreview}`;
 
-      const result = await sendPushNotification(ownerDoc.data().fcmToken, title, body, {
-        type: 'comment',
-        photoId,
-        commentId,
-        screen: 'Feed',
-      });
+      const result = await sendPushNotification(
+        ownerDoc.data().fcmToken,
+        title,
+        body,
+        {
+          type: 'comment',
+          photoId,
+          commentId,
+          screen: 'Feed',
+        },
+        photoOwnerId
+      );
 
       // Write to notifications collection for in-app display
       await admin
@@ -1018,9 +1147,15 @@ exports.sendDeletionReminderNotification = functions.pubsub
         const body =
           "Your account will be permanently deleted in 3 days. Log in to cancel if you've changed your mind.";
 
-        await sendPushNotification(fcmToken, title, body, {
-          type: 'deletion_reminder',
-        });
+        await sendPushNotification(
+          fcmToken,
+          title,
+          body,
+          {
+            type: 'deletion_reminder',
+          },
+          userDoc.id
+        );
 
         sentCount++;
       }
