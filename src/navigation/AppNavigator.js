@@ -42,6 +42,7 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import RecentlyDeletedScreen from '../screens/RecentlyDeletedScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import ProfilePhotoCropScreen from '../screens/ProfilePhotoCropScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 
 // Create navigation reference for programmatic navigation
 export const navigationRef = createRef();
@@ -109,6 +110,11 @@ const ProfileStackNavigator = () => {
         }}
       />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />

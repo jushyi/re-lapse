@@ -64,6 +64,17 @@ const SettingsScreen = () => {
       ],
     },
     {
+      title: 'Notifications',
+      items: [
+        {
+          id: 'notifications',
+          label: 'Notifications',
+          icon: 'notifications-outline',
+          onPress: () => handleNavigate('NotificationSettings'),
+        },
+      ],
+    },
+    {
       title: 'Privacy',
       items: [
         {
