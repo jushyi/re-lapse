@@ -449,7 +449,7 @@ const PhotoDetailScreen = () => {
             <Image
               source={{ uri: imageURL }}
               style={styles.photo}
-              contentFit="cover"
+              contentFit="contain"
               transition={0}
             />
           </View>

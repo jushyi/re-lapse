@@ -402,7 +402,7 @@ const AlbumPhotoViewer = ({
         <Image
           source={{ uri: item.imageURL }}
           style={styles.photo}
-          contentFit="cover"
+          contentFit="contain"
           cachePolicy="memory-disk"
           priority="high"
         />
