@@ -1,5 +1,6 @@
 const { Expo } = require('expo-server-sdk');
 const logger = require('../logger');
+const { storePendingReceipt } = require('./receipts');
 
 // Initialize Expo client with optional access token from env
 // Access token enables higher rate limits for production apps
@@ -15,9 +16,10 @@ const expo = new Expo({
  * @param {string} title - Notification title
  * @param {string} body - Notification body
  * @param {object} data - Additional data payload for deep linking
+ * @param {string|null} userId - User ID for receipt tracking (optional, enables token cleanup)
  * @returns {Promise<object>} - { success, tickets } or { success: false, error }
  */
-async function sendPushNotification(token, title, body, data = {}) {
+async function sendPushNotification(token, title, body, data = {}, userId = null) {
   try {
     // Validate token format using SDK helper
     if (!Expo.isExpoPushToken(token)) {
@@ -44,6 +46,18 @@ async function sendPushNotification(token, title, body, data = {}) {
       token: token.substring(0, 30) + '...',
       tickets,
     });
+
+    // Store pending receipt for later checking (if userId provided)
+    // Only store if ticket has id and status is 'ok'
+    if (userId && tickets.length > 0) {
+      const ticket = tickets[0];
+      if (ticket.status === 'ok' && ticket.id) {
+        // Fire and forget - don't block on receipt storage
+        storePendingReceipt(ticket.id, userId, token).catch(() => {
+          // Errors already logged in storePendingReceipt
+        });
+      }
+    }
 
     return { success: true, tickets };
   } catch (error) {
