@@ -129,11 +129,12 @@ Plans:
 **Goal**: Add notifications for tagged in photo and new story events
 **Depends on**: Phase 35
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 2
 
 Plans:
 
-- [ ] 36-01: TBD
+- [ ] 36-01: Story notifications (triage completion tracking, Cloud Function, deep linking)
+- [ ] 36-02: Tagged photo notifications (Cloud Function infrastructure, deep linking, schema docs)
 
 #### Phase 37: Darkroom Ready Notifications
 
