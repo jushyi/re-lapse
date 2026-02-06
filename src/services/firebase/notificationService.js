@@ -235,7 +235,7 @@ export const handleNotificationReceived = notification => {
 export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
-    const { type, photoId, friendshipId, revealAll, revealedCount, userId } = data || {};
+    const { type, photoId, friendshipId, revealAll, revealedCount, userId, taggerId } = data || {};
 
     logger.debug('Notification tapped', {
       type,
@@ -244,6 +244,7 @@ export const handleNotificationTapped = notification => {
       revealAll,
       revealedCount,
       userId,
+      taggerId,
     });
 
     // Return navigation data based on notification type
@@ -295,6 +296,23 @@ export const handleNotificationTapped = notification => {
             params: {
               highlightUserId: userId, // User whose story to show
               openStory: true, // Signal to auto-open their story
+            },
+          },
+        };
+
+      case 'tagged':
+        // Navigate to Feed with params to open the tagger's story and highlight the specific photo
+        // Deep link UX: Opens the photo within that person's story (can swipe to see more)
+        return {
+          success: true,
+          data: {
+            type: 'tagged',
+            screen: 'Feed',
+            params: {
+              highlightUserId: taggerId, // Person who tagged (their story)
+              highlightPhotoId: photoId, // Specific photo to show
+              openStory: true, // Open the tagger's story
+              scrollToPhoto: true, // Scroll to the specific tagged photo
             },
           },
         };
