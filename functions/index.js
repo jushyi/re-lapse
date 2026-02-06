@@ -484,6 +484,137 @@ exports.sendFriendRequestNotification = functions.firestore
   });
 
 /**
+ * Cloud Function: Send notification when friend request is accepted
+ * Triggered when friendship document is updated with status changing to 'accepted'
+ */
+exports.sendFriendAcceptedNotification = functions.firestore
+  .document('friendships/{friendshipId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const friendshipId = context.params.friendshipId;
+      const before = change.before.data();
+      const after = change.after.data();
+
+      // Guard: validate document data exists
+      if (!after || typeof after !== 'object') {
+        logger.warn('sendFriendAcceptedNotification: Invalid after data', { friendshipId });
+        return null;
+      }
+      if (!before || typeof before !== 'object') {
+        logger.warn('sendFriendAcceptedNotification: Invalid before data', { friendshipId });
+        return null;
+      }
+
+      // Check if status changed from 'pending' to 'accepted'
+      if (before.status === after.status || after.status !== 'accepted') {
+        logger.debug(
+          'sendFriendAcceptedNotification: Not a pending->accepted transition, skipping'
+        );
+        return null;
+      }
+
+      // Guard: verify required IDs are present and valid
+      const { requestedBy, user1Id, user2Id } = after;
+      if (!requestedBy || !user1Id || !user2Id) {
+        logger.warn('sendFriendAcceptedNotification: Missing required user IDs', {
+          friendshipId,
+          hasRequestedBy: !!requestedBy,
+          hasUser1Id: !!user1Id,
+          hasUser2Id: !!user2Id,
+        });
+        return null;
+      }
+
+      // The original requester receives this notification
+      const recipientId = requestedBy;
+
+      // The acceptor is the other user (not the original requester)
+      const acceptorId = user1Id === requestedBy ? user2Id : user1Id;
+
+      // Check recipient's notification preferences
+      const recipientDoc = await admin.firestore().collection('users').doc(recipientId).get();
+
+      if (!recipientDoc.exists) {
+        logger.error('sendFriendAcceptedNotification: Recipient not found:', recipientId);
+        return null;
+      }
+
+      const recipientData = recipientDoc.data();
+      const fcmToken = recipientData.fcmToken;
+
+      if (!fcmToken) {
+        logger.debug(
+          'sendFriendAcceptedNotification: Recipient has no FCM token, skipping:',
+          recipientId
+        );
+        return null;
+      }
+
+      // Check notification preferences (enabled AND follows)
+      const prefs = recipientData.notificationPreferences || {};
+      const masterEnabled = prefs.enabled !== false;
+      const followsEnabled = prefs.follows !== false;
+
+      if (!masterEnabled || !followsEnabled) {
+        logger.debug('sendFriendAcceptedNotification: Notifications disabled by user preferences', {
+          recipientId,
+          masterEnabled,
+          followsEnabled,
+        });
+        return null;
+      }
+
+      // Get acceptor's display name
+      const acceptorDoc = await admin.firestore().collection('users').doc(acceptorId).get();
+
+      const acceptorName = acceptorDoc.exists
+        ? acceptorDoc.data().displayName || acceptorDoc.data().username
+        : 'Someone';
+
+      const acceptorProfilePhotoURL = acceptorDoc.exists
+        ? acceptorDoc.data().profilePhotoURL
+        : null;
+
+      // Send notification
+      const title = '🎉 Friend Request Accepted';
+      const body = `${acceptorName} accepted your friend request`;
+
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'friend_accepted',
+          friendshipId: friendshipId,
+        },
+        recipientId
+      );
+
+      // Write to notifications collection for in-app display
+      await admin
+        .firestore()
+        .collection('notifications')
+        .add({
+          recipientId: recipientId,
+          type: 'friend_accepted',
+          senderId: acceptorId,
+          senderName: acceptorName,
+          senderProfilePhotoURL: acceptorProfilePhotoURL || null,
+          friendshipId: friendshipId,
+          message: body,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false,
+        });
+
+      logger.debug('sendFriendAcceptedNotification: Notification sent to:', recipientId, result);
+      return result;
+    } catch (error) {
+      logger.error('sendFriendAcceptedNotification: Error:', error);
+      return null;
+    }
+  });
+
+/**
  * Send the batched reaction notification after debounce window expires
  * @param {string} pendingKey - Key in pendingReactions object
  */
