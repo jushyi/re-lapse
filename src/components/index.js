@@ -28,3 +28,4 @@ export { default as RenameAlbumModal } from './RenameAlbumModal';
 export { default as MonthlyAlbumCard } from './MonthlyAlbumCard';
 export { default as YearSection } from './YearSection';
 export { default as MonthlyAlbumsSection } from './MonthlyAlbumsSection';
+export { default as InAppNotificationBanner } from './InAppNotificationBanner';
