@@ -165,11 +165,11 @@ Plans:
 **Goal**: Add UI to tag friends during darkroom photo triage (button on photo card)
 **Depends on**: Phase 38
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 39-01: TBD
+- [x] 39-01: TagFriendsModal, darkroom tag button, taggedUserIds persistence
 
 #### Phase 40: Feed Photo Tagging
 
@@ -214,7 +214,7 @@ Plans:
 | 36. Photo Notifications    | v1.7      | 2/2   | Complete    | 2026-02-06 |
 | 37. Darkroom Notifications | v1.7      | 1/1   | Complete    | 2026-02-06 |
 | 38. Notification UI Polish | v1.7      | 1/1   | Complete    | 2026-02-07 |
-| 39. Darkroom Tagging       | v1.7      | 0/?   | Not started | -          |
+| 39. Darkroom Tagging       | v1.7      | 1/1   | Complete    | 2026-02-09 |
 | 40. Feed Tagging           | v1.7      | 0/?   | Not started | -          |
 | 41. Tag Integration        | v1.7      | 0/?   | Not started | -          |
 
