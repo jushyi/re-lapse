@@ -24,13 +24,15 @@
  */
 
 import React, { forwardRef } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import logger from '../utils/logger';
 import useSwipeableCard from '../hooks/useSwipeableCard';
 import { styles } from '../styles/SwipeablePhotoCard.styles';
+import { colors } from '../constants/colors';
 
 const SwipeablePhotoCard = forwardRef(
   (
@@ -41,6 +43,8 @@ const SwipeablePhotoCard = forwardRef(
       onSwipeDown,
       onDeleteComplete,
       onExitClearance,
+      onTagPress,
+      hasTagged,
       stackIndex = 0,
       isActive = true,
       enterFrom = null,
@@ -102,6 +106,18 @@ const SwipeablePhotoCard = forwardRef(
             })
           }
         />
+
+        {/* Tag Button Overlay - only on active card when onTagPress provided */}
+        {onTagPress && (
+          <TouchableOpacity
+            style={styles.tagOverlayButton}
+            onPress={onTagPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add-outline" size={20} color={colors.icon.primary} />
+            {hasTagged && <View style={styles.tagOverlayBadge} />}
+          </TouchableOpacity>
+        )}
 
         {/* Archive Overlay (Left swipe) - only show on active card */}
         {isActive && (

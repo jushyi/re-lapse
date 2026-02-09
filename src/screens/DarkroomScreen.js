@@ -57,10 +57,6 @@ const DarkroomScreen = () => {
     handleCloseTagModal,
   } = useDarkroom();
 
-  // Check if current photo has tags
-  const currentPhotoTags = getTagsForPhoto(currentPhoto?.id);
-  const currentPhotoHasTags = currentPhotoTags.length > 0;
-
   // Loading state
   if (loading) {
     return (
@@ -264,6 +260,8 @@ const DarkroomScreen = () => {
                     onSwipeDown={isActive ? handleDeleteSwipe : undefined}
                     onDeleteComplete={isActive ? handleDeletePulse : undefined}
                     onExitClearance={isActive ? () => handleExitClearance(photo.id) : undefined}
+                    onTagPress={isActive ? handleOpenTagModal : undefined}
+                    hasTagged={isActive ? getTagsForPhoto(photo.id).length > 0 : false}
                   />
                 );
               })}
@@ -275,12 +273,6 @@ const DarkroomScreen = () => {
             <TouchableOpacity style={styles.archiveButton} onPress={handleArchiveButton}>
               <Text style={styles.triageButtonIcon}>{'☐'}</Text>
               <Text style={styles.archiveButtonText}>Archive</Text>
-            </TouchableOpacity>
-
-            {/* Tag Button */}
-            <TouchableOpacity style={styles.tagButton} onPress={handleOpenTagModal}>
-              <Ionicons name="person-add-outline" size={24} color={colors.icon.primary} />
-              {currentPhotoHasTags && <View style={styles.tagBadge} />}
             </TouchableOpacity>
 
             {/* Delete Button */}
@@ -307,7 +299,7 @@ const DarkroomScreen = () => {
           handleTagFriends(currentPhoto?.id, ids);
           handleCloseTagModal();
         }}
-        initialSelectedIds={currentPhotoTags}
+        initialSelectedIds={getTagsForPhoto(currentPhoto?.id)}
       />
     </GestureHandlerRootView>
   );
