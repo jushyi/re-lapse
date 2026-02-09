@@ -176,11 +176,11 @@ Plans:
 **Goal**: Allow tagging on existing feed photos via three-dots menu
 **Depends on**: Phase 39
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 40-01: TBD
+- [x] 40-01: Tag button on PhotoDetailScreen, TaggedPeopleModal, updatePhotoTags persistence
 
 #### Phase 41: Tagged Notification Integration
 
@@ -226,7 +226,7 @@ Plans:
 | 37. Darkroom Notifications | v1.7      | 1/1   | Complete    | 2026-02-06 |
 | 38. Notification UI Polish | v1.7      | 1/1   | Complete    | 2026-02-07 |
 | 39. Darkroom Tagging       | v1.7      | 1/1   | Complete    | 2026-02-09 |
-| 40. Feed Tagging           | v1.7      | 0/?   | Not started | -          |
+| 40. Feed Tagging           | v1.7      | 1/1   | Complete    | 2026-02-09 |
 | 41. Tag Integration        | v1.7      | 1/1   | Complete    | 2026-02-09 |
 | 42. Mutual Friends         | v1.7      | 0/?   | Not started | -          |
 

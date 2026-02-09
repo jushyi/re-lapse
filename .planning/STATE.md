@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 41 of 42 (Tagged Notification Integration)
+Phase: 40 of 42 (Feed Photo Tagging)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-09 — Completed 41-01-PLAN.md
+Last activity: 2026-02-09 — Completed 40-01-PLAN.md
 
 Progress: █████████░ 95%
 
@@ -52,10 +52,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 41-01-PLAN.md (Tagged Notification Integration)
+Stopped at: Completed 40-01-PLAN.md (Feed Photo Tagging)
 Resume file: None
 
 ## Next Steps
 
 - `/gsd:plan-phase 42` — Plan Mutual Friends Suggestions phase
-- `/gsd:verify-work 41` — Test tag notification integration before continuing
+- `/gsd:verify-work 40` — Test feed photo tagging before continuing
