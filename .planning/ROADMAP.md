@@ -225,11 +225,12 @@ Plans:
 **Goal**: Complete the notification screen to properly display all notification types — reactions, comments, comment replies, photo tags, and push notification activity
 **Depends on**: Phase 43
 **Research**: Unlikely (internal patterns)
-**Plans**: 0
+**Plans**: 2
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 44 to break down)
+- [ ] 44-01: Notification type renderers + photo thumbnails
+- [ ] 44-02: Time grouping + deep linking polish + visual verification
 
 #### Phase 45: Security Audit
 
@@ -279,7 +280,7 @@ Plans:
 | 41. Tag Integration            | v1.7      | 1/1   | Complete    | 2026-02-09 |
 | 42. Mutual Friends             | v1.7      | 2/2   | Complete    | 2026-02-09 |
 | 43. Comment Cleanup/Audit      | v1.7      | 2/4   | In progress |            |
-| 44. Notification Activity      | v1.7      | 0/?   | Planned     |            |
+| 44. Notification Activity      | v1.7      | 0/2   | Planned     |            |
 | 45. Security Audit             | v1.7      | 0/?   | Planned     |            |
 | 46. Full Notifications Testing | v1.7      | 0/?   | Planned     |            |
 
