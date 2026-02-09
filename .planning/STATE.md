@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 Phase: 39 of 41 (Darkroom Photo Tagging)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-09 — Completed 39-01-PLAN.md (Darkroom Photo Tagging)
+Last activity: 2026-02-09 — Completed 39-01-FIX.md (Tag button relocation)
 
 Progress: ████████░░ 80%
 
@@ -51,7 +51,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 39-01-PLAN.md (Phase 39 complete)
+Stopped at: Completed 39-01-FIX.md (UAT-001 tag button relocation)
 Resume file: None
 
 ## Next Steps
