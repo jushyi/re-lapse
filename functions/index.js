@@ -1335,7 +1335,7 @@ exports.sendTaggedPhotoNotification = functions.firestore
         // Check notification preferences
         const prefs = taggedUserData.notificationPreferences || {};
         const masterEnabled = prefs.enabled !== false;
-        // Tags fall under a general social category - could add specific 'tags' preference later
+        // Tags preference controlled via NotificationSettingsScreen toggle
         const tagsEnabled = prefs.tags !== false;
 
         if (!masterEnabled || !tagsEnabled) {

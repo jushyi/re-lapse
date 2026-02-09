@@ -22,6 +22,7 @@ const DEFAULT_PREFERENCES = {
   follows: true,
   friendRequests: true,
   mentions: true,
+  tags: true,
 };
 
 /**
@@ -58,6 +59,12 @@ const NOTIFICATION_TYPES = [
     icon: 'at-outline',
     label: 'Mentions',
     subtitle: 'When someone mentions you in a comment',
+  },
+  {
+    id: 'tags',
+    icon: 'pricetag-outline',
+    label: 'Tagged in Photos',
+    subtitle: 'When someone tags you in a photo',
   },
 ];
 
