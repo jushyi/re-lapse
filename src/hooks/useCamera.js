@@ -77,7 +77,7 @@ const useCamera = () => {
 
   // Camera state
   const [facing, setFacing] = useState('back');
-  const [flash, setFlash] = useState('off');
+  const [flash, setFlash] = useState('on');
   const [zoom, setZoom] = useState(ZOOM_LEVELS_BASE[0]); // Default to 1x
   const [isCapturing, setIsCapturing] = useState(false);
 
@@ -256,9 +256,9 @@ const useCamera = () => {
   const toggleFlash = useCallback(() => {
     lightImpact();
     setFlash(current => {
-      if (current === 'off') return 'on';
-      if (current === 'on') return 'auto';
-      return 'off';
+      if (current === 'on') return 'off';
+      if (current === 'off') return 'auto';
+      return 'on';
     });
   }, []);
 

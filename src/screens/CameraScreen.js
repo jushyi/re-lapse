@@ -26,7 +26,11 @@ import logger from '../utils/logger';
 
 // Flash icon - pixel art lightning bolt
 const FlashIcon = ({ color = colors.icon.primary, mode = 'off' }) => (
-  <PixelIcon name={mode === 'off' ? 'flash-off' : 'flash-on'} size={24} color={color} />
+  <PixelIcon
+    name={mode === 'on' || mode === 'auto' ? 'flash-on' : 'flash-off'}
+    size={24}
+    color={color}
+  />
 );
 
 // Flip camera icon - pixel art rotation arrows
