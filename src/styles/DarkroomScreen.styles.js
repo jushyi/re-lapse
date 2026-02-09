@@ -153,6 +153,23 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
+  tagButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.overlay.light,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tagBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.interactive.primary,
+  },
   deleteButton: {
     width: 56,
     height: 56,

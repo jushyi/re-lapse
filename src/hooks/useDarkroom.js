@@ -59,6 +59,11 @@ const useDarkroom = () => {
   // Track hidden photos instead of removing from array to prevent black flash
   const [hiddenPhotoIds, setHiddenPhotoIds] = useState(new Set());
 
+  // Photo tagging state - tracks tags per photo locally until Done is tapped
+  // { [photoId]: string[] } mapping photoId to array of tagged friend user IDs
+  const [photoTags, setPhotoTags] = useState({});
+  const [tagModalVisible, setTagModalVisible] = useState(false);
+
   // Refs
   const cardRef = useRef(null);
   const successFadeAnim = useRef(new Animated.Value(0)).current;
@@ -446,6 +451,55 @@ const useDarkroom = () => {
     });
   }, [undoStack, undoingPhoto, successFadeAnim]);
 
+  /**
+   * Update tags for a specific photo.
+   * @param {string} photoId - Photo ID to tag
+   * @param {string[]} selectedFriendIds - Array of friend user IDs to tag
+   */
+  const handleTagFriends = useCallback((photoId, selectedFriendIds) => {
+    if (!photoId) return;
+    setPhotoTags(prev => {
+      const next = { ...prev };
+      if (selectedFriendIds.length === 0) {
+        delete next[photoId];
+      } else {
+        next[photoId] = selectedFriendIds;
+      }
+      logger.debug('useDarkroom: Updated photo tags', {
+        photoId,
+        tagCount: selectedFriendIds.length,
+      });
+      return next;
+    });
+  }, []);
+
+  /**
+   * Get current tags for a photo.
+   * @param {string} photoId - Photo ID
+   * @returns {string[]} Array of tagged friend user IDs
+   */
+  const getTagsForPhoto = useCallback(
+    photoId => {
+      return photoTags[photoId] || [];
+    },
+    [photoTags]
+  );
+
+  /**
+   * Open the tag friends modal (only if a current photo exists).
+   */
+  const handleOpenTagModal = useCallback(() => {
+    if (!currentPhoto) return;
+    setTagModalVisible(true);
+  }, [currentPhoto]);
+
+  /**
+   * Close the tag friends modal.
+   */
+  const handleCloseTagModal = useCallback(() => {
+    setTagModalVisible(false);
+  }, []);
+
   // Handle back button press
   const handleBackPress = useCallback(() => {
     logger.info('useDarkroom: User tapped back button');
@@ -501,6 +555,8 @@ const useDarkroom = () => {
     hiddenPhotoIds,
     currentPhoto,
     newlyVisibleIds,
+    photoTags,
+    tagModalVisible,
 
     // Refs
     cardRef,
@@ -520,6 +576,10 @@ const useDarkroom = () => {
     handleDeletePulse,
     handleUndo,
     handleBackPress,
+    handleTagFriends,
+    getTagsForPhoto,
+    handleOpenTagModal,
+    handleCloseTagModal,
   };
 };
 

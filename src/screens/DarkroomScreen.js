@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import useDarkroom from '../hooks/useDarkroom';
-import { SwipeablePhotoCard } from '../components';
+import { SwipeablePhotoCard, TagFriendsModal } from '../components';
 import { styles } from '../styles/DarkroomScreen.styles';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
@@ -36,6 +36,9 @@ const DarkroomScreen = () => {
     successFadeAnim,
     deleteButtonScale,
 
+    // Tagging state
+    tagModalVisible,
+
     // Handlers
     handleDone,
     handleExitClearance,
@@ -48,7 +51,15 @@ const DarkroomScreen = () => {
     handleDeletePulse,
     handleUndo,
     handleBackPress,
+    handleTagFriends,
+    getTagsForPhoto,
+    handleOpenTagModal,
+    handleCloseTagModal,
   } = useDarkroom();
+
+  // Check if current photo has tags
+  const currentPhotoTags = getTagsForPhoto(currentPhoto?.id);
+  const currentPhotoHasTags = currentPhotoTags.length > 0;
 
   // Loading state
   if (loading) {
@@ -266,6 +277,12 @@ const DarkroomScreen = () => {
               <Text style={styles.archiveButtonText}>Archive</Text>
             </TouchableOpacity>
 
+            {/* Tag Button */}
+            <TouchableOpacity style={styles.tagButton} onPress={handleOpenTagModal}>
+              <Ionicons name="person-add-outline" size={24} color={colors.icon.primary} />
+              {currentPhotoHasTags && <View style={styles.tagBadge} />}
+            </TouchableOpacity>
+
             {/* Delete Button */}
             <Animated.View style={{ transform: [{ scale: deleteButtonScale }] }}>
               <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteButton}>
@@ -281,6 +298,17 @@ const DarkroomScreen = () => {
           </View>
         </SafeAreaView>
       </View>
+
+      {/* Tag Friends Modal */}
+      <TagFriendsModal
+        visible={tagModalVisible}
+        onClose={handleCloseTagModal}
+        onConfirm={ids => {
+          handleTagFriends(currentPhoto?.id, ids);
+          handleCloseTagModal();
+        }}
+        initialSelectedIds={currentPhotoTags}
+      />
     </GestureHandlerRootView>
   );
 };
