@@ -17,6 +17,7 @@ import { sendVerificationCode } from '../services/firebase/phoneAuthService';
 import { formatAsUserTypes } from '../utils/phoneUtils';
 import { usePhoneAuth } from '../context/PhoneAuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -283,21 +284,22 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: typography.size.display,
+    fontFamily: typography.fontFamily.display,
     textAlign: 'center',
     marginBottom: 8,
     color: colors.text.primary,
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     textAlign: 'center',
     marginBottom: 8,
     color: colors.text.primary,
   },
   description: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 32,
@@ -306,8 +308,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     marginBottom: 8,
   },
@@ -317,22 +319,24 @@ const styles = StyleSheet.create({
     height: 52,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    borderRadius: 8,
+    borderRadius: 2,
     paddingHorizontal: 16,
     backgroundColor: colors.background.secondary,
     marginBottom: 16,
   },
   countrySelectorFlag: {
-    fontSize: 20,
+    fontSize: typography.size.xl,
     marginRight: 12,
   },
   countrySelectorText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   countrySelectorArrow: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   phoneInputContainer: {
@@ -348,12 +352,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    borderRadius: 8,
+    borderRadius: 2,
     marginRight: 8,
   },
   countryCodeText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   phoneInputWrapper: {
@@ -370,8 +374,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     maxHeight: '70%',
   },
   modalHeader: {
@@ -384,12 +388,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   modalClose: {
-    fontSize: 20,
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   countryList: {
@@ -403,16 +408,18 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   countryFlag: {
-    fontSize: 24,
+    fontSize: typography.size.xxl,
     marginRight: 12,
   },
   countryName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   countryCode: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
 });

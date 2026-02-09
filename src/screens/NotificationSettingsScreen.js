@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { getFirestore, doc, updateDoc } from '@react-native-firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
@@ -140,7 +140,7 @@ const NotificationSettingsScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
@@ -151,7 +151,7 @@ const NotificationSettingsScreen = () => {
           {/* Master Toggle */}
           <View style={[styles.toggleItem, styles.masterToggleItem]}>
             <View style={styles.toggleItemLeft}>
-              <Ionicons name="notifications-outline" size={22} color={colors.icon.primary} />
+              <PixelIcon name="notifications-outline" size={22} color={colors.icon.primary} />
               <View style={styles.toggleItemContent}>
                 <Text style={styles.toggleItemLabel}>Push Notifications</Text>
                 <Text style={styles.toggleItemSubtitle}>Turn off to stop all notifications</Text>
@@ -176,7 +176,7 @@ const NotificationSettingsScreen = () => {
               style={[styles.toggleItem, !preferences.enabled && styles.toggleItemDisabled]}
             >
               <View style={styles.toggleItemLeft}>
-                <Ionicons name={type.icon} size={22} color={colors.icon.primary} />
+                <PixelIcon name={type.icon} size={22} color={colors.icon.primary} />
                 <View style={styles.toggleItemContent}>
                   <Text style={styles.toggleItemLabel}>{type.label}</Text>
                   <Text style={styles.toggleItemSubtitle}>{type.subtitle}</Text>

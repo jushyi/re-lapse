@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { successNotification } from '../utils/haptics';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -196,13 +197,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: typography.size.display,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   button: {
@@ -212,13 +214,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.interactive.primary,
     paddingVertical: 16,
     paddingHorizontal: 48,
-    borderRadius: 24,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import FriendCard from '../components/FriendCard';
 import {
@@ -122,7 +122,7 @@ const ContactsSyncScreen = ({ navigation }) => {
   const renderInitialState = () => (
     <View style={styles.content}>
       <View style={styles.privacySection}>
-        <Ionicons
+        <PixelIcon
           name="people-outline"
           size={64}
           color={colors.brand.purple}
@@ -216,7 +216,7 @@ const ContactsSyncScreen = ({ navigation }) => {
   const renderEmptyState = () => (
     <View style={styles.content}>
       <View style={styles.emptyContainer}>
-        <Ionicons
+        <PixelIcon
           name="heart-outline"
           size={64}
           color={colors.text.tertiary}
@@ -265,7 +265,7 @@ const ContactsSyncScreen = ({ navigation }) => {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Find Friends</Text>
       </View>

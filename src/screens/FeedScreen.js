@@ -20,7 +20,7 @@ import {
   limit,
   onSnapshot,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import { useViewedStories } from '../hooks/useViewedStories';
 import { usePhotoDetail } from '../context/PhotoDetailContext';
@@ -39,6 +39,7 @@ import {
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,7 +57,8 @@ const FeedScreen = () => {
   const insets = useSafeAreaInsets();
 
   // Photo detail context for feed mode navigation
-  const { openPhotoDetail, setCallbacks, updatePhotoAtIndex } = usePhotoDetail();
+  const { openPhotoDetail, setCallbacks, updatePhotoAtIndex, updateCurrentPhoto } =
+    usePhotoDetail();
 
   // Track current feed photo for reaction updates (ref to avoid re-renders)
   const currentFeedPhotoRef = useRef(null);
@@ -667,9 +669,10 @@ const FeedScreen = () => {
       reactionCount: newTotalCount,
     };
 
-    // Update the ref and feed state
+    // Update the ref, feed state, and context photo for modal re-render
     currentFeedPhotoRef.current = updatedPhoto;
     updatePhotoInState(photoId, updatedPhoto);
+    updateCurrentPhoto(updatedPhoto);
 
     // Persist to Firebase
     try {
@@ -679,12 +682,14 @@ const FeedScreen = () => {
         // Revert optimistic update on error
         currentFeedPhotoRef.current = photo;
         updatePhotoInState(photoId, photo);
+        updateCurrentPhoto(photo);
       }
     } catch (error) {
       logger.error('Error toggling reaction', error);
       // Revert optimistic update on error
       currentFeedPhotoRef.current = photo;
       updatePhotoInState(photoId, photo);
+      updateCurrentPhoto(photo);
     }
   };
 
@@ -815,7 +820,7 @@ const FeedScreen = () => {
     // Established user state: has friends but no posts in feed
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="sad-outline" size={64} color={colors.text.secondary} />
+        <PixelIcon name="sad-outline" size={64} color={colors.text.secondary} />
         <Text style={styles.emptyTitle}>Nothing yet</Text>
         <Text style={styles.emptyText}>Tell your friends to post!</Text>
       </View>
@@ -1007,7 +1012,7 @@ const FeedScreen = () => {
           onPress={() => navigation.navigate('FriendsList')}
           style={styles.friendsButton}
         >
-          <Ionicons name="people-outline" size={24} color={colors.text.primary} />
+          <PixelIcon name="people-outline" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         {/* Centered title */}
         <Text style={styles.headerTitle}>Rewind</Text>
@@ -1016,7 +1021,7 @@ const FeedScreen = () => {
           onPress={() => navigation.navigate('Activity')}
           style={styles.notificationButton}
         >
-          <Ionicons name="heart-outline" size={24} color={colors.text.primary} />
+          <PixelIcon name="heart-outline" size={24} color={colors.text.primary} />
           {hasNewNotifications && <View style={styles.notificationDot} />}
         </TouchableOpacity>
       </Animated.View>
@@ -1093,8 +1098,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   friendsButton: {
@@ -1128,7 +1133,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     marginLeft: 12,
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   emptyContainer: {
@@ -1143,13 +1149,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -1166,13 +1173,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -1182,11 +1190,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   retryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   // Stories row styles
@@ -1211,7 +1219,7 @@ const styles = StyleSheet.create({
   storySkeletonPhoto: {
     width: 94, // 88 + 6 border
     height: 136, // 130 + 6 border
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     marginBottom: 8,
     overflow: 'hidden', // Contain shimmer
@@ -1219,7 +1227,7 @@ const styles = StyleSheet.create({
   storySkeletonName: {
     width: 50,
     height: 10,
-    borderRadius: 5,
+    borderRadius: 2,
     backgroundColor: colors.background.tertiary,
     overflow: 'hidden', // Contain shimmer
   },

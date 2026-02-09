@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { getBlockedUsersWithProfiles, unblockUser } from '../services/firebase';
 import FriendCard from '../components/FriendCard';
@@ -147,7 +147,7 @@ const BlockedUsersScreen = () => {
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Blocked Users</Text>
           <View style={styles.headerSpacer} />
@@ -171,7 +171,7 @@ const BlockedUsersScreen = () => {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Blocked Users</Text>
         <View style={styles.headerSpacer} />

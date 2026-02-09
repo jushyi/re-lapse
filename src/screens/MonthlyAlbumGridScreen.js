@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from '
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import { getMonthPhotos } from '../services/firebase/monthlyAlbumService';
 import { AlbumPhotoViewer } from '../components';
@@ -309,7 +310,7 @@ const MonthlyAlbumGridScreen = () => {
       {/* Header */}
       <View style={[styles.header, { top: insets.top }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -379,7 +380,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
   },
   emptyContainer: {
     flex: 1,
@@ -388,7 +390,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
   },
   header: {
     position: 'absolute',
@@ -417,13 +420,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
   },
   photoCount: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -436,8 +440,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   dayHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

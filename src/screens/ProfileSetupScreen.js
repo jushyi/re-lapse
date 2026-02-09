@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Input, StepIndicator, ProfileSongCard } from '../components';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ import {
 } from '../utils/validation';
 import { checkUsernameAvailability, cancelProfileSetup } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation }) => {
@@ -361,7 +362,7 @@ const ProfileSetupScreen = ({ navigation }) => {
           <View style={styles.content}>
             <View style={styles.header}>
               <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-                <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+                <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
             <StepIndicator currentStep={1} totalSteps={2} style={styles.stepIndicator} />
@@ -376,7 +377,7 @@ const ProfileSetupScreen = ({ navigation }) => {
                 />
               ) : (
                 <View style={styles.placeholderPhoto}>
-                  <Ionicons name="camera-outline" size={40} color={colors.text.secondary} />
+                  <PixelIcon name="camera-outline" size={40} color={colors.text.secondary} />
                   <Text style={styles.placeholderText}>Add Photo</Text>
                 </View>
               )}
@@ -489,14 +490,15 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxxl,
+    fontFamily: typography.fontFamily.display,
     textAlign: 'center',
     marginBottom: 8,
     color: colors.text.primary,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     textAlign: 'center',
     color: colors.text.secondary,
     marginBottom: 32,
@@ -523,7 +525,8 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   form: {
@@ -541,8 +544,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   songLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     marginBottom: 8,
   },

@@ -14,7 +14,7 @@ import {
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -28,6 +28,7 @@ import Animated, {
 import { Button, StepIndicator } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 // Enable LayoutAnimation on Android
@@ -301,7 +302,7 @@ const DeleteBar = ({ isVisible, isHovering }) => {
     <Animated.View
       style={[styles.deleteBar, animatedStyle, isHovering && styles.deleteBarHovering]}
     >
-      <Ionicons
+      <PixelIcon
         name="trash-outline"
         size={20}
         color={colors.text.primary}
@@ -361,9 +362,9 @@ const TutorialHint = ({ isVisible, onDismiss }) => {
       <Animated.View style={[styles.tutorialContainer, containerStyle]}>
         <View style={styles.tutorialIconRow}>
           <Animated.View style={arrowStyle}>
-            <Ionicons name="hand-left-outline" size={32} color={colors.text.primary} />
+            <PixelIcon name="hand-left-outline" size={32} color={colors.text.primary} />
           </Animated.View>
-          <Ionicons
+          <PixelIcon
             name="swap-horizontal"
             size={24}
             color={colors.text.secondary}
@@ -703,7 +704,7 @@ const SelectsScreen = ({ navigation }) => {
   // Render empty preview placeholder
   const renderEmptyPreview = () => (
     <View style={[styles.previewEmpty, { width: previewWidth, height: previewHeight }]}>
-      <Ionicons name="images-outline" size={64} color={colors.text.secondary} />
+      <PixelIcon name="images-outline" size={64} color={colors.text.secondary} />
       <Text style={styles.previewEmptyText}>Tap to add photos</Text>
     </View>
   );
@@ -759,7 +760,7 @@ const SelectsScreen = ({ navigation }) => {
         onPress={() => handleThumbnailPress(index)}
         activeOpacity={0.7}
       >
-        <Ionicons name="add" size={24} color={colors.text.secondary} />
+        <PixelIcon name="add" size={24} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
@@ -774,7 +775,7 @@ const SelectsScreen = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <StepIndicator currentStep={2} totalSteps={2} style={styles.headerStepIndicator} />
           <View style={styles.headerSpacer} />
@@ -877,14 +878,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxxl,
+    fontFamily: typography.fontFamily.display,
     textAlign: 'center',
     color: colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     textAlign: 'center',
     color: colors.text.secondary,
   },
@@ -894,12 +896,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   previewTouchable: {
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   previewEmpty: {
     backgroundColor: colors.background.tertiary,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
@@ -907,12 +909,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   previewEmptyText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 12,
   },
   previewImage: {
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
   },
   thumbnailSection: {
@@ -932,7 +935,7 @@ const styles = StyleSheet.create({
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -954,12 +957,12 @@ const styles = StyleSheet.create({
   thumbnailImage: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   thumbnailTouchable: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   spacer: {
@@ -975,7 +978,7 @@ const styles = StyleSheet.create({
     height: DELETE_BAR_HEIGHT,
     backgroundColor: colors.status.danger,
     opacity: 0.9,
-    borderRadius: 8,
+    borderRadius: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -989,8 +992,8 @@ const styles = StyleSheet.create({
   },
   deleteBarText: {
     color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   // Tutorial hint styles
   tutorialOverlay: {
@@ -1006,7 +1009,7 @@ const styles = StyleSheet.create({
   },
   tutorialContainer: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 16,
+    borderRadius: 4,
     padding: 24,
     marginHorizontal: 40,
     alignItems: 'center',
@@ -1022,13 +1025,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   tutorialTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 4,
   },
   tutorialSubtitle: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginBottom: 20,
   },
@@ -1036,12 +1040,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     paddingHorizontal: 32,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   tutorialButtonText: {
     color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });
 

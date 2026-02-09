@@ -13,7 +13,7 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import useDarkroom from '../hooks/useDarkroom';
 import { SwipeablePhotoCard, TagFriendsModal } from '../components';
 import { styles } from '../styles/DarkroomScreen.styles';
@@ -101,7 +101,7 @@ const DarkroomScreen = () => {
                 onPress={handleUndo}
                 disabled={undoStack.length === 0 || undoingPhoto !== null}
               >
-                <Ionicons
+                <PixelIcon
                   name="arrow-undo"
                   size={16}
                   color={colors.icon.primary}
@@ -215,7 +215,7 @@ const DarkroomScreen = () => {
               onPress={handleUndo}
               disabled={undoStack.length === 0 || undoingPhoto !== null}
             >
-              <Ionicons
+              <PixelIcon
                 name="arrow-undo"
                 size={16}
                 color={colors.icon.primary}

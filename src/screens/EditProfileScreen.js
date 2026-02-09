@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { Input } from '../components';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ import {
   canChangeUsername,
 } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -427,11 +428,11 @@ const EditProfileScreen = ({ navigation }) => {
               <Image source={{ uri: currentPhotoUri }} style={styles.profilePhoto} />
             ) : (
               <View style={styles.placeholderPhoto}>
-                <Ionicons name="person" size={48} color={colors.text.secondary} />
+                <PixelIcon name="person" size={48} color={colors.text.secondary} />
               </View>
             )}
             <View style={styles.photoEditBadge}>
-              <Ionicons name="camera" size={16} color={colors.text.primary} />
+              <PixelIcon name="camera" size={16} color={colors.text.primary} />
             </View>
           </TouchableOpacity>
 
@@ -527,17 +528,18 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   cancelText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   saveText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.brand.purple,
     textAlign: 'right',
   },
@@ -556,12 +558,12 @@ const styles = StyleSheet.create({
   profilePhoto: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 9999,
   },
   placeholderPhoto: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 9999,
     backgroundColor: colors.background.tertiary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 9999,
     backgroundColor: colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -592,7 +594,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   usernameRestrictionHint: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: -8,
     marginBottom: 16,

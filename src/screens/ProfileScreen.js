@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import {
@@ -29,6 +29,7 @@ import {
   unblockUser,
   isBlocked,
 } from '../services/firebase';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -732,7 +733,7 @@ const ProfileScreen = () => {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerButton} />
@@ -750,7 +751,7 @@ const ProfileScreen = () => {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerButton} />
@@ -769,23 +770,23 @@ const ProfileScreen = () => {
         {/* Left: Friends icon (own) or Back arrow (other user) */}
         {isOwnProfile ? (
           <TouchableOpacity onPress={handleFriendsPress} style={styles.headerButton}>
-            <Ionicons name="people-outline" size={24} color={colors.text.primary} />
+            <PixelIcon name="people-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
         )}
 
         {/* Center: Username */}
-        <Text style={styles.headerTitle}>
+        <Text style={styles.headerTitle} numberOfLines={1}>
           {isOwnProfile ? userProfile?.username || 'Profile' : routeUsername || 'Profile'}
         </Text>
 
         {/* Right: Settings icon (own) or three-dot menu (other user) */}
         {isOwnProfile ? (
           <TouchableOpacity onPress={handleSettingsPress} style={styles.headerButton}>
-            <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
+            <PixelIcon name="settings-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -793,7 +794,7 @@ const ProfileScreen = () => {
             onPress={handleProfileMenuPress}
             style={styles.headerButton}
           >
-            <Ionicons name="ellipsis-vertical" size={24} color={colors.text.primary} />
+            <PixelIcon name="ellipsis-vertical" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -824,7 +825,7 @@ const ProfileScreen = () => {
               <Image source={{ uri: profileData.photoURL }} style={styles.profilePhoto} />
             ) : (
               <View style={[styles.profilePhoto, styles.profilePhotoPlaceholder]}>
-                <Ionicons name="person" size={60} color={colors.text.secondary} />
+                <PixelIcon name="person" size={60} color={colors.text.secondary} />
               </View>
             )}
           </View>
@@ -865,7 +866,7 @@ const ProfileScreen = () => {
               }
               disabled={friendshipStatus === 'pending_sent' || friendshipLoading}
             >
-              <Ionicons
+              <PixelIcon
                 name={
                   friendshipStatus === 'pending_received'
                     ? 'checkmark-outline'
@@ -964,7 +965,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
   },
   header: {
     position: 'absolute',
@@ -986,9 +988,11 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    flex: 1,
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
@@ -1029,23 +1033,25 @@ const styles = StyleSheet.create({
   profileInfoCard: {
     flex: 1,
     backgroundColor: colors.background.tertiary,
-    borderRadius: 8,
+    borderRadius: 2,
     paddingHorizontal: 12,
     paddingBottom: 12,
     paddingTop: 70, // Space for profile photo overlay
   },
   displayName: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   username: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
   },
   bio: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 8,
   },
@@ -1070,7 +1076,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 4,
     width: '100%',
     gap: 8,
   },
@@ -1079,8 +1085,8 @@ const styles = StyleSheet.create({
   },
   addFriendText: {
     color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   cancelRequestButton: {
     marginTop: 12,
@@ -1088,7 +1094,8 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: colors.text.secondary,
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
   },
 });
 

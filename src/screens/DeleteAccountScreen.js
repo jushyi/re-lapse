@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from '@react-native-firebase/auth';
 import { sendVerificationCode, verifyCode } from '../services/firebase/phoneAuthService';
@@ -28,6 +28,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components';
 import DownloadProgress from '../components/DownloadProgress';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -316,7 +317,7 @@ const DeleteAccountScreen = () => {
   const renderWarningStep = () => (
     <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
       <View style={styles.warningIconContainer}>
-        <Ionicons name="warning-outline" size={64} color={colors.status.danger} />
+        <PixelIcon name="warning-outline" size={64} color={colors.status.danger} />
       </View>
 
       <Text style={styles.title}>Delete Account</Text>
@@ -357,7 +358,7 @@ const DeleteAccountScreen = () => {
 
         {downloadStatus === 'idle' && (
           <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPhotos}>
-            <Ionicons
+            <PixelIcon
               name="download-outline"
               size={20}
               color={colors.brand.purple}
@@ -492,7 +493,7 @@ const DeleteAccountScreen = () => {
       {step !== 'scheduling' && (
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Delete Account</Text>
           <View style={styles.headerSpacer} />
@@ -529,8 +530,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   headerSpacer: {
@@ -561,43 +562,46 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
   phoneNumber: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 32,
   },
   warningBox: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 12,
+    borderRadius: 4,
     padding: 20,
     marginTop: 24,
     marginBottom: 32,
   },
   warningText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 22,
   },
   warningTextBold: {
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   warningSubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
     marginBottom: 16,
@@ -614,13 +618,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   bulletDot: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginRight: 8,
     width: 12,
   },
   bulletText: {
-    fontSize: 15,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     flex: 1,
   },
@@ -631,7 +637,7 @@ const styles = StyleSheet.create({
   dangerButton: {
     borderWidth: 2,
     borderColor: colors.status.danger,
-    borderRadius: 12,
+    borderRadius: 4,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 16,
@@ -641,8 +647,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   dangerButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.status.danger,
   },
   dangerButtonTextDisabled: {
@@ -652,13 +658,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   downloadHeading: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     marginBottom: 4,
   },
   downloadSubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginBottom: 16,
   },
@@ -668,7 +675,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.brand.purple,
-    borderRadius: 12,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 20,
   },
@@ -676,8 +683,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   downloadButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.brand.purple,
   },
   cancelButton: {
@@ -685,7 +692,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   primaryButton: {
@@ -698,13 +706,13 @@ const styles = StyleSheet.create({
   codeInput: {
     width: '80%',
     height: 72,
-    fontSize: 32,
-    fontWeight: '600',
+    fontSize: typography.size.display,
+    fontFamily: typography.fontFamily.bodyBold,
     letterSpacing: 16,
     textAlign: 'center',
     borderWidth: 2,
     borderColor: colors.border.subtle,
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.secondary,
     color: colors.text.primary,
   },
@@ -716,31 +724,34 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.status.danger,
     textAlign: 'center',
-    fontWeight: '600',
   },
   retryDelayText: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     textAlign: 'center',
     marginTop: 4,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     marginTop: 16,
   },
   deletingText: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     marginTop: 24,
   },
   deletingSubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 8,
   },

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import {
   getFirestore,
   collection,
@@ -269,10 +269,10 @@ const ActivityScreen = () => {
         </View>
         <View style={styles.requestActions}>
           <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.id)}>
-            <Ionicons name="checkmark" size={18} color={colors.icon.primary} />
+            <PixelIcon name="checkmark" size={18} color={colors.icon.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item.id)}>
-            <Ionicons name="close" size={18} color={colors.text.secondary} />
+            <PixelIcon name="close" size={18} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -302,7 +302,7 @@ const ActivityScreen = () => {
             <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
           ) : (
             <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
-              <Ionicons name="person" size={20} color={colors.text.tertiary} />
+              <PixelIcon name="person" size={20} color={colors.text.tertiary} />
             </View>
           )}
         </TouchableOpacity>
@@ -327,7 +327,7 @@ const ActivityScreen = () => {
     if (friendRequests.length === 0 && notifications.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
+          <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
           <Text style={styles.emptyTitle}>No activity yet</Text>
           <Text style={styles.emptyText}>Friend requests and reactions will appear here</Text>
         </View>
@@ -341,7 +341,7 @@ const ActivityScreen = () => {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
           <View style={styles.headerSpacer} />
@@ -358,7 +358,7 @@ const ActivityScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
@@ -386,7 +386,7 @@ const ActivityScreen = () => {
               <View style={styles.sectionBadge}>
                 <Text style={styles.sectionBadgeText}>{friendRequests.length}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              <PixelIcon name="chevron-forward" size={18} color={colors.text.tertiary} />
             </TouchableOpacity>
             {friendRequests.map(item => (
               <View key={item.id}>{renderFriendRequest({ item })}</View>

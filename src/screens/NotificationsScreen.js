@@ -20,9 +20,10 @@ import {
   limit,
   getDocs,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
@@ -175,7 +176,7 @@ const NotificationsScreen = () => {
             <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.profilePhoto} />
           ) : (
             <View style={styles.profilePhotoPlaceholder}>
-              <Ionicons name="person" size={24} color={colors.text.secondary} />
+              <PixelIcon name="person" size={24} color={colors.text.secondary} />
             </View>
           )}
         </View>
@@ -204,7 +205,7 @@ const NotificationsScreen = () => {
     return (
       <View style={styles.pushBanner}>
         <View style={styles.pushBannerContent}>
-          <Ionicons name="notifications-off-outline" size={24} color={colors.brand.purple} />
+          <PixelIcon name="notifications-off-outline" size={24} color={colors.brand.purple} />
           <View style={styles.pushBannerText}>
             <Text style={styles.pushBannerTitle}>Push notifications disabled</Text>
             <Text style={styles.pushBannerSubtitle}>
@@ -235,7 +236,7 @@ const NotificationsScreen = () => {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
+        <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
         <Text style={styles.emptyTitle}>No notifications yet</Text>
         <Text style={styles.emptyText}>
           When friends react to your photos, you&apos;ll see it here
@@ -256,7 +257,7 @@ const NotificationsScreen = () => {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
@@ -276,7 +277,7 @@ const NotificationsScreen = () => {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>
@@ -321,8 +322,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   loadingContainer: {
@@ -362,12 +363,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   messageText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 20,
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   separator: {
@@ -382,8 +385,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginTop: 16,
     marginBottom: 8,
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.brand.purple + '40',
   },
@@ -418,12 +421,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pushBannerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   pushBannerSubtitle: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -431,14 +435,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 2,
     marginLeft: 12,
     minWidth: 70,
     alignItems: 'center',
   },
   pushBannerButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
 });

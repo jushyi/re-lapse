@@ -26,7 +26,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import EmojiPicker from 'rn-emoji-keyboard';
 import { useNavigation } from '@react-navigation/native';
 import { getTimeAgo } from '../utils/timeUtils';
@@ -552,11 +552,7 @@ const PhotoDetailScreen = () => {
             }}
             activeOpacity={0.7}
           >
-            <Ionicons
-              name={currentPhoto?.taggedUserIds?.length > 0 ? 'person' : 'person-add-outline'}
-              size={18}
-              color={colors.text.primary}
-            />
+            <PixelIcon name="add" size={18} color={colors.text.primary} />
           </TouchableOpacity>
         )}
 
@@ -568,7 +564,7 @@ const PhotoDetailScreen = () => {
             onLayout={handleMenuButtonLayout}
             activeOpacity={0.7}
           >
-            <Ionicons name="ellipsis-vertical" size={28} color={colors.text.primary} />
+            <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
           </TouchableOpacity>
         )}
 
@@ -605,7 +601,7 @@ const PhotoDetailScreen = () => {
             onPress={() => setShowComments(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
+            <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
             <Text style={styles.commentInputTriggerText} numberOfLines={1}>
               {currentPhoto?.commentCount > 0
                 ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`

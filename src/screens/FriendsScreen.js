@@ -20,7 +20,7 @@ import {
   doc,
   getDoc,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import FriendCard from '../components/FriendCard';
 import {
@@ -123,7 +123,7 @@ const FriendsScreen = ({ navigation }) => {
                 acceptedAt: friendship.acceptedAt,
                 displayName: userDoc.data().displayName,
                 username: userDoc.data().username,
-                profilePhotoURL: userDoc.data().profilePhotoURL,
+                profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
               };
             }
           } catch (err) {
@@ -172,7 +172,7 @@ const FriendsScreen = ({ navigation }) => {
                   userId: otherUserId,
                   displayName: userDoc.data().displayName,
                   username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL,
+                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
                 };
               }
             } catch (err) {
@@ -198,7 +198,7 @@ const FriendsScreen = ({ navigation }) => {
                   userId: otherUserId,
                   displayName: userDoc.data().displayName,
                   username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL,
+                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
                 };
               }
             } catch (err) {
@@ -261,6 +261,7 @@ const FriendsScreen = ({ navigation }) => {
         const filtered = result.suggestions.filter(
           s => !dismissedSet.has(s.userId) && !blockedUserIds.includes(s.userId)
         );
+
         setMutualSuggestions(filtered);
       } else {
         setMutualSuggestions([]);
@@ -809,7 +810,7 @@ const FriendsScreen = ({ navigation }) => {
    */
   const renderEmptyState = (icon, title, text) => (
     <View style={styles.emptyContainer}>
-      <Ionicons name={icon} size={48} color={colors.text.tertiary} style={styles.emptyIcon} />
+      <PixelIcon name={icon} size={48} color={colors.text.tertiary} style={styles.emptyIcon} />
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
@@ -820,7 +821,7 @@ const FriendsScreen = ({ navigation }) => {
    */
   const renderSyncPrompt = () => (
     <View style={styles.syncPromptContainer}>
-      <Ionicons
+      <PixelIcon
         name="people-outline"
         size={40}
         color={colors.brand.purple}
@@ -1186,7 +1187,7 @@ const FriendsScreen = ({ navigation }) => {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Friends</Text>
       </View>

@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { PRIVACY_POLICY_CONTENT } from '../constants/legalContent';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -27,7 +28,7 @@ const PrivacyPolicyScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy Policy</Text>
         <View style={styles.headerSpacer} />
@@ -63,8 +64,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   headerSpacer: {
@@ -78,7 +79,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   bodyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     lineHeight: 22,
     color: colors.text.primary,
   },
