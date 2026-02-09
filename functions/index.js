@@ -1279,6 +1279,45 @@ exports.sendTaggedPhotoNotification = functions.firestore
       // Find newly added user IDs (in after but not in before)
       const newlyTaggedUserIds = afterTaggedUserIds.filter(id => !beforeTaggedUserIds.includes(id));
 
+      // Handle tag removals: cancel pending debounce notifications for untagged users
+      const removedTaggedUserIds = beforeTaggedUserIds.filter(
+        id => !afterTaggedUserIds.includes(id)
+      );
+
+      for (const removedUserId of removedTaggedUserIds) {
+        const pendingKey = `${after.userId}_${removedUserId}`;
+        if (pendingTags[pendingKey]) {
+          clearTimeout(pendingTags[pendingKey].timeout);
+          // Remove the photoId from the pending batch
+          const idx = pendingTags[pendingKey].photoIds.indexOf(photoId);
+          if (idx !== -1) {
+            pendingTags[pendingKey].photoIds.splice(idx, 1);
+          }
+          // If no photos left in batch, delete the entire pending entry
+          if (pendingTags[pendingKey].photoIds.length === 0) {
+            delete pendingTags[pendingKey];
+            logger.debug(
+              'sendTaggedPhotoNotification: Cancelled pending notification (all photos untagged)',
+              {
+                pendingKey,
+                removedUserId,
+              }
+            );
+          } else {
+            // Restart debounce timer with remaining photos
+            pendingTags[pendingKey].timeout = setTimeout(
+              () => sendBatchedTagNotification(pendingKey),
+              TAG_DEBOUNCE_MS
+            );
+            logger.debug('sendTaggedPhotoNotification: Removed photo from pending batch', {
+              pendingKey,
+              removedPhotoId: photoId,
+              remainingCount: pendingTags[pendingKey].photoIds.length,
+            });
+          }
+        }
+      }
+
       if (newlyTaggedUserIds.length === 0) {
         logger.debug('sendTaggedPhotoNotification: No new tags, skipping', { photoId });
         return null;
