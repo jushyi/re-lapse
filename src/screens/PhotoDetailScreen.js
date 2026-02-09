@@ -43,7 +43,7 @@ import {
   updatePhotoTags,
 } from '../services/firebase/photoService';
 import DropdownMenu from '../components/DropdownMenu';
-import { TagFriendsModal } from '../components';
+import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
@@ -731,6 +731,17 @@ const PhotoDetailScreen = () => {
         onConfirm={async selectedIds => {
           await updatePhotoTags(currentPhoto.id, selectedIds);
           setTagModalVisible(false);
+        }}
+      />
+
+      {/* Tagged People Modal (for non-owner viewing) */}
+      <TaggedPeopleModal
+        visible={taggedPeopleModalVisible}
+        onClose={() => setTaggedPeopleModalVisible(false)}
+        taggedUserIds={currentPhoto?.taggedUserIds || []}
+        onPersonPress={(userId, userName) => {
+          setTaggedPeopleModalVisible(false);
+          contextAvatarPress?.(userId, userName);
         }}
       />
     </Animated.View>
