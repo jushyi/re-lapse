@@ -302,7 +302,6 @@ const useCamera = () => {
 
   // Play card stack capture animation - cards fan out and enlarge, then snap back
   const playCardCaptureAnimation = useCallback(() => {
-    // Reset values
     cardScale.setValue(1);
     cardFanSpread.setValue(0);
 

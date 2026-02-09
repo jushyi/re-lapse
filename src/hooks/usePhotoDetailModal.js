@@ -30,7 +30,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  * @param {function} params.onClose - Callback to close modal
  * @param {function} params.onReactionToggle - Callback when emoji is toggled
  * @param {string} params.currentUserId - Current user's ID
- * @param {function} params.onSwipeUp - Callback when user swipes up on photo (ISS-005)
+ * @param {function} params.onSwipeUp - Callback when user swipes up on photo
  * @returns {object} Modal state and handlers
  */
 export const usePhotoDetailModal = ({
@@ -44,7 +44,7 @@ export const usePhotoDetailModal = ({
   onReactionToggle,
   currentUserId,
   onFriendTransition, // Callback for friend-to-friend transition with cube animation
-  onSwipeUp, // ISS-005: Callback when user swipes up to open comments
+  onSwipeUp, // Callback when user swipes up to open comments
 }) => {
   // Stories mode: current photo index
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -96,9 +96,9 @@ export const usePhotoDetailModal = ({
   }, [currentPhoto?.id]);
 
   // Reset emoji state when photo changes
-  // - Reset frozenOrder so emojis sort correctly by count for new photo (ISS-008 fix)
+  // - Reset frozenOrder so emojis sort correctly by count for new photo
   // - Initialize activeCustomEmojis with any custom emojis already in the photo's reactions
-  // ISS-009 fix: Read reactions directly from currentPhoto to avoid stale closure issue
+  // Read reactions directly from currentPhoto to avoid stale closure issue
   useEffect(() => {
     if (currentPhoto?.id) {
       // Reset frozen order so new photo shows emojis sorted by count
@@ -125,10 +125,10 @@ export const usePhotoDetailModal = ({
 
   /**
    * Get grouped reactions (emoji -> count)
-   * ISS-009 fix: Read reactions directly from currentPhoto inside useMemo
-   * and depend on currentPhoto instead of destructured reactions variable.
-   * This ensures recalculation when photo changes, as React's dependency
-   * comparison on the destructured variable was unreliable.
+   * Read reactions directly from currentPhoto inside useMemo and depend on
+   * currentPhoto instead of destructured reactions variable. This ensures
+   * recalculation when photo changes, as React's dependency comparison on
+   * the destructured variable was unreliable.
    */
   const groupedReactions = useMemo(() => {
     // Read reactions directly from currentPhoto to ensure fresh data
@@ -150,7 +150,7 @@ export const usePhotoDetailModal = ({
 
   /**
    * Get current user's reaction count for a specific emoji
-   * ISS-009 fix: Read from currentPhoto?.reactions directly for consistency
+   * Read from currentPhoto?.reactions directly for consistency
    */
   const getUserReactionCount = useCallback(
     emoji => {
@@ -454,7 +454,7 @@ export const usePhotoDetailModal = ({
     ]).start();
   }, [translateY, opacity]);
 
-  // ISS-005: Store onSwipeUp in ref for panResponder access
+  // Store onSwipeUp in ref for panResponder access
   const onSwipeUpRef = useRef(onSwipeUp);
   useEffect(() => {
     onSwipeUpRef.current = onSwipeUp;
@@ -473,9 +473,9 @@ export const usePhotoDetailModal = ({
   /**
    * Pan responder for swipe gestures:
    * - Swipe DOWN: dismiss photo detail (existing behavior)
-   * - Swipe UP: open comments (ISS-005)
+   * - Swipe UP: open comments
    * Excludes footer area (bottom 100px) to allow emoji taps.
-   * UAT-028 fix: Better gesture detection - check vertical vs horizontal movement
+   * Better gesture detection - check vertical vs horizontal movement
    */
   const panResponder = useRef(
     PanResponder.create({
@@ -496,9 +496,9 @@ export const usePhotoDetailModal = ({
         const footerThreshold = SCREEN_HEIGHT - 100;
         if (touchY >= footerThreshold) return false;
 
-        // UAT-028 fix: Check for vertical swipe (dy > dx)
+        // Check for vertical swipe (dy > dx)
         const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-        // ISS-005: Respond to both downward (close) and upward (open comments) swipes
+        // Respond to both downward (close) and upward (open comments) swipes
         const isDownward = gestureState.dy > 5;
         const isUpward = gestureState.dy < -10; // Slightly higher threshold for upward
         return isVerticalSwipe && (isDownward || isUpward);
@@ -512,9 +512,9 @@ export const usePhotoDetailModal = ({
         const footerThreshold = SCREEN_HEIGHT - 100;
         if (touchY >= footerThreshold) return false;
 
-        // UAT-028 fix: Capture gesture when vertical swipe is detected
+        // Capture gesture when vertical swipe is detected
         const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-        // ISS-005: Capture both downward and upward swipes
+        // Capture both downward and upward swipes
         const isDownward = gestureState.dy > 5;
         const isUpward = gestureState.dy < -10;
         return isVerticalSwipe && (isDownward || isUpward);
@@ -532,7 +532,7 @@ export const usePhotoDetailModal = ({
       onPanResponderRelease: (_, gestureState) => {
         const { dy, vy } = gestureState;
 
-        // ISS-005: SWIPE UP - open comments
+        // SWIPE UP - open comments
         if (dy < -50 || vy < -0.5) {
           // Significant upward swipe detected
           if (onSwipeUpRef.current) {

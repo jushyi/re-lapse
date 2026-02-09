@@ -103,7 +103,6 @@ const useDarkroom = () => {
 
       logger.debug('useDarkroom: Loading photos', { userId: user.uid });
 
-      // Check if darkroom is ready to reveal photos
       const isReady = await isDarkroomReadyToReveal(user.uid);
       logger.info('useDarkroom: Darkroom ready status', { isReady });
 
@@ -133,7 +132,6 @@ const useDarkroom = () => {
       });
 
       if (result.success && result.photos) {
-        // Log all photos with their statuses
         logger.debug('useDarkroom: All photos', {
           photos: result.photos.map(p => ({
             id: p.id,
@@ -184,7 +182,6 @@ const useDarkroom = () => {
         currentCount: visiblePhotos.length,
       });
 
-      // Find the photo object to store in undo stack
       const photoToTriage = photos.find(p => p.id === photoId);
       if (!photoToTriage) {
         logger.error('useDarkroom: Photo not found for triage', { photoId });
@@ -213,7 +210,6 @@ const useDarkroom = () => {
         return newStack;
       });
 
-      // Check if this is the last visible photo
       const isLastPhoto = visiblePhotos.length === 1;
 
       // Set pendingSuccess BEFORE hiding photo to prevent empty state flash
@@ -274,7 +270,6 @@ const useDarkroom = () => {
 
     setSaving(true);
 
-    // Build decisions array from undo stack
     const decisions = undoStack.map(entry => ({
       photoId: entry.photo.id,
       action: entry.action,
@@ -457,7 +452,6 @@ const useDarkroom = () => {
     setPendingSuccess(false);
     setTriageComplete(false);
 
-    // Reset success fade animation
     successFadeAnim.setValue(0);
 
     logger.debug('useDarkroom: Undo completed', {
@@ -532,7 +526,6 @@ const useDarkroom = () => {
         useNativeDriver: true,
       }).start();
 
-      // Play success sound in sync with animation
       playSuccessSound();
     }
   }, [visiblePhotos.length, undoStack.length, successFadeAnim]);
@@ -542,7 +535,6 @@ const useDarkroom = () => {
     const prefetchStackImages = async () => {
       if (photos.length === 0) return;
 
-      // Get first 4 visible photos
       const visiblePhotosForPrefetch = photos.filter(p => !hiddenPhotoIds.has(p.id)).slice(0, 4);
       const urls = visiblePhotosForPrefetch.map(p => p.imageURL).filter(Boolean);
 
