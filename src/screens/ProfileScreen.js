@@ -274,6 +274,15 @@ const ProfileScreen = () => {
     }
   }, [route.params, albums, navigation, runNewAlbumAnimation]);
 
+  // Detect selectedSong from route params (passed back from SongSearchScreen)
+  useEffect(() => {
+    const { selectedSong } = route.params || {};
+    if (selectedSong) {
+      navigation.setParams({ selectedSong: undefined });
+      handleSaveSong(selectedSong);
+    }
+  }, [route.params, navigation]);
+
   // Scroll to top when profile tab icon is pressed while already on profile
   const isFocused = useIsFocused();
   useEffect(() => {
@@ -557,9 +566,7 @@ const ProfileScreen = () => {
     if (!profileData?.profileSong) {
       logger.info('ProfileScreen: Add song pressed');
       navigation.navigate('SongSearch', {
-        onSongSelected: songWithClip => {
-          handleSaveSong(songWithClip);
-        },
+        source: 'ProfileMain',
       });
     }
     // Play/pause handled internally by ProfileSongCard
@@ -576,10 +583,8 @@ const ProfileScreen = () => {
         onPress: () => {
           // Opens clip selection first, cancel goes to search for different song
           navigation.navigate('SongSearch', {
+            source: 'ProfileMain',
             editSong: profileData.profileSong,
-            onSongSelected: songWithClip => {
-              handleSaveSong(songWithClip);
-            },
           });
         },
       },

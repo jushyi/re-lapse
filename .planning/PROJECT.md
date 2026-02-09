@@ -55,7 +55,7 @@ All three areas (login/signup flow, profile creation onboarding, profile screen)
 **Current State (v1.6 shipped):**
 
 - 40,354 lines of JavaScript/JSX
-- Tech stack: React Native + Expo, Firebase Auth, Firestore, expo-av, expo-image
+- Tech stack: React Native + Expo, Firebase Auth, Firestore, expo-audio, expo-image
 - 31 integer phases + 14 decimal insertions completed
 - 108 plans executed over 16 days
 

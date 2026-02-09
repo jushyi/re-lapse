@@ -5,26 +5,27 @@
  * - Clip range support (start/end positions)
  * - Progress callbacks
  *
- * Uses expo-av for cross-platform audio support.
+ * Uses expo-audio for cross-platform audio support.
  */
 
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import logger from '../utils/logger';
 
 // Configure audio to play even in silent mode (like music apps)
 // This must be called before any sound is played
-Audio.setAudioModeAsync({
-  allowsRecordingIOS: false,
-  staysActiveInBackground: false, // Songs stop when navigating away
-  playsInSilentModeIOS: true, // Key setting: play through speakers regardless of silent switch
-  shouldDuckAndroid: true,
-  playThroughEarpieceAndroid: false,
+setAudioModeAsync({
+  allowsRecording: false,
+  shouldPlayInBackground: false, // Songs stop when navigating away
+  playsInSilentMode: true, // Key setting: play through speakers regardless of silent switch
+  interruptionMode: 'duckOthers',
+  shouldRouteThroughEarpiece: false,
 }).catch(error => {
   logger.error('audioPlayer: Failed to set audio mode', { error: error?.message });
 });
 
-// Module-level state for single sound instance
-let currentSound = null;
+// Module-level state for single player instance
+let currentPlayer = null;
+let statusListener = null;
 let clipEndTimeout = null;
 
 /**
@@ -36,7 +37,7 @@ let clipEndTimeout = null;
  * @param {number} options.clipEnd - End position in seconds (default 30)
  * @param {function} options.onProgress - Progress callback (receives 0-1)
  * @param {function} options.onComplete - Called when playback ends
- * @returns {Promise<Audio.Sound|null>} Sound object for external control
+ * @returns {Promise<AudioPlayer|null>} Player object for external control
  */
 export const playPreview = async (previewUrl, options = {}) => {
   const { clipStart = 0, clipEnd = 30, onProgress, onComplete } = options;
@@ -47,24 +48,16 @@ export const playPreview = async (previewUrl, options = {}) => {
   await stopPreview();
 
   try {
-    // Create new sound instance
-    const { sound } = await Audio.Sound.createAsync({ uri: previewUrl }, { shouldPlay: false });
+    // Create new player instance
+    const player = createAudioPlayer(previewUrl, { updateInterval: 50 });
 
-    currentSound = sound;
-
-    // Seek to clip start position
-    if (clipStart > 0) {
-      await sound.setPositionAsync(clipStart * 1000);
-    }
-
-    // Set progress update interval for smooth animations (50ms = 20 updates/sec)
-    await sound.setProgressUpdateIntervalAsync(50);
+    currentPlayer = player;
 
     // Set up playback status update handler
-    sound.setOnPlaybackStatusUpdate(status => {
+    statusListener = player.addListener('playbackStatusUpdate', status => {
       if (!status.isLoaded) return;
 
-      const currentPositionSec = status.positionMillis / 1000;
+      const currentPositionSec = status.currentTime;
       const clipDuration = clipEnd - clipStart;
       const elapsed = currentPositionSec - clipStart;
 
@@ -78,7 +71,7 @@ export const playPreview = async (previewUrl, options = {}) => {
       // Stop at clip end (immediate cut, no fade)
       if (currentPositionSec >= clipEnd) {
         logger.debug('audioPlayer: Reached clip end, stopping');
-        cleanupSound(sound);
+        cleanupPlayer(player);
         if (onComplete) {
           onComplete();
         }
@@ -87,15 +80,20 @@ export const playPreview = async (previewUrl, options = {}) => {
       // Handle natural playback completion
       if (status.didJustFinish) {
         logger.debug('audioPlayer: Playback finished naturally');
-        cleanupSound(sound);
+        cleanupPlayer(player);
         if (onComplete) {
           onComplete();
         }
       }
     });
 
+    // Seek to clip start position
+    if (clipStart > 0) {
+      await player.seekTo(clipStart);
+    }
+
     // Start playback
-    await sound.playAsync();
+    player.play();
     logger.info('audioPlayer: Playback started');
 
     // Backup timeout to ensure playback stops at clipEnd
@@ -108,7 +106,7 @@ export const playPreview = async (previewUrl, options = {}) => {
       }
     }, clipDurationMs + 100); // Small buffer
 
-    return sound;
+    return player;
   } catch (error) {
     logger.error('audioPlayer: Failed to start playback', { error: error?.message });
     return null;
@@ -128,31 +126,37 @@ export const stopPreview = async () => {
   }
 
   // Stop immediately (no fade)
-  if (currentSound) {
-    const sound = currentSound;
-    currentSound = null;
-    await cleanupSound(sound);
+  if (currentPlayer) {
+    const player = currentPlayer;
+    currentPlayer = null;
+    cleanupPlayer(player);
   }
 };
 
 /**
- * Clean up a sound instance (stop and unload).
+ * Clean up a player instance (pause and release resources).
  *
- * @param {Audio.Sound} sound - Sound instance to cleanup
+ * @param {AudioPlayer} player - Player instance to cleanup
  */
-const cleanupSound = async sound => {
-  if (!sound) return;
+const cleanupPlayer = player => {
+  if (!player) return;
 
-  try {
-    await sound.stopAsync();
-  } catch (_error) {
-    // Ignore - may already be stopped
+  // Remove listener first to prevent callbacks on removed player
+  if (statusListener) {
+    statusListener.remove();
+    statusListener = null;
   }
 
   try {
-    await sound.unloadAsync();
+    player.pause();
   } catch (_error) {
-    // Ignore - may already be unloaded
+    // Ignore - may already be paused
+  }
+
+  try {
+    player.remove();
+  } catch (_error) {
+    // Ignore - may already be removed
   }
 };
 
@@ -160,9 +164,9 @@ const cleanupSound = async sound => {
  * Pause current preview playback.
  */
 export const pausePreview = async () => {
-  if (currentSound) {
+  if (currentPlayer) {
     try {
-      await currentSound.pauseAsync();
+      currentPlayer.pause();
       logger.debug('audioPlayer: Paused');
     } catch (error) {
       logger.debug('audioPlayer: Pause failed', { error: error?.message });
@@ -174,9 +178,9 @@ export const pausePreview = async () => {
  * Resume current preview playback.
  */
 export const resumePreview = async () => {
-  if (currentSound) {
+  if (currentPlayer) {
     try {
-      await currentSound.playAsync();
+      currentPlayer.play();
       logger.debug('audioPlayer: Resumed');
     } catch (error) {
       logger.debug('audioPlayer: Resume failed', { error: error?.message });
@@ -190,9 +194,9 @@ export const resumePreview = async () => {
  * @param {number} seconds - Position to seek to in seconds
  */
 export const seekTo = async seconds => {
-  if (currentSound) {
+  if (currentPlayer) {
     try {
-      await currentSound.setPositionAsync(seconds * 1000);
+      await currentPlayer.seekTo(seconds);
       logger.debug('audioPlayer: Seeked to', { seconds });
     } catch (error) {
       logger.debug('audioPlayer: Seek failed', { error: error?.message });

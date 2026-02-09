@@ -32,7 +32,7 @@ import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
-const ProfileSetupScreen = ({ navigation }) => {
+const ProfileSetupScreen = ({ navigation, route }) => {
   const { user, userProfile, updateUserProfile, updateUserDocumentNative, signOut } = useAuth();
 
   // Detect default placeholder values and use empty string instead
@@ -53,6 +53,16 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
   const usernameCheckTimeout = useRef(null);
+
+  // Detect selectedSong from route params (passed back from SongSearchScreen)
+  useEffect(() => {
+    const { selectedSong: songParam } = route.params || {};
+    if (songParam) {
+      navigation.setParams({ selectedSong: undefined });
+      setSelectedSong(songParam);
+      logger.info('ProfileSetupScreen: Song selected', { songId: songParam.id });
+    }
+  }, [route.params, navigation]);
 
   // Handle cancel profile setup
   const handleCancel = () => {
@@ -217,10 +227,7 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   const handleSongPress = () => {
     navigation.navigate('SongSearch', {
-      onSongSelected: songWithClip => {
-        setSelectedSong(songWithClip);
-        logger.info('ProfileSetupScreen: Song selected', { songId: songWithClip.id });
-      },
+      source: 'ProfileSetup',
     });
   };
 
