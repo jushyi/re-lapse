@@ -4,68 +4,33 @@ Enhancements discovered during execution. Not critical - address in future phase
 
 ## Open Enhancements
 
-### ISS-001: Optimize photo capture for full-screen display
+None - all issues closed.
 
-- **Discovered:** Phase 8 Task 1 (2026-01-29)
-- **Type:** UX
-- **Description:** Photos taken in the app should be captured at an aspect ratio that fills the full screen when viewed in AlbumPhotoViewer (and other full-screen viewers). Currently photos may have different aspect ratios causing black bars or cropping when displayed full-screen.
-- **Impact:** Low (works correctly with cover/contain modes, this would enhance visual experience)
-- **Effort:** Medium (requires camera capture settings adjustment and potentially migration for existing photos)
-- **Suggested phase:** Future
+## Closed Enhancements
 
 ### ISS-004: Comments sheet closes when navigating to profile
 
 - **Discovered:** Phase 15.3 Plan 02 verification (2026-02-02)
+- **Closed:** 2026-02-06
 - **Type:** Bug
-- **Description:** When tapping a commenter's avatar to view their profile, the comments sheet closes. When returning from the profile, comments should still be open but they reset to closed state. This happens despite storing `showComments` in PhotoDetailContext - the underlying CommentsBottomSheet Modal component seems to be dismissed by the system when OtherUserProfile (fullScreenModal) is pushed.
-- **Root cause:** React Native Modal component inside a transparentModal navigation screen gets dismissed when another modal screen stacks on top. The context state is preserved but the Modal's internal visibility state is reset.
-- **Attempted fixes:**
-  1. Moved `showComments` state from local to context - state preserved but Modal still closes
-  2. Removed the `setShowComments(false)` call before navigation - no effect
-- **Potential solutions:**
-  1. Replace Modal-based CommentsBottomSheet with an Animated.View that's always rendered
-  2. Use a portal-based approach to render comments outside navigation hierarchy
-  3. Change OtherUserProfile from fullScreenModal to card presentation
-- **Impact:** Medium (users lose their place in comments thread)
-- **Effort:** Medium-High (may require CommentsBottomSheet refactor)
-- **Suggested phase:** Phase 16 (natural fit with modal/navigation architecture work)
-
-### ISS-011: Custom profile photo crop UI with circular preview and edit capability
-
-- **Discovered:** Phase 22 Task 2 (2026-02-05)
-- **Type:** Enhancement
-- **Description:** Profile photo editing has two limitations due to expo-image-picker constraints:
-  1. **Circular crop preview:** expo-image-picker only supports square crop masks. Users expect a circular crop preview that matches how the photo will be displayed.
-  2. **Edit existing photo:** expo-image-picker can't open a specific image for re-cropping - it only opens the system photo library. Users want to edit/re-crop their current profile photo.
-- **Affected screens:**
-  1. EditProfileScreen - profile photo selection and editing
-  2. ProfileSetupScreen - initial profile photo selection
-- **Implementation approach:**
-  1. Build custom crop screen using expo-image-manipulator
-  2. Display image with circular mask overlay for preview
-  3. Support pinch-to-zoom and pan gestures for positioning
-  4. For "Edit" option: download current photo, open in custom crop screen
-  5. Apply crop transformation and upload result
-- **Alternative:** Eject to bare workflow and use react-native-image-crop-picker (has cropperCircleOverlay option)
-- **Impact:** Medium (missing expected "Edit" functionality, visual polish)
-- **Effort:** High (full custom crop UI needed)
-- **Suggested phase:** Future (after Phase 24 audit)
+- **Resolution:** Fixed in Phase 33-01 by converting CommentsBottomSheet from Modal to Animated.View. The Modal component was getting dismissed by React Native when OtherUserProfile (fullScreenModal) pushed on top. Animated.View with pointerEvents and backdropOpacity stays in render tree and survives navigation.
+- **Files modified:** `src/components/comments/CommentsBottomSheet.js`, `src/styles/CommentsBottomSheet.styles.js`
 
 ### ISS-005: Swipe up on photo to open comments
 
 - **Discovered:** Phase 15.3 Plan 02 verification (2026-02-02)
+- **Closed:** 2026-02-06
 - **Type:** Enhancement
-- **Description:** Add gesture support to swipe up on the photo in PhotoDetailScreen to open the comments sheet. This is a common pattern in social apps (Instagram, TikTok) for quick access to comments.
-- **Implementation notes:**
-  1. Add PanResponder or gesture handler on photo area
-  2. Detect upward swipe gesture (dy < -threshold)
-  3. Call `setShowComments(true)` on swipe up
-  4. Already have swipe down to dismiss - this complements it
-- **Impact:** Low (UX enhancement, not blocking functionality)
-- **Effort:** Low (simple gesture addition)
-- **Suggested phase:** Phase 16 (touches same PhotoDetailScreen gesture handling)
+- **Resolution:** Fixed in Phase 33-01 by adding upward swipe detection to usePhotoDetailModal hook. PanResponder now detects swipe-up gestures (dy < -50 or vy < -0.5) and triggers onSwipeUp callback. PhotoDetailScreen connects this to setShowComments(true).
+- **Files modified:** `src/hooks/usePhotoDetailModal.js`, `src/screens/PhotoDetailScreen.js`
 
-## Closed Enhancements
+### ISS-001: Optimize photo display for full viewing in albums
+
+- **Discovered:** Phase 8 Task 1 (2026-01-29)
+- **Closed:** 2026-02-06
+- **Type:** UX
+- **Resolution:** Fixed in Phase 32-01 by changing `contentFit` from `cover` to `contain` in AlbumPhotoViewer. Photos now display in full without cropping, with letterboxing if aspect ratio differs from screen. Feed/stories views kept `cover` mode per user preference for immersive full-screen experience.
+- **Files modified:** `src/components/AlbumPhotoViewer.js`
 
 ### ISS-010: Duplicate day headers in monthly albums when journaling old photos
 
@@ -123,3 +88,18 @@ Enhancements discovered during execution. Not critical - address in future phase
   2. **Custom emojis not sorted**: The `orderedEmojis` logic only sorted curated emojis by count - custom emojis (added via emoji picker) were prepended without sorting. Fix: Changed to sort ALL emojis (custom + curated) together by total count.
 - **Files modified:** `src/hooks/usePhotoDetailModal.js`
 - **Pattern:** Always read from source object inside useMemo/useCallback rather than relying on destructured variables for React dependency comparison.
+
+### ISS-011: Custom profile photo crop UI with circular preview
+
+- **Discovered:** Phase 22 Task 2 (2026-02-05)
+- **Closed:** 2026-02-06
+- **Type:** Enhancement
+- **Resolution:** Fixed in Phase 32-02 by creating custom ProfilePhotoCropScreen with:
+  1. SVG-based circular mask overlay (transparent circle, 70% dimmed outside)
+  2. Pinch-to-zoom and pan gestures using react-native-gesture-handler + react-native-reanimated
+  3. expo-image-manipulator for cropping to square 1:1 output
+  4. Direct gesture response (no bouncy animations)
+  5. Zoom limits: minimum fills circle, maximum 4x
+- **Files created:** `src/screens/ProfilePhotoCropScreen.js`
+- **Files modified:** `src/screens/EditProfileScreen.js`, `src/screens/ProfileSetupScreen.js`, `src/navigation/AppNavigator.js`
+- **Note:** "Edit existing photo" capability (re-cropping uploaded photo) not included in this fix - would require downloading current photo from Firebase Storage first.

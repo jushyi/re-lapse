@@ -37,7 +37,7 @@ const db = getFirestore();
  */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowAlert: false, // Suppress system banner — custom InAppNotificationBanner used instead
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -209,20 +209,30 @@ export const clearLocalNotificationToken = async () => {
 
 /**
  * Handle notification received while app is in foreground
+ * Returns structured banner data for the InAppNotificationBanner component
  * @param {object} notification - Notification object from expo-notifications
+ * @returns {{success: boolean, data?: object, error?: string}} Banner data with title, body, avatarUrl, notificationType, notificationData
  */
 export const handleNotificationReceived = notification => {
   try {
-    logger.debug('Notification received in foreground', {
-      title: notification.request.content.title,
-      body: notification.request.content.body,
-      data: notification.request.content.data,
-    });
+    const { title, body, data } = notification.request.content;
+    const { senderProfilePhotoURL, senderName, type } = data || {};
 
-    // Could add custom in-app banner here if desired
-    // For MVP, expo-notifications handles the display automatically
+    logger.debug('Notification received in foreground', { title, body, type });
+
+    return {
+      success: true,
+      data: {
+        title: title || senderName || 'New notification',
+        body: body || '',
+        avatarUrl: senderProfilePhotoURL || null,
+        notificationType: type,
+        notificationData: data || {},
+      },
+    };
   } catch (error) {
     logger.error('Error handling notification received', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -235,16 +245,21 @@ export const handleNotificationReceived = notification => {
 export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
-    const { type, photoId, friendshipId, revealAll, revealedCount } = data || {};
+    const { type, photoId, friendshipId, userId, taggerId } = data || {};
 
-    logger.debug('Notification tapped', { type, photoId, friendshipId, revealAll, revealedCount });
+    logger.debug('Notification tapped', {
+      type,
+      photoId,
+      friendshipId,
+      userId,
+      taggerId,
+    });
 
     // Return navigation data based on notification type
     // The actual navigation will be handled by App.js using this data
     switch (type) {
       case 'photo_reveal':
-        // Include revealAll and revealedCount for auto-reveal behavior
-        // Values come as strings from push notification data, convert to proper types
+        // Opens darkroom via Camera tab - simple deep link to view ready photos
         return {
           success: true,
           data: {
@@ -252,8 +267,6 @@ export const handleNotificationTapped = notification => {
             screen: 'Camera',
             params: {
               openDarkroom: true,
-              revealAll: revealAll === 'true' || revealAll === true,
-              revealedCount: parseInt(revealedCount, 10) || 0,
             },
           },
         };
@@ -275,6 +288,37 @@ export const handleNotificationTapped = notification => {
             type: 'reaction',
             screen: 'Feed',
             params: { photoId },
+          },
+        };
+
+      case 'story':
+        // Navigate to Feed with params to highlight the poster's story
+        return {
+          success: true,
+          data: {
+            type: 'story',
+            screen: 'Feed',
+            params: {
+              highlightUserId: userId, // User whose story to show
+              openStory: true, // Signal to auto-open their story
+            },
+          },
+        };
+
+      case 'tagged':
+        // Navigate to Feed with params to open the tagger's story and highlight the specific photo
+        // Deep link UX: Opens the photo within that person's story (can swipe to see more)
+        return {
+          success: true,
+          data: {
+            type: 'tagged',
+            screen: 'Feed',
+            params: {
+              highlightUserId: taggerId, // Person who tagged (their story)
+              highlightPhotoId: photoId, // Specific photo to show
+              openStory: true, // Open the tagger's story
+              scrollToPhoto: true, // Scroll to the specific tagged photo
+            },
           },
         };
 
@@ -380,6 +424,34 @@ export const markNotificationsAsRead = async userId => {
     return { success: true, count: snapshot.docs.length };
   } catch (error) {
     logger.error('markNotificationsAsRead: Failed to mark notifications as read', {
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Mark a single notification as read
+ * @param {string} notificationId - The notification document ID
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const markSingleNotificationAsRead = async notificationId => {
+  try {
+    if (!notificationId) {
+      return { success: false, error: 'Invalid notification ID' };
+    }
+
+    const notifRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notifRef, { read: true });
+
+    logger.debug('markSingleNotificationAsRead: Notification marked as read', {
+      notificationId,
+    });
+
+    return { success: true };
+  } catch (error) {
+    logger.error('markSingleNotificationAsRead: Failed', {
+      notificationId,
       error: error.message,
     });
     return { success: false, error: error.message };

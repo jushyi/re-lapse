@@ -77,7 +77,7 @@ const useCamera = () => {
 
   // Camera state
   const [facing, setFacing] = useState('back');
-  const [flash, setFlash] = useState('off');
+  const [flash, setFlash] = useState('on');
   const [zoom, setZoom] = useState(ZOOM_LEVELS_BASE[0]); // Default to 1x
   const [isCapturing, setIsCapturing] = useState(false);
 
@@ -256,9 +256,9 @@ const useCamera = () => {
   const toggleFlash = useCallback(() => {
     lightImpact();
     setFlash(current => {
-      if (current === 'off') return 'on';
-      if (current === 'on') return 'auto';
-      return 'off';
+      if (current === 'on') return 'off';
+      if (current === 'off') return 'auto';
+      return 'on';
     });
   }, []);
 
@@ -302,7 +302,6 @@ const useCamera = () => {
 
   // Play card stack capture animation - cards fan out and enlarge, then snap back
   const playCardCaptureAnimation = useCallback(() => {
-    // Reset values
     cardScale.setValue(1);
     cardFanSpread.setValue(0);
 

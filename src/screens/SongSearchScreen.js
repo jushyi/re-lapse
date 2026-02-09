@@ -25,8 +25,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { searchSongs } from '../services/iTunesService';
 import { stopPreview, playPreview } from '../services/audioPlayer';
 import { SongSearchResult, ClipSelectionModal } from '../components/ProfileSong';
@@ -50,8 +51,8 @@ const SongSearchScreen = () => {
 
   const debounceRef = useRef(null);
 
-  // Get callback and editSong from route params
-  const { onSongSelected, editSong } = route.params || {};
+  // Get source screen name and editSong from route params
+  const { source, editSong } = route.params || {};
 
   // Handle editSong param - immediately open clip selection
   useEffect(() => {
@@ -144,11 +145,14 @@ const SongSearchScreen = () => {
         clipEnd: songWithClip.clipEnd,
       });
       setSelectedSongForClip(null);
-      // Call parent callback and navigate back
-      onSongSelected?.(songWithClip);
-      navigation.goBack();
+      // Navigate back to source screen with selected song as serializable params
+      if (source) {
+        navigation.navigate(source, { selectedSong: songWithClip });
+      } else {
+        navigation.goBack();
+      }
     },
-    [onSongSelected, navigation]
+    [source, navigation]
   );
 
   // Handle clip selection cancel - always stay on search to allow picking different song
@@ -179,7 +183,7 @@ const SongSearchScreen = () => {
     if (query.trim().length < 2) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={48} color={colors.text.tertiary} />
+          <PixelIcon name="search-outline" size={48} color={colors.text.tertiary} />
           <Text style={styles.emptyText}>Search to find songs</Text>
         </View>
       );
@@ -188,7 +192,7 @@ const SongSearchScreen = () => {
     if (results.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="musical-notes-outline" size={48} color={colors.text.tertiary} />
+          <PixelIcon name="musical-notes-outline" size={48} color={colors.text.tertiary} />
           <Text style={styles.emptyText}>No songs found</Text>
         </View>
       );
@@ -222,7 +226,7 @@ const SongSearchScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="chevron-down" size={24} color={colors.text.primary} />
+            <PixelIcon name="chevron-down" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Search Songs</Text>
           <View style={styles.headerSpacer} />
@@ -231,7 +235,7 @@ const SongSearchScreen = () => {
         {/* Search Input */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputWrapper}>
-            <Ionicons
+            <PixelIcon
               name="search"
               size={20}
               color={colors.text.tertiary}
@@ -250,7 +254,7 @@ const SongSearchScreen = () => {
             />
             {query.length > 0 && (
               <TouchableOpacity onPress={() => handleQueryChange('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color={colors.text.tertiary} />
+                <PixelIcon name="close-circle" size={20} color={colors.text.tertiary} />
               </TouchableOpacity>
             )}
           </View>
@@ -300,8 +304,8 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   headerSpacer: {
@@ -315,7 +319,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.secondary,
-    borderRadius: 8,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: colors.border.subtle,
     paddingHorizontal: 12,
@@ -326,7 +330,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   clearButton: {
@@ -344,7 +349,8 @@ const styles = StyleSheet.create({
     paddingTop: 80,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: 12,
   },

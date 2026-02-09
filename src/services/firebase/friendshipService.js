@@ -13,6 +13,7 @@ import {
   onSnapshot,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import logger from '../../utils/logger';
 
 // Initialize Firestore once at module level
@@ -479,6 +480,31 @@ export const getFriendUserIds = async userId => {
     return { success: true, friendUserIds };
   } catch (error) {
     logger.error('Error getting friend user IDs', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get mutual friend suggestions based on friends-of-friends
+ * Calls Cloud Function that uses admin SDK to bypass security rules
+ * (users can't read other users' friendships client-side)
+ *
+ * @param {string} userId - User ID to get suggestions for
+ * @returns {Promise<{success: boolean, suggestions?: Array<{userId: string, displayName: string, username: string, profilePhotoURL: string|null, mutualCount: number}>, error?: string}>}
+ */
+export const getMutualFriendSuggestions = async userId => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    const functions = getFunctions();
+    const getMutualSuggestions = httpsCallable(functions, 'getMutualFriendSuggestions');
+    const result = await getMutualSuggestions();
+
+    return { success: true, suggestions: result.data.suggestions || [] };
+  } catch (error) {
+    logger.error('Error getting mutual friend suggestions', error);
     return { success: false, error: error.message };
   }
 };

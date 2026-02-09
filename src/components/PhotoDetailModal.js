@@ -23,7 +23,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import EmojiPicker from 'rn-emoji-keyboard';
 import { getTimeAgo } from '../utils/timeUtils';
 import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
@@ -91,11 +91,11 @@ const PhotoDetailModal = ({
   // Highlight fade animation for newly added emoji (1 second fade)
   const highlightOpacity = useRef(new Animated.Value(1)).current;
 
-  // Track previous visibility for initialShowComments logic (UAT-009 fix)
+  // Track previous visibility for initialShowComments logic
   const wasVisible = useRef(false);
 
   // Reset cube rotation and comments when modal opens
-  // Only apply initialShowComments on FALSE -> TRUE transition (UAT-009 fix)
+  // Only apply initialShowComments on FALSE -> TRUE transition
   useEffect(() => {
     if (visible && !wasVisible.current) {
       // Only on initial open (false -> true transition)
@@ -339,7 +339,7 @@ const PhotoDetailModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Photo - TouchableWithoutFeedback in both modes for swipe-to-close gesture support (UAT-028 fix)
+          {/* Photo - TouchableWithoutFeedback in both modes for swipe-to-close gesture support
               Stories mode: onPress triggers tap navigation
               Feed mode: onPress is undefined (touch tracking only for panResponder) */}
           <TouchableWithoutFeedback onPress={mode === 'stories' ? handleTapNavigation : undefined}>
@@ -374,7 +374,7 @@ const PhotoDetailModal = ({
           </TouchableOpacity>
 
           {/* User info - bottom left of photo
-              Stories mode: raised 15px (UAT-034 fix)
+              Stories mode: raised to clear progress bar
               Feed mode: original position */}
           <View
             style={[
@@ -398,7 +398,7 @@ const PhotoDetailModal = ({
           </View>
 
           {/* Comment preview - below user info, above progress bar
-              Stories mode: raised 15px to match userInfoOverlay
+              Stories mode: raised to match userInfoOverlay
               Feed mode: original position */}
           {previewComments.length > 0 && (
             <View
@@ -446,7 +446,7 @@ const PhotoDetailModal = ({
               onPress={() => setShowComments(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
+              <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
               <Text style={styles.commentInputTriggerText} numberOfLines={1}>
                 {currentPhoto?.commentCount > 0
                   ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`

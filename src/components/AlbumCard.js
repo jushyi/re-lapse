@@ -7,8 +7,9 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const CARD_SIZE = 150;
 
@@ -17,7 +18,7 @@ const CARD_SIZE = 150;
  *
  * @param {object} album - Album object with { id, name, coverPhotoId, photoIds }
  * @param {string} coverPhotoUrl - URL for the cover photo (resolved by parent)
- * @param {array} stackPhotoUrls - URLs for stack photos (up to 3, most recent non-cover photos)
+ * @param {array} stackPhotoUrls - URLs for stack photos (up to 2, most recent non-cover photos)
  * @param {function} onPress - Callback when card tapped
  * @param {function} onLongPress - Optional callback for long press (edit menu)
  * @param {boolean} isHighlighted - Whether to show scale bounce animation
@@ -81,7 +82,7 @@ export const AlbumCard = ({
             <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
           ) : (
             <View style={styles.placeholder}>
-              <Ionicons name="images-outline" size={40} color={colors.text.secondary} />
+              <PixelIcon name="images-outline" size={40} color={colors.text.secondary} />
             </View>
           )}
         </View>
@@ -102,7 +103,7 @@ export const AddAlbumCard = ({ onPress }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.addContainer}>
-        <Ionicons name="add" size={40} color={colors.text.secondary} />
+        <PixelIcon name="add" size={40} color={colors.text.secondary} />
       </View>
     </TouchableOpacity>
   );
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     width: CARD_SIZE,
     height: CARD_SIZE,
     backgroundColor: colors.background.tertiary,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   stackImage: {
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: CARD_SIZE,
     height: CARD_SIZE,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
     zIndex: 3,
@@ -164,7 +165,8 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 14,
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
     width: CARD_SIZE,
     height: CARD_SIZE,
     marginTop: 6,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,

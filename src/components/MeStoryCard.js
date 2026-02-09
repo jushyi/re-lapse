@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -30,9 +31,6 @@ export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false
   // Use thumbnailURL (most recent photo) if available, fallback to first photo in array
   const thumbnailUrl = thumbnailURL || topPhotos?.[0]?.imageURL || null;
 
-  /**
-   * Handle card press
-   */
   const handlePress = () => {
     logger.debug('MeStoryCard: Card pressed', { userId });
     if (onPress) {
@@ -74,7 +72,7 @@ export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false
         <RNImage source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
       ) : (
         <View style={styles.profilePlaceholder}>
-          <Ionicons name="person" size={18} color={colors.text.secondary} />
+          <PixelIcon name="person" size={18} color={colors.text.secondary} />
         </View>
       )}
     </View>
@@ -138,13 +136,13 @@ const styles = StyleSheet.create({
   gradientBorder: {
     width: PHOTO_WIDTH + BORDER_WIDTH * 2,
     height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
-    borderRadius: 14,
+    borderRadius: 4,
     padding: BORDER_WIDTH,
   },
   viewedBorder: {
     width: PHOTO_WIDTH + BORDER_WIDTH * 2,
     height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
-    borderRadius: 14,
+    borderRadius: 4,
     padding: BORDER_WIDTH,
     borderWidth: 2,
     borderColor: colors.storyCard.glowViewed,
@@ -154,7 +152,7 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
   },
@@ -169,8 +167,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
   },
   placeholderInitial: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: typography.size.xxxl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
   },
   profileContainer: {
@@ -199,11 +197,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
     color: colors.storyCard.textName,
     textAlign: 'center',
     maxWidth: PHOTO_WIDTH + BORDER_WIDTH * 2,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.body,
   },
 });
 

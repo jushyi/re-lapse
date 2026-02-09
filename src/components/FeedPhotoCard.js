@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
 import { colors } from '../constants/colors';
@@ -33,10 +33,8 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
 
   const { displayName, profilePhotoURL } = user;
 
-  // Preview comments state
   const [previewComments, setPreviewComments] = useState([]);
 
-  // Fetch preview comments
   useEffect(() => {
     const fetchPreview = async () => {
       if (!id) return;
@@ -113,7 +111,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
             <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
           ) : (
             <View style={styles.profilePhotoFallback}>
-              <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
+              <PixelIcon name="person-circle" size={36} color={colors.text.secondary} />
             </View>
           )}
         </TouchableOpacity>
@@ -143,7 +141,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
       {/* Prompt if no reactions */}
       {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
 
-      {/* Comment preview - tapping opens modal with comments sheet (UAT-005 fix) */}
+      {/* Comment preview - tapping opens modal with comments sheet */}
       {previewComments.length > 0 && (
         <View style={styles.commentPreview}>
           <CommentPreview

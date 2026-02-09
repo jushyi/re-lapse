@@ -9,8 +9,9 @@ import {
   UIManager,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import MonthlyAlbumCard from './MonthlyAlbumCard';
 
 // Enable LayoutAnimation on Android
@@ -60,7 +61,7 @@ const YearSection = ({ year, months, initiallyExpanded = false, onMonthPress }) 
       <TouchableOpacity style={styles.header} onPress={handleToggle} activeOpacity={0.7}>
         <Text style={styles.yearText}>{year}</Text>
         <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
-          <Ionicons name="chevron-down" size={24} color={colors.text.primary} />
+          <PixelIcon name="chevron-down" size={24} color={colors.text.primary} />
         </Animated.View>
       </TouchableOpacity>
 
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   yearText: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   monthsContainer: {

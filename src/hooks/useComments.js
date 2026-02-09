@@ -33,9 +33,9 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [initialMention, setInitialMention] = useState(null); // @username to pre-fill in input
   const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
-  const [highlightedCommentId, setHighlightedCommentId] = useState(null); // Comment ID to highlight (17-02)
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null); // Comment ID to highlight
   const unsubscribeRef = useRef(null);
-  const highlightTimeoutRef = useRef(null); // Timeout ref for auto-clear (17-02)
+  const highlightTimeoutRef = useRef(null); // Timeout ref for auto-clear
 
   logger.debug('useComments: Hook initialized', {
     photoId,
@@ -57,7 +57,6 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     setLoading(true);
     setError(null);
 
-    // Subscribe to comments
     unsubscribeRef.current = subscribeToComments(photoId, async result => {
       logger.debug('useComments: Subscription callback', {
         photoId,
@@ -319,7 +318,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   }, []);
 
   /**
-   * Highlight a comment temporarily (17-02)
+   * Highlight a comment temporarily
    * Sets highlightedCommentId and auto-clears after 1.5s
    *
    * @param {string} commentId - Comment ID to highlight
@@ -411,14 +410,14 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     replyingTo,
     initialMention,
     userLikes,
-    highlightedCommentId, // 17-02: Currently highlighted comment
+    highlightedCommentId, // Currently highlighted comment
     // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
     toggleLike: handleToggleLike,
     setReplyingTo: handleSetReplyingTo,
     cancelReply: handleCancelReply,
-    highlightComment, // 17-02: Set highlighted comment with auto-clear
+    highlightComment, // Set highlighted comment with auto-clear
     // Utilities
     canDeleteComment,
     isOwnerComment,

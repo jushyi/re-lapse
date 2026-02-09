@@ -12,7 +12,7 @@ import {
   LayoutAnimation,
   Keyboard,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { submitReport, REPORT_REASONS } from '../services/firebase';
@@ -107,7 +107,7 @@ const ReportUserScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color={colors.icon.primary} />
+          <PixelIcon name="close" size={24} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Report @{username || 'user'}</Text>
         <View style={styles.headerSpacer} />
@@ -128,7 +128,7 @@ const ReportUserScreen = () => {
             style={styles.reasonRow}
             onPress={() => handleSelectReason(reason)}
           >
-            <Ionicons
+            <PixelIcon
               name={REASON_ICONS[reason]}
               size={24}
               color={colors.icon.secondary}
@@ -136,7 +136,7 @@ const ReportUserScreen = () => {
             />
             <Text style={styles.reasonLabel}>{REASON_LABELS[reason]}</Text>
             {selectedReason === reason && (
-              <Ionicons
+              <PixelIcon
                 name="checkmark-circle"
                 size={24}
                 color={colors.brand.purple}

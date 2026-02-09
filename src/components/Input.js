@@ -8,24 +8,13 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
- * Reusable Input Component with dark theme support
- * @param {string} label - Input label
- * @param {string} placeholder - Placeholder text
- * @param {string} value - Input value
- * @param {function} onChangeText - Function to call on text change
- * @param {boolean} secureTextEntry - Whether to hide text (for passwords)
- * @param {string} keyboardType - Keyboard type (default, email-address, numeric, etc.)
- * @param {boolean} autoCapitalize - Auto capitalize setting
- * @param {string} error - Error message to display
- * @param {object} style - Additional styles
- * @param {boolean} showPasswordToggle - Show/hide password toggle icon
- * @param {string} rightIcon - Right icon type: 'loading', 'check', or null
- * @param {number} maxLength - Maximum characters allowed (optional)
- * @param {boolean} showCharacterCount - Whether to show character counter on focus (default false)
+ * Retro 16-Bit Input Component
+ * Terminal-style with pixel font, blocky borders, cyan glow on focus
  */
 const Input = ({
   label,
@@ -52,7 +41,6 @@ const Input = ({
     setIsPasswordVisible(!isPasswordVisible);
   };
 
-  // Trigger shake animation when user tries to type at max length
   const triggerShake = useCallback(() => {
     Animated.sequence([
       Animated.timing(shakeAnimation, {
@@ -78,13 +66,11 @@ const Input = ({
     ]).start();
   }, [shakeAnimation]);
 
-  // Handle text change with limit enforcement
   const handleChangeText = useCallback(
     text => {
       const currentLength = text?.length || 0;
       const prevLength = previousLengthRef.current;
 
-      // Check if user tried to type past the limit
       if (maxLength && prevLength === maxLength && currentLength >= maxLength) {
         triggerShake();
       }
@@ -116,12 +102,12 @@ const Input = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text style={styles.label}>{label.toUpperCase()}</Text>}
       <Animated.View
         style={[styles.inputContainer, { transform: [{ translateX: shakeAnimation }] }]}
       >
         <TextInput
-          style={[styles.input, error && styles.inputError]}
+          style={[styles.input, isFocused && styles.inputFocused, error && styles.inputError]}
           placeholder={placeholder}
           placeholderTextColor={colors.text.tertiary}
           value={value}
@@ -133,6 +119,8 @@ const Input = ({
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           maxLength={maxLength}
+          cursorColor={colors.interactive.primary}
+          selectionColor={colors.interactive.primary}
           {...props}
         />
         {showPasswordToggle && secureTextEntry && (
@@ -151,7 +139,7 @@ const Input = ({
         )}
         {rightIcon === 'check' && (
           <View style={styles.rightIcon}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.status.ready} />
+            <PixelIcon name="checkmark-circle" size={20} color={colors.status.ready} />
           </View>
         )}
       </Animated.View>
@@ -170,30 +158,41 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.primary,
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.secondary,
     marginBottom: 8,
+    letterSpacing: 2,
   },
   inputContainer: {
     position: 'relative',
   },
   input: {
     height: 52,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border.subtle,
-    borderRadius: 8,
+    borderRadius: 2,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     backgroundColor: colors.background.secondary,
     color: colors.text.primary,
     letterSpacing: 0,
+  },
+  inputFocused: {
+    borderColor: colors.interactive.primary,
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
   },
   inputError: {
     borderColor: colors.status.danger,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.body,
     color: colors.status.danger,
     marginTop: 4,
   },
@@ -212,7 +211,8 @@ const styles = StyleSheet.create({
     top: 16,
   },
   characterCounter: {
-    fontSize: 12,
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     textAlign: 'right',
     marginTop: 4,

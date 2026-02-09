@@ -65,7 +65,6 @@ export const createPhoto = async (userId, photoUri) => {
     const photoId = photoRef.id;
     logger.debug('PhotoService.createPhoto: Document created', { photoId });
 
-    // Upload photo to Firebase Storage
     logger.debug('PhotoService.createPhoto: Uploading to Storage', { userId, photoId });
     const uploadResult = await uploadPhoto(userId, photoId, photoUri);
 
@@ -79,7 +78,6 @@ export const createPhoto = async (userId, photoUri) => {
       return { success: false, error: uploadResult.error };
     }
 
-    // Update document with imageURL
     logger.debug('PhotoService.createPhoto: Updating document with imageURL', { photoId });
     await updateDoc(photoRef, {
       imageURL: uploadResult.url,
@@ -327,7 +325,6 @@ export const getDevelopingPhotos = async userId => {
  */
 export const revealPhotos = async userId => {
   try {
-    // Get ALL developing photos for this user
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
@@ -337,7 +334,6 @@ export const revealPhotos = async userId => {
 
     const updates = [];
 
-    // Reveal ALL developing photos
     snapshot.docs.forEach(docSnap => {
       updates.push(
         updateDoc(docSnap.ref, {
@@ -414,7 +410,6 @@ export const addReaction = async (photoId, userId, emoji) => {
     const photoRef = doc(db, 'photos', photoId);
     const photoDoc = await getDoc(photoRef);
 
-    // In modular API, exists() is a method
     if (!photoDoc.exists()) {
       return { success: false, error: 'Photo not found' };
     }
@@ -445,7 +440,6 @@ export const removeReaction = async (photoId, userId) => {
     const photoRef = doc(db, 'photos', photoId);
     const photoDoc = await getDoc(photoRef);
 
-    // In modular API, exists() is a method
     if (!photoDoc.exists()) {
       return { success: false, error: 'Photo not found' };
     }
@@ -478,7 +472,6 @@ export const getPhotosByIds = async photoIds => {
       return { success: true, photos: [] };
     }
 
-    // Fetch each photo document
     const photoPromises = photoIds.map(async photoId => {
       const photoRef = doc(db, 'photos', photoId);
       const photoDoc = await getDoc(photoRef);
@@ -509,18 +502,42 @@ export const getPhotosByIds = async photoIds => {
  * Batch triage multiple photos at once
  * Used by darkroom when user taps Done to save all decisions
  * @param {Array} decisions - Array of { photoId, action } objects
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {Object} [photoTags] - Optional mapping of photoId to taggedUserIds array
+ * @returns {Promise<{success: boolean, journaledCount?: number, error?: string}>}
  */
-export const batchTriagePhotos = async decisions => {
+export const batchTriagePhotos = async (decisions, photoTags = {}) => {
   try {
-    logger.debug('PhotoService.batchTriagePhotos: Starting batch', { count: decisions.length });
+    logger.debug('PhotoService.batchTriagePhotos: Starting batch', {
+      count: decisions.length,
+      taggedPhotoCount: Object.keys(photoTags).length,
+    });
+
+    // Count how many photos are being journaled (posted to story)
+    const journaledCount = decisions.filter(d => d.action === 'journal').length;
 
     for (const { photoId, action } of decisions) {
+      // Write taggedUserIds before triaging if photo has tags
+      const tags = photoTags[photoId];
+      if (tags && tags.length > 0) {
+        const photoRef = doc(db, 'photos', photoId);
+        await updateDoc(photoRef, {
+          taggedUserIds: tags,
+          taggedAt: serverTimestamp(),
+        });
+        logger.debug('PhotoService.batchTriagePhotos: Wrote tags for photo', {
+          photoId,
+          tagCount: tags.length,
+        });
+      }
+
       await triagePhoto(photoId, action);
     }
 
-    logger.info('PhotoService.batchTriagePhotos: Batch complete', { count: decisions.length });
-    return { success: true };
+    logger.info('PhotoService.batchTriagePhotos: Batch complete', {
+      count: decisions.length,
+      journaledCount,
+    });
+    return { success: true, journaledCount };
   } catch (error) {
     logger.error('PhotoService.batchTriagePhotos: Failed', { error: error.message });
     return { success: false, error: error.message };
@@ -777,7 +794,6 @@ export const archivePhoto = async (photoId, userId) => {
       return { success: false, error: 'Unauthorized: You do not own this photo' };
     }
 
-    // Update photo state to archive
     await updateDoc(photoRef, {
       photoState: 'archive',
       triagedAt: serverTimestamp(), // Reset visibility window
@@ -827,7 +843,6 @@ export const restorePhoto = async (photoId, userId) => {
       return { success: false, error: 'Unauthorized: You do not own this photo' };
     }
 
-    // Update photo state to journal
     await updateDoc(photoRef, {
       photoState: 'journal',
       triagedAt: serverTimestamp(), // Reset visibility window for re-sharing
@@ -1049,6 +1064,48 @@ export const permanentlyDeletePhoto = async (photoId, userId) => {
       userId,
       error: error.message,
     });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Update tagged user IDs on a photo document
+ * If taggedUserIds is empty, removes the fields entirely (no empty arrays in Firestore)
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string[]} taggedUserIds - Array of user IDs to tag (empty = remove tags)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const updatePhotoTags = async (photoId, taggedUserIds) => {
+  logger.info('PhotoService.updatePhotoTags: Starting', {
+    photoId,
+    tagCount: taggedUserIds?.length,
+  });
+
+  try {
+    const photoRef = doc(db, 'photos', photoId);
+
+    if (!taggedUserIds || taggedUserIds.length === 0) {
+      // Clean up: remove tag fields entirely instead of storing empty array
+      await updateDoc(photoRef, {
+        taggedUserIds: FieldValue.delete(),
+        taggedAt: FieldValue.delete(),
+      });
+      logger.info('PhotoService.updatePhotoTags: Tags removed (fields deleted)', { photoId });
+    } else {
+      await updateDoc(photoRef, {
+        taggedUserIds,
+        taggedAt: serverTimestamp(),
+      });
+      logger.info('PhotoService.updatePhotoTags: Tags updated', {
+        photoId,
+        tagCount: taggedUserIds.length,
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.updatePhotoTags: Failed', { photoId, error: error.message });
     return { success: false, error: error.message };
   }
 };

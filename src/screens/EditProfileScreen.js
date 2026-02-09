@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { Input } from '../components';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ import {
   canChangeUsername,
 } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -171,6 +172,12 @@ const EditProfileScreen = ({ navigation }) => {
     };
   }, []);
 
+  // Callback for crop screen completion
+  const handleCropComplete = croppedUri => {
+    setPhotoUri(croppedUri);
+    setPhotoRemoved(false);
+  };
+
   // Photo picker functions
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -182,14 +189,15 @@ const EditProfileScreen = ({ navigation }) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-      setPhotoRemoved(false);
+      // Navigate to crop screen
+      navigation.navigate('ProfilePhotoCrop', {
+        imageUri: result.assets[0].uri,
+        onCropComplete: handleCropComplete,
+      });
     }
   };
 
@@ -202,14 +210,15 @@ const EditProfileScreen = ({ navigation }) => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-      setPhotoRemoved(false);
+      // Navigate to crop screen
+      navigation.navigate('ProfilePhotoCrop', {
+        imageUri: result.assets[0].uri,
+        onCropComplete: handleCropComplete,
+      });
     }
   };
 
@@ -419,14 +428,13 @@ const EditProfileScreen = ({ navigation }) => {
               <Image source={{ uri: currentPhotoUri }} style={styles.profilePhoto} />
             ) : (
               <View style={styles.placeholderPhoto}>
-                <Ionicons name="person" size={48} color={colors.text.secondary} />
+                <PixelIcon name="person" size={48} color={colors.text.secondary} />
               </View>
             )}
             <View style={styles.photoEditBadge}>
-              <Ionicons name="camera" size={16} color={colors.text.primary} />
+              <PixelIcon name="camera" size={16} color={colors.text.primary} />
             </View>
           </TouchableOpacity>
-          <Text style={styles.changePhotoText}>Change Photo</Text>
 
           {/* Form Fields */}
           <View style={styles.form}>
@@ -520,17 +528,18 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   cancelText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   saveText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.brand.purple,
     textAlign: 'right',
   },
@@ -549,12 +558,12 @@ const styles = StyleSheet.create({
   profilePhoto: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 9999,
   },
   placeholderPhoto: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 9999,
     backgroundColor: colors.background.tertiary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -567,23 +576,16 @@ const styles = StyleSheet.create({
     right: 0,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 9999,
     backgroundColor: colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.background.primary,
   },
-  changePhotoText: {
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 32,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.brand.purple,
-  },
   form: {
     width: '100%',
+    marginTop: 24,
   },
   usernameContainer: {
     marginBottom: 0,
@@ -592,7 +594,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   usernameRestrictionHint: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: -8,
     marginBottom: 16,

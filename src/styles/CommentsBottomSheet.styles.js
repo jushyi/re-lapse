@@ -11,18 +11,28 @@
  */
 import { StyleSheet, Dimensions, Platform, StatusBar } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+export const SCREEN_HEIGHT = Dimensions.get('window').height;
 export const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6;
 export const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.85; // Expanded height (leaves room for notch)
-// Minimum height for empty state (UAT-008 fix) - ~50% screen
+// Minimum height for empty state - ~50% screen
 export const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 export const styles = StyleSheet.create({
-  // Modal overlay
+  // Overlay container (for both Modal and Animated.View approaches)
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  // Animated.View overlay positioned absolutely to cover screen
+  animatedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000, // Ensure it appears above PhotoDetailScreen content
   },
   // Backdrop for tap-to-close
   backdrop: {
@@ -30,7 +40,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   // KeyboardAvoidingView wrapper
-  // Note: maxHeight removed (36.1-01) to allow expand/collapse gesture
+  // No maxHeight - allows expand/collapse gesture
   keyboardAvoidContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -38,13 +48,13 @@ export const styles = StyleSheet.create({
   // Main sheet container
   sheet: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    minHeight: MIN_SHEET_HEIGHT, // UAT-008 fix: consistent height even when empty
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    minHeight: MIN_SHEET_HEIGHT, // Consistent height even when empty
     maxHeight: SHEET_HEIGHT,
     overflow: 'hidden',
   },
-  // Handle bar for visual affordance - larger touch target (36.1-01)
+  // Handle bar for visual affordance - larger touch target
   handleBarContainer: {
     alignItems: 'center',
     paddingTop: 16,
@@ -67,12 +77,13 @@ export const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   headerCount: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginLeft: 6,
   },
@@ -86,7 +97,7 @@ export const styles = StyleSheet.create({
   commentsListContent: {
     paddingBottom: 8,
   },
-  // Empty state - centered with minimum height (UAT-008 fix)
+  // Empty state - centered with minimum height
   emptyContainer: {
     flex: 1,
     minHeight: MIN_SHEET_HEIGHT * 0.5, // Half of sheet min height for content area
@@ -95,12 +106,14 @@ export const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: 4,
   },
@@ -120,11 +133,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.status.danger,
     textAlign: 'center',
   },
-  // Reply indicator in list (indented replies) - legacy, kept for compatibility
+  // Reply indicator in list (indented replies)
   replyContainer: {
     paddingLeft: 52, // Align with parent comment text (40px photo + 12px margin)
   },
@@ -152,8 +166,8 @@ export const styles = StyleSheet.create({
   // Toggle text styling
   viewRepliesText: {
     color: colors.text.secondary,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
   },
   // Individual reply item container
   replyItem: {

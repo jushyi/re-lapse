@@ -38,7 +38,6 @@ export const getDarkroom = async userId => {
     const darkroomRef = doc(db, 'darkrooms', userId);
     const darkroomDoc = await getDoc(darkroomRef);
 
-    // In modular API, exists() is a method
     if (!darkroomDoc.exists()) {
       // Create new darkroom with initial reveal time
       const nextRevealAt = calculateNextRevealTime();
@@ -259,4 +258,42 @@ const calculateNextRevealTime = () => {
   const randomMinutes = Math.random() * 5; // Random between 0-5 minutes
   const revealTime = new Date(now.getTime() + randomMinutes * 60 * 1000);
   return Timestamp.fromDate(revealTime);
+};
+
+/**
+ * Record triage completion to trigger story notifications
+ * Called after user completes darkroom triage with at least one journaled photo
+ * This update triggers the sendStoryNotification Cloud Function
+ *
+ * @param {string} userId - User ID
+ * @param {number} journaledCount - Number of photos posted to story
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const recordTriageCompletion = async (userId, journaledCount) => {
+  try {
+    logger.debug('DarkroomService.recordTriageCompletion: Recording triage completion', {
+      userId,
+      journaledCount,
+    });
+
+    const darkroomRef = doc(db, 'darkrooms', userId);
+
+    await updateDoc(darkroomRef, {
+      lastTriageCompletedAt: serverTimestamp(),
+      lastJournaledCount: journaledCount,
+    });
+
+    logger.info('DarkroomService.recordTriageCompletion: Triage completion recorded', {
+      userId,
+      journaledCount,
+    });
+
+    return { success: true };
+  } catch (error) {
+    logger.error('DarkroomService.recordTriageCompletion: Failed', {
+      userId,
+      error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
 };

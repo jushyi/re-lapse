@@ -1,11 +1,11 @@
 export const animations = {
-  // Duration scale (ms)
+  // Duration scale (ms) - snappier for retro game feel
   duration: {
     instant: 50, // Snap/shake animations
-    fast: 100, // Quick feedback
-    normal: 300, // Standard transitions
-    slow: 350, // Card animations
-    slower: 1000, // Skeleton pulse
+    fast: 80, // Quick feedback
+    normal: 150, // Standard transitions
+    slow: 250, // Card animations
+    slower: 800, // Skeleton pulse
     hold: 1600, // Hold-to-reveal duration
   },
 
@@ -18,7 +18,7 @@ export const animations = {
     decelerate: 'ease-out',
   },
 
-  // Startup sequence timing (Plan 30-04: Animated Splash Rebrand)
+  // Startup sequence timing
   STARTUP: {
     SHUTTER_DURATION: 800, // ms - aperture opening animation
     BLUR_DELAY: 200, // ms - pause after shutter opens

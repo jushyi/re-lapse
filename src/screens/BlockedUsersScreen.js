@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { getBlockedUsersWithProfiles, unblockUser } from '../services/firebase';
 import FriendCard from '../components/FriendCard';
@@ -25,9 +25,6 @@ const BlockedUsersScreen = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null); // Track which user is being unblocked
 
-  /**
-   * Load blocked users on mount
-   */
   const loadBlockedUsers = useCallback(async () => {
     if (!user?.uid) return;
 
@@ -96,9 +93,6 @@ const BlockedUsersScreen = () => {
     ]);
   };
 
-  /**
-   * Handle profile navigation
-   */
   const handleViewProfile = blockedUser => {
     navigation.navigate('OtherUserProfile', {
       userId: blockedUser.userId,
@@ -107,9 +101,6 @@ const BlockedUsersScreen = () => {
     });
   };
 
-  /**
-   * Render individual blocked user card
-   */
   const renderItem = ({ item }) => (
     <FriendCard
       user={{
@@ -126,18 +117,12 @@ const BlockedUsersScreen = () => {
     />
   );
 
-  /**
-   * Render empty state
-   */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No blocked users</Text>
     </View>
   );
 
-  /**
-   * Render loading state
-   */
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -147,7 +132,7 @@ const BlockedUsersScreen = () => {
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Blocked Users</Text>
           <View style={styles.headerSpacer} />
@@ -171,7 +156,7 @@ const BlockedUsersScreen = () => {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Blocked Users</Text>
         <View style={styles.headerSpacer} />

@@ -26,7 +26,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import EmojiPicker from 'rn-emoji-keyboard';
 import { useNavigation } from '@react-navigation/native';
 import { getTimeAgo } from '../utils/timeUtils';
@@ -36,8 +36,14 @@ import { styles } from '../styles/PhotoDetailScreen.styles';
 import CommentsBottomSheet from '../components/comments/CommentsBottomSheet';
 import CommentPreview from '../components/comments/CommentPreview';
 import { getPreviewComments } from '../services/firebase/commentService';
-import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
+import {
+  softDeletePhoto,
+  archivePhoto,
+  restorePhoto,
+  updatePhotoTags,
+} from '../services/firebase/photoService';
 import DropdownMenu from '../components/DropdownMenu';
+import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
@@ -96,15 +102,16 @@ const PhotoDetailScreen = () => {
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
 
+  // Tag modal state
+  const [tagModalVisible, setTagModalVisible] = useState(false);
+  const [taggedPeopleModalVisible, setTaggedPeopleModalVisible] = useState(false);
+
   // Reset cube rotation when screen mounts
   useEffect(() => {
     cubeRotation.setValue(0);
     setIsTransitioning(false);
   }, []);
 
-  /**
-   * Handle close - navigate back
-   */
   const handleClose = useCallback(() => {
     // Call context close handler
     contextClose();
@@ -142,6 +149,13 @@ const PhotoDetailScreen = () => {
     return true;
   }, [contextHasNextFriend, handleRequestNextFriend, cubeRotation, isTransitioning]);
 
+  // Opens comments on swipe-up if not already visible
+  const handleSwipeUpToOpenComments = useCallback(() => {
+    if (!showComments) {
+      setShowComments(true);
+    }
+  }, [showComments, setShowComments]);
+
   const {
     // Mode
     showProgressBar,
@@ -175,6 +189,9 @@ const PhotoDetailScreen = () => {
     handleOpenEmojiPicker,
     handleEmojiPickerSelect,
     newlyAddedEmoji,
+
+    // Comments visibility (for disabling swipe-to-dismiss during comment scroll)
+    updateCommentsVisible,
   } = usePhotoDetailModal({
     mode: contextMode,
     photo: contextPhoto,
@@ -186,15 +203,18 @@ const PhotoDetailScreen = () => {
     onReactionToggle: handleReactionToggle,
     currentUserId: contextUserId,
     onFriendTransition: contextHasNextFriend ? handleFriendTransition : null,
+    onSwipeUp: handleSwipeUpToOpenComments,
   });
+
+  // Sync comments visibility with hook (so panResponder knows not to capture gestures)
+  useEffect(() => {
+    updateCommentsVisible(showComments);
+  }, [showComments, updateCommentsVisible]);
 
   // Check if viewing own photo (disable avatar tap)
   const isOwnPhoto = currentPhoto?.userId === contextUserId;
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * Disabled for own photos
-   */
+  // Disabled for own photos
   const handleAvatarPress = useCallback(() => {
     if (isOwnPhoto) return;
     if (contextAvatarPress && currentPhoto) {
@@ -217,9 +237,6 @@ const PhotoDetailScreen = () => {
     [contextAvatarPress]
   );
 
-  /**
-   * Handle archive - show confirmation and archive photo
-   */
   const handleArchive = useCallback(() => {
     setShowPhotoMenu(false);
     Alert.alert(
@@ -243,9 +260,6 @@ const PhotoDetailScreen = () => {
     );
   }, [currentPhoto?.id, contextUserId, handleClose, handlePhotoStateChanged]);
 
-  /**
-   * Handle restore - no confirmation needed for non-destructive action
-   */
   const handleRestore = useCallback(async () => {
     setShowPhotoMenu(false);
     const result = await restorePhoto(currentPhoto.id, contextUserId);
@@ -258,9 +272,7 @@ const PhotoDetailScreen = () => {
     }
   }, [currentPhoto?.id, contextUserId, handlePhotoStateChanged]);
 
-  /**
-   * Handle delete - moves photo to Recently Deleted (30-day grace period)
-   */
+  // Soft delete: moves to Recently Deleted with 30-day grace period
   const handleDeleteConfirm = useCallback(() => {
     setShowPhotoMenu(false);
     Alert.alert(
@@ -285,9 +297,6 @@ const PhotoDetailScreen = () => {
     );
   }, [currentPhoto?.id, contextUserId, handleClose, handlePhotoStateChanged]);
 
-  /**
-   * Build menu options based on photo state
-   */
   const menuOptions = useMemo(() => {
     if (!isOwnPhoto) return [];
 
@@ -317,9 +326,6 @@ const PhotoDetailScreen = () => {
     return options;
   }, [isOwnPhoto, currentPhoto?.photoState, handleArchive, handleRestore, handleDeleteConfirm]);
 
-  /**
-   * Handle menu button press - capture position for anchored menu
-   */
   const handleMenuButtonLayout = useCallback(event => {
     const { x, y, width, height } = event.nativeEvent.layout;
     setMenuAnchor({ x, y, width, height });
@@ -510,6 +516,23 @@ const PhotoDetailScreen = () => {
           </View>
         )}
 
+        {/* Tag button - visible for owner always, non-owner only when tags exist */}
+        {(isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
+          <TouchableOpacity
+            style={styles.tagButton}
+            onPress={() => {
+              if (isOwnPhoto) {
+                setTagModalVisible(true);
+              } else {
+                setTaggedPeopleModalVisible(true);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <PixelIcon name="add" size={18} color={colors.text.primary} />
+          </TouchableOpacity>
+        )}
+
         {/* Photo menu button - only for own photos */}
         {isOwnPhoto && menuOptions.length > 0 && (
           <TouchableOpacity
@@ -518,7 +541,7 @@ const PhotoDetailScreen = () => {
             onLayout={handleMenuButtonLayout}
             activeOpacity={0.7}
           >
-            <Ionicons name="ellipsis-vertical" size={28} color={colors.text.primary} />
+            <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
           </TouchableOpacity>
         )}
 
@@ -555,7 +578,7 @@ const PhotoDetailScreen = () => {
             onPress={() => setShowComments(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
+            <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
             <Text style={styles.commentInputTriggerText} numberOfLines={1}>
               {currentPhoto?.commentCount > 0
                 ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
@@ -671,6 +694,28 @@ const PhotoDetailScreen = () => {
         onClose={() => setShowPhotoMenu(false)}
         options={menuOptions}
         anchorPosition={menuAnchor}
+      />
+
+      {/* Tag Friends Modal (for owner tagging) */}
+      <TagFriendsModal
+        visible={tagModalVisible}
+        onClose={() => setTagModalVisible(false)}
+        initialSelectedIds={currentPhoto?.taggedUserIds || []}
+        onConfirm={async selectedIds => {
+          await updatePhotoTags(currentPhoto.id, selectedIds);
+          setTagModalVisible(false);
+        }}
+      />
+
+      {/* Tagged People Modal (for non-owner viewing) */}
+      <TaggedPeopleModal
+        visible={taggedPeopleModalVisible}
+        onClose={() => setTaggedPeopleModalVisible(false)}
+        taggedUserIds={currentPhoto?.taggedUserIds || []}
+        onPersonPress={(userId, userName) => {
+          setTaggedPeopleModalVisible(false);
+          contextAvatarPress?.(userId, userName);
+        }}
       />
     </Animated.View>
   );

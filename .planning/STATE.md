@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** v1.6 shipped — planning next features
+**Current focus:** v1.7 Engagement & Polish — Phase 43 complete, Phase 44 next
 
 ## Current Position
 
-Phase: v1.6 complete
-Plan: All plans complete
-Status: Milestone shipped
-Last activity: 2026-02-06 — v1.6 milestone complete
+Phase: 43 of 46 (Comment Cleanup and Audit)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-09 — Completed 43-04-PLAN.md
 
-Progress: v1.6 ████████████████████████████ SHIPPED
+Progress: ██████████ 100%
 
 ## Performance Metrics
 
@@ -34,26 +34,36 @@ Progress: v1.6 █████████████████████�
 
 See PROJECT.md Key Decisions table for full history.
 
+| Phase | Decision                                     | Rationale                                                                                                                |
+| ----- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 42    | Mutual friend computation via Cloud Function | Firestore security rules correctly block client-side cross-user friendship queries; admin SDK is the established pattern |
+
 ### Deferred Issues
 
-- ISS-001: Optimize photo capture for full-screen display
-- ISS-004: Comments sheet closes when navigating to profile
-- ISS-005: Swipe up on photo to open comments
-- ISS-011: Custom profile photo crop UI
+None - all issues closed.
 
-**Closed:** ISS-002, ISS-003, ISS-006, ISS-007, ISS-008
+**Closed:** ISS-001, ISS-002, ISS-003, ISS-004, ISS-005, ISS-006, ISS-007, ISS-008, ISS-011
 
 ### Blockers/Concerns
 
 None.
 
+### Roadmap Evolution
+
+- Milestone v1.7 created: Engagement & Polish, 10 phases (Phase 32-41)
+- Phase 42 added: Mutual Friends Suggestions
+- Phase 43 added: Comment Cleanup and Audit
+- Phase 44 added: Notification Activity Feed
+- Phase 45 added: Security Audit
+- Phase 46 added: Full Notifications Testing
+
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: v1.6 milestone complete
+Last session: 2026-02-09
+Stopped at: Completed 43-04-PLAN.md (Phase 43 complete)
 Resume file: None
 
 ## Next Steps
 
-- `/gsd:discuss-milestone` — Plan v1.7 features
-- `/gsd:new-milestone` — Create v1.7 roadmap directly
+- `/gsd:plan-phase 44` — Plan Notification Activity Feed phase
+- `/gsd:complete-milestone` — Archive v1.7 after all phases done

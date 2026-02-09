@@ -22,6 +22,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 
 const BAR_COUNT = 60; // Number of bars in waveform visualization
 
@@ -63,13 +64,8 @@ const WaveformScrubber = ({
   onSeek, // Callback when user drags to seek: (seconds) => void
   containerWidth = DEFAULT_WIDTH,
 }) => {
-  // Generate waveform data based on songId
   const waveformData = useMemo(() => generateWaveformData(songId), [songId]);
-
-  // Calculate pixels per second
   const pixelsPerSecond = containerWidth / duration;
-
-  // Playback position indicator (in pixels)
   const playbackX = useSharedValue(currentTime * pixelsPerSecond);
 
   // Track if user is currently dragging
@@ -88,7 +84,6 @@ const WaveformScrubber = ({
     }
   }, [currentTime, pixelsPerSecond, playbackX]);
 
-  // Handle seek callback on JS thread
   const handleSeekJS = seconds => {
     if (onSeek) {
       onSeek(seconds);
@@ -135,15 +130,11 @@ const WaveformScrubber = ({
       runOnJS(setDraggingFalse)();
     });
 
-  // Animated style for playback position indicator
   const playbackIndicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: playbackX.value }],
   }));
 
-  // Calculate bar width
   const barWidth = (containerWidth - (BAR_COUNT - 1) * 2) / BAR_COUNT;
-
-  // Calculate progress percentage for bar coloring
   const progressRatio = currentTime / duration;
 
   return (
@@ -224,12 +215,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   timeLabel: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
   },
   timeLabelDuration: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
   },

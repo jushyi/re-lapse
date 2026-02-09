@@ -11,8 +11,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import PixelIcon from '../components/PixelIcon';
 import {
   getFirestore,
   collection,
@@ -33,13 +33,14 @@ import {
 } from '../services/firebase/friendshipService';
 import { getTimeAgo } from '../utils/timeUtils';
 import { mediumImpact } from '../utils/haptics';
-import { markNotificationsAsRead } from '../services/firebase/notificationService';
+import { markSingleNotificationAsRead } from '../services/firebase/notificationService';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const db = getFirestore();
 
 /**
- * Notifications Screen - Friend requests + reaction notifications
+ * ActivityScreen - Friend requests + reaction notifications
  * Accessed via heart icon in feed header
  */
 const ActivityScreen = () => {
@@ -50,9 +51,6 @@ const ActivityScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  /**
-   * Fetch friend requests (incoming only)
-   */
   const fetchFriendRequests = useCallback(async () => {
     if (!user?.uid) return [];
 
@@ -85,9 +83,6 @@ const ActivityScreen = () => {
     return [];
   }, [user?.uid]);
 
-  /**
-   * Fetch notifications (reactions)
-   */
   const fetchNotifications = useCallback(async () => {
     if (!user?.uid) return [];
 
@@ -111,9 +106,6 @@ const ActivityScreen = () => {
     return [];
   }, [user?.uid]);
 
-  /**
-   * Load all data
-   */
   const loadData = useCallback(async () => {
     const [requests, notifs] = await Promise.all([fetchFriendRequests(), fetchNotifications()]);
     setFriendRequests(requests);
@@ -126,29 +118,11 @@ const ActivityScreen = () => {
     loadData();
   }, [loadData]);
 
-  /**
-   * Mark notifications as read when screen is focused
-   */
-  useFocusEffect(
-    useCallback(() => {
-      // Only mark as read if data is loaded
-      if (!loading && user?.uid) {
-        markNotificationsAsRead(user.uid);
-      }
-    }, [loading, user?.uid])
-  );
-
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  /**
-   * Handle accept friend request
-   */
   const handleAccept = async requestId => {
     mediumImpact();
     const result = await acceptFriendRequest(requestId, user.uid);
@@ -159,9 +133,6 @@ const ActivityScreen = () => {
     }
   };
 
-  /**
-   * Handle decline friend request
-   */
   const handleDecline = async requestId => {
     mediumImpact();
     const result = await declineFriendRequest(requestId, user.uid);
@@ -172,18 +143,12 @@ const ActivityScreen = () => {
     }
   };
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * Uses OtherUserProfile screen in root stack for viewing other users
-   */
+  // Uses OtherUserProfile in root stack (not tab navigator) for viewing other users
   const handleAvatarPress = (userId, displayName) => {
     logger.debug('ActivityScreen: Avatar pressed', { userId, displayName });
     navigation.navigate('OtherUserProfile', { userId, username: displayName });
   };
 
-  /**
-   * Format reactions text
-   */
   const formatReactionsText = reactions => {
     if (!reactions || typeof reactions !== 'object') return '';
     const parts = Object.entries(reactions)
@@ -193,8 +158,62 @@ const ActivityScreen = () => {
   };
 
   /**
-   * Render friend request item (compact)
+   * Get action text for notification item
+   * Strips sender name prefix if present so username can be bolded separately
    */
+  const getActionText = item => {
+    const senderName = item.senderName || 'Someone';
+
+    if (item.message) {
+      // If message starts with sender name, strip the prefix
+      if (item.message.startsWith(senderName)) {
+        return item.message.slice(senderName.length).trim();
+      }
+      // Message doesn't start with sender name - return full message
+      return item.message;
+    }
+
+    if (item.reactions) {
+      const reactionsText = formatReactionsText(item.reactions);
+      return `reacted ${reactionsText} to your photo`;
+    }
+
+    return 'sent you a notification';
+  };
+
+  /**
+   * Handle notification item press
+   * Optimistic local update, then Firestore update, then navigation
+   */
+  const handleNotificationPress = async item => {
+    // Mark as read locally (optimistic update)
+    setNotifications(prev => prev.map(n => (n.id === item.id ? { ...n, read: true } : n)));
+
+    // Mark as read in Firestore
+    await markSingleNotificationAsRead(item.id);
+
+    // Navigate based on notification type/data
+    const { type, photoId, userId: notifUserId, taggerId } = item;
+    if (type === 'reaction' && photoId) {
+      navigation.navigate('MainTabs', { screen: 'Feed', params: { photoId } });
+    } else if (type === 'story' && notifUserId) {
+      navigation.navigate('MainTabs', {
+        screen: 'Feed',
+        params: { highlightUserId: notifUserId, openStory: true },
+      });
+    } else if (type === 'tagged' && taggerId) {
+      navigation.navigate('MainTabs', {
+        screen: 'Feed',
+        params: { highlightUserId: taggerId, highlightPhotoId: photoId, openStory: true },
+      });
+    } else if (type === 'friend_accepted' || type === 'friend_request') {
+      navigation.navigate('FriendsList');
+    } else if (item.senderId) {
+      // Default: navigate to sender's profile
+      handleAvatarPress(item.senderId, item.senderName);
+    }
+  };
+
   const renderFriendRequest = ({ item }) => {
     const { otherUser } = item;
     if (!otherUser) return null;
@@ -223,26 +242,27 @@ const ActivityScreen = () => {
         </View>
         <View style={styles.requestActions}>
           <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.id)}>
-            <Ionicons name="checkmark" size={18} color={colors.icon.primary} />
+            <PixelIcon name="checkmark" size={18} color={colors.icon.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item.id)}>
-            <Ionicons name="close" size={18} color={colors.text.secondary} />
+            <PixelIcon name="close" size={18} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
     );
   };
 
-  /**
-   * Render notification item
-   */
   const renderNotification = ({ item }) => {
-    const reactionsText = formatReactionsText(item.reactions);
-    const displayMessage =
-      item.message || `${item.senderName || 'Someone'} reacted ${reactionsText} to your photo`;
+    const actionText = getActionText(item);
+    const isUnread = item.read !== true;
 
     return (
-      <View style={styles.notificationItem}>
+      <TouchableOpacity
+        style={styles.notificationItem}
+        onPress={() => handleNotificationPress(item)}
+        activeOpacity={0.7}
+      >
+        {isUnread ? <View style={styles.unreadDot} /> : <View style={styles.readSpacer} />}
         <TouchableOpacity
           onPress={() => item.senderId && handleAvatarPress(item.senderId, item.senderName)}
           activeOpacity={0.7}
@@ -252,32 +272,29 @@ const ActivityScreen = () => {
             <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
           ) : (
             <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
-              <Ionicons name="person" size={20} color={colors.text.tertiary} />
+              <PixelIcon name="person" size={20} color={colors.text.tertiary} />
             </View>
           )}
         </TouchableOpacity>
         <View style={styles.notifContent}>
           <Text style={styles.notifMessage} numberOfLines={2}>
-            {displayMessage}
+            <Text style={styles.notifSenderName}>{item.senderName || 'Someone'}</Text> {actionText}
           </Text>
         </View>
         <Text style={styles.notifTime}>
           {item.createdAt ? getTimeAgo(item.createdAt).replace(' ago', '') : ''}
         </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
-  /**
-   * Render empty state
-   */
   const renderEmpty = () => {
     if (loading) return null;
 
     if (friendRequests.length === 0 && notifications.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
+          <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
           <Text style={styles.emptyTitle}>No activity yet</Text>
           <Text style={styles.emptyText}>Friend requests and reactions will appear here</Text>
         </View>
@@ -291,7 +308,7 @@ const ActivityScreen = () => {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
           <View style={styles.headerSpacer} />
@@ -308,7 +325,7 @@ const ActivityScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
@@ -336,7 +353,7 @@ const ActivityScreen = () => {
               <View style={styles.sectionBadge}>
                 <Text style={styles.sectionBadgeText}>{friendRequests.length}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              <PixelIcon name="chevron-forward" size={18} color={colors.text.tertiary} />
             </TouchableOpacity>
             {friendRequests.map(item => (
               <View key={item.id}>{renderFriendRequest({ item })}</View>
@@ -379,8 +396,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   headerSpacer: {
@@ -405,23 +422,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionBadge: {
     backgroundColor: colors.brand.pink,
-    borderRadius: 10,
+    borderRadius: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginLeft: 8,
     marginRight: 'auto',
   },
   sectionBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   requestItem: {
@@ -445,8 +462,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   requestPhotoText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
   },
   requestInfo: {
@@ -454,12 +471,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   requestName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   requestSubtext: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -508,12 +526,30 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   notifMessage: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 20,
   },
+  notifSenderName: {
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.brand.purple,
+    marginRight: 6,
+  },
+  readSpacer: {
+    width: 6,
+    height: 6,
+    marginRight: 6,
+  },
   notifTime: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
   },
   emptyContainer: {
@@ -524,13 +560,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     marginTop: 16,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     marginTop: 8,

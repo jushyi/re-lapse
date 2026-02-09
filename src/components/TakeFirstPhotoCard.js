@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -17,7 +18,7 @@ const TakeFirstPhotoCard = ({ onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.contentContainer}>
-        <Ionicons name="camera-outline" size={48} color={colors.text.secondary} />
+        <PixelIcon name="camera-outline" size={48} color={colors.text.secondary} />
         <Text style={styles.title}>Take your first photo</Text>
         <Text style={styles.subtitle}>Capture a moment to share with friends</Text>
       </View>
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     width: SCREEN_WIDTH - 32, // Account for horizontal margins
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.background.tertiary,
     borderStyle: 'dashed',
@@ -43,13 +44,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginTop: 16,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 8,
     textAlign: 'center',

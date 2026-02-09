@@ -36,28 +36,25 @@ const HORIZONTAL_THRESHOLD = 100;
 // Delete overlay threshold (used for button-triggered animation overlay only)
 const DELETE_OVERLAY_THRESHOLD = 150;
 
-// Exit animation configuration (UAT-008: increased from 250ms for more visible arc motion)
-// 18.4: Slowed to 800ms for smooth exponential arc visibility
+// Exit animation duration
 const EXIT_DURATION = 800;
 
-// UAT-016: Button-triggered animations use slower duration for satisfying pace
+// Button-triggered animations use slower duration for satisfying pace
 // Swipe gestures have natural lead-in time from drag, but button taps are instant
-// 1200ms (3x EXIT_DURATION) gives button animations similar perceived pace to swipes
 const BUTTON_EXIT_DURATION = 800;
 
-// UAT-005 FIX: Delay for front card transition gives exiting card time to clear
-// 18.6: Reduced to 0ms since onExitClearance now triggers cascade early
+// Delay for front card transition gives exiting card time to clear
 const CASCADE_DELAY_MS = 0;
 
-// 18.6: Clearance delay - time before cascade animation triggers
+// Clearance delay - time before cascade animation triggers
 // 100ms gives instant feel while allowing exit animation to start
 const SWIPE_CLEARANCE_DELAY = 100;
 const BUTTON_CLEARANCE_DELAY = 100;
 
-// UAT-004 FIX: Fade-in duration for new cards entering the visible stack
+// Fade-in duration for new cards entering the visible stack
 const STACK_ENTRY_FADE_DURATION = 300;
 
-// 18.1-02: Entry animation duration for undo
+// Entry animation duration for undo
 const ENTRY_DURATION = 400;
 
 /**
@@ -119,28 +116,27 @@ const useSwipeableCard = ({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
-  // 18.3: Scale for delete suction animation (card shrinks as it gets sucked into delete button)
+  // Scale for delete suction animation (card shrinks as it gets sucked into delete button)
   const cardScale = useSharedValue(1);
 
-  // UAT-004 FIX: Track if this card has completed its entry animation
+  // Track if this card has completed its entry animation
   // Used to detect when a card is newly entering the visible stack
   const hasAnimatedEntry = useSharedValue(false);
 
-  // Animated values for smooth stack cascade animation (UAT-009)
+  // Animated values for smooth stack cascade animation
   // These animate when stackIndex changes (card moves forward in stack)
-  // UAT-004 FIX: Start newly visible cards at opacity 0 for fade-in effect
+  // Start newly visible cards at opacity 0 for fade-in effect
   const initialOpacity =
     isNewlyVisible && !hasAnimatedEntry.value ? 0 : getStackOpacity(stackIndex);
   const stackScaleAnim = useSharedValue(getStackScale(stackIndex));
   const stackOffsetAnim = useSharedValue(getStackOffset(stackIndex));
   const stackOpacityAnim = useSharedValue(initialOpacity);
 
-  // UAT-005 FIX: Consolidated animation - stackIndex useEffect is the SINGLE source of truth
-  // Removed dual-animation approach (cascading useEffect + stackIndex useEffect) that caused race condition
-  // The cascade animation was being interrupted by stackIndex useEffect, causing mid-flight snaps
+  // Consolidated animation - stackIndex useEffect is the SINGLE source of truth
+  // Removed dual-animation approach that caused race condition (cascade interrupted by stackIndex useEffect)
   const prevStackIndex = useSharedValue(stackIndex);
 
-  // UAT-006 FIX: Track whether card is transitioning to front position
+  // Track whether card is transitioning to front position
   // When a card becomes isActive=true, the cardStyle switches from using stackOffsetAnim to translateX/Y
   // We need to continue using stackOffsetAnim during the transition animation, not switch immediately
   // This shared value is 1 during transition, 0 when complete
@@ -149,7 +145,7 @@ const useSwipeableCard = ({
   // Track if action is in progress to prevent multiple triggers
   const actionInProgress = useSharedValue(false);
 
-  // UAT-008: Track when delete is button-triggered (vs gesture swipe)
+  // Track when delete is button-triggered (vs gesture swipe)
   // Delete overlay should only show during button-triggered delete animation
   const isButtonDelete = useSharedValue(false);
 
@@ -172,7 +168,7 @@ const useSwipeableCard = ({
     };
 
     if (movingToFront) {
-      // UAT-006 FIX: Mark as transitioning so cardStyle continues using stackOffsetAnim
+      // Mark as transitioning so cardStyle continues using stackOffsetAnim
       isTransitioningToFront.value = 1;
 
       // Card becoming front - add delay to let exiting card clear
@@ -202,7 +198,7 @@ const useSwipeableCard = ({
     prevStackIndex.value = stackIndex;
   }, [stackIndex]);
 
-  // UAT-004 FIX: Fade-in animation for newly visible cards entering the stack
+  // Fade-in animation for newly visible cards entering the stack
   useEffect(() => {
     if (isNewlyVisible && !hasAnimatedEntry.value && stackIndex === 2) {
       logger.debug('useSwipeableCard: New card entering visible stack, starting fade-in', {
@@ -222,7 +218,7 @@ const useSwipeableCard = ({
     }
   }, [isNewlyVisible, stackIndex]);
 
-  // 18.1-02: Entry animation for undo (reverse of exit animation)
+  // Entry animation for undo (reverse of exit animation)
   useEffect(() => {
     if (enterFrom && isActive) {
       // Start card off-screen in the direction it exited
@@ -276,7 +272,7 @@ const useSwipeableCard = ({
     setThresholdTriggered(false);
   }, []);
 
-  // 18.6: Schedule clearance callback with delay (called via runOnJS from worklet)
+  // Schedule clearance callback with delay (called via runOnJS from worklet)
   const scheduleClearanceCallback = useCallback(
     delay => {
       if (onExitClearance) {
@@ -325,7 +321,7 @@ const useSwipeableCard = ({
     triggerHeavyHaptic();
   }, [photo?.id, onSwipeDown, triggerWarningHaptic, triggerHeavyHaptic]);
 
-  // Imperative methods for button-triggered animations (UAT-003)
+  // Imperative methods for button-triggered animations
   useImperativeHandle(
     ref,
     () => ({
@@ -338,7 +334,7 @@ const useSwipeableCard = ({
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerArchive called', { photoId: photo?.id });
         actionInProgress.value = true;
-        // 18.6: Fire clearance callback early to trigger cascade while card still visible
+        // Fire clearance callback early to trigger cascade while card still visible
         if (onExitClearance) {
           setTimeout(() => {
             onExitClearance();
@@ -370,7 +366,7 @@ const useSwipeableCard = ({
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerJournal called', { photoId: photo?.id });
         actionInProgress.value = true;
-        // 18.6: Fire clearance callback early to trigger cascade while card still visible
+        // Fire clearance callback early to trigger cascade while card still visible
         if (onExitClearance) {
           setTimeout(() => {
             onExitClearance();
@@ -522,7 +518,7 @@ const useSwipeableCard = ({
       }
     });
 
-  // Animated card style with FIXED arc motion, rotation, and stack transforms
+  // Animated card style with arc motion, rotation, and stack transforms
   const cardStyle = useAnimatedStyle(() => {
     const normalizedX = Math.abs(translateX.value) / (SCREEN_WIDTH * 1.5);
     const curveProgress = Math.pow(normalizedX, 2.5);

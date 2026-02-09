@@ -12,8 +12,9 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import { getUserPhotos } from '../services/firebase/photoService';
 import { createAlbum, addPhotosToAlbum } from '../services/firebase/albumService';
@@ -170,7 +171,7 @@ const AlbumPhotoPickerScreen = () => {
           {(isSelected || isInAlbum) && (
             <View style={[styles.selectionOverlay, isInAlbum && styles.disabledOverlay]}>
               <View style={[styles.checkmark, isInAlbum && styles.checkmarkDisabled]}>
-                <Ionicons
+                <PixelIcon
                   name={isInAlbum ? 'checkmark-done-circle' : 'checkmark'}
                   size={isInAlbum ? 20 : 16}
                   color={isInAlbum ? colors.text.tertiary : colors.text.inverse}
@@ -195,7 +196,7 @@ const AlbumPhotoPickerScreen = () => {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Select Photos</Text>
@@ -225,7 +226,7 @@ const AlbumPhotoPickerScreen = () => {
         </View>
       ) : photos.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="images-outline" size={48} color={colors.text.tertiary} />
+          <PixelIcon name="images-outline" size={48} color={colors.text.tertiary} />
           <Text style={styles.emptyText}>No photos yet</Text>
           <Text style={styles.emptySubtext}>Take some photos and triage them to add to albums</Text>
         </View>
@@ -273,18 +274,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.system.blue,
   },
   actionButtonDisabled: {
@@ -302,13 +304,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: 8,
     textAlign: 'center',
@@ -347,15 +350,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   inAlbumText: {
-    fontSize: 10,
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
-    fontWeight: '500',
   },
   checkmark: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 9999,
     backgroundColor: colors.system.blue,
     justifyContent: 'center',
     alignItems: 'center',

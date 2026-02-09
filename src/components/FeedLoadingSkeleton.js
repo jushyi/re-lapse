@@ -56,9 +56,6 @@ const FeedLoadingSkeleton = () => {
     ).start();
   }, [shimmerPosition]);
 
-  /**
-   * Render a single story card skeleton
-   */
   const renderStoryCardSkeleton = index => (
     <View key={index} style={styles.storyCardSkeleton}>
       {/* Photo placeholder (rectangular) */}
@@ -72,9 +69,6 @@ const FeedLoadingSkeleton = () => {
     </View>
   );
 
-  /**
-   * Render a single feed card skeleton
-   */
   const renderFeedCardSkeleton = index => (
     <View key={index} style={styles.feedCard}>
       {/* Photo placeholder (full-width square) */}
@@ -140,7 +134,7 @@ const styles = StyleSheet.create({
   storyPhoto: {
     width: STORY_PHOTO_WIDTH + STORY_BORDER_WIDTH * 2,
     height: STORY_PHOTO_HEIGHT + STORY_BORDER_WIDTH * 2,
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     marginBottom: STORY_PROFILE_SIZE / 2 + 4,
     overflow: 'hidden',

@@ -1,6 +1,12 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const logger = require('./logger');
+const { sendPushNotification, expo } = require('./notifications/sender');
+const {
+  getPendingReceipts,
+  deletePendingReceipt,
+  removeInvalidToken,
+} = require('./notifications/receipts');
 const {
   validateOrNull,
   DarkroomDocSchema,
@@ -18,6 +24,56 @@ admin.initializeApp();
 // Track pending reactions for debouncing: { "photoId_reactorId": { timeout, reactions, photoOwnerId, fcmToken, reactorName, reactorProfilePhotoURL } }
 const pendingReactions = {};
 
+/**
+ * Varied notification templates for story posts
+ * Makes notifications feel human and not robotic
+ */
+const STORY_NOTIFICATION_TEMPLATES = [
+  '{name} just journaled some snaps',
+  '{name} shared new moments',
+  'New photos from {name}',
+  '{name} posted to their story',
+  'See what {name} captured today',
+];
+
+/**
+ * Varied notification templates for tagged photos (single tag)
+ * Makes notifications feel human and not robotic
+ */
+const TAG_NOTIFICATION_TEMPLATES = [
+  '{name} tagged you in a photo',
+  "You're in {name}'s latest snap",
+  '{name} included you in a moment',
+  "You made it into {name}'s photo",
+  '{name} captured you!',
+];
+
+/**
+ * Varied notification templates for batch tags (multiple photos)
+ * Used when someone tags user in multiple photos within debounce window
+ */
+const TAG_BATCH_TEMPLATES = [
+  '{name} tagged you in {count} photos',
+  "You're in {count} of {name}'s snaps",
+  '{name} included you in {count} moments',
+];
+
+// Track pending tags for debouncing: { "taggerId_taggedId": { timeout, photoIds, taggerName, taggerProfilePhotoURL, taggedUserId, fcmToken } }
+const pendingTags = {};
+
+// Tag debounce window in milliseconds (30 seconds - longer than reactions since tagging is slower)
+const TAG_DEBOUNCE_MS = 30000;
+
+/**
+ * Pick a random template from an array
+ * @param {string[]} templates - Array of template strings
+ * @returns {string} - Random template
+ */
+function getRandomTemplate(templates) {
+  const index = Math.floor(Math.random() * templates.length);
+  return templates[index];
+}
+
 // Debounce window in milliseconds (10 seconds)
 const REACTION_DEBOUNCE_MS = 10000;
 
@@ -31,6 +87,24 @@ function formatReactionSummary(reactions) {
     .filter(([emoji, count]) => count > 0)
     .map(([emoji, count]) => `${emoji}×${count}`)
     .join(' ');
+}
+
+/**
+ * Check if a notification should be sent based on user preferences
+ * @param {string} userId - User ID to check preferences for
+ * @param {string} notificationType - Type of notification ('likes', 'comments', 'follows', 'friendRequests', 'mentions')
+ * @returns {Promise<boolean>} - True if notification should be sent
+ */
+async function shouldSendNotification(userId, notificationType) {
+  const userDoc = await admin.firestore().collection('users').doc(userId).get();
+  if (!userDoc.exists) return false;
+
+  const prefs = userDoc.data().notificationPreferences || {};
+  // Default to true if preferences not set
+  const masterEnabled = prefs.enabled !== false;
+  const typeEnabled = prefs[notificationType] !== false;
+
+  return masterEnabled && typeEnabled;
 }
 
 /**
@@ -155,53 +229,104 @@ exports.processDarkroomReveals = functions.pubsub
   });
 
 /**
- * Send push notification to a user via Expo Push Token
- * @param {string} fcmToken - User's Expo Push Token
- * @param {string} title - Notification title
- * @param {string} body - Notification body
- * @param {object} data - Additional data payload for deep linking
- * @returns {Promise<object>} - Result of notification send
+ * Cloud Function: Check push notification receipts and clean up invalid tokens
+ * Runs every 15 minutes to match Expo's recommended receipt check timing
+ *
+ * Flow:
+ * 1. Get all pending receipts from Firestore
+ * 2. Chunk receipt IDs for Expo API
+ * 3. Check each receipt's delivery status
+ * 4. Remove invalid tokens when DeviceNotRegistered error detected
+ * 5. Clean up processed receipts
  */
-async function sendPushNotification(fcmToken, title, body, data = {}) {
+exports.checkPushReceipts = functions.pubsub.schedule('every 15 minutes').onRun(async context => {
   try {
-    // Expo push tokens start with "ExponentPushToken["
-    if (!fcmToken || !fcmToken.startsWith('ExponentPushToken[')) {
-      logger.error('sendPushNotification: Invalid Expo Push Token:', fcmToken);
-      return { success: false, error: 'Invalid token format' };
+    logger.info('checkPushReceipts: Starting receipt check');
+
+    // Get all pending receipts from Firestore
+    const pendingReceipts = await getPendingReceipts();
+
+    if (pendingReceipts.length === 0) {
+      logger.info('checkPushReceipts: No pending receipts');
+      return null;
     }
 
-    // For Expo push tokens, we use the Expo Push Notification service
-    // The token is already in the correct format
-    const message = {
-      to: fcmToken,
-      sound: 'default',
-      title: title,
-      body: body,
-      data: data,
-      priority: 'high',
-      channelId: 'default',
-    };
-
-    // Send notification via Expo's push notification service
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-Encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
+    logger.info('checkPushReceipts: Found pending receipts', {
+      count: pendingReceipts.length,
     });
 
-    const responseData = await response.json();
-    logger.debug('sendPushNotification: Expo push notification sent:', responseData);
+    // Create lookup map for quick access to receipt data
+    const receiptMap = {};
+    for (const receipt of pendingReceipts) {
+      receiptMap[receipt.ticketId] = receipt;
+    }
 
-    return { success: true, data: responseData };
+    // Extract receipt IDs
+    const receiptIds = pendingReceipts.map(r => r.ticketId);
+
+    // Chunk receipt IDs for Expo API (handles batching automatically)
+    const chunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+
+    let checkedCount = 0;
+    let removedTokens = 0;
+    let errorCount = 0;
+
+    // Process each chunk
+    for (const chunk of chunks) {
+      try {
+        const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+        // Process each receipt in the response
+        for (const [ticketId, receipt] of Object.entries(receipts)) {
+          const pendingData = receiptMap[ticketId];
+
+          if (receipt.status === 'ok') {
+            // Notification delivered successfully - clean up
+            await deletePendingReceipt(ticketId);
+            checkedCount++;
+          } else if (receipt.status === 'error') {
+            const { message, details } = receipt;
+
+            logger.warn('checkPushReceipts: Receipt error', {
+              ticketId,
+              message,
+              details,
+              userId: pendingData?.userId,
+            });
+
+            // Check if device is no longer registered
+            if (details?.error === 'DeviceNotRegistered') {
+              if (pendingData?.userId) {
+                await removeInvalidToken(pendingData.userId);
+                removedTokens++;
+              }
+            }
+
+            // Clean up receipt regardless of error type
+            await deletePendingReceipt(ticketId);
+            errorCount++;
+          }
+        }
+      } catch (chunkError) {
+        logger.error('checkPushReceipts: Chunk fetch failed', {
+          error: chunkError.message,
+        });
+        // Continue with next chunk - let next run handle failed ones
+      }
+    }
+
+    logger.info('checkPushReceipts: Complete', {
+      checked: checkedCount + errorCount,
+      removed: removedTokens,
+      errors: errorCount,
+    });
+
+    return { checked: checkedCount + errorCount, removed: removedTokens, errors: errorCount };
   } catch (error) {
-    logger.error('sendPushNotification: Error sending push notification:', error);
-    return { success: false, error: error.message };
+    logger.error('checkPushReceipts: Fatal error', { error: error.message });
+    return null;
   }
-}
+});
 
 /**
  * Cloud Function: Send notification when photos are revealed in darkroom
@@ -292,18 +417,22 @@ exports.sendPhotoRevealNotification = functions.firestore
         return null;
       }
 
-      // Send notification with reveal data
-      const title = '📸 Photos Ready!';
+      // Send notification with simple, direct messaging
+      const title = 'Photos Ready!';
       const body =
         photosRevealed === 1
-          ? 'Your photo is ready to view in the darkroom'
-          : `${photosRevealed} photos are ready to view in the darkroom`;
+          ? 'Your photo is ready to reveal!'
+          : `Your ${photosRevealed} photos are ready to reveal!`;
 
-      const result = await sendPushNotification(fcmToken, title, body, {
-        type: 'photo_reveal',
-        revealedCount: String(photosRevealed),
-        revealAll: 'true',
-      });
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'photo_reveal',
+        },
+        userId
+      );
 
       // Update lastNotifiedAt AFTER successfully sending notification
       await admin.firestore().collection('darkrooms').doc(userId).update({
@@ -390,6 +519,20 @@ exports.sendFriendRequestNotification = functions.firestore
         return null;
       }
 
+      // Check notification preferences (enabled AND friendRequests)
+      const prefs = recipientData.notificationPreferences || {};
+      const masterEnabled = prefs.enabled !== false;
+      const friendRequestsEnabled = prefs.friendRequests !== false;
+
+      if (!masterEnabled || !friendRequestsEnabled) {
+        logger.debug('sendFriendRequestNotification: Notifications disabled by user preferences', {
+          recipientId,
+          masterEnabled,
+          friendRequestsEnabled,
+        });
+        return null;
+      }
+
       // Get sender's display name
       const senderDoc = await admin.firestore().collection('users').doc(requestedBy).get();
 
@@ -401,15 +544,353 @@ exports.sendFriendRequestNotification = functions.firestore
       const title = '👋 Friend Request';
       const body = `${senderName} sent you a friend request`;
 
-      const result = await sendPushNotification(fcmToken, title, body, {
-        type: 'friend_request',
-        friendshipId: friendshipId,
-      });
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'friend_request',
+          friendshipId: friendshipId,
+        },
+        recipientId
+      );
 
       logger.debug('sendFriendRequestNotification: Notification sent to:', recipientId, result);
       return result;
     } catch (error) {
       logger.error('sendFriendRequestNotification: Error:', error);
+      return null;
+    }
+  });
+
+/**
+ * Cloud Function: Send notification when friend request is accepted
+ * Triggered when friendship document is updated with status changing to 'accepted'
+ */
+exports.sendFriendAcceptedNotification = functions.firestore
+  .document('friendships/{friendshipId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const friendshipId = context.params.friendshipId;
+      const before = change.before.data();
+      const after = change.after.data();
+
+      // Guard: validate document data exists
+      if (!after || typeof after !== 'object') {
+        logger.warn('sendFriendAcceptedNotification: Invalid after data', { friendshipId });
+        return null;
+      }
+      if (!before || typeof before !== 'object') {
+        logger.warn('sendFriendAcceptedNotification: Invalid before data', { friendshipId });
+        return null;
+      }
+
+      // Check if status changed from 'pending' to 'accepted'
+      if (before.status === after.status || after.status !== 'accepted') {
+        logger.debug(
+          'sendFriendAcceptedNotification: Not a pending->accepted transition, skipping'
+        );
+        return null;
+      }
+
+      // Guard: verify required IDs are present and valid
+      const { requestedBy, user1Id, user2Id } = after;
+      if (!requestedBy || !user1Id || !user2Id) {
+        logger.warn('sendFriendAcceptedNotification: Missing required user IDs', {
+          friendshipId,
+          hasRequestedBy: !!requestedBy,
+          hasUser1Id: !!user1Id,
+          hasUser2Id: !!user2Id,
+        });
+        return null;
+      }
+
+      // The original requester receives this notification
+      const recipientId = requestedBy;
+
+      // The acceptor is the other user (not the original requester)
+      const acceptorId = user1Id === requestedBy ? user2Id : user1Id;
+
+      // Check recipient's notification preferences
+      const recipientDoc = await admin.firestore().collection('users').doc(recipientId).get();
+
+      if (!recipientDoc.exists) {
+        logger.error('sendFriendAcceptedNotification: Recipient not found:', recipientId);
+        return null;
+      }
+
+      const recipientData = recipientDoc.data();
+      const fcmToken = recipientData.fcmToken;
+
+      if (!fcmToken) {
+        logger.debug(
+          'sendFriendAcceptedNotification: Recipient has no FCM token, skipping:',
+          recipientId
+        );
+        return null;
+      }
+
+      // Check notification preferences (enabled AND follows)
+      const prefs = recipientData.notificationPreferences || {};
+      const masterEnabled = prefs.enabled !== false;
+      const followsEnabled = prefs.follows !== false;
+
+      if (!masterEnabled || !followsEnabled) {
+        logger.debug('sendFriendAcceptedNotification: Notifications disabled by user preferences', {
+          recipientId,
+          masterEnabled,
+          followsEnabled,
+        });
+        return null;
+      }
+
+      // Get acceptor's display name
+      const acceptorDoc = await admin.firestore().collection('users').doc(acceptorId).get();
+
+      const acceptorName = acceptorDoc.exists
+        ? acceptorDoc.data().displayName || acceptorDoc.data().username
+        : 'Someone';
+
+      const acceptorProfilePhotoURL = acceptorDoc.exists
+        ? acceptorDoc.data().profilePhotoURL || acceptorDoc.data().photoURL
+        : null;
+
+      // Send notification
+      const title = '🎉 Friend Request Accepted';
+      const body = `${acceptorName} accepted your friend request`;
+
+      const result = await sendPushNotification(
+        fcmToken,
+        title,
+        body,
+        {
+          type: 'friend_accepted',
+          friendshipId: friendshipId,
+        },
+        recipientId
+      );
+
+      // Write to notifications collection for in-app display
+      await admin
+        .firestore()
+        .collection('notifications')
+        .add({
+          recipientId: recipientId,
+          type: 'friend_accepted',
+          senderId: acceptorId,
+          senderName: acceptorName,
+          senderProfilePhotoURL: acceptorProfilePhotoURL || null,
+          friendshipId: friendshipId,
+          message: body,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false,
+        });
+
+      logger.debug('sendFriendAcceptedNotification: Notification sent to:', recipientId, result);
+      return result;
+    } catch (error) {
+      logger.error('sendFriendAcceptedNotification: Error:', error);
+      return null;
+    }
+  });
+
+/**
+ * Cloud Function: Send notification to friends when user posts to their story
+ * Triggered when darkroom document is updated with new lastTriageCompletedAt timestamp
+ *
+ * This notifies all friends that the user has new content available.
+ * Uses varied templates to feel human and not robotic.
+ */
+exports.sendStoryNotification = functions.firestore
+  .document('darkrooms/{userId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const userId = context.params.userId;
+      const before = change.before.data();
+      const after = change.after.data();
+
+      // Guard: validate document data exists
+      if (!after || typeof after !== 'object') {
+        logger.warn('sendStoryNotification: Invalid after data', { userId });
+        return null;
+      }
+      if (!before || typeof before !== 'object') {
+        logger.warn('sendStoryNotification: Invalid before data', { userId });
+        return null;
+      }
+
+      // Check if this is a triage completion event (lastTriageCompletedAt changed)
+      const lastTriageCompletedAtBefore = before.lastTriageCompletedAt?.toMillis() || 0;
+      const lastTriageCompletedAtAfter = after.lastTriageCompletedAt?.toMillis() || 0;
+      const wasTriageCompleted = lastTriageCompletedAtAfter > lastTriageCompletedAtBefore;
+
+      if (!wasTriageCompleted) {
+        logger.debug('sendStoryNotification: No new triage completion, skipping');
+        return null;
+      }
+
+      // Check if any photos were journaled (posted to story)
+      const journaledCount = after.lastJournaledCount || 0;
+      if (journaledCount === 0) {
+        logger.debug('sendStoryNotification: No photos journaled, skipping notification');
+        return null;
+      }
+
+      // Check for duplicate notifications using lastStoryNotifiedAt
+      const lastStoryNotifiedAt = after.lastStoryNotifiedAt?.toMillis() || 0;
+      if (lastStoryNotifiedAt >= lastTriageCompletedAtAfter) {
+        logger.debug('sendStoryNotification: Already notified for this triage, skipping');
+        return null;
+      }
+
+      logger.info('sendStoryNotification: Processing story notification', {
+        userId,
+        journaledCount,
+      });
+
+      // Get user's info for notification
+      const userDoc = await admin.firestore().collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        logger.error('sendStoryNotification: User not found:', userId);
+        return null;
+      }
+
+      const userData = userDoc.data();
+      const displayName = userData.displayName || userData.username || 'Someone';
+      const profilePhotoURL = userData.profilePhotoURL || userData.photoURL || null;
+
+      // Query friendships where this user is involved and status is 'accepted'
+      // Need to query both user1Id and user2Id since user could be in either position
+      const [friendships1Snapshot, friendships2Snapshot] = await Promise.all([
+        admin
+          .firestore()
+          .collection('friendships')
+          .where('user1Id', '==', userId)
+          .where('status', '==', 'accepted')
+          .get(),
+        admin
+          .firestore()
+          .collection('friendships')
+          .where('user2Id', '==', userId)
+          .where('status', '==', 'accepted')
+          .get(),
+      ]);
+
+      // Collect unique friend IDs
+      const friendIds = new Set();
+      friendships1Snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.user2Id && data.user2Id !== userId) {
+          friendIds.add(data.user2Id);
+        }
+      });
+      friendships2Snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.user1Id && data.user1Id !== userId) {
+          friendIds.add(data.user1Id);
+        }
+      });
+
+      if (friendIds.size === 0) {
+        logger.info('sendStoryNotification: User has no friends, skipping', { userId });
+        // Still update lastStoryNotifiedAt to prevent reprocessing
+        await admin.firestore().collection('darkrooms').doc(userId).update({
+          lastStoryNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return null;
+      }
+
+      logger.info('sendStoryNotification: Sending to friends', {
+        userId,
+        friendCount: friendIds.size,
+      });
+
+      // Get all friends' user data in parallel for FCM tokens
+      const friendDocsPromises = Array.from(friendIds).map(friendId =>
+        admin.firestore().collection('users').doc(friendId).get()
+      );
+      const friendDocs = await Promise.all(friendDocsPromises);
+
+      // Send notifications to each friend
+      let sentCount = 0;
+      const notificationPromises = [];
+
+      for (const friendDoc of friendDocs) {
+        if (!friendDoc.exists) continue;
+
+        const friendData = friendDoc.data();
+        const friendId = friendDoc.id;
+        const fcmToken = friendData.fcmToken;
+
+        if (!fcmToken) {
+          logger.debug('sendStoryNotification: Friend has no FCM token', { friendId });
+          continue;
+        }
+
+        // Check notification preferences
+        const prefs = friendData.notificationPreferences || {};
+        const masterEnabled = prefs.enabled !== false;
+        // Story notifications fall under 'follows' category (friend activity)
+        const followsEnabled = prefs.follows !== false;
+
+        if (!masterEnabled || !followsEnabled) {
+          logger.debug('sendStoryNotification: Notifications disabled by preferences', {
+            friendId,
+            masterEnabled,
+            followsEnabled,
+          });
+          continue;
+        }
+
+        // Pick random template and substitute name
+        const template = getRandomTemplate(STORY_NOTIFICATION_TEMPLATES);
+        const message = template.replace('{name}', displayName);
+
+        // Send push notification
+        const pushPromise = sendPushNotification(
+          fcmToken,
+          '📷 New Story',
+          message,
+          {
+            type: 'story',
+            userId: userId,
+          },
+          friendId
+        );
+
+        // Write to notifications collection for in-app display
+        const notificationPromise = admin.firestore().collection('notifications').add({
+          recipientId: friendId,
+          type: 'story',
+          senderId: userId,
+          senderName: displayName,
+          senderProfilePhotoURL: profilePhotoURL,
+          message: message,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false,
+        });
+
+        notificationPromises.push(pushPromise, notificationPromise);
+        sentCount++;
+      }
+
+      // Wait for all notifications to be sent
+      await Promise.all(notificationPromises);
+
+      // Update lastStoryNotifiedAt to prevent duplicate notifications
+      await admin.firestore().collection('darkrooms').doc(userId).update({
+        lastStoryNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      logger.info('sendStoryNotification: Notifications sent', {
+        userId,
+        sentCount,
+        totalFriends: friendIds.size,
+      });
+
+      return { sentCount, totalFriends: friendIds.size };
+    } catch (error) {
+      logger.error('sendStoryNotification: Error:', error);
       return null;
     }
   });
@@ -455,10 +936,16 @@ async function sendBatchedReactionNotification(pendingKey) {
   });
 
   // Send push notification
-  const result = await sendPushNotification(fcmToken, title, body, {
-    type: 'reaction',
-    photoId: photoId,
-  });
+  const result = await sendPushNotification(
+    fcmToken,
+    title,
+    body,
+    {
+      type: 'reaction',
+      photoId: photoId,
+    },
+    photoOwnerId
+  );
 
   // Write to notifications collection for in-app display
   await admin
@@ -615,12 +1102,26 @@ exports.sendReactionNotification = functions.firestore
         return null;
       }
 
+      // Check notification preferences (enabled AND likes)
+      const prefs = ownerData.notificationPreferences || {};
+      const masterEnabled = prefs.enabled !== false;
+      const likesEnabled = prefs.likes !== false;
+
+      if (!masterEnabled || !likesEnabled) {
+        logger.debug('sendReactionNotification: Notifications disabled by user preferences', {
+          photoOwnerId,
+          masterEnabled,
+          likesEnabled,
+        });
+        return null;
+      }
+
       // Get reactor's display name and profile photo
       const reactorDoc = await admin.firestore().collection('users').doc(reactorId).get();
 
       const reactorData = reactorDoc.exists ? reactorDoc.data() : {};
       const reactorName = reactorData.displayName || reactorData.username || 'Someone';
-      const reactorProfilePhotoURL = reactorData.profilePhotoURL || null;
+      const reactorProfilePhotoURL = reactorData.profilePhotoURL || reactorData.photoURL || null;
 
       // Create new pending entry
       pendingReactions[pendingKey] = {
@@ -646,6 +1147,290 @@ exports.sendReactionNotification = functions.firestore
       return null;
     } catch (error) {
       logger.error('sendReactionNotification: Error:', error);
+      return null;
+    }
+  });
+
+/**
+ * Send the batched tag notification after debounce window expires
+ * @param {string} pendingKey - Key in pendingTags object
+ */
+async function sendBatchedTagNotification(pendingKey) {
+  const pending = pendingTags[pendingKey];
+  if (!pending) {
+    logger.debug('sendBatchedTagNotification: No pending entry found for', pendingKey);
+    return;
+  }
+
+  const { photoIds, taggerId, taggerName, taggerProfilePhotoURL, taggedUserId, fcmToken } = pending;
+
+  // Delete pending entry immediately to prevent duplicate sends
+  delete pendingTags[pendingKey];
+
+  if (photoIds.length === 0) {
+    logger.debug('sendBatchedTagNotification: No photos to notify for', pendingKey);
+    return;
+  }
+
+  // Choose template based on count (single vs batch)
+  const count = photoIds.length;
+  let message;
+  if (count === 1) {
+    const template = getRandomTemplate(TAG_NOTIFICATION_TEMPLATES);
+    message = template.replace('{name}', taggerName);
+  } else {
+    const template = getRandomTemplate(TAG_BATCH_TEMPLATES);
+    message = template.replace('{name}', taggerName).replace('{count}', String(count));
+  }
+
+  const title = '📸 You were tagged';
+
+  logger.debug('sendBatchedTagNotification: Sending notification', {
+    pendingKey,
+    taggerName,
+    photoCount: count,
+    message,
+  });
+
+  // Send push notification
+  const result = await sendPushNotification(
+    fcmToken,
+    title,
+    message,
+    {
+      type: 'tagged',
+      photoId: photoIds[0], // First photo for deep link
+      taggerId: taggerId,
+      photoIds: JSON.stringify(photoIds),
+    },
+    taggedUserId
+  );
+
+  // Write to notifications collection for in-app display
+  await admin
+    .firestore()
+    .collection('notifications')
+    .add({
+      recipientId: taggedUserId,
+      type: 'tagged',
+      senderId: taggerId,
+      senderName: taggerName,
+      senderProfilePhotoURL: taggerProfilePhotoURL || null,
+      photoId: photoIds[0], // First photo for deep link
+      photoIds: photoIds, // All photos in batch
+      photoCount: count,
+      message: message,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      read: false,
+    });
+
+  logger.debug('sendBatchedTagNotification: Notification sent and stored', {
+    pendingKey,
+    result,
+  });
+}
+
+/**
+ * Cloud Function: Send notification when someone is tagged in a photo
+ * Triggered when photo document is updated with new taggedUserIds
+ *
+ * DEBOUNCING: Batches rapid tags from same tagger into single notification
+ * - First tag starts 30-second window
+ * - Subsequent tags extend window and aggregate
+ * - After 30 seconds of inactivity, sends "Name tagged you in X photos"
+ *
+ * Tagging is fully implemented in Darkroom and Feed UIs.
+ */
+exports.sendTaggedPhotoNotification = functions.firestore
+  .document('photos/{photoId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const photoId = context.params.photoId;
+      const before = change.before.data();
+      const after = change.after.data();
+
+      // Guard: validate document data exists
+      if (!after || typeof after !== 'object') {
+        logger.warn('sendTaggedPhotoNotification: Invalid after data', { photoId });
+        return null;
+      }
+      if (!before || typeof before !== 'object') {
+        logger.warn('sendTaggedPhotoNotification: Invalid before data', { photoId });
+        return null;
+      }
+
+      // Guard: ensure photo has required userId field
+      if (!after.userId) {
+        logger.warn('sendTaggedPhotoNotification: Missing userId in photo data', { photoId });
+        return null;
+      }
+
+      // Guard: skip if photo was deleted
+      if (after.photoState === 'deleted') {
+        logger.debug('sendTaggedPhotoNotification: Photo is deleted, skipping', { photoId });
+        return null;
+      }
+
+      // Check if taggedUserIds array has NEW entries
+      const beforeTaggedUserIds = before.taggedUserIds || [];
+      const afterTaggedUserIds = after.taggedUserIds || [];
+
+      // Find newly added user IDs (in after but not in before)
+      const newlyTaggedUserIds = afterTaggedUserIds.filter(id => !beforeTaggedUserIds.includes(id));
+
+      // Handle tag removals: cancel pending debounce notifications for untagged users
+      const removedTaggedUserIds = beforeTaggedUserIds.filter(
+        id => !afterTaggedUserIds.includes(id)
+      );
+
+      for (const removedUserId of removedTaggedUserIds) {
+        const pendingKey = `${after.userId}_${removedUserId}`;
+        if (pendingTags[pendingKey]) {
+          clearTimeout(pendingTags[pendingKey].timeout);
+          // Remove the photoId from the pending batch
+          const idx = pendingTags[pendingKey].photoIds.indexOf(photoId);
+          if (idx !== -1) {
+            pendingTags[pendingKey].photoIds.splice(idx, 1);
+          }
+          // If no photos left in batch, delete the entire pending entry
+          if (pendingTags[pendingKey].photoIds.length === 0) {
+            delete pendingTags[pendingKey];
+            logger.debug(
+              'sendTaggedPhotoNotification: Cancelled pending notification (all photos untagged)',
+              {
+                pendingKey,
+                removedUserId,
+              }
+            );
+          } else {
+            // Restart debounce timer with remaining photos
+            pendingTags[pendingKey].timeout = setTimeout(
+              () => sendBatchedTagNotification(pendingKey),
+              TAG_DEBOUNCE_MS
+            );
+            logger.debug('sendTaggedPhotoNotification: Removed photo from pending batch', {
+              pendingKey,
+              removedPhotoId: photoId,
+              remainingCount: pendingTags[pendingKey].photoIds.length,
+            });
+          }
+        }
+      }
+
+      if (newlyTaggedUserIds.length === 0) {
+        logger.debug('sendTaggedPhotoNotification: No new tags, skipping', { photoId });
+        return null;
+      }
+
+      // The tagger is the photo owner
+      const taggerId = after.userId;
+
+      logger.info('sendTaggedPhotoNotification: Processing new tags', {
+        photoId,
+        taggerId,
+        newlyTaggedUserIds,
+      });
+
+      // Get tagger's info for notification
+      const taggerDoc = await admin.firestore().collection('users').doc(taggerId).get();
+      if (!taggerDoc.exists) {
+        logger.error('sendTaggedPhotoNotification: Tagger not found:', taggerId);
+        return null;
+      }
+
+      const taggerData = taggerDoc.data();
+      const taggerName = taggerData.displayName || taggerData.username || 'Someone';
+      const taggerProfilePhotoURL = taggerData.profilePhotoURL || taggerData.photoURL || null;
+
+      // Process each newly tagged user
+      for (const taggedUserId of newlyTaggedUserIds) {
+        // Skip if tagger is tagging themselves
+        if (taggedUserId === taggerId) {
+          logger.debug('sendTaggedPhotoNotification: Skipping self-tag', {
+            photoId,
+            taggerId,
+          });
+          continue;
+        }
+
+        // Get tagged user's FCM token and preferences
+        const taggedUserDoc = await admin.firestore().collection('users').doc(taggedUserId).get();
+        if (!taggedUserDoc.exists) {
+          logger.debug('sendTaggedPhotoNotification: Tagged user not found', { taggedUserId });
+          continue;
+        }
+
+        const taggedUserData = taggedUserDoc.data();
+        const fcmToken = taggedUserData.fcmToken;
+
+        if (!fcmToken) {
+          logger.debug('sendTaggedPhotoNotification: Tagged user has no FCM token', {
+            taggedUserId,
+          });
+          continue;
+        }
+
+        // Check notification preferences
+        const prefs = taggedUserData.notificationPreferences || {};
+        const masterEnabled = prefs.enabled !== false;
+        // Tags preference controlled via NotificationSettingsScreen toggle
+        const tagsEnabled = prefs.tags !== false;
+
+        if (!masterEnabled || !tagsEnabled) {
+          logger.debug('sendTaggedPhotoNotification: Notifications disabled by preferences', {
+            taggedUserId,
+            masterEnabled,
+            tagsEnabled,
+          });
+          continue;
+        }
+
+        // Generate unique key for this tagger+tagged combination
+        const pendingKey = `${taggerId}_${taggedUserId}`;
+
+        // Check if we already have a pending entry for this key (debouncing)
+        if (pendingTags[pendingKey]) {
+          // Clear existing timeout
+          clearTimeout(pendingTags[pendingKey].timeout);
+
+          // Add photoId to batch if not already present
+          if (!pendingTags[pendingKey].photoIds.includes(photoId)) {
+            pendingTags[pendingKey].photoIds.push(photoId);
+          }
+
+          logger.debug('sendTaggedPhotoNotification: Extended debounce window', {
+            pendingKey,
+            photoCount: pendingTags[pendingKey].photoIds.length,
+          });
+
+          // Set new timeout
+          pendingTags[pendingKey].timeout = setTimeout(
+            () => sendBatchedTagNotification(pendingKey),
+            TAG_DEBOUNCE_MS
+          );
+        } else {
+          // Create new pending entry
+          pendingTags[pendingKey] = {
+            photoIds: [photoId],
+            taggerId,
+            taggerName,
+            taggerProfilePhotoURL,
+            taggedUserId,
+            fcmToken,
+            timeout: setTimeout(() => sendBatchedTagNotification(pendingKey), TAG_DEBOUNCE_MS),
+          };
+
+          logger.debug('sendTaggedPhotoNotification: Started new debounce window', {
+            pendingKey,
+            photoId,
+            debounceMs: TAG_DEBOUNCE_MS,
+          });
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('sendTaggedPhotoNotification: Error:', error);
       return null;
     }
   });
@@ -717,7 +1502,10 @@ exports.getSignedPhotoUrl = onCall(async request => {
  * Cloud Function: Send notification when someone comments on a photo
  * Triggered when a new comment is created in the comments subcollection
  *
- * Only sends notifications for top-level comments to photo owner.
+ * Sends two types of notifications:
+ * 1. Comment notification to photo owner (respects comments preference)
+ * 2. @mention notifications to mentioned users (respects mentions preference)
+ *
  * Skips self-comments (commenter is photo owner) and replies.
  */
 exports.sendCommentNotification = functions.firestore
@@ -754,30 +1542,13 @@ exports.sendCommentNotification = functions.firestore
       const photo = photoDoc.data();
       const photoOwnerId = photo.userId;
 
-      // Don't notify if commenter is the photo owner (self-comment)
-      if (comment.userId === photoOwnerId) {
-        logger.info('sendCommentNotification: Skipping self-comment notification', {
-          photoId,
-          commentId,
-          userId: comment.userId,
-        });
-        return null;
-      }
-
-      // Get photo owner's FCM token
-      const ownerDoc = await admin.firestore().collection('users').doc(photoOwnerId).get();
-
-      if (!ownerDoc.exists || !ownerDoc.data().fcmToken) {
-        logger.warn('sendCommentNotification: No FCM token for photo owner', { photoOwnerId });
-        return null;
-      }
-
-      // Get commenter's name for notification
+      // Get commenter's info for notification
       const commenterDoc = await admin.firestore().collection('users').doc(comment.userId).get();
 
-      const commenterName = commenterDoc.exists
-        ? commenterDoc.data().displayName || commenterDoc.data().username || 'Someone'
-        : 'Someone';
+      const commenterData = commenterDoc.exists ? commenterDoc.data() : {};
+      const commenterName = commenterData.displayName || commenterData.username || 'Someone';
+      const commenterProfilePhotoURL =
+        commenterData.profilePhotoURL || commenterData.photoURL || null;
 
       // Build comment preview for notification body
       let commentPreview;
@@ -793,42 +1564,201 @@ exports.sendCommentNotification = functions.firestore
         commentPreview = 'commented';
       }
 
-      // Send notification via Expo Push API
-      const title = '💬 New Comment';
-      const body = `${commenterName}: ${commentPreview}`;
+      let commentNotificationSent = false;
 
-      const result = await sendPushNotification(ownerDoc.data().fcmToken, title, body, {
-        type: 'comment',
-        photoId,
-        commentId,
-        screen: 'Feed',
-      });
+      // ========== PART 1: Send comment notification to photo owner ==========
+      // Don't notify if commenter is the photo owner (self-comment)
+      if (comment.userId !== photoOwnerId) {
+        // Get photo owner's data
+        const ownerDoc = await admin.firestore().collection('users').doc(photoOwnerId).get();
 
-      // Write to notifications collection for in-app display
-      await admin
-        .firestore()
-        .collection('notifications')
-        .add({
-          recipientId: photoOwnerId,
-          type: 'comment',
-          senderId: comment.userId,
-          senderName: commenterName,
-          senderProfilePhotoURL: commenterDoc.exists ? commenterDoc.data().profilePhotoURL : null,
-          photoId: photoId,
-          commentId: commentId,
-          message: body,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          read: false,
+        if (ownerDoc.exists && ownerDoc.data().fcmToken) {
+          const ownerData = ownerDoc.data();
+
+          // Check notification preferences (enabled AND comments)
+          const prefs = ownerData.notificationPreferences || {};
+          const masterEnabled = prefs.enabled !== false;
+          const commentsEnabled = prefs.comments !== false;
+
+          if (masterEnabled && commentsEnabled) {
+            // Send notification via Expo Push API
+            const title = '💬 New Comment';
+            const body = `${commenterName}: ${commentPreview}`;
+
+            await sendPushNotification(
+              ownerData.fcmToken,
+              title,
+              body,
+              {
+                type: 'comment',
+                photoId,
+                commentId,
+                screen: 'Feed',
+              },
+              photoOwnerId
+            );
+
+            // Write to notifications collection for in-app display
+            await admin.firestore().collection('notifications').add({
+              recipientId: photoOwnerId,
+              type: 'comment',
+              senderId: comment.userId,
+              senderName: commenterName,
+              senderProfilePhotoURL: commenterProfilePhotoURL,
+              photoId: photoId,
+              commentId: commentId,
+              message: body,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              read: false,
+            });
+
+            commentNotificationSent = true;
+            logger.info('sendCommentNotification: Comment notification sent', {
+              photoId,
+              commentId,
+              to: photoOwnerId,
+              commenter: comment.userId,
+            });
+          } else {
+            logger.debug(
+              'sendCommentNotification: Comment notifications disabled by user preferences',
+              {
+                photoOwnerId,
+                masterEnabled,
+                commentsEnabled,
+              }
+            );
+          }
+        } else {
+          logger.debug('sendCommentNotification: No FCM token for photo owner', { photoOwnerId });
+        }
+      }
+
+      // ========== PART 2: Send @mention notifications ==========
+      // Extract @mentions from comment text
+      const mentions = (comment.text || '').match(/@(\w+)/g) || [];
+
+      if (mentions.length > 0) {
+        // Get unique usernames (without @ prefix)
+        const uniqueUsernames = [...new Set(mentions.map(m => m.substring(1).toLowerCase()))];
+
+        logger.debug('sendCommentNotification: Processing mentions', {
+          photoId,
+          commentId,
+          uniqueUsernames,
         });
 
-      logger.info('sendCommentNotification: Notification sent', {
-        photoId,
-        commentId,
-        to: photoOwnerId,
-        commenter: comment.userId,
-      });
+        for (const username of uniqueUsernames) {
+          try {
+            // Query users collection for matching username (case-insensitive)
+            // Note: Firestore doesn't support case-insensitive queries directly,
+            // so we store usernames in lowercase or use a lowercased field
+            const usersSnapshot = await admin
+              .firestore()
+              .collection('users')
+              .where('username', '==', username)
+              .limit(1)
+              .get();
 
-      return result;
+            if (usersSnapshot.empty) {
+              logger.debug('sendCommentNotification: Mentioned user not found', { username });
+              continue;
+            }
+
+            const mentionedUserDoc = usersSnapshot.docs[0];
+            const mentionedUserId = mentionedUserDoc.id;
+            const mentionedUserData = mentionedUserDoc.data();
+
+            // Skip if mentioned user is the commenter (don't self-notify)
+            if (mentionedUserId === comment.userId) {
+              logger.debug('sendCommentNotification: Skipping self-mention', { mentionedUserId });
+              continue;
+            }
+
+            // Skip if mentioned user is photo owner (already notified above)
+            if (mentionedUserId === photoOwnerId) {
+              logger.debug(
+                'sendCommentNotification: Skipping mention - already notified as owner',
+                {
+                  mentionedUserId,
+                }
+              );
+              continue;
+            }
+
+            // Check mentioned user's notification preferences
+            const prefs = mentionedUserData.notificationPreferences || {};
+            const masterEnabled = prefs.enabled !== false;
+            const mentionsEnabled = prefs.mentions !== false;
+
+            if (!masterEnabled || !mentionsEnabled) {
+              logger.debug(
+                'sendCommentNotification: Mention notifications disabled by user preferences',
+                {
+                  mentionedUserId,
+                  masterEnabled,
+                  mentionsEnabled,
+                }
+              );
+              continue;
+            }
+
+            // Check for FCM token
+            const fcmToken = mentionedUserData.fcmToken;
+            if (!fcmToken) {
+              logger.debug('sendCommentNotification: No FCM token for mentioned user', {
+                mentionedUserId,
+              });
+              continue;
+            }
+
+            // Send mention notification
+            const mentionTitle = '💬 You were mentioned';
+            const mentionBody = `${commenterName} mentioned you in a comment`;
+
+            await sendPushNotification(
+              fcmToken,
+              mentionTitle,
+              mentionBody,
+              {
+                type: 'mention',
+                photoId,
+                commentId,
+              },
+              mentionedUserId
+            );
+
+            // Write to notifications collection for in-app display
+            await admin.firestore().collection('notifications').add({
+              recipientId: mentionedUserId,
+              type: 'mention',
+              senderId: comment.userId,
+              senderName: commenterName,
+              senderProfilePhotoURL: commenterProfilePhotoURL,
+              photoId: photoId,
+              commentId: commentId,
+              message: mentionBody,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              read: false,
+            });
+
+            logger.info('sendCommentNotification: Mention notification sent', {
+              photoId,
+              commentId,
+              to: mentionedUserId,
+              mentionedUsername: username,
+            });
+          } catch (mentionError) {
+            logger.error('sendCommentNotification: Failed to process mention', {
+              username,
+              error: mentionError.message,
+            });
+            // Continue with other mentions
+          }
+        }
+      }
+
+      return { commentNotificationSent, mentionsProcessed: mentions.length };
     } catch (error) {
       logger.error('sendCommentNotification: Failed', {
         error: error.message,
@@ -933,6 +1863,124 @@ exports.deleteUserAccount = onCall({ cors: true }, async request => {
   } catch (error) {
     logger.error('deleteUserAccount: Failed', { userId, error: error.message });
     throw new HttpsError('internal', 'Account deletion failed: ' + error.message);
+  }
+});
+
+/**
+ * Cloud Function: Get mutual friend suggestions
+ * Computes friends-of-friends for the authenticated user
+ * Uses admin SDK to bypass security rules (users can't read other users' friendships)
+ */
+exports.getMutualFriendSuggestions = onCall(async request => {
+  const userId = request.auth?.uid;
+
+  if (!userId) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  try {
+    const db = admin.firestore();
+
+    // Step 1: Get all friendships involving this user
+    const [snap1, snap2] = await Promise.all([
+      db.collection('friendships').where('user1Id', '==', userId).get(),
+      db.collection('friendships').where('user2Id', '==', userId).get(),
+    ]);
+
+    // Step 2: Build friendIds (accepted) and excludeIds (all connected + self)
+    const friendIds = new Set();
+    const excludeIds = new Set([userId]);
+
+    const processDocs = docs => {
+      docs.forEach(docSnap => {
+        const data = docSnap.data();
+        const otherId = data.user1Id === userId ? data.user2Id : data.user1Id;
+        excludeIds.add(otherId);
+        if (data.status === 'accepted') {
+          friendIds.add(otherId);
+        }
+      });
+    };
+
+    processDocs(snap1.docs);
+    processDocs(snap2.docs);
+
+    if (friendIds.size === 0) {
+      return { suggestions: [] };
+    }
+
+    // Step 3: Cap at 30 friends to limit query volume
+    const friendIdsToProcess = Array.from(friendIds).slice(0, 30);
+
+    // Step 4: Query each friend's friendships in parallel (admin bypasses rules)
+    const friendQueries = friendIdsToProcess.map(async friendId => {
+      const [f1, f2] = await Promise.all([
+        db
+          .collection('friendships')
+          .where('user1Id', '==', friendId)
+          .where('status', '==', 'accepted')
+          .get(),
+        db
+          .collection('friendships')
+          .where('user2Id', '==', friendId)
+          .where('status', '==', 'accepted')
+          .get(),
+      ]);
+      return [...f1.docs, ...f2.docs];
+    });
+    const friendResults = await Promise.all(friendQueries);
+
+    // Step 5: Count mutual connections
+    const mutualCounts = new Map();
+
+    friendResults.forEach(docs => {
+      docs.forEach(docSnap => {
+        const data = docSnap.data();
+        [data.user1Id, data.user2Id].forEach(id => {
+          if (!excludeIds.has(id)) {
+            mutualCounts.set(id, (mutualCounts.get(id) || 0) + 1);
+          }
+        });
+      });
+    });
+
+    if (mutualCounts.size === 0) {
+      return { suggestions: [] };
+    }
+
+    // Step 6: Sort by count descending, take top 20
+    const sortedEntries = Array.from(mutualCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20);
+
+    // Step 7: Fetch user profiles in parallel
+    const profileFetches = sortedEntries.map(async ([suggestionUserId, mutualCount]) => {
+      const userDoc = await db.collection('users').doc(suggestionUserId).get();
+      if (!userDoc.exists) return null;
+
+      const userData = userDoc.data();
+      return {
+        userId: suggestionUserId,
+        displayName: userData.displayName || null,
+        username: userData.username || null,
+        profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+        mutualCount,
+      };
+    });
+    const profiles = await Promise.all(profileFetches);
+
+    const suggestions = profiles.filter(p => p !== null);
+
+    logger.info('getMutualFriendSuggestions: Complete', {
+      userId,
+      friendCount: friendIds.size,
+      suggestionsFound: suggestions.length,
+    });
+
+    return { suggestions };
+  } catch (error) {
+    logger.error('getMutualFriendSuggestions: Failed', { userId, error: error.message });
+    throw new HttpsError('internal', 'Failed to get mutual friend suggestions');
   }
 });
 
@@ -1066,9 +2114,15 @@ exports.sendDeletionReminderNotification = functions.pubsub
         const body =
           "Your account will be permanently deleted in 3 days. Log in to cancel if you've changed your mind.";
 
-        await sendPushNotification(fcmToken, title, body, {
-          type: 'deletion_reminder',
-        });
+        await sendPushNotification(
+          fcmToken,
+          title,
+          body,
+          {
+            type: 'deletion_reminder',
+          },
+          userDoc.id
+        );
 
         sentCount++;
       }

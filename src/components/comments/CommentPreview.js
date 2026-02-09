@@ -8,13 +8,14 @@
  * - Owner comment prioritized as caption
  * - Bold username inline with comment text
  * - Truncation for long comments
- * - Single comment display with 2-second rotation (UAT-012, UAT-015)
+ * - Single comment display with 2-second rotation
  * - Smooth fade animation between comments
  * - "View all X comments" link when more exist
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 
 /**
  * CommentPreview Component
@@ -35,7 +36,7 @@ const CommentPreview = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Rotate comments every 2 seconds with fade animation (UAT-012, UAT-015)
+  // Rotate comments every 2 seconds with fade animation
   useEffect(() => {
     if (!comments || comments.length <= 1) return;
 
@@ -66,7 +67,6 @@ const CommentPreview = ({
     fadeAnim.setValue(1);
   }, [comments, fadeAnim]);
 
-  // Don't render if no comments
   if (!comments || comments.length === 0) {
     return null;
   }
@@ -111,7 +111,7 @@ const CommentPreview = ({
         </View>
       </Animated.View>
 
-      {/* View all comments link - only shown when showViewAll is true (UAT-016) */}
+      {/* View all comments link */}
       {showViewAll && hasMoreComments && (
         <Text style={styles.viewAllText}>View all {totalCount} comments</Text>
       )}
@@ -130,16 +130,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   commentText: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 18,
   },
   username: {
-    fontWeight: 'bold',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   commentContent: {
-    fontWeight: '400',
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   mediaIndicator: {
@@ -147,7 +148,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
   },

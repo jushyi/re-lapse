@@ -15,8 +15,9 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { format } from 'date-fns';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -42,7 +43,7 @@ const DeletionRecoveryModal = ({ visible, scheduledDate, onCancel, onProceed }) 
       <View style={styles.backdrop}>
         <View style={styles.modalContainer}>
           <View style={styles.iconContainer}>
-            <Ionicons name="warning" size={48} color="#F59E0B" />
+            <PixelIcon name="warning" size={48} color="#F59E0B" />
           </View>
 
           <Text style={styles.title}>Account Scheduled for Deletion</Text>
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: MODAL_WIDTH,
     backgroundColor: colors.background.secondary,
-    borderRadius: 16,
+    borderRadius: 4,
     padding: 24,
     alignItems: 'center',
   },
@@ -101,25 +102,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   body: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 8,
   },
   dateText: {
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   question: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: colors.brand.purple,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -139,15 +142,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   secondaryButton: {
     paddingVertical: 8,
   },
   secondaryButtonText: {
-    fontSize: 15,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
 });

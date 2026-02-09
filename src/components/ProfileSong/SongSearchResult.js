@@ -13,8 +13,9 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 import { formatDuration } from '../../services/iTunesService';
 
 const SongSearchResult = ({ song, isPlaying, onPlayPress, onSelectPress }) => {
@@ -43,7 +44,7 @@ const SongSearchResult = ({ song, isPlaying, onPlayPress, onSelectPress }) => {
         onPress={onPlayPress}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons
+        <PixelIcon
           name={isPlaying ? 'pause-circle' : 'play-circle'}
           size={32}
           color={isPlaying ? colors.brand.purple : colors.text.primary}
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginBottom: 8,
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     minHeight: 60,
   },
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   albumArt: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 2,
     backgroundColor: colors.background.secondary,
   },
   songInfo: {
@@ -81,12 +82,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   title: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },

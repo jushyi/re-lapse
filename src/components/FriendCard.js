@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendCard.styles';
 import DropdownMenu from './DropdownMenu';
@@ -40,6 +40,7 @@ const FriendCard = ({
   onReport,
   onDismiss, // Optional: renders X button next to Add for suggestions
   isBlocked = false, // Whether current user has blocked this user
+  subtitle, // Optional: subtitle text below username (e.g., "3 mutual friends")
 }) => {
   const { userId, displayName, username, profilePhotoURL } = user || {};
 
@@ -48,9 +49,6 @@ const FriendCard = ({
   const [menuAnchor, setMenuAnchor] = useState(null);
   const menuButtonRef = useRef(null);
 
-  /**
-   * Format friends since date
-   */
   const formatFriendsSince = () => {
     if (!friendsSince) return '';
 
@@ -153,7 +151,7 @@ const FriendCard = ({
         onPress={handleMenuPress}
         activeOpacity={0.7}
       >
-        <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+        <PixelIcon name="ellipsis-vertical" size={20} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
@@ -189,7 +187,7 @@ const FriendCard = ({
                 onPress={() => onDismiss(userId)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={18} color={colors.text.tertiary} />
+                <PixelIcon name="close" size={18} color={colors.text.tertiary} />
               </TouchableOpacity>
             )}
             {renderMenuButton()}
@@ -240,7 +238,7 @@ const FriendCard = ({
             onPress={handleMenuPress}
             activeOpacity={0.7}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+            <PixelIcon name="ellipsis-vertical" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
         );
 
@@ -277,6 +275,11 @@ const FriendCard = ({
         <Text style={styles.username} numberOfLines={1}>
           @{username || 'unknown'}
         </Text>
+        {subtitle && (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        )}
         {showFriendsSince && friendsSince && (
           <Text style={styles.friendsSince}>Friends since {formatFriendsSince()}</Text>
         )}

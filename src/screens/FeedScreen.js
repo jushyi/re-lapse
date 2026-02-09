@@ -20,7 +20,7 @@ import {
   limit,
   onSnapshot,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import { useViewedStories } from '../hooks/useViewedStories';
 import { usePhotoDetail } from '../context/PhotoDetailContext';
@@ -39,6 +39,7 @@ import {
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,7 +57,8 @@ const FeedScreen = () => {
   const insets = useSafeAreaInsets();
 
   // Photo detail context for feed mode navigation
-  const { openPhotoDetail, setCallbacks, updatePhotoAtIndex } = usePhotoDetail();
+  const { openPhotoDetail, setCallbacks, updatePhotoAtIndex, updateCurrentPhoto } =
+    usePhotoDetail();
 
   // Track current feed photo for reaction updates (ref to avoid re-renders)
   const currentFeedPhotoRef = useRef(null);
@@ -123,10 +125,6 @@ const FeedScreen = () => {
   const handleCloseMyStoriesRef = useRef(() => {});
   const handleCloseStoriesRef = useRef(() => {});
 
-  /**
-   * Load friend stories data
-   * Reusable function for initial load and refresh
-   */
   const loadFriendStories = async () => {
     if (!user?.uid) return;
 
@@ -147,10 +145,6 @@ const FeedScreen = () => {
     setStoriesLoading(false);
   };
 
-  /**
-   * Load user's own stories data
-   * Reusable function for initial load and refresh
-   */
   const loadMyStories = async () => {
     if (!user?.uid) return;
 
@@ -169,9 +163,6 @@ const FeedScreen = () => {
     setMyStoriesLoading(false);
   };
 
-  /**
-   * Load friend stories data on mount
-   */
   useEffect(() => {
     if (user?.uid) {
       loadFriendStories();
@@ -266,9 +257,7 @@ const FeedScreen = () => {
     loadArchivePhotosFallback();
   }, [loading, photos.length, totalFriendCount, user?.uid]);
 
-  /**
-   * Subscribe to unread notifications for red dot indicator
-   */
+  // Subscribe to unread notifications for red dot indicator
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -345,29 +334,17 @@ const FeedScreen = () => {
     });
   }, [setCallbacks, user?.uid]);
 
-  /**
-   * Handle pull-to-refresh
-   * Refreshes both feed and stories
-   */
   const handleRefresh = async () => {
     logger.debug('FeedScreen: Pull-to-refresh triggered');
     // Refresh all data sources in parallel
     await Promise.all([refreshFeed(), loadFriendStories(), loadMyStories()]);
   };
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * @param {string} userId - User ID to navigate to
-   * @param {string} username - Username for display
-   */
   const handleAvatarPress = (userId, username) => {
     logger.debug('FeedScreen: Avatar pressed, navigating to profile', { userId, username });
     navigation.navigate('OtherUserProfile', { userId, username });
   };
 
-  /**
-   * Handle own avatar press - switch to Profile tab
-   */
   const handleOwnAvatarPress = () => {
     logger.debug('FeedScreen: Own avatar pressed');
     navigation.navigate('Profile');
@@ -485,18 +462,11 @@ const FeedScreen = () => {
     // Mode flags are cleared in the onClose callback
   };
 
-  /**
-   * Handle photo change in stories modal
-   * Updates current index for reaction tracking
-   */
   const handleStoriesPhotoChange = (photo, index) => {
     logger.debug('FeedScreen: Stories photo changed', { photoId: photo?.id, index });
     storiesCurrentIndexRef.current = index;
   };
 
-  /**
-   * Get sorted friends array for consistent navigation
-   */
   const getSortedFriends = () => {
     return [...friendStories].sort((a, b) => {
       const aViewed = hasViewedAllPhotos(a.topPhotos);
@@ -604,9 +574,6 @@ const FeedScreen = () => {
   handleCloseMyStoriesRef.current = handleCloseMyStories;
   handleCloseStoriesRef.current = handleCloseStories;
 
-  /**
-   * Handle photo card press - Navigate to PhotoDetail screen
-   */
   const handlePhotoPress = photo => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
@@ -618,9 +585,7 @@ const FeedScreen = () => {
     navigation.navigate('PhotoDetail');
   };
 
-  /**
-   * Handle comment press on feed card - Navigate with comments visible (UAT-005 fix)
-   */
+  // Navigate to photo detail with comments panel visible
   const handleCommentPress = photo => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
@@ -667,9 +632,10 @@ const FeedScreen = () => {
       reactionCount: newTotalCount,
     };
 
-    // Update the ref and feed state
+    // Update the ref, feed state, and context photo for modal re-render
     currentFeedPhotoRef.current = updatedPhoto;
     updatePhotoInState(photoId, updatedPhoto);
+    updateCurrentPhoto(updatedPhoto);
 
     // Persist to Firebase
     try {
@@ -679,12 +645,14 @@ const FeedScreen = () => {
         // Revert optimistic update on error
         currentFeedPhotoRef.current = photo;
         updatePhotoInState(photoId, photo);
+        updateCurrentPhoto(photo);
       }
     } catch (error) {
       logger.error('Error toggling reaction', error);
       // Revert optimistic update on error
       currentFeedPhotoRef.current = photo;
       updatePhotoInState(photoId, photo);
+      updateCurrentPhoto(photo);
     }
   };
 
@@ -767,9 +735,6 @@ const FeedScreen = () => {
     }
   };
 
-  /**
-   * Render single feed item
-   */
   const renderFeedItem = ({ item }) => (
     <FeedPhotoCard
       photo={item}
@@ -780,9 +745,6 @@ const FeedScreen = () => {
     />
   );
 
-  /**
-   * Render footer (loading more indicator)
-   */
   const renderFooter = () => {
     if (!loadingMore) return null;
 
@@ -815,16 +777,13 @@ const FeedScreen = () => {
     // Established user state: has friends but no posts in feed
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="sad-outline" size={64} color={colors.text.secondary} />
+        <PixelIcon name="sad-outline" size={64} color={colors.text.secondary} />
         <Text style={styles.emptyTitle}>Nothing yet</Text>
         <Text style={styles.emptyText}>Tell your friends to post!</Text>
       </View>
     );
   };
 
-  /**
-   * Render error state
-   */
   const renderErrorState = () => {
     return (
       <View style={styles.errorContainer}>
@@ -1007,7 +966,7 @@ const FeedScreen = () => {
           onPress={() => navigation.navigate('FriendsList')}
           style={styles.friendsButton}
         >
-          <Ionicons name="people-outline" size={24} color={colors.text.primary} />
+          <PixelIcon name="people-outline" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         {/* Centered title */}
         <Text style={styles.headerTitle}>Rewind</Text>
@@ -1016,7 +975,7 @@ const FeedScreen = () => {
           onPress={() => navigation.navigate('Activity')}
           style={styles.notificationButton}
         >
-          <Ionicons name="heart-outline" size={24} color={colors.text.primary} />
+          <PixelIcon name="heart-outline" size={24} color={colors.text.primary} />
           {hasNewNotifications && <View style={styles.notificationDot} />}
         </TouchableOpacity>
       </Animated.View>
@@ -1093,8 +1052,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   friendsButton: {
@@ -1128,7 +1087,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     marginLeft: 12,
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   emptyContainer: {
@@ -1143,13 +1103,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -1166,13 +1127,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -1182,11 +1144,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   retryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   // Stories row styles
@@ -1211,7 +1173,7 @@ const styles = StyleSheet.create({
   storySkeletonPhoto: {
     width: 94, // 88 + 6 border
     height: 136, // 130 + 6 border
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     marginBottom: 8,
     overflow: 'hidden', // Contain shimmer
@@ -1219,7 +1181,7 @@ const styles = StyleSheet.create({
   storySkeletonName: {
     width: 50,
     height: 10,
-    borderRadius: 5,
+    borderRadius: 2,
     backgroundColor: colors.background.tertiary,
     overflow: 'hidden', // Contain shimmer
   },

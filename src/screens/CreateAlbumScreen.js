@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const MAX_NAME_LENGTH = 24;
@@ -61,7 +62,7 @@ const CreateAlbumScreen = () => {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Album</Text>
         <View style={styles.headerButton} />
@@ -125,8 +126,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   content: {
@@ -137,8 +138,8 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    fontSize: 24,
-    fontWeight: '500',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
     paddingVertical: 12,
@@ -150,7 +151,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   charCount: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     marginTop: 12,
   },
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: colors.text.primary,
-    borderRadius: 12,
+    borderRadius: 4,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -167,8 +169,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
   },
   nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.inverse,
   },
   nextButtonTextDisabled: {

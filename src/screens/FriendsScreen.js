@@ -20,7 +20,7 @@ import {
   doc,
   getDoc,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import FriendCard from '../components/FriendCard';
 import {
@@ -33,6 +33,7 @@ import {
   declineFriendRequest,
   removeFriend,
   checkFriendshipStatus,
+  getMutualFriendSuggestions,
 } from '../services/firebase/friendshipService';
 import {
   hasUserSyncedContacts,
@@ -89,15 +90,13 @@ const FriendsScreen = ({ navigation }) => {
 
   // Suggestions state
   const [suggestions, setSuggestions] = useState([]);
+  const [mutualSuggestions, setMutualSuggestions] = useState([]);
   const [hasSyncedContacts, setHasSyncedContacts] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   // Block tracking state
   const [blockedUserIds, setBlockedUserIds] = useState([]);
 
-  /**
-   * Fetch all friends data
-   */
   const fetchFriends = async () => {
     try {
       const result = await getFriendships(user.uid);
@@ -121,7 +120,7 @@ const FriendsScreen = ({ navigation }) => {
                 acceptedAt: friendship.acceptedAt,
                 displayName: userDoc.data().displayName,
                 username: userDoc.data().username,
-                profilePhotoURL: userDoc.data().profilePhotoURL,
+                profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
               };
             }
           } catch (err) {
@@ -146,9 +145,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch friend requests (incoming and sent)
-   */
   const fetchRequests = async () => {
     try {
       const [incomingResult, sentResult] = await Promise.all([
@@ -170,7 +166,7 @@ const FriendsScreen = ({ navigation }) => {
                   userId: otherUserId,
                   displayName: userDoc.data().displayName,
                   username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL,
+                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
                 };
               }
             } catch (err) {
@@ -196,7 +192,7 @@ const FriendsScreen = ({ navigation }) => {
                   userId: otherUserId,
                   displayName: userDoc.data().displayName,
                   username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL,
+                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
                 };
               }
             } catch (err) {
@@ -212,9 +208,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch contact-based friend suggestions
-   */
   const fetchSuggestions = async () => {
     try {
       // Check if user has synced contacts
@@ -243,9 +236,30 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch users current user has blocked
-   */
+  const fetchMutualSuggestions = async () => {
+    try {
+      const result = await getMutualFriendSuggestions(user.uid);
+
+      if (result.success && result.suggestions) {
+        // Filter out dismissed suggestions
+        const dismissedIds = await getDismissedSuggestionIds(user.uid);
+        const dismissedSet = new Set(dismissedIds);
+        // Note: mutual suggestions use userId (not id), so we filter manually
+        // instead of using filterDismissedSuggestions which checks s.id
+        const filtered = result.suggestions.filter(
+          s => !dismissedSet.has(s.userId) && !blockedUserIds.includes(s.userId)
+        );
+
+        setMutualSuggestions(filtered);
+      } else {
+        setMutualSuggestions([]);
+      }
+    } catch (err) {
+      logger.error('Error fetching mutual suggestions', err);
+      setMutualSuggestions([]);
+    }
+  };
+
   const fetchBlockedUsers = async () => {
     try {
       const result = await getBlockedUserIds(user.uid);
@@ -257,13 +271,16 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Load all data
-   */
   const loadData = async () => {
     setError(null);
     try {
-      await Promise.all([fetchFriends(), fetchRequests(), fetchSuggestions(), fetchBlockedUsers()]);
+      await Promise.all([
+        fetchFriends(),
+        fetchRequests(),
+        fetchSuggestions(),
+        fetchBlockedUsers(),
+        fetchMutualSuggestions(),
+      ]);
     } catch (err) {
       logger.error('Error loading data', err);
       setError('Failed to load data');
@@ -273,9 +290,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Set up real-time listener
-   */
   useEffect(() => {
     loadData();
 
@@ -287,9 +301,6 @@ const FriendsScreen = ({ navigation }) => {
     return () => unsubscribe();
   }, [user.uid]);
 
-  /**
-   * Filter friends based on search query
-   */
   useEffect(() => {
     if (!friendsSearchQuery.trim()) {
       setFilteredFriends(friends);
@@ -306,9 +317,7 @@ const FriendsScreen = ({ navigation }) => {
     setFilteredFriends(filtered);
   }, [friendsSearchQuery, friends]);
 
-  /**
-   * Search users by username (debounced)
-   */
+  // Debounced user search by username
   useEffect(() => {
     if (!requestsSearchQuery.trim()) {
       setSearchResults([]);
@@ -322,9 +331,6 @@ const FriendsScreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [requestsSearchQuery]);
 
-  /**
-   * Search users by username
-   */
   const searchUsers = async term => {
     try {
       setSearchLoading(true);
@@ -378,17 +384,11 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  /**
-   * Handle add friend action
-   */
   const handleAddFriend = async userId => {
     try {
       setActionLoading(prev => ({ ...prev, [userId]: true }));
@@ -396,6 +396,7 @@ const FriendsScreen = ({ navigation }) => {
 
       // Find suggestion data before removing (for adding to sent requests)
       const suggestion = suggestions.find(s => s.id === userId);
+      const mutualSuggestion = mutualSuggestions.find(s => s.userId === userId);
 
       const result = await sendFriendRequest(user.uid, userId);
       if (!result.success) {
@@ -403,6 +404,7 @@ const FriendsScreen = ({ navigation }) => {
       } else {
         // Remove from suggestions if present
         setSuggestions(prev => prev.filter(s => s.id !== userId));
+        setMutualSuggestions(prev => prev.filter(s => s.userId !== userId));
 
         // Add to sent requests if we had the user data from suggestions
         if (suggestion) {
@@ -414,6 +416,17 @@ const FriendsScreen = ({ navigation }) => {
               displayName: suggestion.displayName,
               username: suggestion.username,
               profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
+            },
+          ]);
+        } else if (mutualSuggestion) {
+          setSentRequests(prev => [
+            ...prev,
+            {
+              id: result.friendshipId,
+              userId: mutualSuggestion.userId,
+              displayName: mutualSuggestion.displayName,
+              username: mutualSuggestion.username,
+              profilePhotoURL: mutualSuggestion.profilePhotoURL,
             },
           ]);
         }
@@ -432,9 +445,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle dismiss suggestion
-   */
   const handleDismissSuggestion = async userId => {
     try {
       mediumImpact();
@@ -451,9 +461,19 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle sync contacts from Requests tab
-   */
+  const handleDismissMutualSuggestion = async userId => {
+    try {
+      mediumImpact();
+      // Optimistic update
+      setMutualSuggestions(prev => prev.filter(s => s.userId !== userId));
+      // Persist dismissal (reuses same dismissedSuggestions array)
+      await dismissSuggestion(user.uid, userId);
+    } catch (err) {
+      logger.error('Error dismissing mutual suggestion', err);
+      fetchMutualSuggestions();
+    }
+  };
+
   const handleSyncContacts = async () => {
     try {
       setSuggestionsLoading(true);
@@ -501,9 +521,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle accept request
-   */
   const handleAcceptRequest = async friendshipId => {
     try {
       setActionLoading(prev => ({ ...prev, [friendshipId]: true }));
@@ -522,9 +539,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle deny/cancel request
-   */
   const handleDenyRequest = async friendshipId => {
     try {
       setActionLoading(prev => ({ ...prev, [friendshipId]: true }));
@@ -543,9 +557,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle cancel sent request
-   */
   const handleCancelRequest = async (friendshipId, actionType) => {
     if (actionType === 'cancel') {
       try {
@@ -582,9 +593,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle remove friend (long press)
-   */
   const handleRemoveFriend = friend => {
     Alert.alert(
       'Remove Friend',
@@ -612,9 +620,6 @@ const FriendsScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Handle remove friend from menu (confirmation already shown in FriendCard)
-   */
   const handleRemoveFriendFromMenu = async userId => {
     try {
       mediumImpact();
@@ -633,9 +638,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle block user from menu (confirmation already shown in FriendCard)
-   */
   const handleBlockUser = async userId => {
     try {
       mediumImpact();
@@ -645,6 +647,7 @@ const FriendsScreen = ({ navigation }) => {
         setFriends(prev => prev.filter(f => f.userId !== userId));
         setFilteredFriends(prev => prev.filter(f => f.userId !== userId));
         setSuggestions(prev => prev.filter(s => s.id !== userId));
+        setMutualSuggestions(prev => prev.filter(s => s.userId !== userId));
         setBlockedUserIds(prev => [...prev, userId]);
         logger.info('FriendsScreen: User blocked via menu', { userId });
       } else {
@@ -656,9 +659,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle unblock user from menu (confirmation already shown in FriendCard)
-   */
   const handleUnblockUser = async userId => {
     try {
       mediumImpact();
@@ -676,9 +676,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle report user - navigate to report screen
-   */
   const handleReportUser = userId => {
     // Find the friend data to pass to report screen
     const friend = friends.find(f => f.userId === userId);
@@ -690,9 +687,6 @@ const FriendsScreen = ({ navigation }) => {
     });
   };
 
-  /**
-   * Handle friend card action from search results
-   */
   const handleSearchAction = async (userId, actionType) => {
     if (actionType === 'add') {
       await handleAddFriend(userId);
@@ -709,9 +703,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Render search bar
-   */
   const renderSearchBar = (value, setValue, placeholder) => (
     <View style={styles.searchContainer}>
       <TextInput
@@ -731,32 +722,23 @@ const FriendsScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render section header
-   */
   const renderSectionHeader = title => (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionHeaderText}>{title}</Text>
     </View>
   );
 
-  /**
-   * Render empty state
-   */
   const renderEmptyState = (icon, title, text) => (
     <View style={styles.emptyContainer}>
-      <Ionicons name={icon} size={48} color={colors.text.tertiary} style={styles.emptyIcon} />
+      <PixelIcon name={icon} size={48} color={colors.text.tertiary} style={styles.emptyIcon} />
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
 
-  /**
-   * Render sync contacts prompt
-   */
   const renderSyncPrompt = () => (
     <View style={styles.syncPromptContainer}>
-      <Ionicons
+      <PixelIcon
         name="people-outline"
         size={40}
         color={colors.brand.purple}
@@ -779,9 +761,6 @@ const FriendsScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render suggestion card with dismiss option
-   */
   const renderSuggestionCard = suggestion => (
     <FriendCard
       user={{
@@ -807,9 +786,6 @@ const FriendsScreen = ({ navigation }) => {
     />
   );
 
-  /**
-   * Render Friends tab content
-   */
   const renderFriendsTab = () => {
     if (loading) {
       return (
@@ -874,9 +850,6 @@ const FriendsScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Render Requests tab content
-   */
   const renderRequestsTab = () => {
     if (loading) {
       return (
@@ -976,6 +949,15 @@ const FriendsScreen = ({ navigation }) => {
       sections.push({ type: 'sync_prompt' });
     }
 
+    // Add mutual friend suggestions section
+    const hasMutualSuggestions = mutualSuggestions.length > 0;
+    if (hasMutualSuggestions) {
+      sections.push({ type: 'header', title: 'People You May Know' });
+      mutualSuggestions.forEach(suggestion => {
+        sections.push({ type: 'mutual_suggestion', data: suggestion });
+      });
+    }
+
     // Render function for items
     const renderItem = ({ item }) => {
       if (item.type === 'header') {
@@ -1035,6 +1017,34 @@ const FriendsScreen = ({ navigation }) => {
         return renderSuggestionCard(item.data);
       }
 
+      if (item.type === 'mutual_suggestion') {
+        return (
+          <FriendCard
+            user={{
+              userId: item.data.userId,
+              displayName: item.data.displayName,
+              username: item.data.username,
+              profilePhotoURL: item.data.profilePhotoURL,
+            }}
+            relationshipStatus="none"
+            subtitle={`${item.data.mutualCount} mutual friend${item.data.mutualCount !== 1 ? 's' : ''}`}
+            onAction={userId => handleAddFriend(userId)}
+            onDismiss={userId => handleDismissMutualSuggestion(userId)}
+            loading={actionLoading[item.data.userId]}
+            onPress={() => {
+              navigation.navigate('OtherUserProfile', {
+                userId: item.data.userId,
+                username: item.data.username,
+              });
+            }}
+            onBlock={handleBlockUser}
+            onUnblock={handleUnblockUser}
+            onReport={handleReportUser}
+            isBlocked={blockedUserIds.includes(item.data.userId)}
+          />
+        );
+      }
+
       return null;
     };
 
@@ -1042,7 +1052,7 @@ const FriendsScreen = ({ navigation }) => {
     const keyExtractor = (item, index) => {
       if (item.type === 'header') return `header-${item.title}`;
       if (item.type === 'sync_prompt') return 'sync-prompt';
-      return item.data?.id || `item-${index}`;
+      return item.data?.id || item.data?.userId || `item-${index}`;
     };
 
     return (
@@ -1085,7 +1095,7 @@ const FriendsScreen = ({ navigation }) => {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Friends</Text>
       </View>

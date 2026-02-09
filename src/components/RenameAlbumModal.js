@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const MAX_ALBUM_NAME_LENGTH = 24;
 
@@ -39,7 +40,6 @@ const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
   // Animate content slide when visibility changes
   useEffect(() => {
     if (visible) {
-      // Slide up with spring animation
       Animated.spring(slideAnim, {
         toValue: 0,
         damping: 15,
@@ -55,7 +55,7 @@ const RenameAlbumModal = ({ visible, currentName = '', onClose, onSave }) => {
   const handleSave = () => {
     const trimmedName = name.trim();
     if (trimmedName.length === 0) {
-      return; // Don't save empty names
+      return;
     }
     onSave?.(trimmedName);
     onClose?.();
@@ -141,8 +141,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     paddingTop: 12,
     paddingHorizontal: 24,
   },
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 24,
@@ -164,13 +164,15 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background.tertiary,
     color: colors.text.primary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 4,
   },
   charCount: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'right',
     marginTop: 8,
@@ -184,12 +186,12 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 4,
     alignItems: 'center',
   },
   cancelText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
   },
   saveButton: {
@@ -199,8 +201,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.icon.inactive,
   },
   saveText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   saveTextDisabled: {

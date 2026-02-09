@@ -14,6 +14,7 @@ import { verifyCode } from '../services/firebase/phoneAuthService';
 import { formatPhoneWithCountry } from '../utils/phoneUtils';
 import { usePhoneAuth } from '../context/PhoneAuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -256,24 +257,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxxl,
+    fontFamily: typography.fontFamily.display,
     textAlign: 'center',
     marginBottom: 8,
     color: colors.text.primary,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
   },
   phoneNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 40,
@@ -287,19 +290,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
     color: colors.status.danger,
     textAlign: 'center',
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   retryDelayText: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     textAlign: 'center',
     marginTop: 4,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     marginTop: 16,
@@ -312,13 +317,14 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   resendTimerText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
   },
   resendButton: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   changeNumberContainer: {
@@ -326,12 +332,13 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   changeNumberText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   changeNumberLink: {
     color: colors.text.primary,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
     textDecorationLine: 'underline',
   },
 });

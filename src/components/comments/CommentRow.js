@@ -12,7 +12,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../../utils/timeUtils';
 import { colors } from '../../constants/colors';
@@ -26,16 +26,16 @@ import MentionText from './MentionText';
  * @param {object} comment - Comment object with text, mediaUrl, mediaType, likeCount, createdAt
  * @param {object} user - User object with displayName, profilePhotoURL
  * @param {function} onReply - Callback when Reply button pressed (receives comment)
- * @param {function} onLike - Callback when heart pressed (Plan 04)
+ * @param {function} onLike - Callback when heart pressed
  * @param {function} onDelete - Callback when delete confirmed
  * @param {function} onAvatarPress - Callback when avatar pressed (userId, displayName) -> navigate to profile
  * @param {string} currentUserId - Current user's ID (to disable tap on own avatar)
  * @param {boolean} isOwnerComment - Whether this is photo owner's comment (show Author badge)
  * @param {boolean} canDelete - Whether current user can delete this comment
- * @param {boolean} isLiked - Whether current user liked this comment (Plan 04)
+ * @param {boolean} isLiked - Whether current user liked this comment
  * @param {boolean} isTopLevel - Whether this is a top-level comment (shows Reply button)
  * @param {function} onMentionPress - Callback when @mention is tapped (username, mentionedCommentId)
- * @param {boolean} isHighlighted - Whether this comment is currently highlighted (17-02)
+ * @param {boolean} isHighlighted - Whether this comment is currently highlighted
  */
 const CommentRow = ({
   comment,
@@ -52,10 +52,9 @@ const CommentRow = ({
   onMentionPress,
   isHighlighted = false,
 }) => {
-  // 17-02: Animated value for highlight effect
   const highlightAnim = useRef(new Animated.Value(0)).current;
 
-  // 17-02: Trigger highlight animation when isHighlighted changes
+  // Trigger highlight animation when isHighlighted changes
   useEffect(() => {
     if (isHighlighted) {
       // Animate: transparent -> purple tint -> transparent over 1.5s
@@ -74,7 +73,7 @@ const CommentRow = ({
     }
   }, [isHighlighted, highlightAnim]);
 
-  // 17-02: Interpolate background color for highlight
+  // Interpolate background color for highlight flash
   const highlightBackgroundColor = highlightAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['transparent', 'rgba(139, 92, 246, 0.2)'], // colors.brand.purple with 20% opacity
@@ -87,9 +86,6 @@ const CommentRow = ({
     isTopLevel,
   });
 
-  /**
-   * Handle reply button press
-   */
   const handleReplyPress = useCallback(() => {
     logger.info('CommentRow: Reply pressed', { commentId: comment?.id });
     if (onReply) {
@@ -98,9 +94,6 @@ const CommentRow = ({
     }
   }, [comment, onReply]);
 
-  /**
-   * Handle heart button press
-   */
   const handleLikePress = useCallback(() => {
     logger.info('CommentRow: Like pressed', { commentId: comment?.id, isLiked });
     if (onLike) {
@@ -130,9 +123,6 @@ const CommentRow = ({
     }
   }, [comment?.id, comment?.userId, user?.displayName, onAvatarPress, isOwnComment, isDeletedUser]);
 
-  /**
-   * Handle long press for delete
-   */
   const handleLongPress = useCallback(() => {
     if (!canDelete) return;
 
@@ -162,7 +152,6 @@ const CommentRow = ({
     );
   }, [canDelete, comment, onDelete]);
 
-  // Validate props
   if (!comment || !user) {
     logger.warn('CommentRow: Missing comment or user data');
     return null;
@@ -253,7 +242,7 @@ const CommentRow = ({
 
         {/* Heart Icon */}
         <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
-          <Ionicons
+          <PixelIcon
             name={isLiked ? 'heart' : 'heart-outline'}
             size={18}
             color={isLiked ? colors.status.danger : colors.text.secondary}

@@ -1,4 +1,3 @@
-// Export all reusable components
 export { default as Button } from './Button';
 export { default as Input } from './Input';
 export { default as AuthCodeInput } from './AuthCodeInput';
@@ -28,3 +27,6 @@ export { default as RenameAlbumModal } from './RenameAlbumModal';
 export { default as MonthlyAlbumCard } from './MonthlyAlbumCard';
 export { default as YearSection } from './YearSection';
 export { default as MonthlyAlbumsSection } from './MonthlyAlbumsSection';
+export { default as InAppNotificationBanner } from './InAppNotificationBanner';
+export { default as TagFriendsModal } from './TagFriendsModal';
+export { default as TaggedPeopleModal } from './TaggedPeopleModal';

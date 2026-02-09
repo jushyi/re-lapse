@@ -7,3 +7,4 @@ export { default as ActivityScreen } from './ActivityScreen';
 export { default as SelectsScreen } from './SelectsScreen';
 export { default as ContactsSyncScreen } from './ContactsSyncScreen';
 export { default as BlockedUsersScreen } from './BlockedUsersScreen';
+export { default as NotificationSettingsScreen } from './NotificationSettingsScreen';

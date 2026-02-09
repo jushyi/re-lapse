@@ -12,8 +12,9 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import {
   getAlbum,
@@ -294,7 +295,7 @@ const AlbumGridScreen = () => {
             onPress={handleAddPhotosPress}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={32} color={colors.text.secondary} />
+            <PixelIcon name="add" size={32} color={colors.text.secondary} />
             <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
         );
@@ -337,7 +338,7 @@ const AlbumGridScreen = () => {
       <View style={styles.container}>
         <View style={[styles.header, { top: insets.top }]}>
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Album</Text>
           <View style={styles.headerButton} />
@@ -357,7 +358,7 @@ const AlbumGridScreen = () => {
       {/* Header */}
       <View style={[styles.header, { top: insets.top }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -373,7 +374,7 @@ const AlbumGridScreen = () => {
             onPress={handleOpenHeaderMenu}
             style={styles.headerButton}
           >
-            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
+            <PixelIcon name="ellipsis-horizontal" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         ) : (
           <View style={styles.headerButton} />
@@ -415,7 +416,7 @@ const AlbumGridScreen = () => {
         <Animated.View
           style={[styles.toast, { opacity: toastOpacity, bottom: insets.bottom + 20 }]}
         >
-          <Ionicons name="checkmark-circle" size={20} color={colors.status.ready} />
+          <PixelIcon name="checkmark-circle" size={20} color={colors.status.ready} />
           <Text style={styles.toastText}>Cover set</Text>
         </Animated.View>
       )}
@@ -467,7 +468,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
   },
   header: {
     position: 'absolute',
@@ -496,13 +498,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
   },
   photoCount: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -533,7 +536,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   addButtonText: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
   },
@@ -546,13 +550,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 6,
     gap: 8,
   },
   toastText: {
     color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });
 

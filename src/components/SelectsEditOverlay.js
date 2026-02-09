@@ -14,7 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -26,6 +26,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 // Enable LayoutAnimation on Android
@@ -36,12 +37,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const MAX_SELECTS = 10;
 const THUMBNAIL_SIZE = 56;
 const THUMBNAIL_GAP = 8;
-const PREVIEW_ASPECT_RATIO = 3 / 4; // Taller preview (was 4/5)
+const PREVIEW_ASPECT_RATIO = 3 / 4;
 const SCREEN_PADDING = 24;
 const DELETE_BAR_HEIGHT = 48;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// DraggableThumbnail component - reused from SelectsScreen
 const DraggableThumbnail = ({
   photo,
   photoId,
@@ -235,7 +235,6 @@ const DraggableThumbnail = ({
   );
 };
 
-// DeleteBar component - reused from SelectsScreen
 const DeleteBar = ({ isVisible, isHovering }) => {
   const translateY = useSharedValue(DELETE_BAR_HEIGHT + 20);
   const barScale = useSharedValue(1);
@@ -256,7 +255,7 @@ const DeleteBar = ({ isVisible, isHovering }) => {
     <Animated.View
       style={[styles.deleteBar, animatedStyle, isHovering && styles.deleteBarHovering]}
     >
-      <Ionicons
+      <PixelIcon
         name="trash-outline"
         size={20}
         color={colors.text.primary}
@@ -278,7 +277,7 @@ const DeleteBar = ({ isVisible, isHovering }) => {
  * @param {function} onClose - Callback when overlay is closed without saving
  */
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger close
+const SWIPE_THRESHOLD = 100;
 
 const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
   // Get safe area insets for explicit positioning (fixes first-render issue with SafeAreaView edges)
@@ -302,7 +301,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [initialSelects, setInitialSelects] = useState([]);
 
-  // Swipe-to-dismiss animation
   const translateY = useSharedValue(0);
 
   // Initialize photos when overlay opens
@@ -321,7 +319,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     }
   }, [visible, selects, initializePhotos, translateY]);
 
-  // Check if there are unsaved changes
   const hasUnsavedChanges = useCallback(() => {
     const currentUris = selectedPhotos.map(p => p.uri);
     // Different length means changes
@@ -336,7 +333,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     });
   }, []);
 
-  // Calculate preview dimensions
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
   const previewHeight = previewWidth / PREVIEW_ASPECT_RATIO;
 
@@ -470,7 +466,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     }
   }, [selectedPhotos, onSave]);
 
-  // Attempt to close - check for unsaved changes first
   const attemptClose = useCallback(() => {
     if (hasUnsavedChanges()) {
       Alert.alert(
@@ -492,7 +487,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     }
   }, [hasUnsavedChanges, onClose]);
 
-  // Handle swipe threshold reached - check changes and decide action
   const handleSwipeThreshold = useCallback(() => {
     if (hasUnsavedChanges()) {
       // Bounce back first, then show alert
@@ -522,25 +516,20 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     }
   }, [hasUnsavedChanges, translateY, onClose]);
 
-  // Swipe-to-dismiss gesture
   const swipeGesture = Gesture.Pan()
     .onUpdate(event => {
-      // Only allow downward swipe
       if (event.translationY > 0) {
         translateY.value = event.translationY;
       }
     })
     .onEnd(event => {
       if (event.translationY > SWIPE_THRESHOLD) {
-        // Swipe threshold reached - check for unsaved changes
         runOnJS(handleSwipeThreshold)();
       } else {
-        // Bounce back
         translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
       }
     });
 
-  // Animated style for swipe-to-dismiss
   const swipeAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
@@ -549,19 +538,17 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     attemptClose();
   }, [attemptClose]);
 
-  // Render empty preview placeholder
   const renderEmptyPreview = () => (
     <TouchableOpacity
       style={[styles.previewEmpty, { width: previewWidth, height: previewHeight }]}
       onPress={handlePickSinglePhoto}
       activeOpacity={0.8}
     >
-      <Ionicons name="images-outline" size={64} color={colors.text.secondary} />
+      <PixelIcon name="images-outline" size={64} color={colors.text.secondary} />
       <Text style={styles.previewEmptyText}>Tap to add photos</Text>
     </TouchableOpacity>
   );
 
-  // Render preview with photo
   const renderPreviewPhoto = () => (
     <Image
       source={{ uri: selectedPhotos[selectedIndex]?.uri }}
@@ -570,7 +557,6 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
     />
   );
 
-  // Render thumbnail slot
   const renderThumbnailSlot = index => {
     const hasPhoto = index < selectedPhotos.length;
     const isSelected = hasPhoto && index === selectedIndex;
@@ -609,7 +595,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
         onPress={() => handleThumbnailPress(index)}
         activeOpacity={0.7}
       >
-        <Ionicons name="add" size={24} color={colors.text.secondary} />
+        <PixelIcon name="add" size={24} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
@@ -631,7 +617,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
                   onPress={handleCancel}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={28} color={colors.text.primary} />
+                  <PixelIcon name="close" size={28} color={colors.text.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Edit Highlights</Text>
                 <View style={styles.headerSpacer} />
@@ -713,8 +699,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -729,7 +715,7 @@ const styles = StyleSheet.create({
   },
   previewEmpty: {
     backgroundColor: colors.background.tertiary,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
@@ -737,12 +723,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   previewEmptyText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 12,
   },
   previewImage: {
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
   },
   thumbnailSection: {
@@ -762,7 +749,7 @@ const styles = StyleSheet.create({
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -784,12 +771,12 @@ const styles = StyleSheet.create({
   thumbnailImage: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   thumbnailTouchable: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   spacer: {
@@ -803,7 +790,7 @@ const styles = StyleSheet.create({
   saveButton: {
     height: 48,
     backgroundColor: colors.brand.purple,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -812,14 +799,14 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   deleteBar: {
     height: DELETE_BAR_HEIGHT,
     backgroundColor: colors.status.danger,
     opacity: 0.9,
-    borderRadius: 8,
+    borderRadius: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -833,8 +820,8 @@ const styles = StyleSheet.create({
   },
   deleteBarText: {
     color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });
 

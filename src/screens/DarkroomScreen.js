@@ -13,9 +13,9 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import useDarkroom from '../hooks/useDarkroom';
-import { SwipeablePhotoCard } from '../components';
+import { SwipeablePhotoCard, TagFriendsModal } from '../components';
 import { styles } from '../styles/DarkroomScreen.styles';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
@@ -36,6 +36,9 @@ const DarkroomScreen = () => {
     successFadeAnim,
     deleteButtonScale,
 
+    // Tagging state
+    tagModalVisible,
+
     // Handlers
     handleDone,
     handleExitClearance,
@@ -48,6 +51,10 @@ const DarkroomScreen = () => {
     handleDeletePulse,
     handleUndo,
     handleBackPress,
+    handleTagFriends,
+    getTagsForPhoto,
+    handleOpenTagModal,
+    handleCloseTagModal,
   } = useDarkroom();
 
   // Loading state
@@ -94,7 +101,7 @@ const DarkroomScreen = () => {
                 onPress={handleUndo}
                 disabled={undoStack.length === 0 || undoingPhoto !== null}
               >
-                <Ionicons
+                <PixelIcon
                   name="arrow-undo"
                   size={16}
                   color={colors.icon.primary}
@@ -208,7 +215,7 @@ const DarkroomScreen = () => {
               onPress={handleUndo}
               disabled={undoStack.length === 0 || undoingPhoto !== null}
             >
-              <Ionicons
+              <PixelIcon
                 name="arrow-undo"
                 size={16}
                 color={colors.icon.primary}
@@ -253,6 +260,8 @@ const DarkroomScreen = () => {
                     onSwipeDown={isActive ? handleDeleteSwipe : undefined}
                     onDeleteComplete={isActive ? handleDeletePulse : undefined}
                     onExitClearance={isActive ? () => handleExitClearance(photo.id) : undefined}
+                    onTagPress={isActive ? handleOpenTagModal : undefined}
+                    hasTagged={isActive ? getTagsForPhoto(photo.id).length > 0 : false}
                   />
                 );
               })}
@@ -281,6 +290,17 @@ const DarkroomScreen = () => {
           </View>
         </SafeAreaView>
       </View>
+
+      {/* Tag Friends Modal */}
+      <TagFriendsModal
+        visible={tagModalVisible}
+        onClose={handleCloseTagModal}
+        onConfirm={ids => {
+          handleTagFriends(currentPhoto?.id, ids);
+          handleCloseTagModal();
+        }}
+        initialSelectedIds={getTagsForPhoto(currentPhoto?.id)}
+      />
     </GestureHandlerRootView>
   );
 };

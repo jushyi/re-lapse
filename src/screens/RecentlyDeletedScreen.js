@@ -21,7 +21,7 @@ import ReanimatedModule, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import {
@@ -353,7 +353,7 @@ const RecentlyDeletedScreen = () => {
         {multiSelectMode && isSelected && (
           <View style={styles.selectionOverlay}>
             <View style={styles.checkmark}>
-              <Ionicons name="checkmark" size={16} color={colors.text.inverse} />
+              <PixelIcon name="checkmark" size={16} color={colors.text.inverse} />
             </View>
           </View>
         )}
@@ -458,7 +458,7 @@ const RecentlyDeletedScreen = () => {
               {/* Header */}
               <View style={[styles.viewerHeader, { paddingTop: insets.top }]}>
                 <TouchableOpacity style={styles.viewerCloseButton} onPress={handleDismissViewer}>
-                  <Ionicons name="close" size={28} color={colors.text.primary} />
+                  <PixelIcon name="close" size={28} color={colors.text.primary} />
                 </TouchableOpacity>
                 <View style={styles.viewerHeaderCenter}>
                   <View style={styles.viewerDaysBadge}>
@@ -484,7 +484,7 @@ const RecentlyDeletedScreen = () => {
                     <ActivityIndicator size="small" color={colors.text.primary} />
                   ) : (
                     <>
-                      <Ionicons name="arrow-undo" size={20} color={colors.text.primary} />
+                      <PixelIcon name="arrow-undo" size={20} color={colors.text.primary} />
                       <Text style={styles.viewerButtonText}>Restore</Text>
                     </>
                   )}
@@ -494,7 +494,7 @@ const RecentlyDeletedScreen = () => {
                   onPress={handleSingleDelete}
                   disabled={actionLoading}
                 >
-                  <Ionicons name="trash" size={20} color={colors.text.primary} />
+                  <PixelIcon name="trash" size={20} color={colors.text.primary} />
                   <Text style={styles.viewerButtonText}>Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -515,7 +515,7 @@ const RecentlyDeletedScreen = () => {
         <SafeAreaView edges={['top']} style={styles.safeHeader}>
           <View style={styles.header}>
             <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-              <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+              <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>Recently Deleted</Text>
@@ -536,7 +536,7 @@ const RecentlyDeletedScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBackPress} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Recently Deleted</Text>
@@ -553,7 +553,7 @@ const RecentlyDeletedScreen = () => {
       {/* Content */}
       {photos.length === 0 ? (
         <View style={[styles.emptyContainer, { paddingBottom: tabBarHeight }]}>
-          <Ionicons
+          <PixelIcon
             name="trash-outline"
             size={64}
             color={colors.text.tertiary}
@@ -605,7 +605,7 @@ const RecentlyDeletedScreen = () => {
               <ActivityIndicator size="small" color={colors.text.primary} />
             ) : (
               <>
-                <Ionicons name="arrow-undo" size={20} color={colors.text.primary} />
+                <PixelIcon name="arrow-undo" size={20} color={colors.text.primary} />
                 <Text style={styles.actionButtonText}>Restore</Text>
               </>
             )}
@@ -615,7 +615,7 @@ const RecentlyDeletedScreen = () => {
             onPress={handleBatchDelete}
             disabled={actionLoading}
           >
-            <Ionicons name="trash" size={20} color={colors.text.primary} />
+            <PixelIcon name="trash" size={20} color={colors.text.primary} />
             <Text style={styles.actionButtonText}>Delete</Text>
           </TouchableOpacity>
         </View>

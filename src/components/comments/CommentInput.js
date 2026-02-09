@@ -20,13 +20,13 @@ import React, {
 } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
 import { uploadCommentImage } from '../../services/firebase/storageService';
-// Note: Giphy SDK requires dev client build, not Expo Go
+// Giphy SDK requires dev client build, not Expo Go
 import { openGifPicker, useGifSelection } from './GifPicker';
 import { styles } from '../../styles/CommentInput.styles';
 
@@ -67,8 +67,6 @@ const CommentInput = forwardRef(
       }
     }, [initialMention]);
 
-    // Note: GIF functionality disabled for Expo Go compatibility
-    // Uncomment when using dev client build:
     const handleGifSelected = useCallback(gifUrl => {
       logger.info('CommentInput: GIF selected', { urlLength: gifUrl?.length });
       setSelectedMedia({ uri: gifUrl, type: 'gif' });
@@ -101,30 +99,20 @@ const CommentInput = forwardRef(
       },
     }));
 
-    /**
-     * Handle text change
-     */
     const handleChangeText = useCallback(newText => {
       setText(newText);
     }, []);
 
-    /**
-     * Clear selected media
-     */
     const clearMedia = useCallback(() => {
       logger.debug('CommentInput: Clearing media');
       setSelectedMedia(null);
     }, []);
 
-    /**
-     * Handle image picker button press
-     */
     const handleImagePick = useCallback(async () => {
       logger.info('CommentInput: Image picker pressed');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       try {
-        // Request permission
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (!permissionResult.granted) {
@@ -152,9 +140,6 @@ const CommentInput = forwardRef(
       }
     }, []);
 
-    /**
-     * Handle send button press
-     */
     const handleSend = useCallback(async () => {
       const trimmedText = text.trim();
       if (!trimmedText && !selectedMedia) {
@@ -208,9 +193,6 @@ const CommentInput = forwardRef(
       setSelectedMedia(null);
     }, [text, selectedMedia, replyingTo, onSubmit]);
 
-    /**
-     * Handle cancel reply
-     */
     const handleCancelReply = useCallback(() => {
       logger.info('CommentInput: Cancel reply pressed');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -220,9 +202,6 @@ const CommentInput = forwardRef(
       }
     }, [onCancelReply]);
 
-    /**
-     * Handle submit on keyboard return
-     */
     const handleSubmitEditing = useCallback(() => {
       if (text.trim() || selectedMedia) {
         handleSend();
@@ -242,7 +221,7 @@ const CommentInput = forwardRef(
               Replying to <Text style={styles.replyBannerUsername}>@{replyUsername}</Text>
             </Text>
             <TouchableOpacity style={styles.replyBannerCancel} onPress={handleCancelReply}>
-              <Ionicons name="close" size={18} color={colors.text.secondary} />
+              <PixelIcon name="close" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
         )}
@@ -257,7 +236,7 @@ const CommentInput = forwardRef(
             />
             <TouchableOpacity onPress={clearMedia} style={styles.removeMediaButton}>
               <View style={styles.removeMediaButtonBg}>
-                <Ionicons name="close" size={14} color="white" />
+                <PixelIcon name="close" size={14} color="white" />
               </View>
             </TouchableOpacity>
             {selectedMedia.type === 'gif' && (
@@ -296,14 +275,14 @@ const CommentInput = forwardRef(
               onPress={handleImagePick}
               disabled={isUploading}
             >
-              <Ionicons
+              <PixelIcon
                 name="image-outline"
                 size={22}
                 color={isUploading ? colors.text.tertiary : colors.text.secondary}
               />
             </TouchableOpacity>
 
-            {/* GIF Picker Button - disabled for Expo Go, enable in dev client */}
+            {/* GIF Picker Button */}
             {
               <TouchableOpacity
                 style={styles.gifButton}
@@ -326,7 +305,7 @@ const CommentInput = forwardRef(
             {isUploading ? (
               <Text style={styles.uploadingText}>...</Text>
             ) : (
-              <Ionicons
+              <PixelIcon
                 name="arrow-up"
                 size={20}
                 color={isDisabled ? colors.text.tertiary : colors.text.primary}

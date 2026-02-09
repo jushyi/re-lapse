@@ -1,9 +1,8 @@
 /**
  * CommentsBottomSheet Component
  *
- * Bottom sheet modal for displaying and adding comments:
- * - Custom Animated Modal (NOT @gorhom/bottom-sheet due to Expo 54 compatibility)
- * - KeyboardAvoidingView for proper keyboard handling on iOS/Android
+ * Bottom sheet for displaying and adding comments:
+ * - Uses Animated.View instead of Modal (survives navigation)
  * - 60% screen height with photo visible above
  * - FlatList for comments with real-time updates
  * - CommentInput at bottom with reply state management
@@ -13,7 +12,6 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
-  Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
   FlatList,
@@ -25,14 +23,19 @@ import {
   PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import CommentWithReplies from './CommentWithReplies';
 import CommentInput from './CommentInput';
 import useComments from '../../hooks/useComments';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
-import { styles, SHEET_HEIGHT, EXPANDED_HEIGHT } from '../../styles/CommentsBottomSheet.styles';
+import {
+  styles,
+  SHEET_HEIGHT,
+  EXPANDED_HEIGHT,
+  SCREEN_HEIGHT,
+} from '../../styles/CommentsBottomSheet.styles';
 
 /**
  * CommentsBottomSheet Component
@@ -55,18 +58,19 @@ const CommentsBottomSheet = ({
   onAvatarPress,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const sheetTranslateY = useRef(new Animated.Value(0)).current; // UAT-021 fix: sheet position for keyboard
-  const swipeY = useRef(new Animated.Value(0)).current; // UAT-020 fix: swipe gesture tracking
-  const sheetHeight = useRef(new Animated.Value(SHEET_HEIGHT)).current; // 36.1-01: animated height for expand/collapse
+  const sheetTranslateY = useRef(new Animated.Value(0)).current; // Sheet position offset for keyboard
+  const swipeY = useRef(new Animated.Value(0)).current; // Swipe gesture tracking
+  const sheetHeight = useRef(new Animated.Value(SHEET_HEIGHT)).current; // Animated height for expand/collapse
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
   const inputRef = useRef(null);
   const flatListRef = useRef(null);
-  const insets = useSafeAreaInsets(); // UAT-010 fix: safe area for bottom input
-  const [keyboardVisible, setKeyboardVisible] = useState(false); // UAT-013 fix: keyboard state
-  const isExpandedRef = useRef(false); // 36.1-01: ref for PanResponder closure access
+  const insets = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const isExpandedRef = useRef(false); // Ref (not state) so PanResponder closure reads current value
   const isAtTopRef = useRef(true); // Track if FlatList is scrolled to top
 
   /**
-   * PanResponder for bidirectional expand/collapse on handle bar (36.1-01)
+   * PanResponder for bidirectional expand/collapse on handle bar
    * - Swipe UP when collapsed: expand to fullscreen
    * - Swipe DOWN when expanded: collapse to 60%
    * - Swipe DOWN when collapsed: close sheet entirely
@@ -74,7 +78,7 @@ const CommentsBottomSheet = ({
    */
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true, // UAT-030 fix: capture touches on handle bar
+      onStartShouldSetPanResponder: () => true, // Capture touches on handle bar
       onMoveShouldSetPanResponder: (_, gestureState) => {
         // Respond to vertical swipes (up or down)
         return Math.abs(gestureState.dy) > 5;
@@ -97,7 +101,7 @@ const CommentsBottomSheet = ({
             isExpandedRef.current = true; // Update ref immediately for next gesture
             Animated.spring(sheetHeight, {
               toValue: EXPANDED_HEIGHT,
-              useNativeDriver: false, // height animation requires JS driver
+              useNativeDriver: false, // Height animation requires JS driver
               damping: 20,
               stiffness: 100,
             }).start();
@@ -150,7 +154,7 @@ const CommentsBottomSheet = ({
     })
   ).current;
 
-  // Track keyboard visibility and animate sheet up (UAT-021 fix, UAT-029 fix)
+  // Track keyboard visibility and animate sheet up to clear suggestions bar
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -158,8 +162,7 @@ const CommentsBottomSheet = ({
     const showSub = Keyboard.addListener(showEvent, event => {
       const keyboardHeight = event.endCoordinates.height;
       setKeyboardVisible(true);
-      // UAT-029 fix: Move up 87% of keyboard height - clears suggestions bar
-      // 60% didn't clear suggestions, 80% still tight, 90% slightly high, 100% had excess gap
+      // Move up 88.5% of keyboard height to clear autocomplete suggestions bar
       Animated.timing(sheetTranslateY, {
         toValue: -(keyboardHeight * 0.885),
         duration: 250,
@@ -169,7 +172,7 @@ const CommentsBottomSheet = ({
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setKeyboardVisible(false);
-      // Animate sheet back to original position (UAT-021 fix)
+      // Animate sheet back to original position
       Animated.timing(sheetTranslateY, {
         toValue: 0,
         duration: 200,
@@ -190,19 +193,19 @@ const CommentsBottomSheet = ({
     error,
     replyingTo,
     initialMention,
-    highlightedCommentId, // 17-02: Currently highlighted comment
+    highlightedCommentId,
     addComment,
     deleteComment,
     toggleLike,
     setReplyingTo,
     cancelReply,
-    highlightComment, // 17-02: Set highlighted comment with auto-clear
+    highlightComment,
     canDeleteComment,
     isOwnerComment,
     isLikedByUser,
   } = useComments(photoId, currentUserId, photoOwnerId);
 
-  // 17-02: Track which reply sections to auto-expand for @mention navigation
+  // Track which reply sections to auto-expand for @mention navigation
   const [expandedReplyParents, setExpandedReplyParents] = useState({});
 
   logger.debug('CommentsBottomSheet: Render', {
@@ -214,31 +217,38 @@ const CommentsBottomSheet = ({
   });
 
   /**
-   * Animate sheet on visibility change
+   * Animate sheet on visibility change.
+   * Uses Animated.View with opacity and pointerEvents instead of Modal
+   * so the sheet survives navigation events.
    */
   useEffect(() => {
     if (visible) {
-      // Slide up animation
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 100,
-      }).start();
+      // Animate in: backdrop fade + sheet slide up
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 20,
+          stiffness: 100,
+        }),
+      ]).start();
 
       logger.info('CommentsBottomSheet: Opened', { photoId });
     } else {
-      // Reset all animated values for next open (36.1-01)
+      // Reset all animated values for next open
       translateY.setValue(SHEET_HEIGHT);
       sheetHeight.setValue(SHEET_HEIGHT);
       swipeY.setValue(0); // Reset swipe position here, not in animation callback
+      backdropOpacity.setValue(0);
       isExpandedRef.current = false;
     }
-  }, [visible, translateY, photoId, sheetHeight]);
+  }, [visible, translateY, photoId, sheetHeight, backdropOpacity]);
 
-  /**
-   * Handle backdrop press to close
-   */
   const handleBackdropPress = useCallback(() => {
     logger.debug('CommentsBottomSheet: Backdrop pressed, closing');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -247,9 +257,6 @@ const CommentsBottomSheet = ({
     }
   }, [onClose]);
 
-  /**
-   * Handle close button press
-   */
   const handleClose = useCallback(() => {
     logger.debug('CommentsBottomSheet: Close button pressed');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -259,8 +266,8 @@ const CommentsBottomSheet = ({
   }, [onClose]);
 
   /**
-   * Handle comment submit
-   * Note: Sheet stays open after submit (UAT-003 fix) to allow continued interaction
+   * Handle comment submit.
+   * Sheet stays open after submit to allow continued interaction.
    */
   const handleSubmitComment = useCallback(
     async (text, mediaUrl, mediaType) => {
@@ -277,7 +284,7 @@ const CommentsBottomSheet = ({
           commentId: result.commentId,
         });
 
-        // Trigger callback (but don't close sheet - UAT-003 fix)
+        // Trigger callback (but don't close sheet)
         if (onCommentAdded) {
           onCommentAdded();
         }
@@ -295,9 +302,6 @@ const CommentsBottomSheet = ({
     [photoId, replyingTo, addComment, onCommentAdded]
   );
 
-  /**
-   * Handle reply button press on comment
-   */
   const handleReply = useCallback(
     comment => {
       logger.info('CommentsBottomSheet: Reply to comment', {
@@ -312,9 +316,6 @@ const CommentsBottomSheet = ({
     [setReplyingTo]
   );
 
-  /**
-   * Handle delete comment
-   */
   const handleDelete = useCallback(
     async comment => {
       logger.info('CommentsBottomSheet: Deleting comment', {
@@ -333,9 +334,6 @@ const CommentsBottomSheet = ({
     [deleteComment]
   );
 
-  /**
-   * Handle like comment
-   */
   const handleLike = useCallback(
     async comment => {
       logger.info('CommentsBottomSheet: Like comment', {
@@ -348,11 +346,8 @@ const CommentsBottomSheet = ({
   );
 
   /**
-   * Handle @mention press - scroll to referenced comment (17-02)
+   * Handle @mention press - scroll to referenced comment.
    * Finds the comment in threadedComments, scrolls to it, and highlights it.
-   *
-   * @param {string} username - The @mentioned username
-   * @param {string|null} mentionedCommentId - The comment ID this @mention refers to
    */
   const handleMentionPress = useCallback(
     (username, mentionedCommentId) => {
@@ -454,7 +449,7 @@ const CommentsBottomSheet = ({
   );
 
   /**
-   * Scroll to a comment and highlight it (17-02)
+   * Scroll to a comment and highlight it
    */
   const scrollToComment = useCallback(
     (index, commentId) => {
@@ -492,9 +487,6 @@ const CommentsBottomSheet = ({
     }, 100);
   }, []);
 
-  /**
-   * Render individual comment row with replies
-   */
   const renderCommentItem = useCallback(
     ({ item: comment }) => {
       return (
@@ -529,41 +521,31 @@ const CommentsBottomSheet = ({
     ]
   );
 
-  /**
-   * Render empty state
-   */
   const renderEmpty = useCallback(() => {
     if (loading) return null;
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="chatbubble-outline" size={48} color={colors.text.tertiary} />
+        <PixelIcon name="chatbubble-outline" size={48} color={colors.text.tertiary} />
         <Text style={styles.emptyText}>No comments yet</Text>
         <Text style={styles.emptySubtext}>Be the first to comment</Text>
       </View>
     );
   }, [loading]);
 
-  /**
-   * Render loading state
-   */
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={colors.brand.purple} />
     </View>
   );
 
-  /**
-   * Render error state
-   */
   const renderError = () => (
     <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.status.danger} />
+      <PixelIcon name="alert-circle-outline" size={48} color={colors.status.danger} />
       <Text style={styles.errorText}>{error || 'Failed to load comments'}</Text>
     </View>
   );
 
-  // Key extractor for FlatList
   const keyExtractor = useCallback(item => item.id, []);
 
   /**
@@ -616,106 +598,102 @@ const CommentsBottomSheet = ({
     [sheetHeight, swipeY, onClose]
   );
 
-  // Comment count for header
   const totalCommentCount = threadedComments.reduce(
     (count, comment) => count + 1 + (comment.replies?.length || 0),
     0
   );
 
+  // Animated.View instead of Modal so sheet survives navigation.
+  // When visible=false, pointerEvents='none' makes it non-interactive but keeps it in render tree.
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-      statusBarTranslucent
+    <Animated.View
+      style={[styles.overlay, styles.animatedOverlay, { opacity: backdropOpacity }]}
+      pointerEvents={visible ? 'auto' : 'none'}
     >
-      <View style={styles.overlay}>
-        {/* Backdrop - tap to close */}
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
+      {/* Backdrop - tap to close */}
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <View style={styles.backdrop} />
+      </TouchableWithoutFeedback>
 
-        {/* Sheet container - no KeyboardAvoidingView needed with translateY approach (UAT-021 fix) */}
-        <View style={styles.keyboardAvoidContainer}>
-          {/* Outer: Height animation (JS driver) - 36.1-01 expand/collapse */}
-          <Animated.View style={{ height: sheetHeight }}>
-            {/* Inner: Transform animations (native driver) - UAT-020/021 gestures */}
-            <Animated.View
-              style={[
-                styles.sheet,
-                {
-                  flex: 1, // Fill the height-animated container
-                  maxHeight: undefined, // Override fixed maxHeight for expansion
-                  transform: [
-                    { translateY },
-                    { translateY: sheetTranslateY },
-                    { translateY: swipeY },
-                  ],
-                },
-              ]}
-            >
-              {/* Handle bar - swipe-to-close gesture (UAT-020 fix) */}
-              <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
-                <View style={styles.handleBar} />
+      {/* Sheet container - uses translateY instead of KeyboardAvoidingView */}
+      <View style={styles.keyboardAvoidContainer} pointerEvents="box-none">
+        {/* Outer: Height animation (JS driver) for expand/collapse */}
+        <Animated.View style={{ height: sheetHeight }}>
+          {/* Inner: Transform animations (native driver) for gestures */}
+          <Animated.View
+            style={[
+              styles.sheet,
+              {
+                flex: 1, // Fill the height-animated container
+                maxHeight: undefined, // Override fixed maxHeight for expansion
+                transform: [
+                  { translateY },
+                  { translateY: sheetTranslateY },
+                  { translateY: swipeY },
+                ],
+              },
+            ]}
+          >
+            {/* Handle bar - swipe gestures for expand/collapse/close */}
+            <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
+              <View style={styles.handleBar} />
+            </View>
+
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.headerTitle}>Comments</Text>
+                {totalCommentCount > 0 && (
+                  <Text style={styles.headerCount}>({totalCommentCount})</Text>
+                )}
               </View>
+              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                <PixelIcon name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
 
-              {/* Header */}
-              <View style={styles.header}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={styles.headerTitle}>Comments</Text>
-                  {totalCommentCount > 0 && (
-                    <Text style={styles.headerCount}>({totalCommentCount})</Text>
-                  )}
-                </View>
-                <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                  <Ionicons name="close" size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-              </View>
+            {/* Comments List */}
+            {loading ? (
+              renderLoading()
+            ) : error ? (
+              renderError()
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                style={styles.commentsList}
+                contentContainerStyle={styles.commentsListContent}
+                data={threadedComments}
+                renderItem={renderCommentItem}
+                keyExtractor={keyExtractor}
+                ListEmptyComponent={renderEmpty}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                onScroll={handleScroll}
+                onScrollEndDrag={handleScrollEndDrag}
+                scrollEventThrottle={16}
+                onScrollToIndexFailed={handleScrollToIndexFailed}
+              />
+            )}
 
-              {/* Comments List */}
-              {loading ? (
-                renderLoading()
-              ) : error ? (
-                renderError()
-              ) : (
-                <FlatList
-                  ref={flatListRef}
-                  style={styles.commentsList}
-                  contentContainerStyle={styles.commentsListContent}
-                  data={threadedComments}
-                  renderItem={renderCommentItem}
-                  keyExtractor={keyExtractor}
-                  ListEmptyComponent={renderEmpty}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode="interactive"
-                  onScroll={handleScroll}
-                  onScrollEndDrag={handleScrollEndDrag}
-                  scrollEventThrottle={16}
-                  onScrollToIndexFailed={handleScrollToIndexFailed}
-                />
-              )}
-
-              {/* Comment Input - with safe area padding (UAT-010 fix) */}
-              <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-                <CommentInput
-                  ref={inputRef}
-                  onSubmit={handleSubmitComment}
-                  onImagePick={() => {
-                    logger.debug('CommentsBottomSheet: Image picker (Plan 06)');
-                  }}
-                  replyingTo={replyingTo}
-                  onCancelReply={cancelReply}
-                  initialMention={initialMention}
-                  placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
-                />
-              </View>
-            </Animated.View>
+            {/* Comment Input */}
+            <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+              <CommentInput
+                ref={inputRef}
+                onSubmit={handleSubmitComment}
+                onImagePick={() => {
+                  logger.debug('CommentsBottomSheet: Image picker');
+                }}
+                replyingTo={replyingTo}
+                onCancelReply={cancelReply}
+                initialMention={initialMention}
+                placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+              />
+            </View>
           </Animated.View>
-        </View>
+        </Animated.View>
       </View>
-    </Modal>
+    </Animated.View>
   );
 };
 

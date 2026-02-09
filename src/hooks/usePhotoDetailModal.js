@@ -30,6 +30,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  * @param {function} params.onClose - Callback to close modal
  * @param {function} params.onReactionToggle - Callback when emoji is toggled
  * @param {string} params.currentUserId - Current user's ID
+ * @param {function} params.onSwipeUp - Callback when user swipes up on photo
  * @returns {object} Modal state and handlers
  */
 export const usePhotoDetailModal = ({
@@ -43,6 +44,7 @@ export const usePhotoDetailModal = ({
   onReactionToggle,
   currentUserId,
   onFriendTransition, // Callback for friend-to-friend transition with cube animation
+  onSwipeUp, // Callback when user swipes up to open comments
 }) => {
   // Stories mode: current photo index
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -94,9 +96,9 @@ export const usePhotoDetailModal = ({
   }, [currentPhoto?.id]);
 
   // Reset emoji state when photo changes
-  // - Reset frozenOrder so emojis sort correctly by count for new photo (ISS-008 fix)
+  // - Reset frozenOrder so emojis sort correctly by count for new photo
   // - Initialize activeCustomEmojis with any custom emojis already in the photo's reactions
-  // ISS-009 fix: Read reactions directly from currentPhoto to avoid stale closure issue
+  // Read reactions directly from currentPhoto to avoid stale closure issue
   useEffect(() => {
     if (currentPhoto?.id) {
       // Reset frozen order so new photo shows emojis sorted by count
@@ -123,10 +125,10 @@ export const usePhotoDetailModal = ({
 
   /**
    * Get grouped reactions (emoji -> count)
-   * ISS-009 fix: Read reactions directly from currentPhoto inside useMemo
-   * and depend on currentPhoto instead of destructured reactions variable.
-   * This ensures recalculation when photo changes, as React's dependency
-   * comparison on the destructured variable was unreliable.
+   * Read reactions directly from currentPhoto inside useMemo and depend on
+   * currentPhoto instead of destructured reactions variable. This ensures
+   * recalculation when photo changes, as React's dependency comparison on
+   * the destructured variable was unreliable.
    */
   const groupedReactions = useMemo(() => {
     // Read reactions directly from currentPhoto to ensure fresh data
@@ -148,7 +150,7 @@ export const usePhotoDetailModal = ({
 
   /**
    * Get current user's reaction count for a specific emoji
-   * ISS-009 fix: Read from currentPhoto?.reactions directly for consistency
+   * Read from currentPhoto?.reactions directly for consistency
    */
   const getUserReactionCount = useCallback(
     emoji => {
@@ -452,11 +454,28 @@ export const usePhotoDetailModal = ({
     ]).start();
   }, [translateY, opacity]);
 
+  // Store onSwipeUp in ref for panResponder access
+  const onSwipeUpRef = useRef(onSwipeUp);
+  useEffect(() => {
+    onSwipeUpRef.current = onSwipeUp;
+  }, [onSwipeUp]);
+
+  // Track if comments are visible (to disable swipe-to-dismiss when scrolling comments)
+  const [commentsVisible, setCommentsVisible] = useState(false);
+  const commentsVisibleRef = useRef(false);
+
+  // Expose setter for parent to call when comments open/close
+  const updateCommentsVisible = useCallback(visible => {
+    commentsVisibleRef.current = visible;
+    setCommentsVisible(visible);
+  }, []);
+
   /**
-   * Pan responder for swipe-down-to-close gesture.
+   * Pan responder for swipe gestures:
+   * - Swipe DOWN: dismiss photo detail (existing behavior)
+   * - Swipe UP: open comments
    * Excludes footer area (bottom 100px) to allow emoji taps.
-   * Dismisses modal when swiped 1/3 of screen height or with velocity > 0.5.
-   * UAT-028 fix: Better gesture detection - check vertical vs horizontal movement
+   * Better gesture detection - check vertical vs horizontal movement
    */
   const panResponder = useRef(
     PanResponder.create({
@@ -469,29 +488,40 @@ export const usePhotoDetailModal = ({
         return false;
       },
       onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Don't respond if comments sheet is open (let it handle its own scrolling)
+        if (commentsVisibleRef.current) return false;
+
         // Don't respond if touch started in footer area
         const touchY = evt.nativeEvent.pageY;
         const footerThreshold = SCREEN_HEIGHT - 100;
         if (touchY >= footerThreshold) return false;
 
-        // UAT-028 fix: Check for vertical swipe (dy > dx) and downward movement
+        // Check for vertical swipe (dy > dx)
         const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        // Respond to both downward (close) and upward (open comments) swipes
         const isDownward = gestureState.dy > 5;
-        return isVerticalSwipe && isDownward;
+        const isUpward = gestureState.dy < -10; // Slightly higher threshold for upward
+        return isVerticalSwipe && (isDownward || isUpward);
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        // Don't capture if comments sheet is open (let it handle its own scrolling)
+        if (commentsVisibleRef.current) return false;
+
         // Don't capture if touch is in footer area
         const touchY = evt.nativeEvent.pageY;
         const footerThreshold = SCREEN_HEIGHT - 100;
         if (touchY >= footerThreshold) return false;
 
-        // UAT-028 fix: Capture gesture when vertical swipe is detected
+        // Capture gesture when vertical swipe is detected
         const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        // Capture both downward and upward swipes
         const isDownward = gestureState.dy > 5;
-        return isVerticalSwipe && isDownward;
+        const isUpward = gestureState.dy < -10;
+        return isVerticalSwipe && (isDownward || isUpward);
       },
       onPanResponderMove: (_, gestureState) => {
-        // Only allow downward swipes
+        // Only animate for downward swipes (visual feedback for close gesture)
+        // Upward swipes don't need visual feedback - just detect and callback
         if (gestureState.dy > 0) {
           translateY.setValue(gestureState.dy);
           // Fade out as user swipes down
@@ -500,9 +530,21 @@ export const usePhotoDetailModal = ({
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        // If swiped down more than 1/3 of screen or fast swipe (velocity), close the modal
+        const { dy, vy } = gestureState;
+
+        // SWIPE UP - open comments
+        if (dy < -50 || vy < -0.5) {
+          // Significant upward swipe detected
+          if (onSwipeUpRef.current) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSwipeUpRef.current();
+          }
+          return;
+        }
+
+        // SWIPE DOWN - close modal (existing behavior)
         const dismissThreshold = SCREEN_HEIGHT / 3;
-        if (gestureState.dy > dismissThreshold || gestureState.vy > 0.5) {
+        if (dy > dismissThreshold || vy > 0.5) {
           closeWithAnimation();
         } else {
           springBack();
@@ -564,5 +606,8 @@ export const usePhotoDetailModal = ({
 
     // Close handler
     handleClose: onClose,
+
+    // Comments visibility (for disabling swipe-to-dismiss during comment scroll)
+    updateCommentsVisible,
   };
 };

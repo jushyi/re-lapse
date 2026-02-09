@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -19,12 +20,18 @@ import {
   limit,
   getDocs,
 } from '@react-native-firebase/firestore';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
+import {
+  requestNotificationPermission,
+  getNotificationToken,
+  storeNotificationToken,
+} from '../services/firebase/notificationService';
 
 const db = getFirestore();
 
@@ -34,14 +41,63 @@ const db = getFirestore();
  */
 const NotificationsScreen = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, userProfile, refreshUserProfile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
+
+  // Check if push notifications are enabled (fcmToken exists)
+  const hasPushToken = !!userProfile?.fcmToken;
 
   /**
-   * Fetch notifications from Firestore
+   * Handle enabling push notifications
+   * Requests permission, gets token, and stores it
    */
+  const handleEnablePushNotifications = async () => {
+    if (!user?.uid) return;
+
+    setEnablingPush(true);
+    try {
+      // Step 1: Request permission
+      const permResult = await requestNotificationPermission();
+      if (!permResult.success) {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive push notifications.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Step 2: Get push token
+      const tokenResult = await getNotificationToken();
+      if (!tokenResult.success) {
+        Alert.alert('Error', tokenResult.error || 'Failed to get push token');
+        return;
+      }
+
+      // Step 3: Store token in Firestore
+      const storeResult = await storeNotificationToken(user.uid, tokenResult.data);
+      if (!storeResult.success) {
+        Alert.alert('Error', 'Failed to save push token');
+        return;
+      }
+
+      // Refresh user profile to update hasPushToken state
+      await refreshUserProfile();
+
+      logger.info('NotificationsScreen: Push notifications enabled successfully');
+    } catch (error) {
+      logger.error('NotificationsScreen: Failed to enable push notifications', {
+        error: error.message,
+      });
+      Alert.alert('Error', 'Failed to enable push notifications');
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
   const fetchNotifications = useCallback(async () => {
     if (!user?.uid) {
       setLoading(false);
@@ -74,25 +130,16 @@ const NotificationsScreen = () => {
     }
   }, [user?.uid]);
 
-  /**
-   * Load notifications on mount
-   */
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchNotifications();
     setRefreshing(false);
   };
 
-  /**
-   * Render a single notification item
-   */
   const renderNotificationItem = ({ item }) => {
     // Format reactions display (e.g., "reacted 😂×2 ❤️×1")
     const formatReactionsText = reactions => {
@@ -117,7 +164,7 @@ const NotificationsScreen = () => {
             <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.profilePhoto} />
           ) : (
             <View style={styles.profilePhotoPlaceholder}>
-              <Ionicons name="person" size={24} color={colors.text.secondary} />
+              <PixelIcon name="person" size={24} color={colors.text.secondary} />
             </View>
           )}
         </View>
@@ -137,15 +184,41 @@ const NotificationsScreen = () => {
     );
   };
 
-  /**
-   * Render empty state
-   */
+  const renderPushBanner = () => {
+    if (hasPushToken) return null;
+
+    return (
+      <View style={styles.pushBanner}>
+        <View style={styles.pushBannerContent}>
+          <PixelIcon name="notifications-off-outline" size={24} color={colors.brand.purple} />
+          <View style={styles.pushBannerText}>
+            <Text style={styles.pushBannerTitle}>Push notifications disabled</Text>
+            <Text style={styles.pushBannerSubtitle}>
+              Enable to get notified when your photos are ready
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.pushBannerButton}
+          onPress={handleEnablePushNotifications}
+          disabled={enablingPush}
+        >
+          {enablingPush ? (
+            <ActivityIndicator size="small" color={colors.background.primary} />
+          ) : (
+            <Text style={styles.pushBannerButtonText}>Enable</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderEmptyState = () => {
     if (loading) return null;
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
+        <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
         <Text style={styles.emptyTitle}>No notifications yet</Text>
         <Text style={styles.emptyText}>
           When friends react to your photos, you&apos;ll see it here
@@ -154,9 +227,6 @@ const NotificationsScreen = () => {
     );
   };
 
-  /**
-   * Render loading state
-   */
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -166,7 +236,7 @@ const NotificationsScreen = () => {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+            <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
@@ -186,7 +256,7 @@ const NotificationsScreen = () => {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>
@@ -205,6 +275,7 @@ const NotificationsScreen = () => {
             tintColor={colors.text.primary}
           />
         }
+        ListHeaderComponent={renderPushBanner}
         ListEmptyComponent={renderEmptyState}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
@@ -230,8 +301,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   loadingContainer: {
@@ -271,12 +342,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   messageText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 20,
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
   separator: {
@@ -291,8 +364,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginTop: 16,
     marginBottom: 8,
@@ -302,6 +375,54 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  pushBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background.tertiary,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.brand.purple + '40',
+  },
+  pushBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  pushBannerText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  pushBannerTitle: {
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
+  },
+  pushBannerSubtitle: {
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  pushBannerButton: {
+    backgroundColor: colors.brand.purple,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 2,
+    marginLeft: 12,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  pushBannerButtonText: {
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
   },
 });
 

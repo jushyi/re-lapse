@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
  * AddFriendsPromptCard - Prompt card styled like FriendStoryCard
@@ -22,7 +23,7 @@ const AddFriendsPromptCard = ({ onPress, isFirst = false }) => {
       <View style={styles.cardWrapper}>
         <View style={styles.dashedBorder}>
           <View style={styles.contentContainer}>
-            <Ionicons name="add" size={32} color={colors.text.secondary} />
+            <PixelIcon name="add" size={32} color={colors.text.secondary} />
           </View>
         </View>
       </View>
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
   dashedBorder: {
     width: PHOTO_WIDTH + BORDER_WIDTH * 2,
     height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
-    borderRadius: 14,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.background.tertiary,
     borderStyle: 'dashed',
@@ -60,17 +61,17 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 2,
     backgroundColor: colors.background.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   label: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
     color: colors.text.secondary,
     textAlign: 'center',
     maxWidth: PHOTO_WIDTH + BORDER_WIDTH * 2,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });
 

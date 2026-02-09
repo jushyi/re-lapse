@@ -1,8 +1,9 @@
 import { forwardRef, useRef, useImperativeHandle } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { AlbumCard, AddAlbumCard } from './AlbumCard';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
  * AlbumBar - Horizontal scrolling album bar for profile
@@ -55,7 +56,7 @@ const AlbumBar = forwardRef(
         <View style={styles.container}>
           <Text style={styles.header}>Albums</Text>
           <TouchableOpacity style={styles.emptyPrompt} onPress={onAddPress} activeOpacity={0.8}>
-            <Ionicons
+            <PixelIcon
               name="albums-outline"
               size={28}
               color={colors.text.secondary}
@@ -131,8 +132,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   header: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 12,
     paddingHorizontal: 16,
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -158,7 +159,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   emptyPromptText: {
-    fontSize: 15,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
 });

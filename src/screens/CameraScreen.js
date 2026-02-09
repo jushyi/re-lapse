@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import { CameraView } from 'expo-camera';
 
-import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { colors } from '../constants/colors';
+import PixelIcon from '../components/PixelIcon';
 
 import useCamera, {
   BASE_ROTATION_PER_CARD,
@@ -23,54 +24,18 @@ import { DarkroomBottomSheet } from '../components';
 import { lightImpact } from '../utils/haptics';
 import logger from '../utils/logger';
 
-// Flash icon SVG component - matches bottom nav design system
+// Flash icon - pixel art lightning bolt
 const FlashIcon = ({ color = colors.icon.primary, mode = 'off' }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M13 2L4.09 12.35a1 1 0 0 0 .77 1.65H11v6a1 1 0 0 0 1.84.54l8.91-10.35a1 1 0 0 0-.77-1.65H13V2z"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill={mode === 'on' ? color : 'none'}
-    />
-  </Svg>
+  <PixelIcon
+    name={mode === 'on' || mode === 'auto' ? 'flash-on' : 'flash-off'}
+    size={24}
+    color={color}
+  />
 );
 
-// Flip camera icon SVG component - clean rotation arrows design
+// Flip camera icon - pixel art rotation arrows
 const FlipCameraIcon = ({ color = colors.icon.primary }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    {/* Top arrow - curves right and down */}
-    <Path
-      d="M17 1l4 4-4 4"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M3 11V9a4 4 0 0 1 4-4h14"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    {/* Bottom arrow - curves left and up */}
-    <Path
-      d="M7 23l-4-4 4-4"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M21 13v2a4 4 0 0 1-4 4H3"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <PixelIcon name="flip-camera" size={24} color={color} />
 );
 
 // Card dimensions (must match styles for proper SVG sizing)
@@ -98,8 +63,8 @@ const GradientCard = ({ centerColor, children }) => {
           y="0"
           width={CARD_WIDTH}
           height={CARD_HEIGHT}
-          rx="8"
-          ry="8"
+          rx="2"
+          ry="2"
           fill={centerColor}
         />
         {/* White stroke/border for consistent edge highlight */}
@@ -108,8 +73,8 @@ const GradientCard = ({ centerColor, children }) => {
           y={inset}
           width={CARD_WIDTH - strokeWidth}
           height={CARD_HEIGHT - strokeWidth}
-          rx="7"
-          ry="7"
+          rx="1.5"
+          ry="1.5"
           fill="none"
           stroke="url(#strokeGrad)"
           strokeWidth={strokeWidth}
@@ -126,8 +91,8 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
 
   // Get card color based on state
   const cardColor = hasRevealedPhotos
-    ? colors.interactive.primaryPressed // Purple (ready)
-    : colors.brand.pink; // Pink (developing)
+    ? colors.interactive.primaryPressed // Cyan pressed (ready)
+    : colors.status.developing; // Retro amber (developing)
 
   // Determine number of cards to show (1-4 max)
   const cardCount = Math.min(Math.max(count, 1), 4);
@@ -174,7 +139,11 @@ const DarkroomCardButton = ({ count, onPress, scaleAnim, fanSpreadAnim, hasRevea
             ]}
           >
             <GradientCard centerColor={cardColor}>
-              <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>
+              {count === 0 ? (
+                <PixelIcon name="camera-outline" size={20} color={colors.text.secondary} />
+              ) : (
+                <Text style={styles.darkroomCardText}>{count > 99 ? '99+' : count}</Text>
+              )}
             </GradientCard>
           </Animated.View>
         );

@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,14 +48,10 @@ const StoriesViewerModal = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  // Animated values for swipe gesture
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
-  // Extract friend data
   const { userId, displayName, profilePhotoURL, topPhotos = [] } = friend || {};
-
-  // Current photo
   const currentPhoto = topPhotos[currentIndex] || null;
 
   // Reset index when modal opens with new friend
@@ -160,9 +157,6 @@ const StoriesViewerModal = ({
     })
   ).current;
 
-  /**
-   * Handle tap navigation on photo area
-   */
   const handleTap = event => {
     const { locationX } = event.nativeEvent;
 
@@ -197,21 +191,15 @@ const StoriesViewerModal = ({
         }
       }
     }
-    // Center tap (40%) - do nothing for now (future: pause auto-advance)
+    // Center tap (40%) - no action
   };
 
-  /**
-   * Handle close button press
-   */
   const handleClose = () => {
     logger.debug('StoriesViewer: Close button pressed');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onClose();
   };
 
-  /**
-   * Handle avatar press - close modal and navigate to profile
-   */
   const handleAvatarPress = () => {
     logger.debug('StoriesViewer: Avatar pressed', { userId, displayName });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -221,9 +209,6 @@ const StoriesViewerModal = ({
     }
   };
 
-  /**
-   * Render progress bar segments
-   */
   const renderProgressBar = () => {
     return (
       <View style={styles.progressBarContainer}>
@@ -347,7 +332,7 @@ const styles = StyleSheet.create({
   profilePic: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.overlay.light,
   },
@@ -357,8 +342,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profilePicText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
   },
   friendTextContainer: {
@@ -366,12 +351,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   displayName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 1,
   },
@@ -380,9 +366,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   closeButtonText: {
-    fontSize: 20,
+    fontSize: typography.size.xl,
     color: colors.text.primary,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   photoContainer: {
     flex: 1,

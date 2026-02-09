@@ -2,9 +2,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 /**
@@ -60,6 +61,17 @@ const SettingsScreen = () => {
           label: 'Edit Profile',
           icon: 'person-outline',
           onPress: () => handleNavigate('EditProfile'),
+        },
+      ],
+    },
+    {
+      title: 'Notifications',
+      items: [
+        {
+          id: 'notifications',
+          label: 'Notifications',
+          icon: 'notifications-outline',
+          onPress: () => handleNavigate('NotificationSettings'),
         },
       ],
     },
@@ -137,7 +149,7 @@ const SettingsScreen = () => {
           }}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.icon.primary} />
+          <PixelIcon name="chevron-back" size={28} color={colors.icon.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerSpacer} />
@@ -158,7 +170,7 @@ const SettingsScreen = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <Ionicons
+                  <PixelIcon
                     name={item.icon}
                     size={22}
                     color={item.danger ? colors.status.danger : colors.icon.primary}
@@ -167,7 +179,7 @@ const SettingsScreen = () => {
                     {item.label}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.icon.tertiary} />
+                <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -182,7 +194,7 @@ const SettingsScreen = () => {
             activeOpacity={0.7}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons
+              <PixelIcon
                 name={item.icon}
                 size={22}
                 color={item.danger ? colors.status.danger : colors.icon.primary}
@@ -191,7 +203,7 @@ const SettingsScreen = () => {
                 {item.label}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.icon.tertiary} />
+            <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
           </TouchableOpacity>
         ))}
       </View>
@@ -224,8 +236,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   headerSpacer: {
@@ -242,8 +254,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -262,7 +274,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuItemLabel: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     marginLeft: 16,
   },
@@ -275,7 +288,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   versionText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
   },
 });

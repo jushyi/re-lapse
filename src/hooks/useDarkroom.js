@@ -26,7 +26,11 @@ import {
   revealPhotos,
   batchTriagePhotos,
 } from '../services/firebase/photoService';
-import { isDarkroomReadyToReveal, scheduleNextReveal } from '../services/firebase/darkroomService';
+import {
+  isDarkroomReadyToReveal,
+  scheduleNextReveal,
+  recordTriageCompletion,
+} from '../services/firebase/darkroomService';
 import { successNotification } from '../utils/haptics';
 import { playSuccessSound } from '../utils/soundUtils';
 import logger from '../utils/logger';
@@ -47,13 +51,18 @@ const useDarkroom = () => {
   const [pendingSuccess, setPendingSuccess] = useState(false);
 
   // Undo stack for batched triage - stores decisions locally until Done is tapped
-  // Each entry: { photo: PhotoObject, action: 'archive'|'journal'|'delete', exitDirection: 'left'|'right'|'down' }
+  // Each entry: { photo: PhotoObject, action: 'archive'|'journal'|'delete', exitDirection: 'left'|'right'|'down', tags: string[] }
   const [undoStack, setUndoStack] = useState([]);
   const [undoingPhoto, setUndoingPhoto] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // Track hidden photos instead of removing from array to prevent black flash
   const [hiddenPhotoIds, setHiddenPhotoIds] = useState(new Set());
+
+  // Photo tagging state - tracks tags per photo locally until Done is tapped
+  // { [photoId]: string[] } mapping photoId to array of tagged friend user IDs
+  const [photoTags, setPhotoTags] = useState({});
+  const [tagModalVisible, setTagModalVisible] = useState(false);
 
   // Refs
   const cardRef = useRef(null);
@@ -94,7 +103,6 @@ const useDarkroom = () => {
 
       logger.debug('useDarkroom: Loading photos', { userId: user.uid });
 
-      // Check if darkroom is ready to reveal photos
       const isReady = await isDarkroomReadyToReveal(user.uid);
       logger.info('useDarkroom: Darkroom ready status', { isReady });
 
@@ -124,7 +132,6 @@ const useDarkroom = () => {
       });
 
       if (result.success && result.photos) {
-        // Log all photos with their statuses
         logger.debug('useDarkroom: All photos', {
           photos: result.photos.map(p => ({
             id: p.id,
@@ -143,13 +150,15 @@ const useDarkroom = () => {
         setPhotos(revealedPhotos);
         // Clear hidden state when photos reload to prevent stale state
         setHiddenPhotoIds(new Set());
-        // Also clear undo stack since these are fresh photos
+        // Also clear undo stack and tags since these are fresh photos
         setUndoStack([]);
+        setPhotoTags({});
       } else {
         logger.warn('useDarkroom: Failed to get photos or no photos returned');
         setPhotos([]);
         setHiddenPhotoIds(new Set());
         setUndoStack([]);
+        setPhotoTags({});
       }
     } catch (error) {
       logger.error('useDarkroom: Error loading developing photos', error);
@@ -173,7 +182,6 @@ const useDarkroom = () => {
         currentCount: visiblePhotos.length,
       });
 
-      // Find the photo object to store in undo stack
       const photoToTriage = photos.find(p => p.id === photoId);
       if (!photoToTriage) {
         logger.error('useDarkroom: Photo not found for triage', { photoId });
@@ -183,19 +191,25 @@ const useDarkroom = () => {
       // Determine exit direction based on action
       const exitDirection = action === 'archive' ? 'left' : action === 'journal' ? 'right' : 'down';
 
+      // Capture current tags for this photo (for undo restoration)
+      const currentTags = photoTags[photoId] || [];
+
       // Push to undo stack instead of calling triagePhoto()
       setUndoStack(prev => {
-        const newStack = [...prev, { photo: photoToTriage, action, exitDirection }];
+        const newStack = [
+          ...prev,
+          { photo: photoToTriage, action, exitDirection, tags: currentTags },
+        ];
         logger.debug('useDarkroom: Decision pushed to undo stack', {
           photoId,
           action,
           exitDirection,
+          tagCount: currentTags.length,
           stackSize: newStack.length,
         });
         return newStack;
       });
 
-      // Check if this is the last visible photo
       const isLastPhoto = visiblePhotos.length === 1;
 
       // Set pendingSuccess BEFORE hiding photo to prevent empty state flash
@@ -256,20 +270,27 @@ const useDarkroom = () => {
 
     setSaving(true);
 
-    // Build decisions array from undo stack
     const decisions = undoStack.map(entry => ({
       photoId: entry.photo.id,
       action: entry.action,
     }));
 
-    // Batch save to Firestore
-    const result = await batchTriagePhotos(decisions);
+    // Batch save to Firestore (pass photoTags for tagged photo notifications)
+    const result = await batchTriagePhotos(decisions, photoTags);
 
     if (!result.success) {
       logger.error('useDarkroom: Batch save failed', { error: result.error });
       setSaving(false);
       Alert.alert('Save Failed', 'Could not save your decisions. Please try again.');
       return;
+    }
+
+    // Record triage completion if any photos were journaled (triggers story notifications)
+    if (result.journaledCount > 0) {
+      logger.debug('useDarkroom: Recording triage completion for story notifications', {
+        journaledCount: result.journaledCount,
+      });
+      await recordTriageCompletion(user.uid, result.journaledCount);
     }
 
     // Success - close immediately
@@ -414,6 +435,14 @@ const useDarkroom = () => {
       return next;
     });
 
+    // Restore tags for undone photo
+    if (lastDecision.tags && lastDecision.tags.length > 0) {
+      setPhotoTags(prev => ({
+        ...prev,
+        [lastDecision.photo.id]: lastDecision.tags,
+      }));
+    }
+
     // Clear undo animation state after animation completes
     setTimeout(() => {
       setUndoingPhoto(null);
@@ -423,7 +452,6 @@ const useDarkroom = () => {
     setPendingSuccess(false);
     setTriageComplete(false);
 
-    // Reset success fade animation
     successFadeAnim.setValue(0);
 
     logger.debug('useDarkroom: Undo completed', {
@@ -433,6 +461,55 @@ const useDarkroom = () => {
       newStackSize: undoStack.length - 1,
     });
   }, [undoStack, undoingPhoto, successFadeAnim]);
+
+  /**
+   * Update tags for a specific photo.
+   * @param {string} photoId - Photo ID to tag
+   * @param {string[]} selectedFriendIds - Array of friend user IDs to tag
+   */
+  const handleTagFriends = useCallback((photoId, selectedFriendIds) => {
+    if (!photoId) return;
+    setPhotoTags(prev => {
+      const next = { ...prev };
+      if (selectedFriendIds.length === 0) {
+        delete next[photoId];
+      } else {
+        next[photoId] = selectedFriendIds;
+      }
+      logger.debug('useDarkroom: Updated photo tags', {
+        photoId,
+        tagCount: selectedFriendIds.length,
+      });
+      return next;
+    });
+  }, []);
+
+  /**
+   * Get current tags for a photo.
+   * @param {string} photoId - Photo ID
+   * @returns {string[]} Array of tagged friend user IDs
+   */
+  const getTagsForPhoto = useCallback(
+    photoId => {
+      return photoTags[photoId] || [];
+    },
+    [photoTags]
+  );
+
+  /**
+   * Open the tag friends modal (only if a current photo exists).
+   */
+  const handleOpenTagModal = useCallback(() => {
+    if (!currentPhoto) return;
+    setTagModalVisible(true);
+  }, [currentPhoto]);
+
+  /**
+   * Close the tag friends modal.
+   */
+  const handleCloseTagModal = useCallback(() => {
+    setTagModalVisible(false);
+  }, []);
 
   // Handle back button press
   const handleBackPress = useCallback(() => {
@@ -449,7 +526,6 @@ const useDarkroom = () => {
         useNativeDriver: true,
       }).start();
 
-      // Play success sound in sync with animation
       playSuccessSound();
     }
   }, [visiblePhotos.length, undoStack.length, successFadeAnim]);
@@ -459,7 +535,6 @@ const useDarkroom = () => {
     const prefetchStackImages = async () => {
       if (photos.length === 0) return;
 
-      // Get first 4 visible photos
       const visiblePhotosForPrefetch = photos.filter(p => !hiddenPhotoIds.has(p.id)).slice(0, 4);
       const urls = visiblePhotosForPrefetch.map(p => p.imageURL).filter(Boolean);
 
@@ -489,6 +564,8 @@ const useDarkroom = () => {
     hiddenPhotoIds,
     currentPhoto,
     newlyVisibleIds,
+    photoTags,
+    tagModalVisible,
 
     // Refs
     cardRef,
@@ -508,6 +585,10 @@ const useDarkroom = () => {
     handleDeletePulse,
     handleUndo,
     handleBackPress,
+    handleTagFriends,
+    getTagsForPhoto,
+    handleOpenTagModal,
+    handleCloseTagModal,
   };
 };
 
