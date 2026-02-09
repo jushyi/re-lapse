@@ -16,7 +16,7 @@ import { typography } from '../constants/typography';
 export const SCREEN_HEIGHT = Dimensions.get('window').height;
 export const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6;
 export const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.85; // Expanded height (leaves room for notch)
-// Minimum height for empty state (UAT-008 fix) - ~50% screen
+// Minimum height for empty state - ~50% screen
 export const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 export const styles = StyleSheet.create({
@@ -25,7 +25,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
-  // ISS-004 fix: Animated.View overlay positioned absolutely to cover screen
+  // Animated.View overlay positioned absolutely to cover screen
   animatedOverlay: {
     position: 'absolute',
     top: 0,
@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   // KeyboardAvoidingView wrapper
-  // Note: maxHeight removed (36.1-01) to allow expand/collapse gesture
+  // No maxHeight - allows expand/collapse gesture
   keyboardAvoidContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -50,11 +50,11 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
-    minHeight: MIN_SHEET_HEIGHT, // UAT-008 fix: consistent height even when empty
+    minHeight: MIN_SHEET_HEIGHT, // Consistent height even when empty
     maxHeight: SHEET_HEIGHT,
     overflow: 'hidden',
   },
-  // Handle bar for visual affordance - larger touch target (36.1-01)
+  // Handle bar for visual affordance - larger touch target
   handleBarContainer: {
     alignItems: 'center',
     paddingTop: 16,
@@ -97,7 +97,7 @@ export const styles = StyleSheet.create({
   commentsListContent: {
     paddingBottom: 8,
   },
-  // Empty state - centered with minimum height (UAT-008 fix)
+  // Empty state - centered with minimum height
   emptyContainer: {
     flex: 1,
     minHeight: MIN_SHEET_HEIGHT * 0.5, // Half of sheet min height for content area
@@ -138,7 +138,7 @@ export const styles = StyleSheet.create({
     color: colors.status.danger,
     textAlign: 'center',
   },
-  // Reply indicator in list (indented replies) - legacy, kept for compatibility
+  // Reply indicator in list (indented replies)
   replyContainer: {
     paddingLeft: 52, // Align with parent comment text (40px photo + 12px margin)
   },

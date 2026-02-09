@@ -125,10 +125,6 @@ const FeedScreen = () => {
   const handleCloseMyStoriesRef = useRef(() => {});
   const handleCloseStoriesRef = useRef(() => {});
 
-  /**
-   * Load friend stories data
-   * Reusable function for initial load and refresh
-   */
   const loadFriendStories = async () => {
     if (!user?.uid) return;
 
@@ -149,10 +145,6 @@ const FeedScreen = () => {
     setStoriesLoading(false);
   };
 
-  /**
-   * Load user's own stories data
-   * Reusable function for initial load and refresh
-   */
   const loadMyStories = async () => {
     if (!user?.uid) return;
 
@@ -171,9 +163,6 @@ const FeedScreen = () => {
     setMyStoriesLoading(false);
   };
 
-  /**
-   * Load friend stories data on mount
-   */
   useEffect(() => {
     if (user?.uid) {
       loadFriendStories();
@@ -268,9 +257,7 @@ const FeedScreen = () => {
     loadArchivePhotosFallback();
   }, [loading, photos.length, totalFriendCount, user?.uid]);
 
-  /**
-   * Subscribe to unread notifications for red dot indicator
-   */
+  // Subscribe to unread notifications for red dot indicator
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -347,29 +334,17 @@ const FeedScreen = () => {
     });
   }, [setCallbacks, user?.uid]);
 
-  /**
-   * Handle pull-to-refresh
-   * Refreshes both feed and stories
-   */
   const handleRefresh = async () => {
     logger.debug('FeedScreen: Pull-to-refresh triggered');
     // Refresh all data sources in parallel
     await Promise.all([refreshFeed(), loadFriendStories(), loadMyStories()]);
   };
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * @param {string} userId - User ID to navigate to
-   * @param {string} username - Username for display
-   */
   const handleAvatarPress = (userId, username) => {
     logger.debug('FeedScreen: Avatar pressed, navigating to profile', { userId, username });
     navigation.navigate('OtherUserProfile', { userId, username });
   };
 
-  /**
-   * Handle own avatar press - switch to Profile tab
-   */
   const handleOwnAvatarPress = () => {
     logger.debug('FeedScreen: Own avatar pressed');
     navigation.navigate('Profile');
@@ -487,18 +462,11 @@ const FeedScreen = () => {
     // Mode flags are cleared in the onClose callback
   };
 
-  /**
-   * Handle photo change in stories modal
-   * Updates current index for reaction tracking
-   */
   const handleStoriesPhotoChange = (photo, index) => {
     logger.debug('FeedScreen: Stories photo changed', { photoId: photo?.id, index });
     storiesCurrentIndexRef.current = index;
   };
 
-  /**
-   * Get sorted friends array for consistent navigation
-   */
   const getSortedFriends = () => {
     return [...friendStories].sort((a, b) => {
       const aViewed = hasViewedAllPhotos(a.topPhotos);
@@ -606,9 +574,6 @@ const FeedScreen = () => {
   handleCloseMyStoriesRef.current = handleCloseMyStories;
   handleCloseStoriesRef.current = handleCloseStories;
 
-  /**
-   * Handle photo card press - Navigate to PhotoDetail screen
-   */
   const handlePhotoPress = photo => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
@@ -620,9 +585,7 @@ const FeedScreen = () => {
     navigation.navigate('PhotoDetail');
   };
 
-  /**
-   * Handle comment press on feed card - Navigate with comments visible (UAT-005 fix)
-   */
+  // Navigate to photo detail with comments panel visible
   const handleCommentPress = photo => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
@@ -772,9 +735,6 @@ const FeedScreen = () => {
     }
   };
 
-  /**
-   * Render single feed item
-   */
   const renderFeedItem = ({ item }) => (
     <FeedPhotoCard
       photo={item}
@@ -785,9 +745,6 @@ const FeedScreen = () => {
     />
   );
 
-  /**
-   * Render footer (loading more indicator)
-   */
   const renderFooter = () => {
     if (!loadingMore) return null;
 
@@ -827,9 +784,6 @@ const FeedScreen = () => {
     );
   };
 
-  /**
-   * Render error state
-   */
   const renderErrorState = () => {
     return (
       <View style={styles.errorContainer}>

@@ -35,7 +35,6 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 
-  // Profile photo
   profilePhoto: {
     width: 36,
     height: 36,
@@ -44,7 +43,6 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
   },
 
-  // Fallback icon container
   profilePhotoFallback: {
     width: 36,
     height: 36,
@@ -55,19 +53,16 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Text container for name and timestamp
   textContainer: {
     flex: 1,
   },
 
-  // Display name
   displayName: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
 
-  // Timestamp
   timestamp: {
     fontSize: typography.size.sm,
     fontFamily: typography.fontFamily.body,

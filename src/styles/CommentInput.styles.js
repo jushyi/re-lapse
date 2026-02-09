@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingBottom: Platform.OS === 'ios' ? 12 : 8,
   },
-  // Text input wrapper (UAT-018 fix: alignItems center for placeholder centering)
+  // Text input wrapper - alignItems center for placeholder centering
   inputWrapper: {
     flex: 1,
     flexDirection: 'row',
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 0,
     maxHeight: 80,
-    textAlignVertical: 'center', // UAT-018 fix: center placeholder vertically (Android)
+    textAlignVertical: 'center', // Center placeholder vertically (Android)
   },
   // Image picker button
   imageButton: {
@@ -85,7 +85,7 @@ export const styles = StyleSheet.create({
   gifButtonTextDisabled: {
     color: colors.text.tertiary,
   },
-  // Send button (UAT-032 fix: 44x44 to match inputWrapper visual height with padding)
+  // Send button - 44x44 to match inputWrapper visual height with padding
   sendButton: {
     marginLeft: 8,
     width: 44,

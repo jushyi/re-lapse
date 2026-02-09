@@ -40,7 +40,7 @@ import logger from '../utils/logger';
 const db = getFirestore();
 
 /**
- * Notifications Screen - Friend requests + reaction notifications
+ * ActivityScreen - Friend requests + reaction notifications
  * Accessed via heart icon in feed header
  */
 const ActivityScreen = () => {
@@ -51,9 +51,6 @@ const ActivityScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  /**
-   * Fetch friend requests (incoming only)
-   */
   const fetchFriendRequests = useCallback(async () => {
     if (!user?.uid) return [];
 
@@ -86,9 +83,6 @@ const ActivityScreen = () => {
     return [];
   }, [user?.uid]);
 
-  /**
-   * Fetch notifications (reactions)
-   */
   const fetchNotifications = useCallback(async () => {
     if (!user?.uid) return [];
 
@@ -112,9 +106,6 @@ const ActivityScreen = () => {
     return [];
   }, [user?.uid]);
 
-  /**
-   * Load all data
-   */
   const loadData = useCallback(async () => {
     const [requests, notifs] = await Promise.all([fetchFriendRequests(), fetchNotifications()]);
     setFriendRequests(requests);
@@ -127,17 +118,11 @@ const ActivityScreen = () => {
     loadData();
   }, [loadData]);
 
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  /**
-   * Handle accept friend request
-   */
   const handleAccept = async requestId => {
     mediumImpact();
     const result = await acceptFriendRequest(requestId, user.uid);
@@ -148,9 +133,6 @@ const ActivityScreen = () => {
     }
   };
 
-  /**
-   * Handle decline friend request
-   */
   const handleDecline = async requestId => {
     mediumImpact();
     const result = await declineFriendRequest(requestId, user.uid);
@@ -161,18 +143,12 @@ const ActivityScreen = () => {
     }
   };
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * Uses OtherUserProfile screen in root stack for viewing other users
-   */
+  // Uses OtherUserProfile in root stack (not tab navigator) for viewing other users
   const handleAvatarPress = (userId, displayName) => {
     logger.debug('ActivityScreen: Avatar pressed', { userId, displayName });
     navigation.navigate('OtherUserProfile', { userId, username: displayName });
   };
 
-  /**
-   * Format reactions text
-   */
   const formatReactionsText = reactions => {
     if (!reactions || typeof reactions !== 'object') return '';
     const parts = Object.entries(reactions)
@@ -238,9 +214,6 @@ const ActivityScreen = () => {
     }
   };
 
-  /**
-   * Render friend request item (compact)
-   */
   const renderFriendRequest = ({ item }) => {
     const { otherUser } = item;
     if (!otherUser) return null;
@@ -279,9 +252,6 @@ const ActivityScreen = () => {
     );
   };
 
-  /**
-   * Render notification item
-   */
   const renderNotification = ({ item }) => {
     const actionText = getActionText(item);
     const isUnread = item.read !== true;
@@ -318,9 +288,6 @@ const ActivityScreen = () => {
     );
   };
 
-  /**
-   * Render empty state
-   */
   const renderEmpty = () => {
     if (loading) return null;
 

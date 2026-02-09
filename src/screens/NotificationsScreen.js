@@ -98,9 +98,6 @@ const NotificationsScreen = () => {
     }
   };
 
-  /**
-   * Fetch notifications from Firestore
-   */
   const fetchNotifications = useCallback(async () => {
     if (!user?.uid) {
       setLoading(false);
@@ -133,25 +130,16 @@ const NotificationsScreen = () => {
     }
   }, [user?.uid]);
 
-  /**
-   * Load notifications on mount
-   */
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchNotifications();
     setRefreshing(false);
   };
 
-  /**
-   * Render a single notification item
-   */
   const renderNotificationItem = ({ item }) => {
     // Format reactions display (e.g., "reacted 😂×2 ❤️×1")
     const formatReactionsText = reactions => {
@@ -196,9 +184,6 @@ const NotificationsScreen = () => {
     );
   };
 
-  /**
-   * Render push notification banner when not enabled
-   */
   const renderPushBanner = () => {
     if (hasPushToken) return null;
 
@@ -228,9 +213,6 @@ const NotificationsScreen = () => {
     );
   };
 
-  /**
-   * Render empty state
-   */
   const renderEmptyState = () => {
     if (loading) return null;
 
@@ -245,9 +227,6 @@ const NotificationsScreen = () => {
     );
   };
 
-  /**
-   * Render loading state
-   */
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>

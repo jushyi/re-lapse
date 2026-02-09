@@ -1,8 +1,7 @@
 /**
  * CameraScreen styles
  *
- * Extracted from CameraScreen.js as part of three-way separation refactoring.
- * Contains all StyleSheet definitions for the camera screen component.
+ * StyleSheet definitions for the camera screen component.
  */
 
 import { StyleSheet, Dimensions } from 'react-native';
@@ -11,7 +10,6 @@ import { typography } from '../constants/typography';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Layout constants
 const TAB_BAR_HEIGHT = 65; // Bottom tab navigator height (includes safe area)
 const FOOTER_HEIGHT = 200; // Covers ~1/4 of screen for iOS-native camera feel
 const CAMERA_HEIGHT = SCREEN_HEIGHT - FOOTER_HEIGHT - TAB_BAR_HEIGHT;

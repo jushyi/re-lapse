@@ -2,10 +2,10 @@ export const animations = {
   // Duration scale (ms) - snappier for retro game feel
   duration: {
     instant: 50, // Snap/shake animations
-    fast: 80, // Quick feedback (was 100)
-    normal: 150, // Standard transitions (was 300 - retro games are snappy)
-    slow: 250, // Card animations (was 350)
-    slower: 800, // Skeleton pulse (was 1000)
+    fast: 80, // Quick feedback
+    normal: 150, // Standard transitions
+    slow: 250, // Card animations
+    slower: 800, // Skeleton pulse
     hold: 1600, // Hold-to-reveal duration
   },
 

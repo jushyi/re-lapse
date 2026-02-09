@@ -97,9 +97,6 @@ const FriendsScreen = ({ navigation }) => {
   // Block tracking state
   const [blockedUserIds, setBlockedUserIds] = useState([]);
 
-  /**
-   * Fetch all friends data
-   */
   const fetchFriends = async () => {
     try {
       const result = await getFriendships(user.uid);
@@ -148,9 +145,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch friend requests (incoming and sent)
-   */
   const fetchRequests = async () => {
     try {
       const [incomingResult, sentResult] = await Promise.all([
@@ -214,9 +208,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch contact-based friend suggestions
-   */
   const fetchSuggestions = async () => {
     try {
       // Check if user has synced contacts
@@ -245,9 +236,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch mutual friend suggestions
-   */
   const fetchMutualSuggestions = async () => {
     try {
       const result = await getMutualFriendSuggestions(user.uid);
@@ -272,9 +260,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Fetch users current user has blocked
-   */
   const fetchBlockedUsers = async () => {
     try {
       const result = await getBlockedUserIds(user.uid);
@@ -286,9 +271,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Load all data
-   */
   const loadData = async () => {
     setError(null);
     try {
@@ -308,9 +290,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Set up real-time listener
-   */
   useEffect(() => {
     loadData();
 
@@ -322,9 +301,6 @@ const FriendsScreen = ({ navigation }) => {
     return () => unsubscribe();
   }, [user.uid]);
 
-  /**
-   * Filter friends based on search query
-   */
   useEffect(() => {
     if (!friendsSearchQuery.trim()) {
       setFilteredFriends(friends);
@@ -341,9 +317,7 @@ const FriendsScreen = ({ navigation }) => {
     setFilteredFriends(filtered);
   }, [friendsSearchQuery, friends]);
 
-  /**
-   * Search users by username (debounced)
-   */
+  // Debounced user search by username
   useEffect(() => {
     if (!requestsSearchQuery.trim()) {
       setSearchResults([]);
@@ -357,9 +331,6 @@ const FriendsScreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [requestsSearchQuery]);
 
-  /**
-   * Search users by username
-   */
   const searchUsers = async term => {
     try {
       setSearchLoading(true);
@@ -413,17 +384,11 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle pull-to-refresh
-   */
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  /**
-   * Handle add friend action
-   */
   const handleAddFriend = async userId => {
     try {
       setActionLoading(prev => ({ ...prev, [userId]: true }));
@@ -480,9 +445,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle dismiss suggestion
-   */
   const handleDismissSuggestion = async userId => {
     try {
       mediumImpact();
@@ -499,9 +461,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle dismiss mutual friend suggestion
-   */
   const handleDismissMutualSuggestion = async userId => {
     try {
       mediumImpact();
@@ -515,9 +474,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle sync contacts from Requests tab
-   */
   const handleSyncContacts = async () => {
     try {
       setSuggestionsLoading(true);
@@ -565,9 +521,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle accept request
-   */
   const handleAcceptRequest = async friendshipId => {
     try {
       setActionLoading(prev => ({ ...prev, [friendshipId]: true }));
@@ -586,9 +539,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle deny/cancel request
-   */
   const handleDenyRequest = async friendshipId => {
     try {
       setActionLoading(prev => ({ ...prev, [friendshipId]: true }));
@@ -607,9 +557,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle cancel sent request
-   */
   const handleCancelRequest = async (friendshipId, actionType) => {
     if (actionType === 'cancel') {
       try {
@@ -646,9 +593,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle remove friend (long press)
-   */
   const handleRemoveFriend = friend => {
     Alert.alert(
       'Remove Friend',
@@ -676,9 +620,6 @@ const FriendsScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Handle remove friend from menu (confirmation already shown in FriendCard)
-   */
   const handleRemoveFriendFromMenu = async userId => {
     try {
       mediumImpact();
@@ -697,9 +638,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle block user from menu (confirmation already shown in FriendCard)
-   */
   const handleBlockUser = async userId => {
     try {
       mediumImpact();
@@ -721,9 +659,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle unblock user from menu (confirmation already shown in FriendCard)
-   */
   const handleUnblockUser = async userId => {
     try {
       mediumImpact();
@@ -741,9 +676,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle report user - navigate to report screen
-   */
   const handleReportUser = userId => {
     // Find the friend data to pass to report screen
     const friend = friends.find(f => f.userId === userId);
@@ -755,9 +687,6 @@ const FriendsScreen = ({ navigation }) => {
     });
   };
 
-  /**
-   * Handle friend card action from search results
-   */
   const handleSearchAction = async (userId, actionType) => {
     if (actionType === 'add') {
       await handleAddFriend(userId);
@@ -774,9 +703,6 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Render search bar
-   */
   const renderSearchBar = (value, setValue, placeholder) => (
     <View style={styles.searchContainer}>
       <TextInput
@@ -796,18 +722,12 @@ const FriendsScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render section header
-   */
   const renderSectionHeader = title => (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionHeaderText}>{title}</Text>
     </View>
   );
 
-  /**
-   * Render empty state
-   */
   const renderEmptyState = (icon, title, text) => (
     <View style={styles.emptyContainer}>
       <PixelIcon name={icon} size={48} color={colors.text.tertiary} style={styles.emptyIcon} />
@@ -816,9 +736,6 @@ const FriendsScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render sync contacts prompt
-   */
   const renderSyncPrompt = () => (
     <View style={styles.syncPromptContainer}>
       <PixelIcon
@@ -844,9 +761,6 @@ const FriendsScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render suggestion card with dismiss option
-   */
   const renderSuggestionCard = suggestion => (
     <FriendCard
       user={{
@@ -872,9 +786,6 @@ const FriendsScreen = ({ navigation }) => {
     />
   );
 
-  /**
-   * Render Friends tab content
-   */
   const renderFriendsTab = () => {
     if (loading) {
       return (
@@ -939,9 +850,6 @@ const FriendsScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Render Requests tab content
-   */
   const renderRequestsTab = () => {
     if (loading) {
       return (

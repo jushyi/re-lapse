@@ -25,9 +25,6 @@ const BlockedUsersScreen = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null); // Track which user is being unblocked
 
-  /**
-   * Load blocked users on mount
-   */
   const loadBlockedUsers = useCallback(async () => {
     if (!user?.uid) return;
 
@@ -96,9 +93,6 @@ const BlockedUsersScreen = () => {
     ]);
   };
 
-  /**
-   * Handle profile navigation
-   */
   const handleViewProfile = blockedUser => {
     navigation.navigate('OtherUserProfile', {
       userId: blockedUser.userId,
@@ -107,9 +101,6 @@ const BlockedUsersScreen = () => {
     });
   };
 
-  /**
-   * Render individual blocked user card
-   */
   const renderItem = ({ item }) => (
     <FriendCard
       user={{
@@ -126,18 +117,12 @@ const BlockedUsersScreen = () => {
     />
   );
 
-  /**
-   * Render empty state
-   */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No blocked users</Text>
     </View>
   );
 
-  /**
-   * Render loading state
-   */
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>

@@ -1,8 +1,7 @@
 /**
  * SwipeablePhotoCard styles
  *
- * Extracted from SwipeablePhotoCard.js as part of three-way separation refactoring.
- * Contains all StyleSheet definitions for the swipeable photo card component.
+ * StyleSheet definitions for the swipeable photo card component.
  */
 
 import { StyleSheet, Dimensions } from 'react-native';
@@ -13,13 +12,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   cardContainer: {
-    // Absolute positioning for stacking cards on top of each other (UAT-005)
+    // Absolute positioning for stacking cards on top of each other
     position: 'absolute',
     width: SCREEN_WIDTH * 0.92,
     alignSelf: 'center',
-    // UAT-014: Reduced border radius from 24 to 6 for subtler rounded corners
     borderRadius: 6,
-    // UAT-012: Black background matches screen, prevents gray flash during cascade
+    // Black background matches screen, prevents flash during cascade animation
     backgroundColor: colors.background.primary,
     overflow: 'hidden',
     elevation: 0,

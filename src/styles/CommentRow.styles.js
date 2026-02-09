@@ -97,7 +97,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
-    marginHorizontal: 0, // UAT-031 fix: removed margin entirely (replyButton has paddingRight: 8)
+    marginHorizontal: 0, // No margin - replyButton paddingRight provides spacing
   },
   timestamp: {
     fontSize: typography.size.sm,

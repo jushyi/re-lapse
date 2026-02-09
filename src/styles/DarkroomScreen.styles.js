@@ -1,8 +1,7 @@
 /**
  * DarkroomScreen styles
  *
- * Extracted from DarkroomScreen.js as part of three-way separation refactoring.
- * Contains all StyleSheet definitions for the darkroom screen component.
+ * StyleSheet definitions for the darkroom screen component.
  */
 
 import { StyleSheet } from 'react-native';

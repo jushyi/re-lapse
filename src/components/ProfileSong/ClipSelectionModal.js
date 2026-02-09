@@ -207,7 +207,6 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
                 style={[styles.button, styles.confirmButton]}
                 onPress={handleConfirm}
               >
-                <PixelIcon name="checkmark" size={20} color={colors.text.primary} />
                 <Text style={styles.buttonText}>Use This Song</Text>
               </TouchableOpacity>
             </View>
@@ -322,9 +321,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.purple,
   },
   buttonText: {
-    fontSize: typography.size.lg,
+    fontSize: typography.size.md,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
+    flexShrink: 1,
   },
   buttonTextActive: {
     color: colors.brand.purple,

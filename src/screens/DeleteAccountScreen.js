@@ -313,7 +313,6 @@ const DeleteAccountScreen = () => {
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
-  // Render warning step
   const renderWarningStep = () => (
     <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
       <View style={styles.warningIconContainer}>
@@ -405,7 +404,6 @@ const DeleteAccountScreen = () => {
     </ScrollView>
   );
 
-  // Render verify step
   const renderVerifyStep = () => (
     <View style={styles.content}>
       <Text style={styles.title}>Verify Your Identity</Text>
@@ -431,7 +429,6 @@ const DeleteAccountScreen = () => {
     </View>
   );
 
-  // Render code step
   const renderCodeStep = () => (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -478,7 +475,6 @@ const DeleteAccountScreen = () => {
     </KeyboardAvoidingView>
   );
 
-  // Render scheduling step
   const renderSchedulingStep = () => (
     <View style={styles.contentCentered}>
       <ActivityIndicator size="large" color={colors.status.danger} />

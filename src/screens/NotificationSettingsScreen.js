@@ -90,9 +90,6 @@ const NotificationSettingsScreen = () => {
     }
   }, [userProfile?.notificationPreferences]);
 
-  /**
-   * Save preferences to Firestore
-   */
   const savePreferences = async newPreferences => {
     if (!user?.uid) return;
 
@@ -109,9 +106,6 @@ const NotificationSettingsScreen = () => {
     }
   };
 
-  /**
-   * Handle master toggle change
-   */
   const handleMasterToggle = value => {
     const newPreferences = { ...preferences, enabled: value };
     setPreferences(newPreferences);
@@ -119,9 +113,6 @@ const NotificationSettingsScreen = () => {
     logger.debug('NotificationSettingsScreen: Master toggle changed', { enabled: value });
   };
 
-  /**
-   * Handle individual notification type toggle
-   */
   const handleTypeToggle = (typeId, value) => {
     const newPreferences = { ...preferences, [typeId]: value };
     setPreferences(newPreferences);

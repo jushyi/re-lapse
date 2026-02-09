@@ -64,7 +64,7 @@ export const styles = StyleSheet.create({
   },
   photoScrollView: {
     flex: 1,
-    borderRadius: 4, // UAT-035 fix: sharper corners (was 24)
+    borderRadius: 4, // Sharper corners for retro feel
     overflow: 'hidden',
     marginHorizontal: 8,
     marginBottom: 8,
@@ -80,7 +80,7 @@ export const styles = StyleSheet.create({
   profilePicContainer: {
     position: 'absolute',
     top: (StatusBar.currentHeight || 44) + 14,
-    left: 22, // UAT-027 fix: shifted 6px right (was 16)
+    left: 22,
     zIndex: 5,
   },
   profilePic: {
@@ -102,8 +102,8 @@ export const styles = StyleSheet.create({
   },
   userInfoOverlay: {
     position: 'absolute',
-    // bottom: dynamic via inline style (UAT-019 fix: 140 with comments, 100 without)
-    left: 22, // UAT-027 fix: shifted 6px right (was 16)
+    // bottom: dynamic via inline style (140 with comments, 100 without)
+    left: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -124,13 +124,11 @@ export const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  // Comment preview container - below user info (UAT-004 fix: absolute positioning)
-  // UAT-011 fix: removed paddingBottom for better alignment with username
-  // UAT-034 followup: moved up 15px to match userInfoOverlay (was 85)
+  // Comment preview container - absolutely positioned below user info, above footer
   commentPreviewContainer: {
     position: 'absolute',
     bottom: 100, // Below userInfoOverlay, above footer
-    left: 22, // UAT-027 fix: shifted 6px right (was 16)
+    left: 22,
     right: 16,
   },
   footer: {
@@ -142,7 +140,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.overlay.darker,
     gap: 8,
   },
-  // Comment input trigger - left side of footer (UAT-001 fix: 50/50 split)
+  // Comment input trigger - left side of footer (50/50 split with emoji pills)
   commentInputTrigger: {
     flex: 1,
     flexDirection: 'row',
@@ -161,7 +159,7 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
-  // Emoji pills scroll view - right side of footer (UAT-001 fix: 50/50 split)
+  // Emoji pills scroll view - right side of footer (50/50 split with comment input)
   emojiPickerScrollView: {
     flex: 1,
   },

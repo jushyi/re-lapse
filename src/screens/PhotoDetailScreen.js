@@ -112,9 +112,6 @@ const PhotoDetailScreen = () => {
     setIsTransitioning(false);
   }, []);
 
-  /**
-   * Handle close - navigate back
-   */
   const handleClose = useCallback(() => {
     // Call context close handler
     contextClose();
@@ -152,10 +149,7 @@ const PhotoDetailScreen = () => {
     return true;
   }, [contextHasNextFriend, handleRequestNextFriend, cubeRotation, isTransitioning]);
 
-  /**
-   * ISS-005: Handle swipe-up gesture to open comments
-   * Only opens if comments are currently closed
-   */
+  // Opens comments on swipe-up if not already visible
   const handleSwipeUpToOpenComments = useCallback(() => {
     if (!showComments) {
       setShowComments(true);
@@ -209,7 +203,7 @@ const PhotoDetailScreen = () => {
     onReactionToggle: handleReactionToggle,
     currentUserId: contextUserId,
     onFriendTransition: contextHasNextFriend ? handleFriendTransition : null,
-    onSwipeUp: handleSwipeUpToOpenComments, // ISS-005: swipe up to open comments
+    onSwipeUp: handleSwipeUpToOpenComments,
   });
 
   // Sync comments visibility with hook (so panResponder knows not to capture gestures)
@@ -220,10 +214,7 @@ const PhotoDetailScreen = () => {
   // Check if viewing own photo (disable avatar tap)
   const isOwnPhoto = currentPhoto?.userId === contextUserId;
 
-  /**
-   * Handle avatar press - navigate to user's profile
-   * Disabled for own photos
-   */
+  // Disabled for own photos
   const handleAvatarPress = useCallback(() => {
     if (isOwnPhoto) return;
     if (contextAvatarPress && currentPhoto) {
@@ -246,9 +237,6 @@ const PhotoDetailScreen = () => {
     [contextAvatarPress]
   );
 
-  /**
-   * Handle archive - show confirmation and archive photo
-   */
   const handleArchive = useCallback(() => {
     setShowPhotoMenu(false);
     Alert.alert(
@@ -272,9 +260,6 @@ const PhotoDetailScreen = () => {
     );
   }, [currentPhoto?.id, contextUserId, handleClose, handlePhotoStateChanged]);
 
-  /**
-   * Handle restore - no confirmation needed for non-destructive action
-   */
   const handleRestore = useCallback(async () => {
     setShowPhotoMenu(false);
     const result = await restorePhoto(currentPhoto.id, contextUserId);
@@ -287,9 +272,7 @@ const PhotoDetailScreen = () => {
     }
   }, [currentPhoto?.id, contextUserId, handlePhotoStateChanged]);
 
-  /**
-   * Handle delete - moves photo to Recently Deleted (30-day grace period)
-   */
+  // Soft delete: moves to Recently Deleted with 30-day grace period
   const handleDeleteConfirm = useCallback(() => {
     setShowPhotoMenu(false);
     Alert.alert(
@@ -314,9 +297,6 @@ const PhotoDetailScreen = () => {
     );
   }, [currentPhoto?.id, contextUserId, handleClose, handlePhotoStateChanged]);
 
-  /**
-   * Build menu options based on photo state
-   */
   const menuOptions = useMemo(() => {
     if (!isOwnPhoto) return [];
 
@@ -346,9 +326,6 @@ const PhotoDetailScreen = () => {
     return options;
   }, [isOwnPhoto, currentPhoto?.photoState, handleArchive, handleRestore, handleDeleteConfirm]);
 
-  /**
-   * Handle menu button press - capture position for anchored menu
-   */
   const handleMenuButtonLayout = useCallback(event => {
     const { x, y, width, height } = event.nativeEvent.layout;
     setMenuAnchor({ x, y, width, height });
