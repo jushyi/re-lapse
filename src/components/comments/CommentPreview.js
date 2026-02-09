@@ -15,6 +15,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 
 /**
  * CommentPreview Component
@@ -130,16 +131,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   commentText: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
     lineHeight: 18,
   },
   username: {
-    fontWeight: 'bold',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   commentContent: {
-    fontWeight: '400',
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
   },
   mediaIndicator: {
@@ -147,7 +149,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
   },

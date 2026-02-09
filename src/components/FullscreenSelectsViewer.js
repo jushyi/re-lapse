@@ -8,8 +8,9 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CYCLE_INTERVAL_MS = 750; // Faster cycling
@@ -126,7 +127,7 @@ const FullscreenSelectsViewer = ({ visible, selects = [], initialIndex = 0, onCl
             <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
               {/* Close button in top-right corner */}
               <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.7}>
-                <Ionicons name="close" size={28} color={colors.text.primary} />
+                <PixelIcon name="close" size={28} color={colors.text.primary} />
               </TouchableOpacity>
 
               {/* Fullscreen image */}
@@ -139,7 +140,7 @@ const FullscreenSelectsViewer = ({ visible, selects = [], initialIndex = 0, onCl
               {/* Pause indicator */}
               {isPaused && (
                 <View style={styles.pauseIndicator}>
-                  <Ionicons name="pause" size={24} color={colors.text.primary} />
+                  <PixelIcon name="pause" size={24} color={colors.text.primary} />
                 </View>
               )}
             </SafeAreaView>
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 9999,
     backgroundColor: colors.overlay.dark,
     justifyContent: 'center',
     alignItems: 'center',
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 4,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
 });

@@ -1,15 +1,11 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
- * Reusable Button Component with dark theme support
- * @param {string} title - Button text
- * @param {function} onPress - Function to call on press
- * @param {string} variant - 'primary', 'secondary', 'outline', 'danger'
- * @param {boolean} disabled - Whether button is disabled
- * @param {boolean} loading - Whether to show loading spinner
- * @param {object} style - Additional styles
+ * Retro 16-Bit Button Component
+ * Blocky pixel borders, pixel font, CRT glow on primary
  */
 const Button = ({
   title,
@@ -59,7 +55,7 @@ const Button = ({
       {loading ? (
         <ActivityIndicator color={colors.text.primary} />
       ) : (
-        <Text style={getTextStyle()}>{title}</Text>
+        <Text style={getTextStyle()}>{title?.toUpperCase()}</Text>
       )}
     </TouchableOpacity>
   );
@@ -69,48 +65,59 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
+    letterSpacing: 1,
   },
-  // Primary button - dark theme CTA (inverted: light on dark background)
+  // Primary - electric cyan with dark text, CRT glow
   primaryButton: {
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.interactive.primary,
+    borderColor: colors.interactive.primary,
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
   },
   primaryButtonText: {
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
-  // Secondary button - subtle dark variant
+  // Secondary - dark surface with pixel border
   secondaryButton: {
     backgroundColor: colors.background.tertiary,
+    borderColor: colors.border.default,
   },
   secondaryButtonText: {
     color: colors.text.primary,
   },
-  // Outline button - transparent with subtle border
+  // Outline - transparent with retro border
   outlineButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
+    borderWidth: 2,
+    borderColor: colors.border.default,
   },
   outlineButtonText: {
     color: colors.text.primary,
   },
-  // Danger button - red with white text
+  // Danger - pixel red
   dangerButton: {
     backgroundColor: colors.status.danger,
+    borderColor: colors.status.danger,
   },
   dangerButtonText: {
     color: colors.text.primary,
   },
   // Disabled state
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 });
 

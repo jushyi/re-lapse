@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32; // 16px margins on each side
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
   container: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
   },
@@ -65,8 +66,8 @@ const styles = StyleSheet.create({
   },
   monthText: {
     color: colors.text.primary,
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,

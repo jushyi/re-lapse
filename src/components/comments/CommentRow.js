@@ -12,7 +12,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../../utils/timeUtils';
 import { colors } from '../../constants/colors';
@@ -253,7 +253,7 @@ const CommentRow = ({
 
         {/* Heart Icon */}
         <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
-          <Ionicons
+          <PixelIcon
             name={isLiked ? 'heart' : 'heart-outline'}
             size={18}
             color={isLiked ? colors.status.danger : colors.text.secondary}

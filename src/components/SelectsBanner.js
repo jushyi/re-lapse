@@ -8,8 +8,9 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const BANNER_HEIGHT = 250;
 const CYCLE_INTERVAL_MS = 750; // Faster cycling
@@ -117,7 +118,7 @@ const SelectsBanner = ({ selects = [], isOwnProfile = true, onTap }) => {
       <GestureHandlerRootView style={styles.gestureRoot}>
         <GestureDetector gesture={tapGesture}>
           <View style={styles.emptyContainer}>
-            <Ionicons name="camera-outline" size={48} color={colors.text.secondary} />
+            <PixelIcon name="camera-outline" size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>Tap to add highlights</Text>
           </View>
         </GestureDetector>
@@ -129,7 +130,7 @@ const SelectsBanner = ({ selects = [], isOwnProfile = true, onTap }) => {
   if (selects.length === 0 && !isOwnProfile) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="sad-outline" size={48} color={colors.text.secondary} />
+        <PixelIcon name="sad-outline" size={48} color={colors.text.secondary} />
         <Text style={styles.emptyText}>This user has no highlights</Text>
       </View>
     );
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   },
   container: {
     height: BANNER_HEIGHT,
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: colors.background.secondary,
   },
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     height: BANNER_HEIGHT,
-    borderRadius: 8,
+    borderRadius: 2,
     backgroundColor: colors.background.secondary,
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -180,7 +181,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     marginTop: 12,
   },
 });

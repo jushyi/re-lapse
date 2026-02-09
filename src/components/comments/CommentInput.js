@@ -20,7 +20,7 @@ import React, {
 } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../constants/colors';
@@ -242,7 +242,7 @@ const CommentInput = forwardRef(
               Replying to <Text style={styles.replyBannerUsername}>@{replyUsername}</Text>
             </Text>
             <TouchableOpacity style={styles.replyBannerCancel} onPress={handleCancelReply}>
-              <Ionicons name="close" size={18} color={colors.text.secondary} />
+              <PixelIcon name="close" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
         )}
@@ -257,7 +257,7 @@ const CommentInput = forwardRef(
             />
             <TouchableOpacity onPress={clearMedia} style={styles.removeMediaButton}>
               <View style={styles.removeMediaButtonBg}>
-                <Ionicons name="close" size={14} color="white" />
+                <PixelIcon name="close" size={14} color="white" />
               </View>
             </TouchableOpacity>
             {selectedMedia.type === 'gif' && (
@@ -296,7 +296,7 @@ const CommentInput = forwardRef(
               onPress={handleImagePick}
               disabled={isUploading}
             >
-              <Ionicons
+              <PixelIcon
                 name="image-outline"
                 size={22}
                 color={isUploading ? colors.text.tertiary : colors.text.secondary}
@@ -326,7 +326,7 @@ const CommentInput = forwardRef(
             {isUploading ? (
               <Text style={styles.uploadingText}>...</Text>
             ) : (
-              <Ionicons
+              <PixelIcon
                 name="arrow-up"
                 size={20}
                 color={isDisabled ? colors.text.tertiary : colors.text.primary}

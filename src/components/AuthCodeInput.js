@@ -1,17 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const CODE_LENGTH = 6;
 
 /**
- * AuthCodeInput - 6-digit verification code input with individual boxes
- * @param {string} value - Current code value (max 6 chars)
- * @param {function} onChange - Called when code changes (code: string) => void
- * @param {function} onComplete - Called when 6 digits entered (code: string) => void
- * @param {boolean} error - Show error styling on all boxes
- * @param {boolean} disabled - Disable input
- * @param {boolean} autoFocus - Auto-focus on mount
+ * Retro 16-Bit AuthCodeInput
+ * Square pixel boxes, display font digits, cyan glow on active
  */
 const AuthCodeInput = ({
   value = '',
@@ -23,7 +19,6 @@ const AuthCodeInput = ({
 }) => {
   const inputRef = useRef(null);
 
-  // Auto-submit when 6 digits entered
   useEffect(() => {
     if (value.length === CODE_LENGTH && onComplete) {
       onComplete(value);
@@ -31,7 +26,6 @@ const AuthCodeInput = ({
   }, [value, onComplete]);
 
   const handleChangeText = text => {
-    // Only allow numeric input, max 6 characters
     const numericText = text.replace(/[^0-9]/g, '').slice(0, CODE_LENGTH);
     onChange(numericText);
   };
@@ -97,25 +91,35 @@ const styles = StyleSheet.create({
   box: {
     width: 48,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 0,
     backgroundColor: colors.background.secondary,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   boxActive: {
-    borderColor: colors.text.primary,
+    borderColor: colors.interactive.primary,
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   boxFilled: {
-    borderColor: colors.border.subtle,
+    borderColor: colors.border.default,
   },
   boxError: {
     borderColor: colors.status.danger,
+    shadowColor: '#FF3333',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 2,
   },
   digit: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
   },

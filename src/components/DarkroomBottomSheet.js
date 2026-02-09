@@ -14,11 +14,12 @@ import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Card with gradient border effect - consistent edge highlight using stroke
-const GradientCard = ({ centerColor, width, height, borderRadius = 8, children }) => {
+const GradientCard = ({ centerColor, width, height, borderRadius = 2, children }) => {
   const strokeWidth = 1.5;
   const inset = strokeWidth / 2;
 
@@ -58,7 +59,7 @@ const GradientCard = ({ centerColor, width, height, borderRadius = 8, children }
 };
 
 // Hold button with gradient border effect
-const GradientButton = ({ centerColor, width, height, borderRadius = 16, children, style }) => {
+const GradientButton = ({ centerColor, width, height, borderRadius = 4, children, style }) => {
   const strokeWidth = 2;
   const inset = strokeWidth / 2;
 
@@ -110,9 +111,47 @@ const BASE_OFFSET_PER_CARD = 5;
 // Hold duration - 1.6 seconds (1.25x faster than original 2 seconds)
 const HOLD_DURATION = 1600;
 
-// Spinner rotation durations
-const SPINNER_NORMAL_DURATION = 2000;
-const SPINNER_FAST_DURATION = 667; // 3x faster during hold
+// Spinner chase durations (snappy retro timing)
+const SPINNER_NORMAL_DURATION = 1200;
+const SPINNER_FAST_DURATION = 400; // 3x faster during hold
+
+// Pixel block chase spinner configuration
+const NUM_BLOCKS = 8;
+const BLOCK_POSITIONS = [
+  { left: 10, top: 0 }, // top-center
+  { left: 20, top: 0 }, // top-right
+  { left: 20, top: 10 }, // right-center
+  { left: 20, top: 20 }, // bottom-right
+  { left: 10, top: 20 }, // bottom-center
+  { left: 0, top: 20 }, // bottom-left
+  { left: 0, top: 10 }, // left-center
+  { left: 0, top: 0 }, // top-left
+];
+
+const getBlockOpacity = (animationPhase, blockIndex) => {
+  const inputRange = [];
+  const outputRange = [];
+
+  for (let step = 0; step <= NUM_BLOCKS; step++) {
+    inputRange.push(step / NUM_BLOCKS);
+    const activeBlock = step % NUM_BLOCKS;
+    const behind = (activeBlock - blockIndex + NUM_BLOCKS) % NUM_BLOCKS;
+
+    let opacity;
+    if (behind === 0) opacity = 1.0;
+    else if (behind === 1) opacity = 0.5;
+    else if (behind === 2) opacity = 0.25;
+    else opacity = 0.1;
+
+    outputRange.push(opacity);
+  }
+
+  return animationPhase.interpolate({
+    inputRange,
+    outputRange,
+    extrapolate: 'clamp',
+  });
+};
 
 // Crescendo haptic configuration
 const HAPTIC_CONFIG = {
@@ -146,24 +185,29 @@ const COLORS = {
   buttonFill: colors.brand.gradient.revealed[1], // '#F472B6' (pink)
 };
 
-// Spinner: 3/4 solid arc with gap, spins around static play triangle
-const SpinnerIcon = ({ rotation, color = COLORS.textPrimary }) => {
+// Spinner: retro pixel block chase around static play triangle
+const SpinnerIcon = ({ animationPhase, color = COLORS.textPrimary }) => {
+  // Memoize interpolation objects so they are not recreated each render
+  const blockOpacities = useRef(
+    BLOCK_POSITIONS.map((_, index) => getBlockOpacity(animationPhase, index))
+  ).current;
+
   return (
     <View style={styles.spinnerOuter}>
-      {/* Rotating 3/4 arc ring */}
-      <Animated.View style={[styles.spinnerRingContainer, { transform: [{ rotate: rotation }] }]}>
-        <View
+      {BLOCK_POSITIONS.map((pos, index) => (
+        <Animated.View
+          key={index}
           style={[
-            styles.spinnerRing,
+            styles.pixelBlock,
             {
-              borderTopColor: color,
-              borderRightColor: color,
-              borderBottomColor: color,
-              borderLeftColor: 'transparent',
+              left: pos.left,
+              top: pos.top,
+              opacity: blockOpacities[index],
             },
+            Platform.OS === 'ios' && styles.pixelBlockGlow,
           ]}
         />
-      </Animated.View>
+      ))}
       {/* Static play triangle in center */}
       <View style={[styles.playTriangle, { borderLeftColor: color }]} />
     </View>
@@ -211,12 +255,6 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
 
     spinnerAnimation.current.start();
   };
-
-  // Interpolate spinner rotation to degrees
-  const spinnerRotationDeg = spinnerRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   // Animate sheet slide when visibility changes
   useEffect(() => {
@@ -461,10 +499,12 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
           ]}
         >
           <GradientCard
-            centerColor={COLORS.cardBackground}
+            centerColor={
+              hasRevealedPhotos ? colors.interactive.primaryPressed : colors.status.developing
+            }
             width={CARD_WIDTH}
             height={CARD_HEIGHT}
-            borderRadius={8}
+            borderRadius={2}
           >
             {isTopCard && (
               <Text style={styles.cardStackText}>{totalCount > 99 ? '99+' : totalCount}</Text>
@@ -538,20 +578,22 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
                 centerColor={COLORS.buttonGradientEnd}
                 width={SCREEN_WIDTH - 48}
                 height={64}
-                borderRadius={16}
+                borderRadius={4}
                 style={styles.holdButtonBase}
               >
-                {/* Fill overlay that darkens left-to-right */}
-                <Animated.View
-                  style={[
-                    styles.fillOverlay,
-                    { width: progressWidth, backgroundColor: COLORS.overlayDark },
-                  ]}
-                />
+                {/* Fill overlay that darkens left-to-right, contained within stroke border */}
+                <View style={styles.fillContainer}>
+                  <Animated.View
+                    style={[
+                      styles.fillOverlay,
+                      { width: progressWidth, backgroundColor: COLORS.overlayDark },
+                    ]}
+                  />
+                </View>
 
                 {/* Button content */}
                 <View style={styles.holdButtonContent}>
-                  <SpinnerIcon rotation={spinnerRotationDeg} />
+                  <SpinnerIcon animationPhase={spinnerRotation} />
                   <Text style={styles.holdButtonText}>
                     {isPressing ? 'Revealing...' : 'Hold to reveal photos'}
                   </Text>
@@ -579,8 +621,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: COLORS.sheetBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: Platform.OS === 'ios' ? 48 : 32,
@@ -601,8 +643,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
     color: COLORS.textPrimary,
     marginRight: 10,
   },
@@ -612,7 +654,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: COLORS.textSecondary,
   },
   // Card stack container
@@ -626,9 +669,9 @@ const styles = StyleSheet.create({
   cardStackCardWrapper: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 8,
+    borderRadius: 2,
     // White glow effect emanating from card edges
-    shadowColor: '#FFFFFF',
+    shadowColor: colors.text.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -636,14 +679,14 @@ const styles = StyleSheet.create({
   },
   cardStackText: {
     color: COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
   },
   // Hold button
   holdButtonContainer: {
     width: '100%',
     marginTop: 16,
-    borderRadius: 16,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   holdButtonBase: {
@@ -651,13 +694,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  fillOverlay: {
+  fillContainer: {
     position: 'absolute',
     top: 2,
     left: 2,
+    right: 2,
     bottom: 2,
-    borderTopLeftRadius: 14,
-    borderBottomLeftRadius: 14,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  fillOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
   },
   holdButtonContent: {
     flexDirection: 'row',
@@ -666,30 +716,30 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   holdButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.bodyBold,
     color: COLORS.textPrimary,
     marginLeft: 12,
   },
-  // Spinner - 3/4 solid arc with 1/4 gap
+  // Spinner - retro pixel block chase
   spinnerOuter: {
     width: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  spinnerRingContainer: {
+  pixelBlock: {
     position: 'absolute',
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 4,
+    height: 4,
+    borderRadius: 0,
+    backgroundColor: colors.interactive.primary, // '#00D4FF' electric cyan
   },
-  spinnerRing: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
+  pixelBlockGlow: {
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
   },
   playTriangle: {
     width: 0,
@@ -702,7 +752,8 @@ const styles = StyleSheet.create({
     marginLeft: 3, // Offset to center visually
   },
   developingText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,

@@ -3,11 +3,8 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../constants/colors';
 
 /**
- * Reusable Card Component
- * @param {ReactNode} children - Card content
- * @param {function} onPress - Function to call on press (makes card touchable)
- * @param {object} style - Additional styles
- * @param {boolean} elevated - Whether to show shadow elevation
+ * Retro 16-Bit Card Component
+ * Blocky corners, subtle pixel border, CRT glow elevation
  */
 const Card = ({ children, onPress, style, elevated = true }) => {
   const containerStyle = [styles.card, elevated && styles.elevated, style];
@@ -26,16 +23,18 @@ const Card = ({ children, onPress, style, elevated = true }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.card,
-    borderRadius: 16,
+    borderRadius: 4,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
   },
   elevated: {
-    shadowColor: colors.background.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // Android
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
 });
 

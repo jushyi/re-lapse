@@ -23,7 +23,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import EmojiPicker from 'rn-emoji-keyboard';
 import { getTimeAgo } from '../utils/timeUtils';
 import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
@@ -446,7 +446,7 @@ const PhotoDetailModal = ({
               onPress={() => setShowComments(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
+              <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
               <Text style={styles.commentInputTriggerText} numberOfLines={1}>
                 {currentPhoto?.commentCount > 0
                   ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`

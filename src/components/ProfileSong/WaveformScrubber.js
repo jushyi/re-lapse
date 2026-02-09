@@ -22,6 +22,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 
 const BAR_COUNT = 60; // Number of bars in waveform visualization
 
@@ -224,12 +225,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   timeLabel: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
   },
   timeLabelDuration: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
   },

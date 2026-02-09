@@ -14,7 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import * as ImagePicker from 'expo-image-picker';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -26,6 +26,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 // Enable LayoutAnimation on Android
@@ -256,7 +257,7 @@ const DeleteBar = ({ isVisible, isHovering }) => {
     <Animated.View
       style={[styles.deleteBar, animatedStyle, isHovering && styles.deleteBarHovering]}
     >
-      <Ionicons
+      <PixelIcon
         name="trash-outline"
         size={20}
         color={colors.text.primary}
@@ -556,7 +557,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
       onPress={handlePickSinglePhoto}
       activeOpacity={0.8}
     >
-      <Ionicons name="images-outline" size={64} color={colors.text.secondary} />
+      <PixelIcon name="images-outline" size={64} color={colors.text.secondary} />
       <Text style={styles.previewEmptyText}>Tap to add photos</Text>
     </TouchableOpacity>
   );
@@ -609,7 +610,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
         onPress={() => handleThumbnailPress(index)}
         activeOpacity={0.7}
       >
-        <Ionicons name="add" size={24} color={colors.text.secondary} />
+        <PixelIcon name="add" size={24} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
@@ -631,7 +632,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
                   onPress={handleCancel}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={28} color={colors.text.primary} />
+                  <PixelIcon name="close" size={28} color={colors.text.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Edit Highlights</Text>
                 <View style={styles.headerSpacer} />
@@ -713,8 +714,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
   },
   previewEmpty: {
     backgroundColor: colors.background.tertiary,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.border.subtle,
     borderStyle: 'dashed',
@@ -737,12 +738,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   previewEmptyText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 12,
   },
   previewImage: {
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
   },
   thumbnailSection: {
@@ -762,7 +764,7 @@ const styles = StyleSheet.create({
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -784,12 +786,12 @@ const styles = StyleSheet.create({
   thumbnailImage: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
   },
   thumbnailTouchable: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   spacer: {
@@ -803,7 +805,7 @@ const styles = StyleSheet.create({
   saveButton: {
     height: 48,
     backgroundColor: colors.brand.purple,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -812,14 +814,14 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   deleteBar: {
     height: DELETE_BAR_HEIGHT,
     backgroundColor: colors.status.danger,
     opacity: 0.9,
-    borderRadius: 8,
+    borderRadius: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -833,8 +835,8 @@ const styles = StyleSheet.create({
   },
   deleteBarText: {
     color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });
 

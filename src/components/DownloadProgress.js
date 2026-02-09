@@ -8,6 +8,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
  * Progress status messages
@@ -97,7 +98,8 @@ const styles = StyleSheet.create({
   statusText: {
     marginTop: 12,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
 });

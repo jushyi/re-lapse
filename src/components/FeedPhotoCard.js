@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
 import { colors } from '../constants/colors';
@@ -113,7 +113,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
             <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
           ) : (
             <View style={styles.profilePhotoFallback}>
-              <Ionicons name="person-circle" size={36} color={colors.text.secondary} />
+              <PixelIcon name="person-circle" size={36} color={colors.text.secondary} />
             </View>
           )}
         </TouchableOpacity>

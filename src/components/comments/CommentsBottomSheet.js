@@ -24,7 +24,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import CommentWithReplies from './CommentWithReplies';
 import CommentInput from './CommentInput';
@@ -551,7 +551,7 @@ const CommentsBottomSheet = ({
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="chatbubble-outline" size={48} color={colors.text.tertiary} />
+        <PixelIcon name="chatbubble-outline" size={48} color={colors.text.tertiary} />
         <Text style={styles.emptyText}>No comments yet</Text>
         <Text style={styles.emptySubtext}>Be the first to comment</Text>
       </View>
@@ -572,7 +572,7 @@ const CommentsBottomSheet = ({
    */
   const renderError = () => (
     <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.status.danger} />
+      <PixelIcon name="alert-circle-outline" size={48} color={colors.status.danger} />
       <Text style={styles.errorText}>{error || 'Failed to load comments'}</Text>
     </View>
   );
@@ -681,7 +681,7 @@ const CommentsBottomSheet = ({
                 )}
               </View>
               <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
+                <PixelIcon name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
 

@@ -20,8 +20,9 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from '../PixelIcon';
 import { colors } from '../../constants/colors';
+import { typography } from '../../constants/typography';
 import { playPreview, stopPreview, pausePreview, resumePreview } from '../../services/audioPlayer';
 import logger from '../../utils/logger';
 
@@ -164,7 +165,7 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
   if (!song) {
     return (
       <TouchableOpacity style={styles.emptyContainer} onPress={handlePress} activeOpacity={0.7}>
-        <Ionicons name="musical-notes-outline" size={24} color={colors.text.secondary} />
+        <PixelIcon name="musical-notes-outline" size={24} color={colors.text.secondary} />
         <Text style={styles.emptyText}>Add a song</Text>
       </TouchableOpacity>
     );
@@ -199,7 +200,7 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
           onPress={handlePlayPause}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
+          <PixelIcon
             name={isPlaying ? 'pause-circle' : 'play-circle'}
             size={32}
             color={colors.text.primary}
@@ -219,7 +220,7 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     overflow: 'hidden',
   },
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   albumArt: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 2,
     backgroundColor: colors.background.secondary,
   },
   songInfo: {
@@ -248,12 +249,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   title: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   artist: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     minHeight: 60,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,
@@ -291,7 +293,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
   },
 });

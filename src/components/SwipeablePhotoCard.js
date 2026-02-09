@@ -28,7 +28,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import logger from '../utils/logger';
 import useSwipeableCard from '../hooks/useSwipeableCard';
 import { styles } from '../styles/SwipeablePhotoCard.styles';
@@ -114,7 +114,7 @@ const SwipeablePhotoCard = forwardRef(
             onPress={onTagPress}
             activeOpacity={0.7}
           >
-            <Ionicons name="person-add-outline" size={20} color={colors.icon.primary} />
+            <PixelIcon name="add" size={20} color={colors.icon.primary} />
             {hasTagged && <View style={styles.tagOverlayBadge} />}
           </TouchableOpacity>
         )}

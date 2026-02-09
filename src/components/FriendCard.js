@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendCard.styles';
 import DropdownMenu from './DropdownMenu';
@@ -154,7 +154,7 @@ const FriendCard = ({
         onPress={handleMenuPress}
         activeOpacity={0.7}
       >
-        <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+        <PixelIcon name="ellipsis-vertical" size={20} color={colors.text.secondary} />
       </TouchableOpacity>
     );
   };
@@ -190,7 +190,7 @@ const FriendCard = ({
                 onPress={() => onDismiss(userId)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={18} color={colors.text.tertiary} />
+                <PixelIcon name="close" size={18} color={colors.text.tertiary} />
               </TouchableOpacity>
             )}
             {renderMenuButton()}
@@ -241,7 +241,7 @@ const FriendCard = ({
             onPress={handleMenuPress}
             activeOpacity={0.7}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+            <PixelIcon name="ellipsis-vertical" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
         );
 

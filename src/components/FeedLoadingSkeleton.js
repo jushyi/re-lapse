@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   storyPhoto: {
     width: STORY_PHOTO_WIDTH + STORY_BORDER_WIDTH * 2,
     height: STORY_PHOTO_HEIGHT + STORY_BORDER_WIDTH * 2,
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: colors.background.tertiary,
     marginBottom: STORY_PROFILE_SIZE / 2 + 4,
     overflow: 'hidden',

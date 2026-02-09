@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
   profilePic: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.overlay.light,
   },
@@ -357,8 +358,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profilePicText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
   },
   friendTextContainer: {
@@ -366,12 +367,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   displayName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 1,
   },
@@ -380,9 +382,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   closeButtonText: {
-    fontSize: 20,
+    fontSize: typography.size.xl,
     color: colors.text.primary,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   photoContainer: {
     flex: 1,

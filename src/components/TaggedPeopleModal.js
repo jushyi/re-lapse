@@ -27,7 +27,7 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { getUserProfile } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/TaggedPeopleModal.styles';
@@ -175,7 +175,7 @@ const TaggedPeopleModal = ({ visible, onClose, taggedUserIds = [], onPersonPress
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Tagged People</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
+              <PixelIcon name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
           </View>
 

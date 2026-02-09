@@ -25,7 +25,7 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { getFriendships } from '../services/firebase/friendshipService';
 import { getUserProfile } from '../services/firebase/userService';
@@ -174,7 +174,7 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
           </View>
 
           {/* Selection indicator */}
-          <Ionicons
+          <PixelIcon
             name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
             size={24}
             color={isSelected ? colors.interactive.primary : colors.icon.inactive}

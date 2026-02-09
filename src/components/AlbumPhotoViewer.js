@@ -20,8 +20,9 @@ import ReanimatedModule, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { deleteAlbum } from '../services/firebase';
 import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
 import DropdownMenu from './DropdownMenu';
@@ -489,7 +490,7 @@ const AlbumPhotoViewer = ({
             <View style={[styles.header, { paddingTop: insets.top }]}>
               {/* Close button */}
               <TouchableOpacity onPress={onClose} style={styles.headerButton} activeOpacity={0.7}>
-                <Ionicons name="close" size={28} color={colors.text.primary} />
+                <PixelIcon name="close" size={28} color={colors.text.primary} />
               </TouchableOpacity>
 
               {/* Album name + position */}
@@ -507,7 +508,7 @@ const AlbumPhotoViewer = ({
                   style={styles.headerButton}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
+                  <PixelIcon name="ellipsis-horizontal" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
               ) : (
                 <View style={styles.headerButton} />
@@ -539,7 +540,7 @@ const AlbumPhotoViewer = ({
               <Animated.View
                 style={[styles.toast, { opacity: toastOpacity, bottom: insets.bottom + 100 }]}
               >
-                <Ionicons name="checkmark-circle" size={20} color={colors.status.ready} />
+                <PixelIcon name="checkmark-circle" size={20} color={colors.status.ready} />
                 <Text style={styles.toastText}>Cover set</Text>
               </Animated.View>
             )}
@@ -588,8 +589,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   albumNameText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -612,13 +613,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 6,
     gap: 8,
   },
   toastText: {
     color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
   },
   thumbnailBar: {
     position: 'absolute',

@@ -1,28 +1,38 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
- * Reusable StepIndicator component for multi-step flows
- * @param {number} currentStep - 1-based index of current step
- * @param {number} totalSteps - Total number of steps
- * @param {object} style - Additional container styles
+ * Retro 16-Bit StepIndicator
+ * Pixel squares instead of dots, "STAGE X/Y" in display font
  */
 const StepIndicator = ({ currentStep, totalSteps, style }) => {
-  const dots = [];
+  const squares = [];
 
   for (let i = 1; i <= totalSteps; i++) {
     const isCurrentStep = i === currentStep;
-    dots.push(
-      <View key={i} style={[styles.dot, isCurrentStep ? styles.dotActive : styles.dotInactive]} />
+    const isCompleted = i < currentStep;
+    squares.push(
+      <View
+        key={i}
+        style={[
+          styles.square,
+          isCurrentStep
+            ? styles.squareActive
+            : isCompleted
+              ? styles.squareCompleted
+              : styles.squareInactive,
+        ]}
+      />
     );
   }
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.dotsContainer}>{dots}</View>
+      <View style={styles.squaresContainer}>{squares}</View>
       <Text style={styles.stepText}>
-        Step {currentStep} of {totalSteps}
+        STAGE {currentStep}/{totalSteps}
       </Text>
     </View>
   );
@@ -32,27 +42,37 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  dotsContainer: {
+  squaresContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginBottom: 8,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  square: {
+    width: 10,
+    height: 10,
+    borderRadius: 0,
   },
-  dotActive: {
-    backgroundColor: colors.text.primary,
+  squareActive: {
+    backgroundColor: colors.interactive.primary,
+    shadowColor: '#00D4FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  dotInactive: {
+  squareCompleted: {
+    backgroundColor: colors.status.ready,
+  },
+  squareInactive: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.text.tertiary,
   },
   stepText: {
-    fontSize: 12,
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.secondary,
+    letterSpacing: 1,
   },
 });
 

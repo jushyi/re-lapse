@@ -11,10 +11,11 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { getUserAlbums, getPhotosByIds, addPhotosToAlbum } from '../services/firebase';
 import logger from '../utils/logger';
 
@@ -141,7 +142,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
             <Image source={{ uri: coverUrl }} style={styles.thumbnailImage} />
           ) : (
             <View style={styles.thumbnailPlaceholder}>
-              <Ionicons name="images" size={20} color={colors.text.secondary} />
+              <PixelIcon name="images" size={20} color={colors.text.secondary} />
             </View>
           )}
         </View>
@@ -161,9 +162,9 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
           {isAdding ? (
             <ActivityIndicator size="small" color={colors.brand.primary} />
           ) : isPhotoInAlbum ? (
-            <Ionicons name="checkmark-circle" size={24} color={colors.brand.primary} />
+            <PixelIcon name="checkmark-circle" size={24} color={colors.brand.primary} />
           ) : (
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
+            <PixelIcon name="chevron-forward" size={20} color={colors.text.secondary} />
           )}
         </View>
       </TouchableOpacity>
@@ -182,7 +183,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Add to Album</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
+              <PixelIcon name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
           </View>
 
@@ -193,7 +194,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
             activeOpacity={0.7}
           >
             <View style={styles.createIcon}>
-              <Ionicons name="add" size={24} color={colors.brand.primary} />
+              <PixelIcon name="add" size={24} color={colors.brand.primary} />
             </View>
             <Text style={styles.createText}>Create New Album</Text>
           </TouchableOpacity>
@@ -209,7 +210,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
             </View>
           ) : albums.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="albums-outline" size={48} color={colors.text.secondary} />
+              <PixelIcon name="albums-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyText}>No albums yet</Text>
               <Text style={styles.emptySubtext}>Create your first album above</Text>
             </View>
@@ -239,8 +240,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     maxHeight: '70%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
@@ -253,8 +254,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.size.xl,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
   },
   closeButton: {
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
   createIcon: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
     borderWidth: 2,
     borderColor: colors.brand.primary,
     borderStyle: 'dashed',
@@ -277,8 +278,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.brand.primary,
     marginLeft: 12,
   },
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   thumbnailImage: {
@@ -322,12 +323,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   albumName: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   photoCount: {
-    fontSize: 13,
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -343,7 +345,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 12,
   },
@@ -352,13 +355,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     marginTop: 4,
   },

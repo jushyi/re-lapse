@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MENU_WIDTH = 220;
@@ -84,7 +85,7 @@ const DropdownMenu = ({ visible, onClose, options = [], anchorPosition }) => {
                 activeOpacity={0.7}
               >
                 {option.icon && (
-                  <Ionicons
+                  <PixelIcon
                     name={option.icon}
                     size={20}
                     color={option.destructive ? colors.status.danger : colors.text.primary}
@@ -109,7 +110,7 @@ const DropdownMenu = ({ visible, onClose, options = [], anchorPosition }) => {
                   activeOpacity={0.7}
                 >
                   {option.icon && (
-                    <Ionicons
+                    <PixelIcon
                       name={option.icon}
                       size={20}
                       color={option.destructive ? colors.status.danger : colors.text.primary}
@@ -146,14 +147,14 @@ const styles = StyleSheet.create({
   },
   menu: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   menuAnchored: {
     position: 'absolute',
     width: MENU_WIDTH,
     backgroundColor: colors.background.secondary,
-    borderRadius: 12,
+    borderRadius: 4,
     overflow: 'hidden',
     // Shadow for depth
     shadowColor: colors.background.primary,
@@ -177,9 +178,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   menuText: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
     color: colors.text.primary,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   destructiveText: {
     color: colors.status.danger,

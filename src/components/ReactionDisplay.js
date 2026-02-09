@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 /**
  * ReactionDisplay - Detailed reaction list with user info
@@ -113,13 +114,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
     marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
   },
 
@@ -136,7 +138,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: colors.pill.background,
-    borderRadius: 16,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.pill.border,
   },
@@ -145,12 +147,12 @@ const styles = StyleSheet.create({
     borderColor: colors.brand.purple,
   },
   compactEmoji: {
-    fontSize: 16,
+    fontSize: typography.size.lg,
     marginRight: 4,
   },
   compactCount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   compactCountHighlighted: {
@@ -162,8 +164,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     marginBottom: 12,
     paddingHorizontal: 16,
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: colors.pill.background,
-    borderRadius: 16,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.pill.border,
     minWidth: 80,
@@ -192,8 +194,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reactionCount: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   reactionCountHighlighted: {
