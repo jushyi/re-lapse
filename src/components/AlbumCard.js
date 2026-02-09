@@ -18,7 +18,7 @@ const CARD_SIZE = 150;
  *
  * @param {object} album - Album object with { id, name, coverPhotoId, photoIds }
  * @param {string} coverPhotoUrl - URL for the cover photo (resolved by parent)
- * @param {array} stackPhotoUrls - URLs for stack photos (up to 3, most recent non-cover photos)
+ * @param {array} stackPhotoUrls - URLs for stack photos (up to 2, most recent non-cover photos)
  * @param {function} onPress - Callback when card tapped
  * @param {function} onLongPress - Optional callback for long press (edit menu)
  * @param {boolean} isHighlighted - Whether to show scale bounce animation

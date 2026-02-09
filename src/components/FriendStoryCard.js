@@ -30,9 +30,6 @@ const FriendStoryCard = ({ friend, onPress, onAvatarPress, isFirst = false, isVi
   // Use thumbnailURL (most recent photo) if available, fallback to first photo in array
   const thumbnailUrl = thumbnailURL || topPhotos?.[0]?.imageURL || null;
 
-  /**
-   * Handle card press
-   */
   const handlePress = () => {
     logger.debug('FriendStoryCard: Card pressed', { userId, displayName });
     if (onPress) {
@@ -50,9 +47,6 @@ const FriendStoryCard = ({ friend, onPress, onAvatarPress, isFirst = false, isVi
     }
   };
 
-  /**
-   * Get first letter of display name for fallback
-   */
   const getInitial = () => {
     return displayName?.[0]?.toUpperCase() || '?';
   };

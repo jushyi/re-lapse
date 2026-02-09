@@ -33,10 +33,8 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
 
   const { displayName, profilePhotoURL } = user;
 
-  // Preview comments state
   const [previewComments, setPreviewComments] = useState([]);
 
-  // Fetch preview comments
   useEffect(() => {
     const fetchPreview = async () => {
       if (!id) return;
@@ -143,7 +141,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
       {/* Prompt if no reactions */}
       {reactionCount === 0 && <Text style={styles.noReactions}>Tap to react</Text>}
 
-      {/* Comment preview - tapping opens modal with comments sheet (UAT-005 fix) */}
+      {/* Comment preview - tapping opens modal with comments sheet */}
       {previewComments.length > 0 && (
         <View style={styles.commentPreview}>
           <CommentPreview

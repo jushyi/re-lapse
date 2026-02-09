@@ -25,9 +25,9 @@ import { styles } from '../../styles/CommentsBottomSheet.styles';
  * @param {function} isOwnerComment - Function to check if comment is from photo owner
  * @param {function} canDeleteComment - Function to check if user can delete comment
  * @param {function} isLikedByUser - Function to check if user liked comment
- * @param {function} onMentionPress - Callback when @mention is tapped (17-02)
- * @param {string|null} highlightedCommentId - ID of comment to highlight (17-02)
- * @param {boolean} forceExpanded - Force replies section to expand (17-02)
+ * @param {function} onMentionPress - Callback when @mention is tapped
+ * @param {string|null} highlightedCommentId - ID of comment to highlight
+ * @param {boolean} forceExpanded - Force replies section to expand (for @mention navigation)
  */
 const CommentWithReplies = ({
   comment,
@@ -45,7 +45,7 @@ const CommentWithReplies = ({
 }) => {
   const [showReplies, setShowReplies] = useState(false);
 
-  // 17-02: Auto-expand replies when forceExpanded becomes true
+  // Auto-expand replies when forceExpanded becomes true (e.g., @mention navigation)
   useEffect(() => {
     if (forceExpanded && !showReplies) {
       setShowReplies(true);
@@ -56,9 +56,6 @@ const CommentWithReplies = ({
   const hasReplies = replies.length > 0;
   const replyCount = replies.length;
 
-  /**
-   * Toggle replies visibility
-   */
   const handleToggleReplies = useCallback(() => {
     logger.debug('CommentWithReplies: Toggle replies', {
       commentId: comment.id,

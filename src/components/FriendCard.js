@@ -49,9 +49,6 @@ const FriendCard = ({
   const [menuAnchor, setMenuAnchor] = useState(null);
   const menuButtonRef = useRef(null);
 
-  /**
-   * Format friends since date
-   */
   const formatFriendsSince = () => {
     if (!friendsSince) return '';
 

@@ -30,13 +30,9 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Glow animation value
   const glowOpacity = useSharedValue(0);
-
-  // Progress bar animation value (0-1)
   const progressValue = useSharedValue(0);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       logger.debug('ProfileSongCard: Unmounting, stopping audio');
@@ -100,19 +96,16 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
     width: `${progressValue.value * 100}%`,
   }));
 
-  // Handle progress updates from audio player
   const handleProgress = useCallback(progressValue => {
     setProgress(progressValue);
   }, []);
 
-  // Handle playback completion
   const handleComplete = useCallback(() => {
     logger.debug('ProfileSongCard: Playback complete');
     setIsPlaying(false);
     setProgress(0);
   }, []);
 
-  // Toggle play/pause
   const handlePlayPause = useCallback(async () => {
     if (!song?.previewUrl) {
       logger.warn('ProfileSongCard: No preview URL available');
@@ -143,7 +136,6 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
     }
   }, [song, isPlaying, progress, handleProgress, handleComplete]);
 
-  // Handle card press
   const handlePress = useCallback(() => {
     if (song) {
       // Has song - toggle play/pause
@@ -154,14 +146,12 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
     }
   }, [song, handlePlayPause, onPress]);
 
-  // Handle card long press (only for own profile with song)
   const handleLongPress = useCallback(() => {
     if (isOwnProfile && song && onLongPress) {
       onLongPress();
     }
   }, [isOwnProfile, song, onLongPress]);
 
-  // Empty state
   if (!song) {
     return (
       <TouchableOpacity style={styles.emptyContainer} onPress={handlePress} activeOpacity={0.7}>
@@ -171,7 +161,6 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
     );
   }
 
-  // With song
   return (
     <Animated.View style={[styles.container, styles.glowShadow, glowStyle]}>
       <TouchableOpacity

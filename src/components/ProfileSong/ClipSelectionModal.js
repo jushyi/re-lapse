@@ -37,11 +37,9 @@ const PREVIEW_DURATION = 30; // iTunes preview duration
 const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
   const insets = useSafeAreaInsets();
 
-  // State
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0); // Current position in seconds
 
-  // Animation for content slide-up
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   // Animate content slide when visibility changes
@@ -124,7 +122,6 @@ const ClipSelectionModal = ({ visible, song, onConfirm, onCancel }) => {
     onConfirm(song);
   }, [song, onConfirm]);
 
-  // Handle cancel
   const handleCancel = useCallback(async () => {
     await stopPreview();
     setIsPlaying(false);

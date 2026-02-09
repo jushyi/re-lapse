@@ -56,9 +56,6 @@ const FeedLoadingSkeleton = () => {
     ).start();
   }, [shimmerPosition]);
 
-  /**
-   * Render a single story card skeleton
-   */
   const renderStoryCardSkeleton = index => (
     <View key={index} style={styles.storyCardSkeleton}>
       {/* Photo placeholder (rectangular) */}
@@ -72,9 +69,6 @@ const FeedLoadingSkeleton = () => {
     </View>
   );
 
-  /**
-   * Render a single feed card skeleton
-   */
   const renderFeedCardSkeleton = index => (
     <View key={index} style={styles.feedCard}>
       {/* Photo placeholder (full-width square) */}

@@ -676,13 +676,13 @@ const CommentsBottomSheet = ({
               />
             )}
 
-            {/* Comment Input - with safe area padding (UAT-010 fix) */}
+            {/* Comment Input */}
             <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
               <CommentInput
                 ref={inputRef}
                 onSubmit={handleSubmitComment}
                 onImagePick={() => {
-                  logger.debug('CommentsBottomSheet: Image picker (Plan 06)');
+                  logger.debug('CommentsBottomSheet: Image picker');
                 }}
                 replyingTo={replyingTo}
                 onCancelReply={cancelReply}

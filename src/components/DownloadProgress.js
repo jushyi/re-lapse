@@ -10,9 +10,6 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 
-/**
- * Progress status messages
- */
 const STATUS_MESSAGES = {
   preparing: 'Preparing download...',
   downloading: (current, total) => `Downloading ${current} of ${total} photos...`,

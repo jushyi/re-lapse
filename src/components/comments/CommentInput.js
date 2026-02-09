@@ -26,7 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
 import { uploadCommentImage } from '../../services/firebase/storageService';
-// Note: Giphy SDK requires dev client build, not Expo Go
+// Giphy SDK requires dev client build, not Expo Go
 import { openGifPicker, useGifSelection } from './GifPicker';
 import { styles } from '../../styles/CommentInput.styles';
 
@@ -67,8 +67,6 @@ const CommentInput = forwardRef(
       }
     }, [initialMention]);
 
-    // Note: GIF functionality disabled for Expo Go compatibility
-    // Uncomment when using dev client build:
     const handleGifSelected = useCallback(gifUrl => {
       logger.info('CommentInput: GIF selected', { urlLength: gifUrl?.length });
       setSelectedMedia({ uri: gifUrl, type: 'gif' });
@@ -101,30 +99,20 @@ const CommentInput = forwardRef(
       },
     }));
 
-    /**
-     * Handle text change
-     */
     const handleChangeText = useCallback(newText => {
       setText(newText);
     }, []);
 
-    /**
-     * Clear selected media
-     */
     const clearMedia = useCallback(() => {
       logger.debug('CommentInput: Clearing media');
       setSelectedMedia(null);
     }, []);
 
-    /**
-     * Handle image picker button press
-     */
     const handleImagePick = useCallback(async () => {
       logger.info('CommentInput: Image picker pressed');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       try {
-        // Request permission
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (!permissionResult.granted) {
@@ -152,9 +140,6 @@ const CommentInput = forwardRef(
       }
     }, []);
 
-    /**
-     * Handle send button press
-     */
     const handleSend = useCallback(async () => {
       const trimmedText = text.trim();
       if (!trimmedText && !selectedMedia) {
@@ -208,9 +193,6 @@ const CommentInput = forwardRef(
       setSelectedMedia(null);
     }, [text, selectedMedia, replyingTo, onSubmit]);
 
-    /**
-     * Handle cancel reply
-     */
     const handleCancelReply = useCallback(() => {
       logger.info('CommentInput: Cancel reply pressed');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -220,9 +202,6 @@ const CommentInput = forwardRef(
       }
     }, [onCancelReply]);
 
-    /**
-     * Handle submit on keyboard return
-     */
     const handleSubmitEditing = useCallback(() => {
       if (text.trim() || selectedMedia) {
         handleSend();
@@ -303,7 +282,7 @@ const CommentInput = forwardRef(
               />
             </TouchableOpacity>
 
-            {/* GIF Picker Button - disabled for Expo Go, enable in dev client */}
+            {/* GIF Picker Button */}
             {
               <TouchableOpacity
                 style={styles.gifButton}
