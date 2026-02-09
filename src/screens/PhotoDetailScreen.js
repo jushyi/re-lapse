@@ -36,8 +36,14 @@ import { styles } from '../styles/PhotoDetailScreen.styles';
 import CommentsBottomSheet from '../components/comments/CommentsBottomSheet';
 import CommentPreview from '../components/comments/CommentPreview';
 import { getPreviewComments } from '../services/firebase/commentService';
-import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
+import {
+  softDeletePhoto,
+  archivePhoto,
+  restorePhoto,
+  updatePhotoTags,
+} from '../services/firebase/photoService';
 import DropdownMenu from '../components/DropdownMenu';
+import { TagFriendsModal } from '../components';
 import { colors } from '../constants/colors';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
@@ -95,6 +101,10 @@ const PhotoDetailScreen = () => {
   // Photo menu state (for owner actions: delete, archive, restore)
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
+
+  // Tag modal state
+  const [tagModalVisible, setTagModalVisible] = useState(false);
+  const [taggedPeopleModalVisible, setTaggedPeopleModalVisible] = useState(false);
 
   // Reset cube rotation when screen mounts
   useEffect(() => {
@@ -529,6 +539,27 @@ const PhotoDetailScreen = () => {
           </View>
         )}
 
+        {/* Tag button - visible for owner always, non-owner only when tags exist; hidden in stories mode */}
+        {contextMode !== 'stories' && (isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
+          <TouchableOpacity
+            style={styles.tagButton}
+            onPress={() => {
+              if (isOwnPhoto) {
+                setTagModalVisible(true);
+              } else {
+                setTaggedPeopleModalVisible(true);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={currentPhoto?.taggedUserIds?.length > 0 ? 'person' : 'person-add-outline'}
+              size={24}
+              color={colors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
+
         {/* Photo menu button - only for own photos */}
         {isOwnPhoto && menuOptions.length > 0 && (
           <TouchableOpacity
@@ -690,6 +721,17 @@ const PhotoDetailScreen = () => {
         onClose={() => setShowPhotoMenu(false)}
         options={menuOptions}
         anchorPosition={menuAnchor}
+      />
+
+      {/* Tag Friends Modal (for owner tagging) */}
+      <TagFriendsModal
+        visible={tagModalVisible}
+        onClose={() => setTagModalVisible(false)}
+        initialSelectedIds={currentPhoto?.taggedUserIds || []}
+        onConfirm={async selectedIds => {
+          await updatePhotoTags(currentPhoto.id, selectedIds);
+          setTagModalVisible(false);
+        }}
       />
     </Animated.View>
   );

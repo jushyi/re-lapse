@@ -1078,6 +1078,48 @@ export const permanentlyDeletePhoto = async (photoId, userId) => {
 };
 
 /**
+ * Update tagged user IDs on a photo document
+ * If taggedUserIds is empty, removes the fields entirely (no empty arrays in Firestore)
+ *
+ * @param {string} photoId - Photo document ID
+ * @param {string[]} taggedUserIds - Array of user IDs to tag (empty = remove tags)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const updatePhotoTags = async (photoId, taggedUserIds) => {
+  logger.info('PhotoService.updatePhotoTags: Starting', {
+    photoId,
+    tagCount: taggedUserIds?.length,
+  });
+
+  try {
+    const photoRef = doc(db, 'photos', photoId);
+
+    if (!taggedUserIds || taggedUserIds.length === 0) {
+      // Clean up: remove tag fields entirely instead of storing empty array
+      await updateDoc(photoRef, {
+        taggedUserIds: FieldValue.delete(),
+        taggedAt: FieldValue.delete(),
+      });
+      logger.info('PhotoService.updatePhotoTags: Tags removed (fields deleted)', { photoId });
+    } else {
+      await updateDoc(photoRef, {
+        taggedUserIds,
+        taggedAt: serverTimestamp(),
+      });
+      logger.info('PhotoService.updatePhotoTags: Tags updated', {
+        photoId,
+        tagCount: taggedUserIds.length,
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    logger.error('PhotoService.updatePhotoTags: Failed', { photoId, error: error.message });
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Internal cascade delete function
  * Removes photo from albums, deletes comments, storage, and document
  * Called by permanentlyDeletePhoto (after ownership check)

@@ -202,6 +202,17 @@ export const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: '600',
   },
+  // Tag button for tagging friends on feed photos
+  tagButton: {
+    position: 'absolute',
+    bottom: 150, // Above photoMenuButton at 102
+    right: 8,
+    width: 44,
+    height: 46,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   // Photo menu button for owner actions (delete, archive, restore)
   photoMenuButton: {
     position: 'absolute',
