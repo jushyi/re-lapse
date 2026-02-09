@@ -7,7 +7,7 @@ Transform Lapse Clone's authentication experience and profile system from incons
 ## Milestones
 
 - ✅ [v1.6 Auth & Profile Refactor](milestones/v1.6-ROADMAP.md) (Phases 1-31) — SHIPPED 2026-02-06
-- 🚧 **v1.7 Engagement & Polish** — Phases 32-42 (in progress)
+- 🚧 **v1.7 Engagement & Polish** — Phases 32-44 (in progress)
 
 ## Completed Milestones
 
@@ -199,11 +199,12 @@ Plans:
 **Goal**: Suggest friends based on mutual connections
 **Depends on**: Phase 41
 **Research**: Unlikely (internal patterns)
-**Plans**: 1
+**Plans**: 2
 
 Plans:
 
 - [x] 42-01: getMutualFriendSuggestions service function + FriendCard subtitle prop
+- [x] 42-02: Integrate mutual friend suggestions into FriendsScreen UI + Cloud Function
 
 #### Phase 43: Comment Cleanup and Audit
 
@@ -218,6 +219,17 @@ Plans:
 - [ ] 43-02: Hooks, utils, context, navigation, App.js comment audit
 - [ ] 43-03: Components comment audit
 - [ ] 43-04: Screens, styles, constants comment audit
+
+#### Phase 44: Notification Activity Feed
+
+**Goal**: Complete the notification screen to properly display all notification types — reactions, comments, comment replies, photo tags, and push notification activity
+**Depends on**: Phase 43
+**Research**: Unlikely (internal patterns)
+**Plans**: 0
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 44 to break down)
 
 ---
 
@@ -243,7 +255,8 @@ Plans:
 | 39. Darkroom Tagging       | v1.7      | 1/1   | Complete | 2026-02-09 |
 | 40. Feed Tagging           | v1.7      | 1/1   | Complete | 2026-02-09 |
 | 41. Tag Integration        | v1.7      | 1/1   | Complete | 2026-02-09 |
-| 42. Mutual Friends         | v1.7      | 1/1   | Complete | 2026-02-09 |
+| 42. Mutual Friends         | v1.7      | 2/2   | Complete | 2026-02-09 |
 | 43. Comment Cleanup/Audit  | v1.7      | 0/4   | Planned  |            |
+| 44. Notification Activity  | v1.7      | 0/?   | Planned  |            |
 
 See [MILESTONES.md](MILESTONES.md) for milestone history.

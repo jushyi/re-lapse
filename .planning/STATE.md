@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 43 of 43 (Comment Cleanup and Audit)
+Phase: 43 of 44 (Comment Cleanup and Audit)
 Plan: 0 of 4 in current phase
 Status: Planned — ready to execute
-Last activity: 2026-02-09 — Completed 38-02-PLAN.md (retroactive)
+Last activity: 2026-02-09 — Completed 42-02-PLAN.md
 
 Progress: ██████████ 100%
 
@@ -34,6 +34,10 @@ Progress: ██████████ 100%
 
 See PROJECT.md Key Decisions table for full history.
 
+| Phase | Decision | Rationale |
+|-------|----------|-----------|
+| 42 | Mutual friend computation via Cloud Function | Firestore security rules correctly block client-side cross-user friendship queries; admin SDK is the established pattern |
+
 ### Deferred Issues
 
 None - all issues closed.
@@ -49,11 +53,12 @@ None.
 - Milestone v1.7 created: Engagement & Polish, 10 phases (Phase 32-41)
 - Phase 42 added: Mutual Friends Suggestions
 - Phase 43 added: Comment Cleanup and Audit
+- Phase 44 added: Notification Activity Feed
 
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 38-02-PLAN.md (notification UI polish)
+Stopped at: Completed 42-02-PLAN.md (mutual friends UI integration + Cloud Function fix)
 Resume file: None
 
 ## Next Steps
