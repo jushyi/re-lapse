@@ -11,21 +11,21 @@ const THEME_STORAGE_KEY = '@rewind_theme_palette';
  * that override the brand colors in the theme
  */
 export const PALETTES = {
-  purple: {
-    accent: '#8B5CF6', // Current Rewind brand (Tailwind violet-500)
-    accentSecondary: '#EC4899', // Tailwind pink-500
+  cyan: {
+    accent: '#00D4FF', // Electric cyan (default retro accent)
+    accentSecondary: '#FF2D78', // Hot magenta
   },
-  blue: {
-    accent: '#3B82F6', // Tailwind blue-500
-    accentSecondary: '#06B6D4', // Tailwind cyan-500
+  magenta: {
+    accent: '#FF2D78', // Hot magenta
+    accentSecondary: '#B24BF3', // Electric purple
   },
-  green: {
-    accent: '#22C55E', // Tailwind green-500
-    accentSecondary: '#84CC16', // Tailwind lime-500
+  neonGreen: {
+    accent: '#39FF14', // Neon green (terminal/Matrix)
+    accentSecondary: '#00D4FF', // Electric cyan
   },
-  orange: {
-    accent: '#F97316', // Tailwind orange-500
-    accentSecondary: '#FBBF24', // Tailwind amber-400
+  gold: {
+    accent: '#FFD700', // Coin gold
+    accentSecondary: '#FF8C00', // Retro amber
   },
 };
 
@@ -49,7 +49,7 @@ export const useTheme = () => {
  * Supports switching between preset palettes
  */
 export const ThemeProvider = ({ children }) => {
-  const [currentPalette, setCurrentPalette] = useState('purple');
+  const [currentPalette, setCurrentPalette] = useState('cyan');
   const [initializing, setInitializing] = useState(true);
 
   // Load saved palette from AsyncStorage on mount
@@ -62,7 +62,7 @@ export const ThemeProvider = ({ children }) => {
           logger.info('ThemeContext: Loaded saved palette', { palette: savedPalette });
           setCurrentPalette(savedPalette);
         } else {
-          logger.debug('ThemeContext: No saved palette, using default purple');
+          logger.debug('ThemeContext: No saved palette, using default cyan');
         }
       } catch (error) {
         logger.warn('ThemeContext: Failed to load saved palette, using default', {
