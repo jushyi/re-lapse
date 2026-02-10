@@ -13,7 +13,7 @@
  * - Stories mode: progress bar, tap navigation, multi-photo
  * - 3D cube rotation for friend-to-friend transitions
  */
-import React, { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -86,7 +86,7 @@ const PhotoDetailScreen = () => {
   // Cube transition animation for friend-to-friend (two-view simultaneous rotation)
   const cubeProgress = useRef(new Animated.Value(1)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [transitionSnapshot, setTransitionSnapshot] = useState(null);
+  const isTransitioningRef = useRef(false);
   const snapshotRef = useRef({});
 
   // Comments preview state (local since it's just for display)
@@ -112,6 +112,7 @@ const PhotoDetailScreen = () => {
   // Reset cube state when screen mounts
   useEffect(() => {
     cubeProgress.setValue(1);
+    isTransitioningRef.current = false;
     setIsTransitioning(false);
   }, []);
 
@@ -128,30 +129,31 @@ const PhotoDetailScreen = () => {
    * Both pivot on the shared right edge for a true cube effect
    */
   const handleFriendTransition = useCallback(() => {
-    if (!contextHasNextFriend || isTransitioning) return false;
+    if (!contextHasNextFriend || isTransitioningRef.current) return false;
 
+    // Mark transitioning synchronously so snapshotRef freezes on next render
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
-    setTransitionSnapshot(snapshotRef.current);
+
+    // Outgoing face is always in the tree — set cubeProgress to 0 so native driver
+    // instantly reveals it (no waiting for React render)
+    cubeProgress.setValue(0);
+
+    // Swap to next friend's content (incoming face is hidden at cubeProgress=0)
     handleRequestNextFriend();
 
-    return true;
-  }, [contextHasNextFriend, handleRequestNextFriend, isTransitioning]);
+    Animated.timing(cubeProgress, {
+      toValue: 1,
+      duration: 350,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      isTransitioningRef.current = false;
+      setIsTransitioning(false);
+    });
 
-  // Start cube animation AFTER React renders the outgoing overlay (prevents flash)
-  useLayoutEffect(() => {
-    if (isTransitioning && transitionSnapshot) {
-      cubeProgress.setValue(0);
-      Animated.timing(cubeProgress, {
-        toValue: 1,
-        duration: 350,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }).start(() => {
-        setIsTransitioning(false);
-        setTransitionSnapshot(null);
-      });
-    }
-  }, [isTransitioning, transitionSnapshot]);
+    return true;
+  }, [contextHasNextFriend, handleRequestNextFriend, cubeProgress]);
 
   // Opens comments on swipe-up if not already visible
   const handleSwipeUpToOpenComments = useCallback(() => {
@@ -211,7 +213,22 @@ const PhotoDetailScreen = () => {
   });
 
   // Keep snapshot ref updated with current display data for cube transition
-  snapshotRef.current = { imageURL, displayName, profilePhotoURL, capturedAt };
+  // Freeze during transitions so outgoing face keeps the old friend's data
+  if (!isTransitioningRef.current) {
+    snapshotRef.current = {
+      imageURL,
+      displayName,
+      profilePhotoURL,
+      capturedAt,
+      totalPhotos,
+      currentIndex,
+      showProgressBar,
+      segmentWidth,
+      commentCount: currentPhoto?.commentCount || 0,
+      orderedEmojis: orderedEmojis,
+      groupedReactions: groupedReactions,
+    };
+  }
 
   // Sync comments visibility with hook (so panResponder knows not to capture gestures)
   useEffect(() => {
@@ -689,69 +706,135 @@ const PhotoDetailScreen = () => {
         </View>
       </Animated.View>
 
-      {/* Outgoing cube face - rendered on top during transition */}
-      {isTransitioning && transitionSnapshot && (
-        <Animated.View
-          style={[
-            styles.contentWrapper,
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backfaceVisibility: 'hidden',
-              transform: [
-                { perspective: 800 },
-                {
-                  translateX: cubeProgress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -SCREEN_WIDTH],
-                  }),
-                },
-                { translateX: SCREEN_WIDTH / 2 },
-                {
-                  rotateY: cubeProgress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '-90deg'],
-                  }),
-                },
-                { translateX: -SCREEN_WIDTH / 2 },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.photoScrollView}>
-            <Image
-              source={{ uri: transitionSnapshot.imageURL }}
-              style={styles.photo}
-              contentFit="cover"
-              transition={0}
-            />
-          </View>
-          <View style={styles.profilePicContainer}>
-            {transitionSnapshot.profilePhotoURL ? (
+      {/* Outgoing cube face - always rendered, naturally hidden at cubeProgress=1
+           (off-screen left + rotated -90deg). Native driver reveals it instantly
+           when cubeProgress goes to 0, eliminating the flash. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.contentWrapper,
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backfaceVisibility: 'hidden',
+            transform: [
+              { perspective: 800 },
+              {
+                translateX: cubeProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -SCREEN_WIDTH],
+                }),
+              },
+              { translateX: SCREEN_WIDTH / 2 },
+              {
+                rotateY: cubeProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '-90deg'],
+                }),
+              },
+              { translateX: -SCREEN_WIDTH / 2 },
+            ],
+          },
+        ]}
+      >
+        {snapshotRef.current.imageURL && (
+          <>
+            {/* Header with close button */}
+            <View style={styles.header}>
+              <View style={styles.headerSpacer} />
+              <View style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </View>
+            </View>
+
+            {/* Photo */}
+            <View style={styles.photoScrollView}>
               <Image
-                source={{ uri: transitionSnapshot.profilePhotoURL }}
-                style={styles.profilePic}
+                source={{ uri: snapshotRef.current.imageURL }}
+                style={styles.photo}
                 contentFit="cover"
+                transition={0}
               />
-            ) : (
-              <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-                <Text style={styles.profilePicText}>
-                  {transitionSnapshot.displayName?.[0]?.toUpperCase() || '?'}
-                </Text>
+            </View>
+
+            {/* Profile photo */}
+            <View style={styles.profilePicContainer}>
+              {snapshotRef.current.profilePhotoURL ? (
+                <Image
+                  source={{ uri: snapshotRef.current.profilePhotoURL }}
+                  style={styles.profilePic}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                  <Text style={styles.profilePicText}>
+                    {snapshotRef.current.displayName?.[0]?.toUpperCase() || '?'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* User info */}
+            <View style={[styles.userInfoOverlay, { bottom: 110 }]}>
+              <Text style={styles.displayName} numberOfLines={1}>
+                {snapshotRef.current.displayName || 'Unknown User'}
+              </Text>
+              <Text style={styles.timestamp}>{getTimeAgo(snapshotRef.current.capturedAt)}</Text>
+            </View>
+
+            {/* Progress bar */}
+            {snapshotRef.current.showProgressBar && snapshotRef.current.totalPhotos > 0 && (
+              <View style={[styles.progressBarScrollView, { overflow: 'hidden' }]}>
+                <View style={styles.progressBarContainer}>
+                  {Array.from({ length: snapshotRef.current.totalPhotos }).map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.progressSegment,
+                        { width: snapshotRef.current.segmentWidth },
+                        index <= snapshotRef.current.currentIndex
+                          ? styles.progressSegmentActive
+                          : styles.progressSegmentInactive,
+                      ]}
+                    />
+                  ))}
+                </View>
               </View>
             )}
-          </View>
-          <View style={[styles.userInfoOverlay, { bottom: 110 }]}>
-            <Text style={styles.displayName} numberOfLines={1}>
-              {transitionSnapshot.displayName || 'Unknown User'}
-            </Text>
-            <Text style={styles.timestamp}>{getTimeAgo(transitionSnapshot.capturedAt)}</Text>
-          </View>
-        </Animated.View>
-      )}
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <View style={styles.commentInputTrigger}>
+                <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
+                <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                  {snapshotRef.current.commentCount > 0
+                    ? `${snapshotRef.current.commentCount} comment${snapshotRef.current.commentCount === 1 ? '' : 's'}`
+                    : 'Add a comment...'}
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.emojiPickerContainer}
+                style={styles.emojiPickerScrollView}
+              >
+                {(snapshotRef.current.orderedEmojis || []).map(emoji => {
+                  const totalCount = snapshotRef.current.groupedReactions?.[emoji] || 0;
+                  return (
+                    <View key={emoji} style={styles.emojiPill}>
+                      <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                      {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </>
+        )}
+      </Animated.View>
 
       {/* Comments Bottom Sheet */}
       <CommentsBottomSheet
