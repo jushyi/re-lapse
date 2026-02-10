@@ -77,6 +77,11 @@ function getRandomTemplate(templates) {
 // Debounce window in milliseconds (10 seconds)
 const REACTION_DEBOUNCE_MS = 10000;
 
+// Abuse prevention limits
+const MAX_MENTIONS_PER_COMMENT = 10;
+const MAX_TAGS_PER_PHOTO = 20;
+const MAX_NOTIFICATION_TEXT = 50;
+
 /**
  * Format reactions into "emoji×count" format for notification display
  * @param {object} reactions - Object like { '😂': 2, '❤️': 1 }
@@ -1003,6 +1008,15 @@ exports.sendReactionNotification = functions.firestore
         return null;
       }
 
+      // Validate reaction count is a number
+      if (
+        typeof after.reactionCount !== 'number' ||
+        typeof (before.reactionCount || 0) !== 'number'
+      ) {
+        logger.warn('sendReactionNotification: Invalid reaction count type', { photoId });
+        return null;
+      }
+
       // Check if reactions were added (reactionCount increased)
       if (!after.reactionCount || after.reactionCount <= (before.reactionCount || 0)) {
         logger.debug('sendReactionNotification: No new reactions, skipping');
@@ -1271,9 +1285,32 @@ exports.sendTaggedPhotoNotification = functions.firestore
         return null;
       }
 
+      // Validate taggedUserIds
+      if (after.taggedUserIds && !Array.isArray(after.taggedUserIds)) {
+        logger.warn('sendTaggedPhotoNotification: taggedUserIds is not an array', { photoId });
+        return null;
+      }
+
+      // The tagger is the photo owner
+      const photoOwnerId = after.userId;
+
+      // Cap tagged users, deduplicate, filter invalid entries and self-tags
+      const rawAfterTags = (after.taggedUserIds || []).slice(0, MAX_TAGS_PER_PHOTO);
+      const validAfterTags = [...new Set(rawAfterTags)].filter(
+        id => typeof id === 'string' && id.length > 0 && id !== photoOwnerId
+      );
+
+      if (rawAfterTags.length < (after.taggedUserIds || []).length) {
+        logger.warn('sendTaggedPhotoNotification: taggedUserIds capped', {
+          photoId,
+          total: (after.taggedUserIds || []).length,
+          capped: MAX_TAGS_PER_PHOTO,
+        });
+      }
+
       // Check if taggedUserIds array has NEW entries
       const beforeTaggedUserIds = before.taggedUserIds || [];
-      const afterTaggedUserIds = after.taggedUserIds || [];
+      const afterTaggedUserIds = validAfterTags;
 
       // Find newly added user IDs (in after but not in before)
       const newlyTaggedUserIds = afterTaggedUserIds.filter(id => !beforeTaggedUserIds.includes(id));
@@ -1322,8 +1359,7 @@ exports.sendTaggedPhotoNotification = functions.firestore
         return null;
       }
 
-      // The tagger is the photo owner
-      const taggerId = after.userId;
+      const taggerId = photoOwnerId;
 
       logger.info('sendTaggedPhotoNotification: Processing new tags', {
         photoId,
@@ -1582,12 +1618,12 @@ exports.sendCommentNotification = functions.firestore
       const commenterProfilePhotoURL =
         commenterData.profilePhotoURL || commenterData.photoURL || null;
 
-      // Build comment preview for notification body
+      // Build comment preview for notification body (UTF-8 safe truncation)
       let commentPreview;
       if (comment.text && comment.text.trim()) {
-        // Truncate text to 50 chars
-        const truncatedText = comment.text.substring(0, 50);
-        commentPreview = truncatedText + (comment.text.length > 50 ? '...' : '');
+        const codePoints = [...(comment.text || '')];
+        const truncatedText = codePoints.slice(0, MAX_NOTIFICATION_TEXT).join('');
+        commentPreview = truncatedText + (codePoints.length > MAX_NOTIFICATION_TEXT ? '...' : '');
       } else if (comment.mediaType === 'gif') {
         commentPreview = 'sent a GIF';
       } else if (comment.mediaType === 'image') {
@@ -1667,12 +1703,20 @@ exports.sendCommentNotification = functions.firestore
       }
 
       // ========== PART 2: Send @mention notifications ==========
-      // Extract @mentions from comment text
+      // Extract @mentions from comment text (capped to prevent abuse)
       const mentions = (comment.text || '').match(/@(\w+)/g) || [];
+      const cappedMentions = mentions.slice(0, MAX_MENTIONS_PER_COMMENT);
 
-      if (mentions.length > 0) {
+      if (mentions.length > MAX_MENTIONS_PER_COMMENT) {
+        logger.warn('sendCommentNotification: Mentions capped', {
+          total: mentions.length,
+          capped: MAX_MENTIONS_PER_COMMENT,
+        });
+      }
+
+      if (cappedMentions.length > 0) {
         // Get unique usernames (without @ prefix)
-        const uniqueUsernames = [...new Set(mentions.map(m => m.substring(1).toLowerCase()))];
+        const uniqueUsernames = [...new Set(cappedMentions.map(m => m.substring(1).toLowerCase()))];
 
         logger.debug('sendCommentNotification: Processing mentions', {
           photoId,
@@ -1790,7 +1834,7 @@ exports.sendCommentNotification = functions.firestore
         }
       }
 
-      return { commentNotificationSent, mentionsProcessed: mentions.length };
+      return { commentNotificationSent, mentionsProcessed: cappedMentions.length };
     } catch (error) {
       logger.error('sendCommentNotification: Failed', {
         error: error.message,
