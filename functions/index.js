@@ -1808,7 +1808,7 @@ exports.sendCommentNotification = functions.firestore
  *
  * IMPORTANT: Auth user must be deleted LAST to maintain permissions during cleanup
  */
-exports.deleteUserAccount = onCall({ cors: true }, async request => {
+exports.deleteUserAccount = onCall(async request => {
   // Require authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to delete account');
@@ -1894,7 +1894,7 @@ exports.deleteUserAccount = onCall({ cors: true }, async request => {
     return { success: true };
   } catch (error) {
     logger.error('deleteUserAccount: Failed', { userId, error: error.message });
-    throw new HttpsError('internal', 'Account deletion failed: ' + error.message);
+    throw new HttpsError('internal', 'Account deletion failed. Please try again later.');
   }
 });
 
@@ -2021,7 +2021,7 @@ exports.getMutualFriendSuggestions = onCall(async request => {
  * Sets scheduledForDeletionAt to 30 days from now
  * User is logged out after scheduling - if they log back in, they can cancel
  */
-exports.scheduleUserAccountDeletion = onCall({ cors: true }, async request => {
+exports.scheduleUserAccountDeletion = onCall(async request => {
   // Require authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to schedule deletion');
@@ -2057,7 +2057,10 @@ exports.scheduleUserAccountDeletion = onCall({ cors: true }, async request => {
     };
   } catch (error) {
     logger.error('scheduleUserAccountDeletion: Failed', { userId, error: error.message });
-    throw new HttpsError('internal', 'Failed to schedule deletion: ' + error.message);
+    throw new HttpsError(
+      'internal',
+      'Failed to schedule account deletion. Please try again later.'
+    );
   }
 });
 
@@ -2066,7 +2069,7 @@ exports.scheduleUserAccountDeletion = onCall({ cors: true }, async request => {
  * Clears scheduledForDeletionAt and deletionScheduledAt fields
  * Called when user logs back in during grace period and chooses to keep account
  */
-exports.cancelUserAccountDeletion = onCall({ cors: true }, async request => {
+exports.cancelUserAccountDeletion = onCall(async request => {
   // Require authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to cancel deletion');
@@ -2089,7 +2092,7 @@ exports.cancelUserAccountDeletion = onCall({ cors: true }, async request => {
     return { success: true };
   } catch (error) {
     logger.error('cancelUserAccountDeletion: Failed', { userId, error: error.message });
-    throw new HttpsError('internal', 'Failed to cancel deletion: ' + error.message);
+    throw new HttpsError('internal', 'Failed to cancel account deletion. Please try again later.');
   }
 });
 
