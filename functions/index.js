@@ -1865,73 +1865,92 @@ exports.deleteUserAccount = onCall(async request => {
     const db = admin.firestore();
     const bucket = getStorage().bucket();
 
-    // Step 1: Get all user's photos and delete Storage files
+    // Helper: commit operations in batches respecting 400-op limit
+    const BATCH_LIMIT = 400;
+    const commitInBatches = async (ops, label) => {
+      for (let i = 0; i < ops.length; i += BATCH_LIMIT) {
+        const chunk = ops.slice(i, i + BATCH_LIMIT);
+        const batch = db.batch();
+        for (const op of chunk) {
+          if (op.type === 'delete') {
+            batch.delete(op.ref);
+          } else if (op.type === 'update') {
+            batch.update(op.ref, op.data);
+          }
+        }
+        await batch.commit();
+      }
+      if (ops.length > 0) {
+        logger.info(`deleteUserAccount: ${label}`, { count: ops.length });
+      }
+    };
+
+    // Step 1: Collect photo references and Storage paths for later cleanup
     const photosSnapshot = await db.collection('photos').where('userId', '==', userId).get();
     logger.info('deleteUserAccount: Found photos to delete', { count: photosSnapshot.size });
 
+    const storagePaths = [];
     for (const doc of photosSnapshot.docs) {
       const photoData = doc.data();
       if (photoData.imageURL) {
         try {
-          // Extract path from Firebase Storage URL
           const decodedUrl = decodeURIComponent(photoData.imageURL);
           const pathMatch = decodedUrl.match(/\/o\/(.+?)\?/);
           if (pathMatch) {
-            await bucket.file(pathMatch[1]).delete();
-            logger.debug('deleteUserAccount: Deleted storage file', { path: pathMatch[1] });
+            storagePaths.push(pathMatch[1]);
           }
-        } catch (storageError) {
-          // Log but continue - file may already be deleted
-          logger.warn('deleteUserAccount: Storage file deletion failed', {
-            error: storageError.message,
+        } catch (parseError) {
+          logger.warn('deleteUserAccount: Failed to parse imageURL', {
+            error: parseError.message,
           });
         }
       }
     }
 
-    // Step 2: Delete all photos from Firestore (batch, max 500)
-    const photoBatch = db.batch();
-    photosSnapshot.docs.forEach(doc => photoBatch.delete(doc.ref));
-    if (photosSnapshot.size > 0) {
-      await photoBatch.commit();
-      logger.info('deleteUserAccount: Deleted photo documents', { count: photosSnapshot.size });
+    // Step 2: Delete all photos from Firestore (batch with size limit)
+    const photoOps = photosSnapshot.docs.map(doc => ({ ref: doc.ref, type: 'delete' }));
+    await commitInBatches(photoOps, 'Deleted photo documents');
+
+    // Step 3: Storage cleanup (best-effort AFTER Firestore photo batch succeeds)
+    for (const path of storagePaths) {
+      try {
+        await bucket.file(path).delete();
+        logger.debug('deleteUserAccount: Deleted storage file', { path });
+      } catch (storageError) {
+        logger.error('deleteUserAccount: Storage cleanup failed - orphaned file', {
+          path,
+          userId,
+          error: storageError.message,
+        });
+        // Continue — Firestore data already cleaned up
+      }
     }
 
-    // Step 3: Delete friendships where user is user1Id
+    // Step 4: Delete friendships (both directions, batched)
     const friendships1 = await db.collection('friendships').where('user1Id', '==', userId).get();
-    const friendship1Batch = db.batch();
-    friendships1.docs.forEach(doc => friendship1Batch.delete(doc.ref));
-    if (friendships1.size > 0) {
-      await friendship1Batch.commit();
-      logger.info('deleteUserAccount: Deleted friendships (user1)', { count: friendships1.size });
-    }
-
-    // Step 4: Delete friendships where user is user2Id
     const friendships2 = await db.collection('friendships').where('user2Id', '==', userId).get();
-    const friendship2Batch = db.batch();
-    friendships2.docs.forEach(doc => friendship2Batch.delete(doc.ref));
-    if (friendships2.size > 0) {
-      await friendship2Batch.commit();
-      logger.info('deleteUserAccount: Deleted friendships (user2)', { count: friendships2.size });
-    }
+    const friendshipOps = [
+      ...friendships1.docs.map(doc => ({ ref: doc.ref, type: 'delete' })),
+      ...friendships2.docs.map(doc => ({ ref: doc.ref, type: 'delete' })),
+    ];
+    await commitInBatches(friendshipOps, 'Deleted friendships');
 
-    // Step 5: Delete darkroom document
+    // Step 5: Delete darkroom and user documents in a single batch
+    const cleanupOps = [];
     const darkroomRef = db.doc(`darkrooms/${userId}`);
     const darkroomDoc = await darkroomRef.get();
     if (darkroomDoc.exists) {
-      await darkroomRef.delete();
-      logger.info('deleteUserAccount: Deleted darkroom document');
+      cleanupOps.push({ ref: darkroomRef, type: 'delete' });
     }
 
-    // Step 6: Delete user document
     const userRef = db.doc(`users/${userId}`);
     const userDoc = await userRef.get();
     if (userDoc.exists) {
-      await userRef.delete();
-      logger.info('deleteUserAccount: Deleted user document');
+      cleanupOps.push({ ref: userRef, type: 'delete' });
     }
+    await commitInBatches(cleanupOps, 'Deleted user and darkroom documents');
 
-    // Step 7: Delete Firebase Auth user (LAST - after all data cleanup)
+    // Step 6: Delete Firebase Auth user (LAST - after all data cleanup)
     await admin.auth().deleteUser(userId);
     logger.info('deleteUserAccount: Deleted auth user, account deletion complete', { userId });
 
@@ -2391,6 +2410,9 @@ exports.processScheduledPhotoDeletions = functions.pubsub
         const userId = photoData.userId;
 
         try {
+          // Collect all Firestore operations, then commit atomically
+          const operations = []; // Array of { ref, type, data? }
+
           // Step 1: Remove from user's albums
           const albumsSnapshot = await db.collection('albums').where('userId', '==', userId).get();
 
@@ -2399,7 +2421,7 @@ exports.processScheduledPhotoDeletions = functions.pubsub
             if (albumData.photoIds && albumData.photoIds.includes(photoId)) {
               if (albumData.photoIds.length === 1) {
                 // Last photo - delete album
-                await albumDoc.ref.delete();
+                operations.push({ ref: albumDoc.ref, type: 'delete' });
               } else {
                 // Remove photo from album
                 const newPhotoIds = albumData.photoIds.filter(id => id !== photoId);
@@ -2408,12 +2430,12 @@ exports.processScheduledPhotoDeletions = functions.pubsub
                 if (albumData.coverPhotoId === photoId && newPhotoIds.length > 0) {
                   updateData.coverPhotoId = newPhotoIds[0];
                 }
-                await albumDoc.ref.update(updateData);
+                operations.push({ ref: albumDoc.ref, type: 'update', data: updateData });
               }
             }
           }
 
-          // Step 2: Delete comments subcollection
+          // Step 2: Collect comment and like deletes
           const commentsSnapshot = await db
             .collection('photos')
             .doc(photoId)
@@ -2421,15 +2443,38 @@ exports.processScheduledPhotoDeletions = functions.pubsub
             .get();
 
           for (const commentDoc of commentsSnapshot.docs) {
-            // Delete comment likes subcollection
+            // Collect comment likes for deletion
             const likesSnapshot = await commentDoc.ref.collection('likes').get();
             for (const likeDoc of likesSnapshot.docs) {
-              await likeDoc.ref.delete();
+              operations.push({ ref: likeDoc.ref, type: 'delete' });
             }
-            await commentDoc.ref.delete();
+            operations.push({ ref: commentDoc.ref, type: 'delete' });
           }
 
-          // Step 3: Delete from Storage
+          // Step 3: Delete photo document itself
+          operations.push({ ref: photoDoc.ref, type: 'delete' });
+
+          // Commit Firestore operations atomically in batches (max 400 per batch for safety)
+          const BATCH_LIMIT = 400;
+          for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
+            const batchOps = operations.slice(i, i + BATCH_LIMIT);
+            const batch = db.batch();
+            for (const op of batchOps) {
+              if (op.type === 'delete') {
+                batch.delete(op.ref);
+              } else if (op.type === 'update') {
+                batch.update(op.ref, op.data);
+              }
+            }
+            await batch.commit();
+          }
+
+          logger.debug('processScheduledPhotoDeletions: Firestore batch committed', {
+            photoId,
+            operationCount: operations.length,
+          });
+
+          // Step 4: Storage cleanup (best-effort AFTER Firestore success)
           if (photoData.imageURL) {
             try {
               const decodedUrl = decodeURIComponent(photoData.imageURL);
@@ -2438,16 +2483,17 @@ exports.processScheduledPhotoDeletions = functions.pubsub
                 await bucket.file(pathMatch[1]).delete();
               }
             } catch (storageError) {
-              logger.warn('processScheduledPhotoDeletions: Storage delete failed', {
-                photoId,
-                error: storageError.message,
-              });
-              // Continue - file might not exist
+              logger.error(
+                'processScheduledPhotoDeletions: Storage cleanup failed - orphaned file',
+                {
+                  photoId,
+                  userId,
+                  error: storageError.message,
+                }
+              );
+              // Continue — Firestore data already cleaned up
             }
           }
-
-          // Step 4: Delete photo document
-          await photoDoc.ref.delete();
 
           logger.debug('processScheduledPhotoDeletions: Photo deleted', { photoId });
           deleted++;
