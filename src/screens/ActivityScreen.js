@@ -40,6 +40,49 @@ import logger from '../utils/logger';
 const db = getFirestore();
 
 /**
+ * Group notifications into time-based sections: Today, This Week, Earlier.
+ * Handles Firestore Timestamps (with .seconds or .toDate()) and plain Dates.
+ * Empty sections are omitted. Order within sections is preserved (already desc by createdAt).
+ */
+const groupNotificationsByTime = notifs => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const weekAgo = todayStart - 6 * 24 * 60 * 60 * 1000; // 7 days including today
+
+  const today = [];
+  const thisWeek = [];
+  const earlier = [];
+
+  for (const notif of notifs) {
+    let ts;
+    if (notif.createdAt?.seconds != null) {
+      ts = notif.createdAt.seconds * 1000;
+    } else if (notif.createdAt?.toDate) {
+      ts = notif.createdAt.toDate().getTime();
+    } else if (notif.createdAt instanceof Date) {
+      ts = notif.createdAt.getTime();
+    } else {
+      ts = 0; // Unknown format -> earliest bucket
+    }
+
+    if (ts >= todayStart) {
+      today.push(notif);
+    } else if (ts >= weekAgo) {
+      thisWeek.push(notif);
+    } else {
+      earlier.push(notif);
+    }
+  }
+
+  const sections = [];
+  if (today.length > 0) sections.push({ title: 'Today', data: today });
+  if (thisWeek.length > 0) sections.push({ title: 'This Week', data: thisWeek });
+  if (earlier.length > 0) sections.push({ title: 'Earlier', data: earlier });
+
+  return sections;
+};
+
+/**
  * ActivityScreen - Friend requests + reaction notifications
  * Accessed via heart icon in feed header
  */
@@ -155,6 +198,12 @@ const ActivityScreen = () => {
 
     return result;
   }, [notifications]);
+
+  // Group clumped notifications into time-based sections
+  const groupedSections = useMemo(
+    () => groupNotificationsByTime(clumpedNotifications),
+    [clumpedNotifications]
+  );
 
   const handleAccept = async requestId => {
     mediumImpact();
@@ -331,7 +380,7 @@ const ActivityScreen = () => {
         <View style={styles.emptyContainer}>
           <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
           <Text style={styles.emptyTitle}>No activity yet</Text>
-          <Text style={styles.emptyText}>Friend requests and reactions will appear here</Text>
+          <Text style={styles.emptyText}>Likes, comments, and other activity will appear here</Text>
         </View>
       );
     }
@@ -396,14 +445,16 @@ const ActivityScreen = () => {
           </View>
         )}
 
-        {/* Reactions Section */}
-        {clumpedNotifications.length > 0 && (
+        {/* Time-grouped Notifications */}
+        {groupedSections.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { paddingHorizontal: 16, paddingVertical: 12 }]}>
-              Reactions
-            </Text>
-            {clumpedNotifications.map(item => (
-              <View key={item.id}>{renderNotification({ item })}</View>
+            {groupedSections.map(section => (
+              <View key={section.title}>
+                <Text style={[styles.sectionTitle, styles.timeSectionHeader]}>{section.title}</Text>
+                {section.data.map(item => (
+                  <View key={item.id}>{renderNotification({ item })}</View>
+                ))}
+              </View>
             ))}
           </View>
         )}
@@ -462,6 +513,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  timeSectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   sectionBadge: {
     backgroundColor: colors.brand.pink,
