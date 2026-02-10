@@ -118,7 +118,7 @@ _v0.9.0 phases complete. See [v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md) f
 
 Plans:
 
-- [ ] 46-01: Feed Query Server-Side Filtering
+- [x] 46-01: Feed Query Server-Side Filtering
 - [ ] 46-02: Firestore Indexes & Read Optimization
 - [ ] 46-03: Image Loading & Caching
 - [ ] 46-04: FlatList & React Rendering
@@ -216,7 +216,7 @@ Plans:
 | ------------------------------ | --------- | ----- | ----------- | ---------- |
 | v1.6 (Phases 1-31)             | v1.6      | 108   | Complete    | 2026-02-06 |
 | v0.9.0 (Phases 32-45)          | v0.9.0    | 30    | Complete    | 2026-02-10 |
-| 46. Performance Optimization   | v1.0.0    | 0/7   | Planned     | -          |
+| 46. Performance Optimization   | v1.0.0    | 1/7   | In progress | -          |
 | 47. Firebase Perf Monitoring   | v1.0.0    | 0/?   | Not started | -          |
 | 48. UI/UX Consistency Audit    | v1.0.0    | 0/?   | Not started | -          |
 | 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |
