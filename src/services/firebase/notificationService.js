@@ -245,7 +245,7 @@ export const handleNotificationReceived = notification => {
 export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
-    const { type, photoId, friendshipId, userId, taggerId } = data || {};
+    const { type, photoId, friendshipId, userId, taggerId, commentId } = data || {};
 
     logger.debug('Notification tapped', {
       type,
@@ -253,6 +253,7 @@ export const handleNotificationTapped = notification => {
       friendshipId,
       userId,
       taggerId,
+      commentId,
     });
 
     // Return navigation data based on notification type
@@ -281,11 +282,41 @@ export const handleNotificationTapped = notification => {
           },
         };
 
+      case 'friend_accepted':
+        return {
+          success: true,
+          data: {
+            type: 'friend_accepted',
+            screen: 'FriendRequests',
+            params: {},
+          },
+        };
+
       case 'reaction':
         return {
           success: true,
           data: {
             type: 'reaction',
+            screen: 'Feed',
+            params: { photoId },
+          },
+        };
+
+      case 'comment':
+        return {
+          success: true,
+          data: {
+            type: 'comment',
+            screen: 'Feed',
+            params: { photoId },
+          },
+        };
+
+      case 'mention':
+        return {
+          success: true,
+          data: {
+            type: 'mention',
             screen: 'Feed',
             params: { photoId },
           },
