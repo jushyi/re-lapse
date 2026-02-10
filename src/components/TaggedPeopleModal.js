@@ -183,6 +183,9 @@ const TaggedPeopleModal = ({ visible, onClose, taggedUserIds = [], onPersonPress
               keyExtractor={keyExtractor}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              maxToRenderPerBatch={8}
+              windowSize={5}
             />
           )}
         </Animated.View>

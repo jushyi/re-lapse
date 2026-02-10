@@ -221,6 +221,9 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
               keyExtractor={item => item.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              initialNumToRender={6}
+              maxToRenderPerBatch={4}
+              windowSize={5}
             />
           )}
         </View>

@@ -119,6 +119,9 @@ const AlbumBar = forwardRef(
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          initialNumToRender={4}
+          maxToRenderPerBatch={3}
+          windowSize={3}
         />
       </View>
     );

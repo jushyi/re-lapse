@@ -215,6 +215,10 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
               keyExtractor={keyExtractor}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={true}
             />
           )}
         </Animated.View>

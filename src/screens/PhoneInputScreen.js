@@ -258,6 +258,15 @@ const PhoneInputScreen = ({ navigation }) => {
               renderItem={renderCountryItem}
               keyExtractor={item => `${item.country}-${item.code}`}
               style={styles.countryList}
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={true}
+              getItemLayout={(data, index) => ({
+                length: 49,
+                offset: 49 * index,
+                index,
+              })}
             />
           </View>
         </View>

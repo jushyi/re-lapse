@@ -825,6 +825,10 @@ const FriendsScreen = ({ navigation }) => {
           keyExtractor={item => item.friendshipId}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -903,6 +907,10 @@ const FriendsScreen = ({ navigation }) => {
               keyExtractor={item => item.userId}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={true}
               ListEmptyComponent={renderEmptyState(
                 'search-outline',
                 'No users found',
@@ -1067,6 +1075,10 @@ const FriendsScreen = ({ navigation }) => {
             keyExtractor={keyExtractor}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={10}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

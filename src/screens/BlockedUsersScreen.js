@@ -171,6 +171,10 @@ const BlockedUsersScreen = () => {
         contentContainerStyle={blockedUsers.length === 0 ? { flex: 1 } : undefined}
         ListEmptyComponent={renderEmptyState}
         style={styles.listContainer}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={true}
       />
     </SafeAreaView>
   );

@@ -269,6 +269,10 @@ const SongSearchScreen = () => {
           ListEmptyComponent={renderEmptyState}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       </KeyboardAvoidingView>
 

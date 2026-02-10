@@ -1138,6 +1138,11 @@ const FeedScreen = () => {
                 progressViewOffset={40}
               />
             }
+            initialNumToRender={4}
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
             onEndReached={photos.length > 0 ? loadMorePhotos : null}
             onEndReachedThreshold={0.5}
             ListHeaderComponent={renderStoriesRow()}
