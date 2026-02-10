@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** Planning next milestone
+**Current focus:** v1.0.0 Release Readiness — Performance, testing, and iOS release
 
 ## Current Position
 
-Phase: All complete (45 phases across 2 milestones)
-Plan: N/A
-Status: Ready to plan next milestone
-Last activity: 2026-02-10 — v0.9.0 milestone complete
+Phase: 46 of 53 (Performance Optimization)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-10 — Milestone v1.0.0 created
 
-Progress: ██████████ 100%
+Progress: ░░░░░░░░░░ 0%
 
 ## Performance Metrics
 
@@ -56,14 +56,16 @@ None.
 
 - Milestone v1.6 shipped: Auth & Profile Refactor, 31 phases (Phase 1-31)
 - Milestone v0.9.0 shipped: Engagement & Polish, 14 phases (Phase 32-45)
+- Milestone v1.0.0 created: Release Readiness, 8 phases (Phase 46-53)
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: v0.9.0 milestone archived
+Stopped at: Milestone v1.0.0 initialization
 Resume file: None
 
 ## Next Steps
 
-- `/gsd:discuss-milestone` — Plan next milestone
-- `/gsd:new-milestone` — Create directly if scope is clear
+- `/gsd:plan-phase 46` — Plan Phase 46: Performance Optimization
+- `/gsd:discuss-phase 46` — Gather context first
+- `/gsd:research-phase 46` — Investigate unknowns

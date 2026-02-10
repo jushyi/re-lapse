@@ -8,6 +8,7 @@ Transform Lapse Clone's authentication experience and profile system from incons
 
 - ✅ [v1.6 Auth & Profile Refactor](milestones/v1.6-ROADMAP.md) (Phases 1-31) — SHIPPED 2026-02-06
 - ✅ [v0.9.0 Engagement & Polish](milestones/v0.9.0-ROADMAP.md) (Phases 32-45) — SHIPPED 2026-02-10
+- 🚧 **v1.0.0 Release Readiness** — Phases 46-53 (in progress)
 
 ## Completed Milestones
 
@@ -95,13 +96,127 @@ Decimal phases appear between their surrounding integers in numeric order.
 _v1.6 phases complete. See [v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md) for archive._
 _v0.9.0 phases complete. See [v0.9.0-ROADMAP.md](milestones/v0.9.0-ROADMAP.md) for archive._
 
+### 🚧 v1.0.0 Release Readiness (In Progress)
+
+**Milestone Goal:** Optimize performance, establish testing infrastructure, and ship the first iOS release with CI/CD pipelines for future updates
+
+**Constraints:**
+
+- iOS only — no Android release in this milestone
+- Unlisted release (not searchable, direct link access only)
+- Privacy policy and ToS already exist, just need linking
+- Apple Developer account partially set up — certificates/profiles still needed
+- UAT should cover all 45 previously shipped phases across 8 feature areas
+
+#### Phase 46: Performance Optimization
+
+**Goal**: Firebase queries, UI rendering, and Cloud Functions code-level improvements — composite indexes, pagination, read/write batching, offline caching, FlatList optimization, image caching & lazy loading, native driver animations, React.memo/useMemo re-render reduction, cold start reduction, memory/timeout tuning
+**Depends on**: Previous milestone complete
+**Research**: Likely (Firebase optimization best practices, composite index configuration, Cloud Functions cold start patterns)
+**Research topics**: Firebase composite indexes, query pagination patterns, Cloud Functions cold start reduction, React Native FlatList optimization
+**Plans**: TBD
+
+Plans:
+
+- [ ] 46-01: TBD (run /gsd:plan-phase 46 to break down)
+
+#### Phase 47: Firebase Performance Monitoring
+
+**Goal**: Integrate Firebase Performance Monitoring SDK for ongoing production metrics — network traces, custom traces, screen rendering performance, baseline establishment
+**Depends on**: Phase 46
+**Research**: Likely (new SDK integration — not currently in codebase)
+**Research topics**: Firebase Performance Monitoring SDK setup for React Native/Expo, custom trace API, network trace configuration
+**Plans**: TBD
+
+Plans:
+
+- [ ] 47-01: TBD
+
+#### Phase 48: UI/UX Consistency Audit
+
+**Goal**: Review all screens for visual and interaction consistency — spacing, colors, typography, component patterns, navigation flows, gesture patterns, loading/error states, feedback patterns
+**Depends on**: Phase 47
+**Research**: Unlikely (internal patterns — reviewing and standardizing existing code)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 48-01: TBD
+
+#### Phase 49: Automated Test Suite
+
+**Goal**: Jest unit tests for business logic + Detox E2E tests for critical user flows (auth, camera, feed, social) — regression guards for future development
+**Depends on**: Phase 48
+**Research**: Likely (Detox E2E framework likely new to project)
+**Research topics**: Detox setup with Expo/React Native, Jest configuration for React Native, test structure patterns
+**Plans**: TBD
+
+Plans:
+
+- [ ] 49-01: TBD
+
+#### Phase 50: CI/CD Pipeline
+
+**Goal**: GitHub Actions for lint/type-check/test on PR, EAS Build on merge to main, EAS Submit on release tag — Apple credentials and EAS tokens in GitHub Secrets
+**Depends on**: Phase 49
+**Research**: Likely (EAS Build/Submit integration, GitHub Actions workflows)
+**Research topics**: EAS Build configuration, GitHub Actions for Expo/EAS, secrets management, pipeline validation
+**Plans**: TBD
+
+Plans:
+
+- [ ] 50-01: TBD
+
+#### Phase 51: iOS Release Preparation
+
+**Goal**: Finish distribution certificate + App Store provisioning profile, configure App Store Connect (bundle ID, metadata, screenshots), link existing privacy policy/ToS
+**Depends on**: Phase 50
+**Research**: Likely (Apple Developer portal, certificates, provisioning profiles, App Store Connect)
+**Research topics**: Distribution certificate creation, App Store provisioning, EAS credentials setup, App Store Connect metadata
+**Plans**: TBD
+
+Plans:
+
+- [ ] 51-01: TBD
+
+#### Phase 52: Systematic UAT
+
+**Goal**: Manual testing checklists across all 8 feature areas (Auth, Profile, Camera/Photos, Feed, Stories, Social, Notifications, Settings) with pass/fail criteria and edge case identification
+**Depends on**: Phase 51
+**Research**: Unlikely (internal testing — reviewing own app features)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 52-01: TBD
+
+#### Phase 53: Unlisted App Store Release
+
+**Goal**: Build via EAS Build, submit via EAS Submit, pass App Review, publish as unlisted (direct link only, not searchable)
+**Depends on**: Phase 52
+**Research**: Likely (EAS Submit, App Review process, unlisted distribution)
+**Research topics**: EAS Submit configuration, App Review requirements, unlisted app distribution setup
+**Plans**: TBD
+
+Plans:
+
+- [ ] 53-01: TBD
+
 ---
 
 ## Progress
 
-| Milestone | Phases | Plans | Status   | Shipped    |
-| --------- | ------ | ----- | -------- | ---------- |
-| v1.6      | 1-31   | 108   | Complete | 2026-02-06 |
-| v0.9.0    | 32-45  | 30    | Complete | 2026-02-10 |
+| Phase                          | Milestone | Plans | Status      | Completed  |
+| ------------------------------ | --------- | ----- | ----------- | ---------- |
+| v1.6 (Phases 1-31)             | v1.6      | 108   | Complete    | 2026-02-06 |
+| v0.9.0 (Phases 32-45)          | v0.9.0    | 30    | Complete    | 2026-02-10 |
+| 46. Performance Optimization   | v1.0.0    | 0/?   | Not started | -          |
+| 47. Firebase Perf Monitoring   | v1.0.0    | 0/?   | Not started | -          |
+| 48. UI/UX Consistency Audit    | v1.0.0    | 0/?   | Not started | -          |
+| 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |
+| 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
+| 51. iOS Release Preparation    | v1.0.0    | 0/?   | Not started | -          |
+| 52. Systematic UAT             | v1.0.0    | 0/?   | Not started | -          |
+| 53. Unlisted App Store Release | v1.0.0    | 0/?   | Not started | -          |
 
 See [MILESTONES.md](MILESTONES.md) for milestone history.
