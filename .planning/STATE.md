@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** All three areas (login/signup flow, profile creation onboarding, profile screen) must be solid and functional — the app's first impression and personal identity depend on it.
-**Current focus:** v1.7 Engagement & Polish — Phase 44 complete
+**Current focus:** v1.7 Engagement & Polish — Phase 45 in progress
 
 ## Current Position
 
-Phase: 44 of 46 (Notification Activity Feed)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-09 — Completed 44-02-PLAN.md
+Phase: 45 of 46 (Security Audit)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-09 — Completed 45-01-PLAN.md
 
 Progress: ██████████ 100%
 
@@ -34,11 +34,12 @@ Progress: ██████████ 100%
 
 See PROJECT.md Key Decisions table for full history.
 
-| Phase | Decision                                              | Rationale                                                                                                                |
-| ----- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 42    | Mutual friend computation via Cloud Function          | Firestore security rules correctly block client-side cross-user friendship queries; admin SDK is the established pattern |
-| 44    | All photo notification taps open PhotoDetail directly | FeedScreen has no handler for photoId route params; openPhotoDetail context is the correct pattern                       |
-| 44    | friend_accepted navigates to sender's profile         | More useful than friends list — user wants to see who accepted                                                           |
+| Phase | Decision                                                      | Rationale                                                                                                                |
+| ----- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 42    | Mutual friend computation via Cloud Function                  | Firestore security rules correctly block client-side cross-user friendship queries; admin SDK is the established pattern |
+| 44    | All photo notification taps open PhotoDetail directly         | FeedScreen has no handler for photoId route params; openPhotoDetail context is the correct pattern                       |
+| 44    | friend_accepted navigates to sender's profile                 | More useful than friends list — user wants to see who accepted                                                           |
+| 45    | Main photos owner-only in Storage, friends via Cloud Function | Admin SDK bypasses Storage rules; getSignedPhotoUrl is the correct access path for non-owners                            |
 
 ### Deferred Issues
 
@@ -62,10 +63,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 44-02-PLAN.md (Phase 44 complete)
+Stopped at: Completed 45-01-PLAN.md
 Resume file: None
 
 ## Next Steps
 
-- `/gsd:plan-phase 45` — Plan Phase 45: Security Audit
+- `/gsd:execute-plan 45-02` — Execute Plan 45-02: Cloud Functions access control
 - `/gsd:complete-milestone` — Archive v1.7 after all phases done
