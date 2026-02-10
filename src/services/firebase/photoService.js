@@ -30,6 +30,7 @@ import {
   writeBatch,
   Timestamp,
   FieldValue,
+  getCountFromServer,
 } from '@react-native-firebase/firestore';
 import { uploadPhoto, deletePhoto } from './storageService';
 import { ensureDarkroomInitialized } from './darkroomService';
@@ -178,15 +179,14 @@ export const getDevelopingPhotoCount = async userId => {
   logger.debug('PhotoService.getDevelopingPhotoCount: Starting', { userId });
 
   try {
+    // Use count() aggregation — downloads zero documents, just returns the count
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing'),
-      limit(500) // Safety bound; count aggregation preferred (see Task 2)
+      where('status', '==', 'developing')
     );
-    const snapshot = await getDocs(developingQuery);
-
-    const count = snapshot.size;
+    const countSnapshot = await getCountFromServer(developingQuery);
+    const count = countSnapshot.data().count;
 
     logger.info('PhotoService.getDevelopingPhotoCount: Retrieved count', {
       userId,
@@ -212,31 +212,26 @@ export const getDarkroomCounts = async userId => {
   logger.debug('PhotoService.getDarkroomCounts: Starting', { userId });
 
   try {
-    // Query for developing photos
+    // Use count() aggregation — downloads zero documents, just returns counts
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing'),
-      limit(500) // Safety bound on developing photo count
+      where('status', '==', 'developing')
     );
-    const developingPromise = getDocs(developingQuery);
 
-    // Query for revealed photos
     const revealedQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'revealed'),
-      limit(500) // Safety bound on revealed photo count
+      where('status', '==', 'revealed')
     );
-    const revealedPromise = getDocs(revealedQuery);
 
-    const [developingSnapshot, revealedSnapshot] = await Promise.all([
-      developingPromise,
-      revealedPromise,
+    const [developingCountSnap, revealedCountSnap] = await Promise.all([
+      getCountFromServer(developingQuery),
+      getCountFromServer(revealedQuery),
     ]);
 
-    const developingCount = developingSnapshot.size;
-    const revealedCount = revealedSnapshot.size;
+    const developingCount = developingCountSnap.data().count;
+    const revealedCount = revealedCountSnap.data().count;
     const totalCount = developingCount + revealedCount;
 
     logger.info('PhotoService.getDarkroomCounts: Retrieved counts', {

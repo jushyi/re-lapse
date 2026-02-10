@@ -26,6 +26,7 @@ import {
   startAfter,
   onSnapshot,
   Timestamp,
+  getCountFromServer,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 import { getFriendUserIds } from './friendshipService';
@@ -45,6 +46,35 @@ const chunkArray = (array, size = FIRESTORE_IN_LIMIT) => {
     chunks.push(array.slice(i, i + size));
   }
   return chunks;
+};
+
+/**
+ * Batch fetch user data for a set of user IDs with deduplication
+ * Returns a Map of userId -> userData for O(1) lookups
+ * Eliminates N+1 reads by fetching each unique user only once
+ *
+ * @param {string[]} userIds - Array of user IDs (may contain duplicates)
+ * @returns {Promise<Map<string, object>>} Map of userId to user data object
+ */
+const batchFetchUserData = async userIds => {
+  const uniqueIds = [...new Set(userIds)];
+  const userMap = new Map();
+
+  if (uniqueIds.length === 0) return userMap;
+
+  const userDocs = await Promise.all(uniqueIds.map(id => getDoc(doc(db, 'users', id))));
+
+  userDocs.forEach((userDocSnap, index) => {
+    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    userMap.set(uniqueIds[index], {
+      uid: uniqueIds[index],
+      username: userData.username || 'unknown',
+      displayName: userData.displayName || 'Unknown User',
+      profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+    });
+  });
+
+  return userMap;
 };
 
 // Content visibility duration constants
@@ -133,25 +163,21 @@ export const getFeedPhotos = async (
       blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
     }
 
-    // Fetch user data and build photo objects
-    const allPhotos = await Promise.all(
-      limitedDocs.map(async ({ docSnap: photoDocSnap, data: photoData }) => {
-        const userDocRef = doc(db, 'users', photoData.userId);
-        const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    // Batch fetch user data with deduplication (eliminates N+1 reads)
+    const userIds = limitedDocs.map(({ data: photoData }) => photoData.userId);
+    const userMap = await batchFetchUserData(userIds);
 
-        return {
-          id: photoDocSnap.id,
-          ...photoData,
-          user: {
-            uid: photoData.userId,
-            username: userData.username || 'unknown',
-            displayName: userData.displayName || 'Unknown User',
-            profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-          },
-        };
-      })
-    );
+    // Build photo objects using the lookup map
+    const allPhotos = limitedDocs.map(({ docSnap: photoDocSnap, data: photoData }) => ({
+      id: photoDocSnap.id,
+      ...photoData,
+      user: userMap.get(photoData.userId) || {
+        uid: photoData.userId,
+        username: 'unknown',
+        displayName: 'Unknown User',
+        profilePhotoURL: null,
+      },
+    }));
 
     // Client-side: filter blocked users only (friend filtering done server-side)
     const filteredPhotos =
@@ -254,25 +280,23 @@ export const subscribeFeedPhotos = (
         async snapshot => {
           const chunkPhotos = new Map();
 
-          await Promise.all(
-            snapshot.docs.map(async photoDoc => {
-              const photoData = photoDoc.data();
-              const userDocRef = doc(db, 'users', photoData.userId);
-              const userDocSnap = await getDoc(userDocRef);
-              const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+          // Batch fetch user data with deduplication (eliminates N+1 reads)
+          const chunkUserIds = snapshot.docs.map(photoDoc => photoDoc.data().userId);
+          const userMap = await batchFetchUserData(chunkUserIds);
 
-              chunkPhotos.set(photoDoc.id, {
-                id: photoDoc.id,
-                ...photoData,
-                user: {
-                  uid: photoData.userId,
-                  username: userData.username || 'unknown',
-                  displayName: userData.displayName || 'Unknown User',
-                  profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-                },
-              });
-            })
-          );
+          snapshot.docs.forEach(photoDoc => {
+            const photoData = photoDoc.data();
+            chunkPhotos.set(photoDoc.id, {
+              id: photoDoc.id,
+              ...photoData,
+              user: userMap.get(photoData.userId) || {
+                uid: photoData.userId,
+                username: 'unknown',
+                displayName: 'Unknown User',
+                profilePhotoURL: null,
+              },
+            });
+          });
 
           photosByChunk.set(chunkIndex, chunkPhotos);
           await mergeAndNotify();
@@ -401,37 +425,36 @@ export const getUserFeedPhotos = async (userId, limitCount = 50, lastDoc = null)
  */
 export const getFeedStats = async () => {
   try {
+    // Use count() aggregation to avoid downloading documents — just returns counts
     const journaledQuery = query(
       collection(db, 'photos'),
       where('status', '==', 'triaged'),
-      where('photoState', '==', 'journaled'),
-      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
+      where('photoState', '==', 'journaled')
     );
     const archivedQuery = query(
       collection(db, 'photos'),
       where('status', '==', 'triaged'),
-      where('photoState', '==', 'archived'),
-      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
+      where('photoState', '==', 'archived')
     );
-    const developingQuery = query(
-      collection(db, 'photos'),
-      where('status', '==', 'developing'),
-      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
-    );
+    const developingQuery = query(collection(db, 'photos'), where('status', '==', 'developing'));
 
-    const [journaledSnapshot, archivedSnapshot, developingSnapshot] = await Promise.all([
-      getDocs(journaledQuery),
-      getDocs(archivedQuery),
-      getDocs(developingQuery),
+    const [journaledCount, archivedCount, developingCount] = await Promise.all([
+      getCountFromServer(journaledQuery),
+      getCountFromServer(archivedQuery),
+      getCountFromServer(developingQuery),
     ]);
+
+    const journaled = journaledCount.data().count;
+    const archived = archivedCount.data().count;
+    const developing = developingCount.data().count;
 
     return {
       success: true,
       stats: {
-        journaledCount: journaledSnapshot.size,
-        archivedCount: archivedSnapshot.size,
-        developingCount: developingSnapshot.size,
-        totalPhotos: journaledSnapshot.size + archivedSnapshot.size + developingSnapshot.size,
+        journaledCount: journaled,
+        archivedCount: archived,
+        developingCount: developing,
+        totalPhotos: journaled + archived + developing,
       },
     };
   } catch (error) {
@@ -863,28 +886,25 @@ export const getRandomFriendPhotos = async (
 
     const snapshots = await Promise.all(chunkPromises);
 
-    // Merge results and fetch user data
+    // Merge results and batch fetch user data with deduplication
     const allDocs = snapshots.flatMap(snapshot => snapshot.docs);
-    const friendPhotos = await Promise.all(
-      allDocs.map(async photoDoc => {
-        const photoData = photoDoc.data();
-        const userDocRef = doc(db, 'users', photoData.userId);
-        const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    const randomUserIds = allDocs.map(photoDoc => photoDoc.data().userId);
+    const userMap = await batchFetchUserData(randomUserIds);
 
-        return {
-          id: photoDoc.id,
-          ...photoData,
-          user: {
-            uid: photoData.userId,
-            username: userData.username || 'unknown',
-            displayName: userData.displayName || 'Unknown User',
-            profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-          },
-          isArchivePhoto: true,
-        };
-      })
-    );
+    const friendPhotos = allDocs.map(photoDoc => {
+      const photoData = photoDoc.data();
+      return {
+        id: photoDoc.id,
+        ...photoData,
+        user: userMap.get(photoData.userId) || {
+          uid: photoData.userId,
+          username: 'unknown',
+          displayName: 'Unknown User',
+          profilePhotoURL: null,
+        },
+        isArchivePhoto: true,
+      };
+    });
 
     // Shuffle randomly using Fisher-Yates algorithm
     const shuffled = [...friendPhotos];
