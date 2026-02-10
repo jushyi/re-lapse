@@ -12,7 +12,13 @@ module.exports = function (api) {
           allowUndefined: true,
         },
       ],
+      ['babel-plugin-react-compiler'],
       'react-native-reanimated/plugin',
     ],
+    env: {
+      production: {
+        plugins: ['transform-remove-console'],
+      },
+    },
   };
 };
