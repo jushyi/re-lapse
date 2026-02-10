@@ -3,12 +3,6 @@ const admin = require('firebase-admin');
 const { initializeApp, getApps, getApp } = require('firebase-admin/app');
 const { initializeFirestore } = require('firebase-admin/firestore');
 const logger = require('./logger');
-const { sendPushNotification, expo } = require('./notifications/sender');
-const {
-  getPendingReceipts,
-  deletePendingReceipt,
-  removeInvalidToken,
-} = require('./notifications/receipts');
 const {
   validateOrNull,
   DarkroomDocSchema,
@@ -17,7 +11,6 @@ const {
   UserDocSchema,
   SignedUrlRequestSchema,
 } = require('./validation');
-const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 // Initialize Firebase Admin SDK with preferRest for faster cold starts
@@ -250,6 +243,12 @@ exports.checkPushReceipts = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .pubsub.schedule('every 15 minutes')
   .onRun(async context => {
+    const { expo } = require('./notifications/sender');
+    const {
+      getPendingReceipts,
+      deletePendingReceipt,
+      removeInvalidToken,
+    } = require('./notifications/receipts');
     try {
       logger.info('checkPushReceipts: Starting receipt check');
 
@@ -349,6 +348,7 @@ exports.sendPhotoRevealNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('darkrooms/{userId}')
   .onUpdate(async (change, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
     try {
       const userId = context.params.userId;
       const before = change.before.data();
@@ -468,6 +468,7 @@ exports.sendFriendRequestNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('friendships/{friendshipId}')
   .onCreate(async (snap, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
     try {
       const friendshipId = context.params.friendshipId;
       const friendshipData = snap.data();
@@ -582,6 +583,7 @@ exports.sendFriendAcceptedNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('friendships/{friendshipId}')
   .onUpdate(async (change, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
     try {
       const friendshipId = context.params.friendshipId;
       const before = change.before.data();
@@ -714,6 +716,7 @@ exports.sendStoryNotification = functions
   .runWith({ memory: '512MB', timeoutSeconds: 120 })
   .firestore.document('darkrooms/{userId}')
   .onUpdate(async (change, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
     try {
       const userId = context.params.userId;
       const before = change.before.data();
@@ -908,6 +911,7 @@ exports.sendStoryNotification = functions
  * @param {string} pendingKey - Key in pendingReactions object
  */
 async function sendBatchedReactionNotification(pendingKey) {
+  const { sendPushNotification } = require('./notifications/sender');
   const pending = pendingReactions[pendingKey];
   if (!pending) {
     logger.debug('sendBatchedReactionNotification: No pending entry found for', pendingKey);
@@ -1171,6 +1175,7 @@ exports.sendReactionNotification = functions
  * @param {string} pendingKey - Key in pendingTags object
  */
 async function sendBatchedTagNotification(pendingKey) {
+  const { sendPushNotification } = require('./notifications/sender');
   const pending = pendingTags[pendingKey];
   if (!pending) {
     logger.debug('sendBatchedTagNotification: No pending entry found for', pendingKey);
@@ -1528,6 +1533,7 @@ exports.getSignedPhotoUrl = onCall({ memory: '256MiB', timeoutSeconds: 30 }, asy
   logger.info('getSignedPhotoUrl: Generating signed URL', { userId, photoPath });
 
   try {
+    const { getStorage } = require('firebase-admin/storage');
     const bucket = getStorage().bucket();
     const file = bucket.file(photoPath);
 
@@ -1575,6 +1581,7 @@ exports.sendCommentNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('photos/{photoId}/comments/{commentId}')
   .onCreate(async (snap, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
     const { photoId, commentId } = context.params;
     const comment = snap.data();
 
@@ -1857,6 +1864,7 @@ exports.deleteUserAccount = onCall({ memory: '512MiB', timeoutSeconds: 300 }, as
   logger.info('deleteUserAccount: Starting deletion', { userId });
 
   try {
+    const { getStorage } = require('firebase-admin/storage');
     const bucket = getStorage().bucket();
 
     // Helper: commit operations in batches respecting 400-op limit
@@ -2167,6 +2175,7 @@ exports.sendDeletionReminderNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 300 })
   .pubsub.schedule('0 9 * * *') // Daily at 9 AM UTC
   .onRun(async context => {
+    const { sendPushNotification } = require('./notifications/sender');
     try {
       const now = admin.firestore.Timestamp.now();
 
@@ -2246,6 +2255,7 @@ exports.processScheduledDeletions = functions
   .runWith({ memory: '512MB', timeoutSeconds: 300 })
   .pubsub.schedule('0 3 * * *') // 3 AM UTC daily
   .onRun(async context => {
+    const { getStorage } = require('firebase-admin/storage');
     const bucket = getStorage().bucket();
     const now = admin.firestore.Timestamp.now();
 
@@ -2379,6 +2389,7 @@ exports.processScheduledPhotoDeletions = functions
   .runWith({ memory: '512MB', timeoutSeconds: 300 })
   .pubsub.schedule('15 3 * * *') // 3:15 AM UTC daily
   .onRun(async context => {
+    const { getStorage } = require('firebase-admin/storage');
     const bucket = getStorage().bucket();
     const now = admin.firestore.Timestamp.now();
 
