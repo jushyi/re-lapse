@@ -27,6 +27,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
@@ -146,7 +147,8 @@ export const getUserAlbums = async userId => {
     const albumsQuery = query(
       collection(db, 'albums'),
       where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      orderBy('updatedAt', 'desc'),
+      limit(50) // Safety bound on album count per user
     );
     const snapshot = await getDocs(albumsQuery);
 

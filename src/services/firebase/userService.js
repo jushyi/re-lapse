@@ -19,6 +19,7 @@ import {
   collection,
   query,
   where,
+  limit,
   getDocs,
   Timestamp,
 } from '@react-native-firebase/firestore';
@@ -123,7 +124,11 @@ export const checkUsernameAvailability = async (username, currentUserId = null) 
     });
 
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('username', '==', normalizedUsername));
+    const q = query(
+      usersRef,
+      where('username', '==', normalizedUsername),
+      limit(1) // Only need existence check, not all matching docs
+    );
     const querySnapshot = await getDocs(q);
 
     // Check if any user has this username (excluding current user)

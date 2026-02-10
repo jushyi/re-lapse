@@ -26,6 +26,7 @@ import {
   updateDoc,
   query,
   where,
+  limit,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
@@ -98,7 +99,11 @@ export const blockUser = async (blockerId, blockedId) => {
  */
 const removeBlockedUserContent = async (blockerId, blockedId) => {
   try {
-    const photosQuery = query(collection(db, 'photos'), where('userId', '==', blockerId));
+    const photosQuery = query(
+      collection(db, 'photos'),
+      where('userId', '==', blockerId),
+      limit(500) // Safety bound on photos to scan for blocked user content
+    );
     const photosSnapshot = await getDocs(photosQuery);
 
     if (photosSnapshot.empty) {
@@ -224,7 +229,11 @@ export const getBlockedByUserIds = async userId => {
     }
 
     // Query blocks where this user is the blocked party
-    const blocksQuery = query(collection(db, 'blocks'), where('blockedId', '==', userId));
+    const blocksQuery = query(
+      collection(db, 'blocks'),
+      where('blockedId', '==', userId),
+      limit(500) // Practical upper bound on users who blocked this user
+    );
     const blocksSnapshot = await getDocs(blocksQuery);
 
     const blockedByUserIds = [];
@@ -253,7 +262,11 @@ export const getBlockedUserIds = async userId => {
     }
 
     // Query blocks where this user is the blocker
-    const blocksQuery = query(collection(db, 'blocks'), where('blockerId', '==', userId));
+    const blocksQuery = query(
+      collection(db, 'blocks'),
+      where('blockerId', '==', userId),
+      limit(500) // Practical upper bound on blocked users
+    );
     const blocksSnapshot = await getDocs(blocksQuery);
 
     const blockedUserIds = [];
@@ -292,20 +305,22 @@ export const getBlockedUsersWithProfiles = async userId => {
       return { success: true, blockedUsers: [] };
     }
 
+    // Fetch all profiles in parallel instead of sequentially
+    const profileResults = await Promise.all(
+      blockedUserIds.map(blockedUserId => getUserProfile(blockedUserId))
+    );
+
     const blockedUsers = [];
-    for (const blockedUserId of blockedUserIds) {
-      const profileResult = await getUserProfile(blockedUserId);
-
-      // Skip users that no longer exist (deleted accounts)
+    profileResults.forEach((profileResult, index) => {
       if (!profileResult.success) {
+        // Skip users that no longer exist (deleted accounts)
         logger.debug('getBlockedUsersWithProfiles: Skipping non-existent user', {
-          blockedUserId,
+          blockedUserId: blockedUserIds[index],
         });
-        continue;
+        return;
       }
-
       blockedUsers.push(profileResult.profile);
-    }
+    });
 
     logger.info('getBlockedUsersWithProfiles: Fetched profiles', {
       userId,

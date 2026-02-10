@@ -25,6 +25,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
   writeBatch,
   Timestamp,
@@ -146,7 +147,8 @@ export const getUserPhotos = async userId => {
     const photosQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      orderBy('capturedAt', 'desc')
+      orderBy('capturedAt', 'desc'),
+      limit(100) // Safety bound on user's photo library; paginate if needed
     );
     const snapshot = await getDocs(photosQuery);
 
@@ -179,7 +181,8 @@ export const getDevelopingPhotoCount = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound; count aggregation preferred (see Task 2)
     );
     const snapshot = await getDocs(developingQuery);
 
@@ -213,7 +216,8 @@ export const getDarkroomCounts = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound on developing photo count
     );
     const developingPromise = getDocs(developingQuery);
 
@@ -221,7 +225,8 @@ export const getDarkroomCounts = async userId => {
     const revealedQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'revealed')
+      where('status', '==', 'revealed'),
+      limit(500) // Safety bound on revealed photo count
     );
     const revealedPromise = getDocs(revealedQuery);
 
@@ -267,14 +272,16 @@ export const getDevelopingPhotos = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound on developing photos in darkroom
     );
     const developingPromise = getDocs(developingQuery);
 
     const revealedQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'revealed')
+      where('status', '==', 'revealed'),
+      limit(500) // Safety bound on revealed photos in darkroom
     );
     const revealedPromise = getDocs(revealedQuery);
 
@@ -328,7 +335,8 @@ export const revealPhotos = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound on batch reveal
     );
     const snapshot = await getDocs(developingQuery);
 
@@ -565,7 +573,8 @@ export const migratePhotoStateField = async userId => {
     const q = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'triaged')
+      where('status', '==', 'triaged'),
+      limit(1000) // Safety bound on migration batch
     );
     const snapshot = await getDocs(q);
 
@@ -1000,7 +1009,8 @@ export const getDeletedPhotos = async userId => {
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('photoState', '==', 'deleted'),
-      orderBy('deletionScheduledAt', 'desc')
+      orderBy('deletionScheduledAt', 'desc'),
+      limit(200) // Safety bound on recently deleted photos
     );
     const snapshot = await getDocs(deletedQuery);
 

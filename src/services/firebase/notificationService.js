@@ -24,6 +24,7 @@ import {
   collection,
   query,
   where,
+  limit,
   getDocs,
   writeBatch,
 } from '@react-native-firebase/firestore';
@@ -424,35 +425,50 @@ export const markNotificationsAsRead = async userId => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query all unread notifications for this user
-    const notificationsRef = collection(db, 'notifications');
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('read', '==', false)
-    );
+    // Query unread notifications in batches of 500 (Firestore writeBatch limit)
+    // Loop until no unread notifications remain
+    const BATCH_LIMIT = 500;
+    let totalMarked = 0;
 
-    const snapshot = await getDocs(q);
+    while (true) {
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(
+        notificationsRef,
+        where('recipientId', '==', userId),
+        where('read', '==', false),
+        limit(BATCH_LIMIT) // Process up to 500 per batch to stay within writeBatch limits
+      );
 
-    if (snapshot.empty) {
-      logger.debug('markNotificationsAsRead: No unread notifications', { userId });
-      return { success: true, count: 0 };
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        break;
+      }
+
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnap => {
+        batch.update(docSnap.ref, { read: true });
+      });
+
+      await batch.commit();
+      totalMarked += snapshot.docs.length;
+
+      // If fewer than BATCH_LIMIT returned, no more remain
+      if (snapshot.docs.length < BATCH_LIMIT) {
+        break;
+      }
     }
 
-    // Batch update all unread notifications
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(docSnap => {
-      batch.update(docSnap.ref, { read: true });
-    });
+    if (totalMarked === 0) {
+      logger.debug('markNotificationsAsRead: No unread notifications', { userId });
+    } else {
+      logger.info('markNotificationsAsRead: Marked notifications as read', {
+        userId,
+        count: totalMarked,
+      });
+    }
 
-    await batch.commit();
-
-    logger.info('markNotificationsAsRead: Marked notifications as read', {
-      userId,
-      count: snapshot.docs.length,
-    });
-
-    return { success: true, count: snapshot.docs.length };
+    return { success: true, count: totalMarked };
   } catch (error) {
     logger.error('markNotificationsAsRead: Failed to mark notifications as read', {
       error: error.message,

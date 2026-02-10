@@ -10,6 +10,7 @@ import {
   query,
   where,
   or,
+  limit,
   onSnapshot,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
@@ -241,7 +242,8 @@ export const getFriendships = async userId => {
     // Query friendships where user is either user1Id or user2Id using modular or() function
     const q = query(
       collection(db, 'friendships'),
-      or(where('user1Id', '==', userId), where('user2Id', '==', userId))
+      or(where('user1Id', '==', userId), where('user2Id', '==', userId)),
+      limit(500) // Practical bound on total friendships (all statuses)
     );
     const querySnapshot = await getDocs(q);
 
@@ -287,7 +289,8 @@ export const getPendingRequests = async userId => {
     // Query friendships where user is either user1Id or user2Id using modular or() function
     const q = query(
       collection(db, 'friendships'),
-      or(where('user1Id', '==', userId), where('user2Id', '==', userId))
+      or(where('user1Id', '==', userId), where('user2Id', '==', userId)),
+      limit(500) // Practical bound on total friendships (all statuses)
     );
     const querySnapshot = await getDocs(q);
 
@@ -334,7 +337,8 @@ export const getSentRequests = async userId => {
     // (Firestore security rules only allow queries where user is user1Id or user2Id)
     const q = query(
       collection(db, 'friendships'),
-      or(where('user1Id', '==', userId), where('user2Id', '==', userId))
+      or(where('user1Id', '==', userId), where('user2Id', '==', userId)),
+      limit(500) // Practical bound on total friendships (all statuses)
     );
     const querySnapshot = await getDocs(q);
 
@@ -428,7 +432,8 @@ export const subscribeFriendships = (userId, callback) => {
   // Query using modular or() function
   const q = query(
     collection(db, 'friendships'),
-    or(where('user1Id', '==', userId), where('user2Id', '==', userId))
+    or(where('user1Id', '==', userId), where('user2Id', '==', userId)),
+    limit(500) // Practical bound on friend count for real-time listener
   );
 
   const unsubscribe = onSnapshot(

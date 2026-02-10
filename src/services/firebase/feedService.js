@@ -404,14 +404,20 @@ export const getFeedStats = async () => {
     const journaledQuery = query(
       collection(db, 'photos'),
       where('status', '==', 'triaged'),
-      where('photoState', '==', 'journaled')
+      where('photoState', '==', 'journaled'),
+      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
     );
     const archivedQuery = query(
       collection(db, 'photos'),
       where('status', '==', 'triaged'),
-      where('photoState', '==', 'archived')
+      where('photoState', '==', 'archived'),
+      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
     );
-    const developingQuery = query(collection(db, 'photos'), where('status', '==', 'developing'));
+    const developingQuery = query(
+      collection(db, 'photos'),
+      where('status', '==', 'developing'),
+      limit(1000) // Safety bound for stats query; count() preferred (see Task 2)
+    );
 
     const [journaledSnapshot, archivedSnapshot, developingSnapshot] = await Promise.all([
       getDocs(journaledQuery),
@@ -494,11 +500,11 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
  * Used for Stories feature - shows most engaging photos first
  *
  * @param {string} userId - User ID to fetch photos for
- * @param {number} limit - Maximum number of photos to return (default: 5)
+ * @param {number} maxCount - Maximum number of photos to return (default: 5)
  * @returns {Promise<{success: boolean, photos?: Array, error?: string}>}
  */
-export const getTopPhotosByEngagement = async (userId, limit = 5) => {
-  logger.debug('feedService.getTopPhotosByEngagement: Starting', { userId, limit });
+export const getTopPhotosByEngagement = async (userId, maxCount = 5) => {
+  logger.debug('feedService.getTopPhotosByEngagement: Starting', { userId, maxCount });
 
   try {
     if (!userId) {
@@ -511,7 +517,8 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
     const q = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('photoState', '==', 'journal')
+      where('photoState', '==', 'journal'),
+      limit(100) // Safety bound; client-side sort picks top N from this set
     );
     const snapshot = await getDocs(q);
 
@@ -532,11 +539,11 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
       return bCount - aCount;
     });
 
-    const topPhotos = photos.slice(0, limit);
+    const topPhotos = photos.slice(0, maxCount);
 
     logger.info('feedService.getTopPhotosByEngagement: Success', {
       userId,
-      requested: limit,
+      requested: maxCount,
       returned: topPhotos.length,
     });
 
@@ -578,7 +585,8 @@ export const getUserStoriesData = async userId => {
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('photoState', '==', 'journal'),
-      where('triagedAt', '>=', cutoff)
+      where('triagedAt', '>=', cutoff),
+      limit(100) // Safety bound on user's own stories within 7-day window
     );
     const photosSnapshot = await getDocs(photosQuery);
 
@@ -702,7 +710,8 @@ export const getFriendStoriesData = async currentUserId => {
         collection(db, 'photos'),
         where('userId', '==', friendId),
         where('photoState', '==', 'journal'),
-        where('triagedAt', '>=', cutoff)
+        where('triagedAt', '>=', cutoff),
+        limit(100) // Safety bound on friend's stories within 7-day window
       );
       const photosSnapshot = await getDocs(photosQuery);
 
