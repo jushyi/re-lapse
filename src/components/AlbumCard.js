@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -24,7 +24,7 @@ const CARD_SIZE = 150;
  * @param {function} onLongPress - Optional callback for long press (edit menu)
  * @param {boolean} isHighlighted - Whether to show scale bounce animation
  */
-export const AlbumCard = ({
+const AlbumCard = ({
   album,
   coverPhotoUrl,
   stackPhotoUrls = [],
@@ -204,4 +204,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AlbumCard;
+const MemoizedAlbumCard = memo(AlbumCard);
+export { MemoizedAlbumCard as AlbumCard };
+export default MemoizedAlbumCard;

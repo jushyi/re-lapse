@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '../constants/colors';
@@ -81,4 +82,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MonthlyAlbumCard;
+export default memo(MonthlyAlbumCard);

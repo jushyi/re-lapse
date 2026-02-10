@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -863,14 +863,17 @@ const FeedScreen = () => {
     }
   };
 
-  const renderFeedItem = ({ item }) => (
-    <FeedPhotoCard
-      photo={item}
-      onPress={() => handlePhotoPress(item)}
-      onCommentPress={() => handleCommentPress(item)}
-      onAvatarPress={handleAvatarPress}
-      currentUserId={user?.uid}
-    />
+  const renderFeedItem = useCallback(
+    ({ item }) => (
+      <FeedPhotoCard
+        photo={item}
+        onPress={() => handlePhotoPress(item)}
+        onCommentPress={() => handleCommentPress(item)}
+        onAvatarPress={handleAvatarPress}
+        currentUserId={user?.uid}
+      />
+    ),
+    [handlePhotoPress, handleCommentPress, handleAvatarPress, user?.uid]
   );
 
   const renderFooter = () => {
@@ -1145,8 +1148,8 @@ const FeedScreen = () => {
             updateCellsBatchingPeriod={50}
             onEndReached={photos.length > 0 ? loadMorePhotos : null}
             onEndReachedThreshold={0.5}
-            ListHeaderComponent={renderStoriesRow()}
-            ListFooterComponent={renderFooter()}
+            ListHeaderComponent={renderStoriesRow}
+            ListFooterComponent={renderFooter}
             ListEmptyComponent={archivePhotosLoading ? null : renderEmptyState()}
           />
         </Animated.View>

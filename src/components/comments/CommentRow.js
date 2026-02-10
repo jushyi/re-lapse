@@ -255,4 +255,4 @@ const CommentRow = ({
   );
 };
 
-export default CommentRow;
+export default React.memo(CommentRow);

@@ -140,7 +140,7 @@ const NotificationsScreen = () => {
     setRefreshing(false);
   };
 
-  const renderNotificationItem = ({ item }) => {
+  const renderNotificationItem = useCallback(({ item }) => {
     // Format reactions display (e.g., "reacted 😂×2 ❤️×1")
     const formatReactionsText = reactions => {
       if (!reactions || typeof reactions !== 'object') return '';
@@ -182,7 +182,7 @@ const NotificationsScreen = () => {
         </Text>
       </View>
     );
-  };
+  }, []);
 
   const renderPushBanner = () => {
     if (hasPushToken) return null;
