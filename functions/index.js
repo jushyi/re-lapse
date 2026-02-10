@@ -1,5 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { initializeApp, getApps, getApp } = require('firebase-admin/app');
+const { initializeFirestore } = require('firebase-admin/firestore');
 const logger = require('./logger');
 const { sendPushNotification, expo } = require('./notifications/sender');
 const {
@@ -18,8 +20,9 @@ const {
 const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
-// Initialize Firebase Admin SDK
-admin.initializeApp();
+// Initialize Firebase Admin SDK with preferRest for faster cold starts
+const app = getApps().length > 0 ? getApp() : initializeApp();
+const db = initializeFirestore(app, { preferRest: true });
 
 // Track pending reactions for debouncing: { "photoId_reactorId": { timeout, reactions, photoOwnerId, fcmToken, reactorName, reactorProfilePhotoURL } }
 const pendingReactions = {};
@@ -101,7 +104,7 @@ function formatReactionSummary(reactions) {
  * @returns {Promise<boolean>} - True if notification should be sent
  */
 async function shouldSendNotification(userId, notificationType) {
-  const userDoc = await admin.firestore().collection('users').doc(userId).get();
+  const userDoc = await db.collection('users').doc(userId).get();
   if (!userDoc.exists) return false;
 
   const prefs = userDoc.data().notificationPreferences || {};
@@ -128,8 +131,7 @@ async function revealUserPhotos(userId, now) {
   logger.info(`revealUserPhotos: Processing user ${userId}`);
 
   // Query developing photos for this user
-  const photosSnapshot = await admin
-    .firestore()
+  const photosSnapshot = await db
     .collection('photos')
     .where('userId', '==', userId)
     .where('status', '==', 'developing')
@@ -141,7 +143,7 @@ async function revealUserPhotos(userId, now) {
     logger.info(`revealUserPhotos: Revealing ${photosSnapshot.size} photos for user ${userId}`);
 
     // Update all photos to revealed
-    const batch = admin.firestore().batch();
+    const batch = db.batch();
     photosSnapshot.docs.forEach(doc => {
       batch.update(doc.ref, {
         status: 'revealed',
@@ -158,7 +160,7 @@ async function revealUserPhotos(userId, now) {
 
   // Update darkroom with new reveal time
   // This update triggers sendPhotoRevealNotification via onUpdate
-  await admin.firestore().collection('darkrooms').doc(userId).update({
+  await db.collection('darkrooms').doc(userId).update({
     nextRevealAt: nextRevealAt,
     lastRevealedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
@@ -180,16 +182,16 @@ async function revealUserPhotos(userId, now) {
  * Runs every 2 minutes to check all darkrooms and reveal overdue photos
  * This ensures photos reveal at scheduled time even when app is closed
  */
-exports.processDarkroomReveals = functions.pubsub
-  .schedule('every 2 minutes')
+exports.processDarkroomReveals = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 120 })
+  .pubsub.schedule('every 2 minutes')
   .onRun(async context => {
     try {
       const now = admin.firestore.Timestamp.now();
       logger.info('processDarkroomReveals: Starting scheduled reveal check at', now.toDate());
 
       // Query all darkrooms where nextRevealAt has passed
-      const darkroomsSnapshot = await admin
-        .firestore()
+      const darkroomsSnapshot = await db
         .collection('darkrooms')
         .where('nextRevealAt', '<=', now)
         .get();
@@ -244,94 +246,97 @@ exports.processDarkroomReveals = functions.pubsub
  * 4. Remove invalid tokens when DeviceNotRegistered error detected
  * 5. Clean up processed receipts
  */
-exports.checkPushReceipts = functions.pubsub.schedule('every 15 minutes').onRun(async context => {
-  try {
-    logger.info('checkPushReceipts: Starting receipt check');
+exports.checkPushReceipts = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .pubsub.schedule('every 15 minutes')
+  .onRun(async context => {
+    try {
+      logger.info('checkPushReceipts: Starting receipt check');
 
-    // Get all pending receipts from Firestore
-    const pendingReceipts = await getPendingReceipts();
+      // Get all pending receipts from Firestore
+      const pendingReceipts = await getPendingReceipts();
 
-    if (pendingReceipts.length === 0) {
-      logger.info('checkPushReceipts: No pending receipts');
+      if (pendingReceipts.length === 0) {
+        logger.info('checkPushReceipts: No pending receipts');
+        return null;
+      }
+
+      logger.info('checkPushReceipts: Found pending receipts', {
+        count: pendingReceipts.length,
+      });
+
+      // Create lookup map for quick access to receipt data
+      const receiptMap = {};
+      for (const receipt of pendingReceipts) {
+        receiptMap[receipt.ticketId] = receipt;
+      }
+
+      // Extract receipt IDs
+      const receiptIds = pendingReceipts.map(r => r.ticketId);
+
+      // Chunk receipt IDs for Expo API (handles batching automatically)
+      const chunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+
+      let checkedCount = 0;
+      let removedTokens = 0;
+      let errorCount = 0;
+
+      // Process each chunk
+      for (const chunk of chunks) {
+        try {
+          const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+          // Process each receipt in the response
+          for (const [ticketId, receipt] of Object.entries(receipts)) {
+            const pendingData = receiptMap[ticketId];
+
+            if (receipt.status === 'ok') {
+              // Notification delivered successfully - clean up
+              await deletePendingReceipt(ticketId);
+              checkedCount++;
+            } else if (receipt.status === 'error') {
+              const { message, details } = receipt;
+
+              logger.warn('checkPushReceipts: Receipt error', {
+                ticketId,
+                message,
+                details,
+                userId: pendingData?.userId,
+              });
+
+              // Check if device is no longer registered
+              if (details?.error === 'DeviceNotRegistered') {
+                if (pendingData?.userId) {
+                  await removeInvalidToken(pendingData.userId);
+                  removedTokens++;
+                }
+              }
+
+              // Clean up receipt regardless of error type
+              await deletePendingReceipt(ticketId);
+              errorCount++;
+            }
+          }
+        } catch (chunkError) {
+          logger.error('checkPushReceipts: Chunk fetch failed', {
+            error: chunkError.message,
+          });
+          // Continue with next chunk - let next run handle failed ones
+        }
+      }
+
+      logger.info('checkPushReceipts: Complete', {
+        checked: checkedCount + errorCount,
+        removed: removedTokens,
+        errors: errorCount,
+      });
+
+      return { checked: checkedCount + errorCount, removed: removedTokens, errors: errorCount };
+    } catch (error) {
+      logger.error('checkPushReceipts: Fatal error', { error: error.message });
       return null;
     }
-
-    logger.info('checkPushReceipts: Found pending receipts', {
-      count: pendingReceipts.length,
-    });
-
-    // Create lookup map for quick access to receipt data
-    const receiptMap = {};
-    for (const receipt of pendingReceipts) {
-      receiptMap[receipt.ticketId] = receipt;
-    }
-
-    // Extract receipt IDs
-    const receiptIds = pendingReceipts.map(r => r.ticketId);
-
-    // Chunk receipt IDs for Expo API (handles batching automatically)
-    const chunks = expo.chunkPushNotificationReceiptIds(receiptIds);
-
-    let checkedCount = 0;
-    let removedTokens = 0;
-    let errorCount = 0;
-
-    // Process each chunk
-    for (const chunk of chunks) {
-      try {
-        const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
-
-        // Process each receipt in the response
-        for (const [ticketId, receipt] of Object.entries(receipts)) {
-          const pendingData = receiptMap[ticketId];
-
-          if (receipt.status === 'ok') {
-            // Notification delivered successfully - clean up
-            await deletePendingReceipt(ticketId);
-            checkedCount++;
-          } else if (receipt.status === 'error') {
-            const { message, details } = receipt;
-
-            logger.warn('checkPushReceipts: Receipt error', {
-              ticketId,
-              message,
-              details,
-              userId: pendingData?.userId,
-            });
-
-            // Check if device is no longer registered
-            if (details?.error === 'DeviceNotRegistered') {
-              if (pendingData?.userId) {
-                await removeInvalidToken(pendingData.userId);
-                removedTokens++;
-              }
-            }
-
-            // Clean up receipt regardless of error type
-            await deletePendingReceipt(ticketId);
-            errorCount++;
-          }
-        }
-      } catch (chunkError) {
-        logger.error('checkPushReceipts: Chunk fetch failed', {
-          error: chunkError.message,
-        });
-        // Continue with next chunk - let next run handle failed ones
-      }
-    }
-
-    logger.info('checkPushReceipts: Complete', {
-      checked: checkedCount + errorCount,
-      removed: removedTokens,
-      errors: errorCount,
-    });
-
-    return { checked: checkedCount + errorCount, removed: removedTokens, errors: errorCount };
-  } catch (error) {
-    logger.error('checkPushReceipts: Fatal error', { error: error.message });
-    return null;
-  }
-});
+  });
 
 /**
  * Cloud Function: Send notification when photos are revealed in darkroom
@@ -340,8 +345,9 @@ exports.checkPushReceipts = functions.pubsub.schedule('every 15 minutes').onRun(
  * IMPORTANT: Uses lastNotifiedAt to ensure only ONE notification per reveal batch.
  * This prevents spam when the scheduled function runs frequently.
  */
-exports.sendPhotoRevealNotification = functions.firestore
-  .document('darkrooms/{userId}')
+exports.sendPhotoRevealNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('darkrooms/{userId}')
   .onUpdate(async (change, context) => {
     try {
       const userId = context.params.userId;
@@ -381,8 +387,7 @@ exports.sendPhotoRevealNotification = functions.firestore
       const batchStartTime = lastRevealedAtAfter - toleranceMs;
       const batchEndTime = lastRevealedAtAfter + toleranceMs;
 
-      const photosSnapshot = await admin
-        .firestore()
+      const photosSnapshot = await db
         .collection('photos')
         .where('userId', '==', userId)
         .where('status', '==', 'revealed')
@@ -401,14 +406,14 @@ exports.sendPhotoRevealNotification = functions.firestore
           'sendPhotoRevealNotification: No photos revealed in this batch, skipping notification'
         );
         // Still update lastNotifiedAt to prevent future checks for this batch
-        await admin.firestore().collection('darkrooms').doc(userId).update({
+        await db.collection('darkrooms').doc(userId).update({
           lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         return null;
       }
 
       // Get user's FCM token
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
+      const userDoc = await db.collection('users').doc(userId).get();
       if (!userDoc.exists) {
         logger.error('sendPhotoRevealNotification: User not found:', userId);
         return null;
@@ -440,7 +445,7 @@ exports.sendPhotoRevealNotification = functions.firestore
       );
 
       // Update lastNotifiedAt AFTER successfully sending notification
-      await admin.firestore().collection('darkrooms').doc(userId).update({
+      await db.collection('darkrooms').doc(userId).update({
         lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -459,8 +464,9 @@ exports.sendPhotoRevealNotification = functions.firestore
  * Cloud Function: Send notification when friend request is received
  * Triggered when friendship document is created with status 'pending'
  */
-exports.sendFriendRequestNotification = functions.firestore
-  .document('friendships/{friendshipId}')
+exports.sendFriendRequestNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('friendships/{friendshipId}')
   .onCreate(async (snap, context) => {
     try {
       const friendshipId = context.params.friendshipId;
@@ -506,7 +512,7 @@ exports.sendFriendRequestNotification = functions.firestore
       const recipientId = user1Id === requestedBy ? user2Id : user1Id;
 
       // Get recipient's FCM token
-      const recipientDoc = await admin.firestore().collection('users').doc(recipientId).get();
+      const recipientDoc = await db.collection('users').doc(recipientId).get();
 
       if (!recipientDoc.exists) {
         logger.error('sendFriendRequestNotification: Recipient not found:', recipientId);
@@ -539,7 +545,7 @@ exports.sendFriendRequestNotification = functions.firestore
       }
 
       // Get sender's display name
-      const senderDoc = await admin.firestore().collection('users').doc(requestedBy).get();
+      const senderDoc = await db.collection('users').doc(requestedBy).get();
 
       const senderName = senderDoc.exists
         ? senderDoc.data().displayName || senderDoc.data().username
@@ -572,8 +578,9 @@ exports.sendFriendRequestNotification = functions.firestore
  * Cloud Function: Send notification when friend request is accepted
  * Triggered when friendship document is updated with status changing to 'accepted'
  */
-exports.sendFriendAcceptedNotification = functions.firestore
-  .document('friendships/{friendshipId}')
+exports.sendFriendAcceptedNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('friendships/{friendshipId}')
   .onUpdate(async (change, context) => {
     try {
       const friendshipId = context.params.friendshipId;
@@ -617,7 +624,7 @@ exports.sendFriendAcceptedNotification = functions.firestore
       const acceptorId = user1Id === requestedBy ? user2Id : user1Id;
 
       // Check recipient's notification preferences
-      const recipientDoc = await admin.firestore().collection('users').doc(recipientId).get();
+      const recipientDoc = await db.collection('users').doc(recipientId).get();
 
       if (!recipientDoc.exists) {
         logger.error('sendFriendAcceptedNotification: Recipient not found:', recipientId);
@@ -650,7 +657,7 @@ exports.sendFriendAcceptedNotification = functions.firestore
       }
 
       // Get acceptor's display name
-      const acceptorDoc = await admin.firestore().collection('users').doc(acceptorId).get();
+      const acceptorDoc = await db.collection('users').doc(acceptorId).get();
 
       const acceptorName = acceptorDoc.exists
         ? acceptorDoc.data().displayName || acceptorDoc.data().username
@@ -676,20 +683,17 @@ exports.sendFriendAcceptedNotification = functions.firestore
       );
 
       // Write to notifications collection for in-app display
-      await admin
-        .firestore()
-        .collection('notifications')
-        .add({
-          recipientId: recipientId,
-          type: 'friend_accepted',
-          senderId: acceptorId,
-          senderName: acceptorName,
-          senderProfilePhotoURL: acceptorProfilePhotoURL || null,
-          friendshipId: friendshipId,
-          message: body,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          read: false,
-        });
+      await db.collection('notifications').add({
+        recipientId: recipientId,
+        type: 'friend_accepted',
+        senderId: acceptorId,
+        senderName: acceptorName,
+        senderProfilePhotoURL: acceptorProfilePhotoURL || null,
+        friendshipId: friendshipId,
+        message: body,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        read: false,
+      });
 
       logger.debug('sendFriendAcceptedNotification: Notification sent to:', recipientId, result);
       return result;
@@ -706,8 +710,9 @@ exports.sendFriendAcceptedNotification = functions.firestore
  * This notifies all friends that the user has new content available.
  * Uses varied templates to feel human and not robotic.
  */
-exports.sendStoryNotification = functions.firestore
-  .document('darkrooms/{userId}')
+exports.sendStoryNotification = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 120 })
+  .firestore.document('darkrooms/{userId}')
   .onUpdate(async (change, context) => {
     try {
       const userId = context.params.userId;
@@ -754,7 +759,7 @@ exports.sendStoryNotification = functions.firestore
       });
 
       // Get user's info for notification
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
+      const userDoc = await db.collection('users').doc(userId).get();
       if (!userDoc.exists) {
         logger.error('sendStoryNotification: User not found:', userId);
         return null;
@@ -767,14 +772,12 @@ exports.sendStoryNotification = functions.firestore
       // Query friendships where this user is involved and status is 'accepted'
       // Need to query both user1Id and user2Id since user could be in either position
       const [friendships1Snapshot, friendships2Snapshot] = await Promise.all([
-        admin
-          .firestore()
+        db
           .collection('friendships')
           .where('user1Id', '==', userId)
           .where('status', '==', 'accepted')
           .get(),
-        admin
-          .firestore()
+        db
           .collection('friendships')
           .where('user2Id', '==', userId)
           .where('status', '==', 'accepted')
@@ -799,7 +802,7 @@ exports.sendStoryNotification = functions.firestore
       if (friendIds.size === 0) {
         logger.info('sendStoryNotification: User has no friends, skipping', { userId });
         // Still update lastStoryNotifiedAt to prevent reprocessing
-        await admin.firestore().collection('darkrooms').doc(userId).update({
+        await db.collection('darkrooms').doc(userId).update({
           lastStoryNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         return null;
@@ -812,7 +815,7 @@ exports.sendStoryNotification = functions.firestore
 
       // Get all friends' user data in parallel for FCM tokens
       const friendDocsPromises = Array.from(friendIds).map(friendId =>
-        admin.firestore().collection('users').doc(friendId).get()
+        db.collection('users').doc(friendId).get()
       );
       const friendDocs = await Promise.all(friendDocsPromises);
 
@@ -864,7 +867,7 @@ exports.sendStoryNotification = functions.firestore
         );
 
         // Write to notifications collection for in-app display
-        const notificationPromise = admin.firestore().collection('notifications').add({
+        const notificationPromise = db.collection('notifications').add({
           recipientId: friendId,
           type: 'story',
           senderId: userId,
@@ -883,7 +886,7 @@ exports.sendStoryNotification = functions.firestore
       await Promise.all(notificationPromises);
 
       // Update lastStoryNotifiedAt to prevent duplicate notifications
-      await admin.firestore().collection('darkrooms').doc(userId).update({
+      await db.collection('darkrooms').doc(userId).update({
         lastStoryNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -953,21 +956,18 @@ async function sendBatchedReactionNotification(pendingKey) {
   );
 
   // Write to notifications collection for in-app display
-  await admin
-    .firestore()
-    .collection('notifications')
-    .add({
-      recipientId: photoOwnerId,
-      type: 'reaction',
-      senderId: reactorId,
-      senderName: reactorName,
-      senderProfilePhotoURL: reactorProfilePhotoURL || null,
-      photoId: photoId,
-      reactions: reactions,
-      message: body,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      read: false,
-    });
+  await db.collection('notifications').add({
+    recipientId: photoOwnerId,
+    type: 'reaction',
+    senderId: reactorId,
+    senderName: reactorName,
+    senderProfilePhotoURL: reactorProfilePhotoURL || null,
+    photoId: photoId,
+    reactions: reactions,
+    message: body,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    read: false,
+  });
 
   logger.debug('sendBatchedReactionNotification: Notification sent and stored', {
     pendingKey,
@@ -984,8 +984,9 @@ async function sendBatchedReactionNotification(pendingKey) {
  * - Subsequent reactions extend window and aggregate
  * - After 10 seconds of inactivity, sends "Name reacted 😂×2 ❤️×1 to your photo"
  */
-exports.sendReactionNotification = functions.firestore
-  .document('photos/{photoId}')
+exports.sendReactionNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('photos/{photoId}')
   .onUpdate(async (change, context) => {
     try {
       const photoId = context.params.photoId;
@@ -1098,7 +1099,7 @@ exports.sendReactionNotification = functions.firestore
 
       // New pending entry - fetch user data
       // Get photo owner's FCM token
-      const ownerDoc = await admin.firestore().collection('users').doc(photoOwnerId).get();
+      const ownerDoc = await db.collection('users').doc(photoOwnerId).get();
 
       if (!ownerDoc.exists) {
         logger.error('sendReactionNotification: Photo owner not found:', photoOwnerId);
@@ -1131,7 +1132,7 @@ exports.sendReactionNotification = functions.firestore
       }
 
       // Get reactor's display name and profile photo
-      const reactorDoc = await admin.firestore().collection('users').doc(reactorId).get();
+      const reactorDoc = await db.collection('users').doc(reactorId).get();
 
       const reactorData = reactorDoc.exists ? reactorDoc.data() : {};
       const reactorName = reactorData.displayName || reactorData.username || 'Someone';
@@ -1221,22 +1222,19 @@ async function sendBatchedTagNotification(pendingKey) {
   );
 
   // Write to notifications collection for in-app display
-  await admin
-    .firestore()
-    .collection('notifications')
-    .add({
-      recipientId: taggedUserId,
-      type: 'tagged',
-      senderId: taggerId,
-      senderName: taggerName,
-      senderProfilePhotoURL: taggerProfilePhotoURL || null,
-      photoId: photoIds[0], // First photo for deep link
-      photoIds: photoIds, // All photos in batch
-      photoCount: count,
-      message: message,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      read: false,
-    });
+  await db.collection('notifications').add({
+    recipientId: taggedUserId,
+    type: 'tagged',
+    senderId: taggerId,
+    senderName: taggerName,
+    senderProfilePhotoURL: taggerProfilePhotoURL || null,
+    photoId: photoIds[0], // First photo for deep link
+    photoIds: photoIds, // All photos in batch
+    photoCount: count,
+    message: message,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    read: false,
+  });
 
   logger.debug('sendBatchedTagNotification: Notification sent and stored', {
     pendingKey,
@@ -1255,8 +1253,9 @@ async function sendBatchedTagNotification(pendingKey) {
  *
  * Tagging is fully implemented in Darkroom and Feed UIs.
  */
-exports.sendTaggedPhotoNotification = functions.firestore
-  .document('photos/{photoId}')
+exports.sendTaggedPhotoNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('photos/{photoId}')
   .onUpdate(async (change, context) => {
     try {
       const photoId = context.params.photoId;
@@ -1368,7 +1367,7 @@ exports.sendTaggedPhotoNotification = functions.firestore
       });
 
       // Get tagger's info for notification
-      const taggerDoc = await admin.firestore().collection('users').doc(taggerId).get();
+      const taggerDoc = await db.collection('users').doc(taggerId).get();
       if (!taggerDoc.exists) {
         logger.error('sendTaggedPhotoNotification: Tagger not found:', taggerId);
         return null;
@@ -1390,7 +1389,7 @@ exports.sendTaggedPhotoNotification = functions.firestore
         }
 
         // Get tagged user's FCM token and preferences
-        const taggedUserDoc = await admin.firestore().collection('users').doc(taggedUserId).get();
+        const taggedUserDoc = await db.collection('users').doc(taggedUserId).get();
         if (!taggedUserDoc.exists) {
           logger.debug('sendTaggedPhotoNotification: Tagged user not found', { taggedUserId });
           continue;
@@ -1478,7 +1477,7 @@ exports.sendTaggedPhotoNotification = functions.firestore
  * Uses v4 signing with 24-hour expiration. Even if a URL leaks,
  * it becomes invalid after 24 hours.
  */
-exports.getSignedPhotoUrl = onCall(async request => {
+exports.getSignedPhotoUrl = onCall({ memory: '256MiB', timeoutSeconds: 30 }, async request => {
   const userId = request.auth?.uid;
 
   // Guard: Require authentication
@@ -1514,11 +1513,7 @@ exports.getSignedPhotoUrl = onCall(async request => {
       // Not the owner — check friendship
       const id1 = userId < photoOwnerId ? userId : photoOwnerId;
       const id2 = userId < photoOwnerId ? photoOwnerId : userId;
-      const friendshipDoc = await admin
-        .firestore()
-        .collection('friendships')
-        .doc(`${id1}_${id2}`)
-        .get();
+      const friendshipDoc = await db.collection('friendships').doc(`${id1}_${id2}`).get();
 
       if (!friendshipDoc.exists || friendshipDoc.data().status !== 'accepted') {
         logger.warn('getSignedPhotoUrl: Access denied', { userId, photoOwnerId });
@@ -1576,8 +1571,9 @@ exports.getSignedPhotoUrl = onCall(async request => {
  *
  * Skips self-comments (commenter is photo owner) and replies.
  */
-exports.sendCommentNotification = functions.firestore
-  .document('photos/{photoId}/comments/{commentId}')
+exports.sendCommentNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('photos/{photoId}/comments/{commentId}')
   .onCreate(async (snap, context) => {
     const { photoId, commentId } = context.params;
     const comment = snap.data();
@@ -1600,7 +1596,7 @@ exports.sendCommentNotification = functions.firestore
       }
 
       // Get photo to find owner
-      const photoDoc = await admin.firestore().collection('photos').doc(photoId).get();
+      const photoDoc = await db.collection('photos').doc(photoId).get();
 
       if (!photoDoc.exists) {
         logger.warn('sendCommentNotification: Photo not found', { photoId });
@@ -1611,7 +1607,7 @@ exports.sendCommentNotification = functions.firestore
       const photoOwnerId = photo.userId;
 
       // Get commenter's info for notification
-      const commenterDoc = await admin.firestore().collection('users').doc(comment.userId).get();
+      const commenterDoc = await db.collection('users').doc(comment.userId).get();
 
       const commenterData = commenterDoc.exists ? commenterDoc.data() : {};
       const commenterName = commenterData.displayName || commenterData.username || 'Someone';
@@ -1638,7 +1634,7 @@ exports.sendCommentNotification = functions.firestore
       // Don't notify if commenter is the photo owner (self-comment)
       if (comment.userId !== photoOwnerId) {
         // Get photo owner's data
-        const ownerDoc = await admin.firestore().collection('users').doc(photoOwnerId).get();
+        const ownerDoc = await db.collection('users').doc(photoOwnerId).get();
 
         if (ownerDoc.exists && ownerDoc.data().fcmToken) {
           const ownerData = ownerDoc.data();
@@ -1667,7 +1663,7 @@ exports.sendCommentNotification = functions.firestore
             );
 
             // Write to notifications collection for in-app display
-            await admin.firestore().collection('notifications').add({
+            await db.collection('notifications').add({
               recipientId: photoOwnerId,
               type: 'comment',
               senderId: comment.userId,
@@ -1729,8 +1725,7 @@ exports.sendCommentNotification = functions.firestore
             // Query users collection for matching username (case-insensitive)
             // Note: Firestore doesn't support case-insensitive queries directly,
             // so we store usernames in lowercase or use a lowercased field
-            const usersSnapshot = await admin
-              .firestore()
+            const usersSnapshot = await db
               .collection('users')
               .where('username', '==', username)
               .limit(1)
@@ -1805,7 +1800,7 @@ exports.sendCommentNotification = functions.firestore
             );
 
             // Write to notifications collection for in-app display
-            await admin.firestore().collection('notifications').add({
+            await db.collection('notifications').add({
               recipientId: mentionedUserId,
               type: 'mention',
               senderId: comment.userId,
@@ -1852,7 +1847,7 @@ exports.sendCommentNotification = functions.firestore
  *
  * IMPORTANT: Auth user must be deleted LAST to maintain permissions during cleanup
  */
-exports.deleteUserAccount = onCall(async request => {
+exports.deleteUserAccount = onCall({ memory: '512MiB', timeoutSeconds: 300 }, async request => {
   // Require authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to delete account');
@@ -1862,7 +1857,6 @@ exports.deleteUserAccount = onCall(async request => {
   logger.info('deleteUserAccount: Starting deletion', { userId });
 
   try {
-    const db = admin.firestore();
     const bucket = getStorage().bucket();
 
     // Helper: commit operations in batches respecting 400-op limit
@@ -1966,205 +1960,212 @@ exports.deleteUserAccount = onCall(async request => {
  * Computes friends-of-friends for the authenticated user
  * Uses admin SDK to bypass security rules (users can't read other users' friendships)
  */
-exports.getMutualFriendSuggestions = onCall(async request => {
-  const userId = request.auth?.uid;
+exports.getMutualFriendSuggestions = onCall(
+  { memory: '512MiB', timeoutSeconds: 120 },
+  async request => {
+    const userId = request.auth?.uid;
 
-  if (!userId) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
-  try {
-    const db = admin.firestore();
-
-    // Step 1: Get all friendships involving this user
-    const [snap1, snap2] = await Promise.all([
-      db.collection('friendships').where('user1Id', '==', userId).get(),
-      db.collection('friendships').where('user2Id', '==', userId).get(),
-    ]);
-
-    // Step 2: Build friendIds (accepted) and excludeIds (all connected + self)
-    const friendIds = new Set();
-    const excludeIds = new Set([userId]);
-
-    const processDocs = docs => {
-      docs.forEach(docSnap => {
-        const data = docSnap.data();
-        const otherId = data.user1Id === userId ? data.user2Id : data.user1Id;
-        excludeIds.add(otherId);
-        if (data.status === 'accepted') {
-          friendIds.add(otherId);
-        }
-      });
-    };
-
-    processDocs(snap1.docs);
-    processDocs(snap2.docs);
-
-    if (friendIds.size === 0) {
-      return { suggestions: [] };
+    if (!userId) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    // Step 3: Cap at 30 friends to limit query volume
-    const friendIdsToProcess = Array.from(friendIds).slice(0, 30);
-
-    // Step 4: Query each friend's friendships in parallel (admin bypasses rules)
-    const friendQueries = friendIdsToProcess.map(async friendId => {
-      const [f1, f2] = await Promise.all([
-        db
-          .collection('friendships')
-          .where('user1Id', '==', friendId)
-          .where('status', '==', 'accepted')
-          .get(),
-        db
-          .collection('friendships')
-          .where('user2Id', '==', friendId)
-          .where('status', '==', 'accepted')
-          .get(),
+    try {
+      // Step 1: Get all friendships involving this user
+      const [snap1, snap2] = await Promise.all([
+        db.collection('friendships').where('user1Id', '==', userId).get(),
+        db.collection('friendships').where('user2Id', '==', userId).get(),
       ]);
-      return [...f1.docs, ...f2.docs];
-    });
-    const friendResults = await Promise.all(friendQueries);
 
-    // Step 5: Count mutual connections
-    const mutualCounts = new Map();
+      // Step 2: Build friendIds (accepted) and excludeIds (all connected + self)
+      const friendIds = new Set();
+      const excludeIds = new Set([userId]);
 
-    friendResults.forEach(docs => {
-      docs.forEach(docSnap => {
-        const data = docSnap.data();
-        [data.user1Id, data.user2Id].forEach(id => {
-          if (!excludeIds.has(id)) {
-            mutualCounts.set(id, (mutualCounts.get(id) || 0) + 1);
+      const processDocs = docs => {
+        docs.forEach(docSnap => {
+          const data = docSnap.data();
+          const otherId = data.user1Id === userId ? data.user2Id : data.user1Id;
+          excludeIds.add(otherId);
+          if (data.status === 'accepted') {
+            friendIds.add(otherId);
           }
         });
-      });
-    });
-
-    if (mutualCounts.size === 0) {
-      return { suggestions: [] };
-    }
-
-    // Step 6: Sort by count descending, take top 20
-    const sortedEntries = Array.from(mutualCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20);
-
-    // Step 7: Fetch user profiles in parallel
-    const profileFetches = sortedEntries.map(async ([suggestionUserId, mutualCount]) => {
-      const userDoc = await db.collection('users').doc(suggestionUserId).get();
-      if (!userDoc.exists) return null;
-
-      const userData = userDoc.data();
-      return {
-        userId: suggestionUserId,
-        displayName: userData.displayName || null,
-        username: userData.username || null,
-        profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-        mutualCount,
       };
-    });
-    const profiles = await Promise.all(profileFetches);
 
-    const suggestions = profiles.filter(p => p !== null);
+      processDocs(snap1.docs);
+      processDocs(snap2.docs);
 
-    logger.info('getMutualFriendSuggestions: Complete', {
-      userId,
-      friendCount: friendIds.size,
-      suggestionsFound: suggestions.length,
-    });
+      if (friendIds.size === 0) {
+        return { suggestions: [] };
+      }
 
-    return { suggestions };
-  } catch (error) {
-    logger.error('getMutualFriendSuggestions: Failed', { userId, error: error.message });
-    throw new HttpsError('internal', 'Failed to get mutual friend suggestions');
+      // Step 3: Cap at 30 friends to limit query volume
+      const friendIdsToProcess = Array.from(friendIds).slice(0, 30);
+
+      // Step 4: Query each friend's friendships in parallel (admin bypasses rules)
+      const friendQueries = friendIdsToProcess.map(async friendId => {
+        const [f1, f2] = await Promise.all([
+          db
+            .collection('friendships')
+            .where('user1Id', '==', friendId)
+            .where('status', '==', 'accepted')
+            .get(),
+          db
+            .collection('friendships')
+            .where('user2Id', '==', friendId)
+            .where('status', '==', 'accepted')
+            .get(),
+        ]);
+        return [...f1.docs, ...f2.docs];
+      });
+      const friendResults = await Promise.all(friendQueries);
+
+      // Step 5: Count mutual connections
+      const mutualCounts = new Map();
+
+      friendResults.forEach(docs => {
+        docs.forEach(docSnap => {
+          const data = docSnap.data();
+          [data.user1Id, data.user2Id].forEach(id => {
+            if (!excludeIds.has(id)) {
+              mutualCounts.set(id, (mutualCounts.get(id) || 0) + 1);
+            }
+          });
+        });
+      });
+
+      if (mutualCounts.size === 0) {
+        return { suggestions: [] };
+      }
+
+      // Step 6: Sort by count descending, take top 20
+      const sortedEntries = Array.from(mutualCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20);
+
+      // Step 7: Fetch user profiles in parallel
+      const profileFetches = sortedEntries.map(async ([suggestionUserId, mutualCount]) => {
+        const userDoc = await db.collection('users').doc(suggestionUserId).get();
+        if (!userDoc.exists) return null;
+
+        const userData = userDoc.data();
+        return {
+          userId: suggestionUserId,
+          displayName: userData.displayName || null,
+          username: userData.username || null,
+          profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+          mutualCount,
+        };
+      });
+      const profiles = await Promise.all(profileFetches);
+
+      const suggestions = profiles.filter(p => p !== null);
+
+      logger.info('getMutualFriendSuggestions: Complete', {
+        userId,
+        friendCount: friendIds.size,
+        suggestionsFound: suggestions.length,
+      });
+
+      return { suggestions };
+    } catch (error) {
+      logger.error('getMutualFriendSuggestions: Failed', { userId, error: error.message });
+      throw new HttpsError('internal', 'Failed to get mutual friend suggestions');
+    }
   }
-});
+);
 
 /**
  * Schedule user account for deletion after 30-day grace period
  * Sets scheduledForDeletionAt to 30 days from now
  * User is logged out after scheduling - if they log back in, they can cancel
  */
-exports.scheduleUserAccountDeletion = onCall(async request => {
-  // Require authentication
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Must be authenticated to schedule deletion');
-  }
+exports.scheduleUserAccountDeletion = onCall(
+  { memory: '256MiB', timeoutSeconds: 30 },
+  async request => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be authenticated to schedule deletion');
+    }
 
-  const userId = request.auth.uid;
-  logger.info('scheduleUserAccountDeletion: Scheduling deletion', { userId });
+    const userId = request.auth.uid;
+    logger.info('scheduleUserAccountDeletion: Scheduling deletion', { userId });
 
-  try {
-    const db = admin.firestore();
+    try {
+      // Calculate deletion date: 30 days from now
+      const now = new Date();
+      const scheduledForDeletionAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Calculate deletion date: 30 days from now
-    const now = new Date();
-    const scheduledForDeletionAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      // Update user document with scheduled deletion info
+      await db
+        .collection('users')
+        .doc(userId)
+        .update({
+          scheduledForDeletionAt: admin.firestore.Timestamp.fromDate(scheduledForDeletionAt),
+          deletionScheduledAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
 
-    // Update user document with scheduled deletion info
-    await db
-      .collection('users')
-      .doc(userId)
-      .update({
-        scheduledForDeletionAt: admin.firestore.Timestamp.fromDate(scheduledForDeletionAt),
-        deletionScheduledAt: admin.firestore.FieldValue.serverTimestamp(),
+      logger.info('scheduleUserAccountDeletion: User scheduled for deletion', {
+        userId,
+        scheduledForDeletionAt: scheduledForDeletionAt.toISOString(),
       });
 
-    logger.info('scheduleUserAccountDeletion: User scheduled for deletion', {
-      userId,
-      scheduledForDeletionAt: scheduledForDeletionAt.toISOString(),
-    });
-
-    return {
-      success: true,
-      scheduledDate: scheduledForDeletionAt.toISOString(),
-    };
-  } catch (error) {
-    logger.error('scheduleUserAccountDeletion: Failed', { userId, error: error.message });
-    throw new HttpsError(
-      'internal',
-      'Failed to schedule account deletion. Please try again later.'
-    );
+      return {
+        success: true,
+        scheduledDate: scheduledForDeletionAt.toISOString(),
+      };
+    } catch (error) {
+      logger.error('scheduleUserAccountDeletion: Failed', { userId, error: error.message });
+      throw new HttpsError(
+        'internal',
+        'Failed to schedule account deletion. Please try again later.'
+      );
+    }
   }
-});
+);
 
 /**
  * Cancel a scheduled account deletion
  * Clears scheduledForDeletionAt and deletionScheduledAt fields
  * Called when user logs back in during grace period and chooses to keep account
  */
-exports.cancelUserAccountDeletion = onCall(async request => {
-  // Require authentication
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Must be authenticated to cancel deletion');
+exports.cancelUserAccountDeletion = onCall(
+  { memory: '256MiB', timeoutSeconds: 30 },
+  async request => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be authenticated to cancel deletion');
+    }
+
+    const userId = request.auth.uid;
+    logger.info('cancelUserAccountDeletion: Canceling scheduled deletion', { userId });
+
+    try {
+      // Clear deletion schedule fields
+      await db.collection('users').doc(userId).update({
+        scheduledForDeletionAt: admin.firestore.FieldValue.delete(),
+        deletionScheduledAt: admin.firestore.FieldValue.delete(),
+      });
+
+      logger.info('cancelUserAccountDeletion: Scheduled deletion canceled', { userId });
+
+      return { success: true };
+    } catch (error) {
+      logger.error('cancelUserAccountDeletion: Failed', { userId, error: error.message });
+      throw new HttpsError(
+        'internal',
+        'Failed to cancel account deletion. Please try again later.'
+      );
+    }
   }
-
-  const userId = request.auth.uid;
-  logger.info('cancelUserAccountDeletion: Canceling scheduled deletion', { userId });
-
-  try {
-    const db = admin.firestore();
-
-    // Clear deletion schedule fields
-    await db.collection('users').doc(userId).update({
-      scheduledForDeletionAt: admin.firestore.FieldValue.delete(),
-      deletionScheduledAt: admin.firestore.FieldValue.delete(),
-    });
-
-    logger.info('cancelUserAccountDeletion: Scheduled deletion canceled', { userId });
-
-    return { success: true };
-  } catch (error) {
-    logger.error('cancelUserAccountDeletion: Failed', { userId, error: error.message });
-    throw new HttpsError('internal', 'Failed to cancel account deletion. Please try again later.');
-  }
-});
+);
 
 /**
  * Cloud Function: Send reminder notification 3 days before account deletion
  * Runs daily at 9 AM UTC to check for accounts approaching deletion
  */
-exports.sendDeletionReminderNotification = functions.pubsub
-  .schedule('0 9 * * *') // Daily at 9 AM UTC
+exports.sendDeletionReminderNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 300 })
+  .pubsub.schedule('0 9 * * *') // Daily at 9 AM UTC
   .onRun(async context => {
     try {
       const now = admin.firestore.Timestamp.now();
@@ -2179,8 +2180,7 @@ exports.sendDeletionReminderNotification = functions.pubsub
 
       // Query users scheduled for deletion in ~3 days
       // (between 3 and 4 days from now to avoid duplicate notifications)
-      const usersSnapshot = await admin
-        .firestore()
+      const usersSnapshot = await db
         .collection('users')
         .where('scheduledForDeletionAt', '>=', threeDaysFromNow)
         .where('scheduledForDeletionAt', '<', threeDaysFromNowEnd)
@@ -2242,10 +2242,10 @@ exports.sendDeletionReminderNotification = functions.pubsub
  * Runs daily at 3 AM UTC to find and delete accounts past their scheduled date
  * Uses the same deletion cascade as deleteUserAccount
  */
-exports.processScheduledDeletions = functions.pubsub
-  .schedule('0 3 * * *') // 3 AM UTC daily
+exports.processScheduledDeletions = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 300 })
+  .pubsub.schedule('0 3 * * *') // 3 AM UTC daily
   .onRun(async context => {
-    const db = admin.firestore();
     const bucket = getStorage().bucket();
     const now = admin.firestore.Timestamp.now();
 
@@ -2375,10 +2375,10 @@ exports.processScheduledDeletions = functions.pubsub
  * Runs daily at 3:15 AM UTC to permanently delete photos past their 30-day grace period
  * Offset from account deletion (3 AM) to avoid resource contention
  */
-exports.processScheduledPhotoDeletions = functions.pubsub
-  .schedule('15 3 * * *') // 3:15 AM UTC daily
+exports.processScheduledPhotoDeletions = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 300 })
+  .pubsub.schedule('15 3 * * *') // 3:15 AM UTC daily
   .onRun(async context => {
-    const db = admin.firestore();
     const bucket = getStorage().bucket();
     const now = admin.firestore.Timestamp.now();
 
