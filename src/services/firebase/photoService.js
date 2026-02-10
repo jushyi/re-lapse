@@ -1083,6 +1083,14 @@ export const updatePhotoTags = async (photoId, taggedUserIds) => {
   });
 
   try {
+    const MAX_TAGS_PER_PHOTO = 20;
+
+    // Validate taggedUserIds is an array
+    if (taggedUserIds && !Array.isArray(taggedUserIds)) {
+      logger.warn('PhotoService.updatePhotoTags: taggedUserIds is not an array');
+      return { success: false, error: 'Invalid tag data' };
+    }
+
     const photoRef = doc(db, 'photos', photoId);
 
     if (!taggedUserIds || taggedUserIds.length === 0) {
@@ -1093,14 +1101,30 @@ export const updatePhotoTags = async (photoId, taggedUserIds) => {
       });
       logger.info('PhotoService.updatePhotoTags: Tags removed (fields deleted)', { photoId });
     } else {
-      await updateDoc(photoRef, {
-        taggedUserIds,
-        taggedAt: serverTimestamp(),
-      });
-      logger.info('PhotoService.updatePhotoTags: Tags updated', {
-        photoId,
-        tagCount: taggedUserIds.length,
-      });
+      // Deduplicate and cap at MAX_TAGS_PER_PHOTO
+      const uniqueIds = [...new Set(taggedUserIds)].slice(0, MAX_TAGS_PER_PHOTO);
+
+      // Validate each ID is a non-empty string
+      const validIds = uniqueIds.filter(id => typeof id === 'string' && id.length > 0);
+
+      if (validIds.length === 0) {
+        // All IDs were invalid, remove tags
+        await updateDoc(photoRef, {
+          taggedUserIds: FieldValue.delete(),
+          taggedAt: FieldValue.delete(),
+        });
+        logger.info('PhotoService.updatePhotoTags: No valid IDs, tags removed', { photoId });
+      } else {
+        await updateDoc(photoRef, {
+          taggedUserIds: validIds,
+          taggedAt: serverTimestamp(),
+        });
+        logger.info('PhotoService.updatePhotoTags: Tags updated', {
+          photoId,
+          tagCount: validIds.length,
+          originalCount: taggedUserIds.length,
+        });
+      }
     }
 
     return { success: true };

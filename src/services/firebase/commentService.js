@@ -45,8 +45,13 @@ import {
   increment,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { isValidUrl } from '../../utils/validation';
 
 const db = getFirestore();
+
+const MAX_COMMENT_LENGTH = 2000;
+const MAX_MENTIONS_PER_COMMENT = 10;
+const VALID_MEDIA_TYPES = ['image', 'gif'];
 
 /**
  * Add a comment to a photo
@@ -94,6 +99,27 @@ export const addComment = async (
     if (!text && !mediaUrl) {
       logger.warn('commentService.addComment: Comment must have text or media');
       return { success: false, error: 'Comment must have text or media' };
+    }
+
+    // Validate text length
+    if (text && text.length > MAX_COMMENT_LENGTH) {
+      logger.warn('commentService.addComment: Text exceeds max length', {
+        length: text.length,
+        max: MAX_COMMENT_LENGTH,
+      });
+      return { success: false, error: 'Comment text is too long' };
+    }
+
+    // Validate media URL format
+    if (mediaUrl && !isValidUrl(mediaUrl)) {
+      logger.warn('commentService.addComment: Invalid media URL');
+      return { success: false, error: 'Invalid media URL' };
+    }
+
+    // Validate media type enum
+    if (mediaUrl && mediaType && !VALID_MEDIA_TYPES.includes(mediaType)) {
+      logger.warn('commentService.addComment: Invalid media type', { mediaType });
+      return { success: false, error: 'Invalid media type' };
     }
 
     // Verify photo exists
