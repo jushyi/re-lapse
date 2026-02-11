@@ -15,6 +15,7 @@ import { formatPhoneWithCountry } from '../utils/phoneUtils';
 import { usePhoneAuth } from '../context/PhoneAuthContext';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
 import logger from '../utils/logger';
 
 /**
@@ -250,11 +251,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   backButton: {
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   backButtonText: {
     fontSize: typography.size.lg,
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xxxl,
     fontFamily: typography.fontFamily.display,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     color: colors.text.primary,
   },
   subtitle: {
@@ -279,15 +280,15 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xxl,
   },
   codeInputContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   errorContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   errorText: {
     fontSize: typography.size.md,
@@ -300,21 +301,21 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
   loadingText: {
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   verifyButton: {
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   resendContainer: {
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: spacing.xl,
   },
   resendTimerText: {
     fontSize: typography.size.md,
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
   },
   changeNumberContainer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.lg,
   },
   changeNumberText: {
     fontSize: typography.size.md,

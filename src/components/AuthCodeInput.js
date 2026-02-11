@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 
 const CODE_LENGTH = 6;
 
@@ -86,12 +88,12 @@ const styles = StyleSheet.create({
   },
   boxesContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
   },
   box: {
-    width: 48,
-    height: 56,
-    borderRadius: 0,
+    width: spacing.xxxl,
+    height: spacing.huge,
+    borderRadius: layout.borderRadius.xs,
     backgroundColor: colors.background.secondary,
     borderWidth: 2,
     borderColor: colors.border.subtle,
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   },
   boxActive: {
     borderColor: colors.interactive.primary,
-    shadowColor: '#00D4FF',
+    shadowColor: colors.interactive.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
   },
   boxError: {
     borderColor: colors.status.danger,
-    shadowColor: '#FF3333',
+    shadowColor: colors.status.danger,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 6,

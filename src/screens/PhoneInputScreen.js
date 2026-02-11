@@ -18,6 +18,8 @@ import { formatAsUserTypes } from '../utils/phoneUtils';
 import { usePhoneAuth } from '../context/PhoneAuthContext';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 /**
@@ -289,21 +291,21 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
   logo: {
     fontSize: typography.size.display,
     fontFamily: typography.fontFamily.display,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     color: colors.text.primary,
   },
   subtitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.bodyBold,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     color: colors.text.primary,
   },
   description: {
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   form: {
     width: '100%',
@@ -320,22 +322,22 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
+    height: layout.dimensions.inputHeight,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    borderRadius: 2,
-    paddingHorizontal: 16,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.md,
     backgroundColor: colors.background.secondary,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   countrySelectorFlag: {
     fontSize: typography.size.xl,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   countrySelectorText: {
     flex: 1,
@@ -351,18 +353,18 @@ const styles = StyleSheet.create({
   phoneInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   countryCodeDisplay: {
-    height: 52,
+    height: layout.dimensions.inputHeight,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm,
     backgroundColor: colors.background.tertiary,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    borderRadius: 2,
-    marginRight: 8,
+    borderRadius: layout.borderRadius.sm,
+    marginRight: spacing.xs,
   },
   countryCodeText: {
     fontSize: typography.size.lg,
@@ -378,13 +380,13 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: colors.overlay.dark,
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
+    borderTopLeftRadius: layout.borderRadius.xl,
+    borderTopRightRadius: layout.borderRadius.xl,
     maxHeight: '70%',
   },
   modalHeader: {
@@ -392,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
@@ -418,7 +420,7 @@ const styles = StyleSheet.create({
   },
   countryFlag: {
     fontSize: typography.size.xxl,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   countryName: {
     flex: 1,
