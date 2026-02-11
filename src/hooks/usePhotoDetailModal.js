@@ -67,7 +67,7 @@ export const usePhotoDetailModal = ({
 
   // Minimum display time tracking for rapid taps (ensures each photo is briefly visible)
   const lastTapTimeRef = useRef(0);
-  const MIN_DISPLAY_TIME = 80; // ms - minimum time each photo is displayed
+  const MIN_DISPLAY_TIME = 30; // ms - minimum time each photo is displayed
 
   // Animated values for swipe gesture
   const translateY = useRef(new Animated.Value(0)).current;
