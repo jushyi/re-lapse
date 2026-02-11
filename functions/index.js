@@ -1575,7 +1575,9 @@ exports.getSignedPhotoUrl = onCall({ memory: '256MiB', timeoutSeconds: 30 }, asy
  * 1. Comment notification to photo owner (respects comments preference)
  * 2. @mention notifications to mentioned users (respects mentions preference)
  *
- * Skips self-comments (commenter is photo owner) and replies.
+ * Skips self-comments (commenter is photo owner).
+ * For replies: skips comment notification to photo owner (Part 1)
+ * but still processes @mention notifications (Part 2).
  */
 exports.sendCommentNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
@@ -1592,15 +1594,8 @@ exports.sendCommentNotification = functions
         return null;
       }
 
-      // Skip notifications for replies (only notify on top-level comments)
-      if (comment.parentId) {
-        logger.info('sendCommentNotification: Skipping notification for reply', {
-          photoId,
-          commentId,
-          parentId: comment.parentId,
-        });
-        return null;
-      }
+      // Track if this is a reply (replies skip Part 1 but still process Part 2 @mentions)
+      const isReply = !!comment.parentId;
 
       // Get photo to find owner
       const photoDoc = await db.collection('photos').doc(photoId).get();
@@ -1638,70 +1633,75 @@ exports.sendCommentNotification = functions
       let commentNotificationSent = false;
 
       // ========== PART 1: Send comment notification to photo owner ==========
-      // Don't notify if commenter is the photo owner (self-comment)
-      if (comment.userId !== photoOwnerId) {
-        // Get photo owner's data
-        const ownerDoc = await db.collection('users').doc(photoOwnerId).get();
+      // Skip for replies — owner was already notified of the top-level comment
+      if (!isReply) {
+        // Don't notify if commenter is the photo owner (self-comment)
+        if (comment.userId !== photoOwnerId) {
+          // Get photo owner's data
+          const ownerDoc = await db.collection('users').doc(photoOwnerId).get();
 
-        if (ownerDoc.exists && ownerDoc.data().fcmToken) {
-          const ownerData = ownerDoc.data();
+          if (ownerDoc.exists && ownerDoc.data().fcmToken) {
+            const ownerData = ownerDoc.data();
 
-          // Check notification preferences (enabled AND comments)
-          const prefs = ownerData.notificationPreferences || {};
-          const masterEnabled = prefs.enabled !== false;
-          const commentsEnabled = prefs.comments !== false;
+            // Check notification preferences (enabled AND comments)
+            const prefs = ownerData.notificationPreferences || {};
+            const masterEnabled = prefs.enabled !== false;
+            const commentsEnabled = prefs.comments !== false;
 
-          if (masterEnabled && commentsEnabled) {
-            // Send notification via Expo Push API
-            const title = '💬 New Comment';
-            const body = `${commenterName}: ${commentPreview}`;
+            if (masterEnabled && commentsEnabled) {
+              // Send notification via Expo Push API
+              const title = '💬 New Comment';
+              const body = `${commenterName}: ${commentPreview}`;
 
-            await sendPushNotification(
-              ownerData.fcmToken,
-              title,
-              body,
-              {
+              await sendPushNotification(
+                ownerData.fcmToken,
+                title,
+                body,
+                {
+                  type: 'comment',
+                  photoId,
+                  commentId,
+                  screen: 'Feed',
+                },
+                photoOwnerId
+              );
+
+              // Write to notifications collection for in-app display
+              await db.collection('notifications').add({
+                recipientId: photoOwnerId,
                 type: 'comment',
+                senderId: comment.userId,
+                senderName: commenterName,
+                senderProfilePhotoURL: commenterProfilePhotoURL,
+                photoId: photoId,
+                commentId: commentId,
+                message: body,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false,
+              });
+
+              commentNotificationSent = true;
+              logger.info('sendCommentNotification: Comment notification sent', {
                 photoId,
                 commentId,
-                screen: 'Feed',
-              },
-              photoOwnerId
-            );
-
-            // Write to notifications collection for in-app display
-            await db.collection('notifications').add({
-              recipientId: photoOwnerId,
-              type: 'comment',
-              senderId: comment.userId,
-              senderName: commenterName,
-              senderProfilePhotoURL: commenterProfilePhotoURL,
-              photoId: photoId,
-              commentId: commentId,
-              message: body,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              read: false,
-            });
-
-            commentNotificationSent = true;
-            logger.info('sendCommentNotification: Comment notification sent', {
-              photoId,
-              commentId,
-              to: photoOwnerId,
-              commenter: comment.userId,
-            });
+                to: photoOwnerId,
+                commenter: comment.userId,
+              });
+            } else {
+              logger.debug(
+                'sendCommentNotification: Comment notifications disabled by user preferences',
+                {
+                  photoOwnerId,
+                  masterEnabled,
+                  commentsEnabled,
+                }
+              );
+            }
           } else {
-            logger.debug(
-              'sendCommentNotification: Comment notifications disabled by user preferences',
-              {
-                photoOwnerId,
-                masterEnabled,
-                commentsEnabled,
-              }
-            );
+            logger.debug('sendCommentNotification: No FCM token for photo owner', {
+              photoOwnerId,
+            });
           }
-        } else {
-          logger.debug('sendCommentNotification: No FCM token for photo owner', { photoOwnerId });
         }
       }
 
@@ -1753,8 +1753,9 @@ exports.sendCommentNotification = functions
               continue;
             }
 
-            // Skip if mentioned user is photo owner (already notified above)
-            if (mentionedUserId === photoOwnerId) {
+            // Skip if mentioned user is photo owner AND already notified via Part 1
+            // For replies, the owner was NOT notified in Part 1, so they should get the @mention
+            if (mentionedUserId === photoOwnerId && commentNotificationSent) {
               logger.debug(
                 'sendCommentNotification: Skipping mention - already notified as owner',
                 {
