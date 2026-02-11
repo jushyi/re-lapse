@@ -68,6 +68,7 @@ const AlbumPhotoViewer = ({
   const flatListRef = useRef(null);
   const thumbnailListRef = useRef(null);
   const menuButtonRef = useRef(null);
+  const isUserDragging = useRef(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Thumbnail dimensions (50x67 for 3:4 ratio)
@@ -142,9 +143,28 @@ const AlbumPhotoViewer = ({
     }
   }, [currentIndex, visible, photos.length]);
 
+  // Mark beginning of a user-initiated drag so handleScroll can update the index optimistically
+  const handleScrollBeginDrag = useCallback(() => {
+    isUserDragging.current = true;
+  }, []);
+
+  // Optimistically update currentIndex during user swipes so the thumbnail bar tracks the gesture
+  const handleScroll = useCallback(
+    event => {
+      if (!isUserDragging.current) return; // skip programmatic scrolls from goToIndex / edge taps
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const newIndex = Math.round(offsetX / SCREEN_WIDTH);
+      if (newIndex >= 0 && newIndex < photos.length) {
+        setCurrentIndex(prevIndex => (prevIndex !== newIndex ? newIndex : prevIndex));
+      }
+    },
+    [photos.length]
+  );
+
   // Handle momentum scroll end for stable index updates (prevents oscillation)
   const handleMomentumScrollEnd = useCallback(
     event => {
+      isUserDragging.current = false;
       const offsetX = event.nativeEvent.contentOffset.x;
       const newIndex = Math.round(offsetX / SCREEN_WIDTH);
       if (newIndex >= 0 && newIndex < photos.length) {
@@ -472,6 +492,9 @@ const AlbumPhotoViewer = ({
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
+              onScrollBeginDrag={handleScrollBeginDrag}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
               onMomentumScrollEnd={handleMomentumScrollEnd}
               getItemLayout={getItemLayout}
               initialScrollIndex={initialIndex}
