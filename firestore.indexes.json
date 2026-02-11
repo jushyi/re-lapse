@@ -39,7 +39,7 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "photoState", "order": "ASCENDING" },
-        { "fieldPath": "triagedAt", "order": "ASCENDING" }
+        { "fieldPath": "triagedAt", "order": "DESCENDING" }
       ]
     },
     {
