@@ -36,6 +36,7 @@ import { uploadPhoto, deletePhoto } from './storageService';
 import { ensureDarkroomInitialized } from './darkroomService';
 import { getUserAlbums, removePhotoFromAlbum, deleteAlbum } from './albumService';
 import logger from '../../utils/logger';
+import { withTrace } from './performanceService';
 
 const db = getFirestore();
 
@@ -362,43 +363,45 @@ export const revealPhotos = async userId => {
  * @returns {Promise}
  */
 export const triagePhoto = async (photoId, action) => {
-  try {
-    const photoRef = doc(db, 'photos', photoId);
+  return withTrace('photo/triage', async () => {
+    try {
+      const photoRef = doc(db, 'photos', photoId);
 
-    if (action === 'delete') {
-      // Soft delete: Set photoState to 'deleted' with 30-day grace period
-      // Photo will be permanently deleted by Cloud Function after grace period
-      const scheduledForPermanentDeletionAt = Timestamp.fromDate(
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      );
+      if (action === 'delete') {
+        // Soft delete: Set photoState to 'deleted' with 30-day grace period
+        // Photo will be permanently deleted by Cloud Function after grace period
+        const scheduledForPermanentDeletionAt = Timestamp.fromDate(
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        );
+        await updateDoc(photoRef, {
+          status: 'triaged',
+          photoState: 'deleted',
+          scheduledForPermanentDeletionAt,
+          deletionScheduledAt: serverTimestamp(),
+        });
+        return { success: true };
+      }
+
+      // Get photo document to retrieve capturedAt for correct month assignment
+      // ISS-010 fix: Old photos need month derived from capturedAt, not creation time
+      const photoDoc = await getDoc(photoRef);
+      const photoData = photoDoc.exists() ? photoDoc.data() : {};
+      const correctMonth = getMonthFromTimestamp(photoData.capturedAt);
+
+      // Update photo state with correct month and triage timestamp
       await updateDoc(photoRef, {
         status: 'triaged',
-        photoState: 'deleted',
-        scheduledForPermanentDeletionAt,
-        deletionScheduledAt: serverTimestamp(),
+        photoState: action, // 'journal' or 'archive'
+        month: correctMonth, // ISS-010: Ensure month matches capturedAt
+        triagedAt: serverTimestamp(), // UAT-004: Track when photo was triaged for visibility windows
       });
+
       return { success: true };
+    } catch (error) {
+      logger.error('Error triaging photo', error);
+      return { success: false, error: error.message };
     }
-
-    // Get photo document to retrieve capturedAt for correct month assignment
-    // ISS-010 fix: Old photos need month derived from capturedAt, not creation time
-    const photoDoc = await getDoc(photoRef);
-    const photoData = photoDoc.exists() ? photoDoc.data() : {};
-    const correctMonth = getMonthFromTimestamp(photoData.capturedAt);
-
-    // Update photo state with correct month and triage timestamp
-    await updateDoc(photoRef, {
-      status: 'triaged',
-      photoState: action, // 'journal' or 'archive'
-      month: correctMonth, // ISS-010: Ensure month matches capturedAt
-      triagedAt: serverTimestamp(), // UAT-004: Track when photo was triaged for visibility windows
-    });
-
-    return { success: true };
-  } catch (error) {
-    logger.error('Error triaging photo', error);
-    return { success: false, error: error.message };
-  }
+  });
 };
 
 /**

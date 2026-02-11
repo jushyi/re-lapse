@@ -14,6 +14,7 @@
 import { getStorage, ref } from '@react-native-firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
 import logger from '../../utils/logger';
+import { withTrace } from './performanceService';
 
 const storageInstance = getStorage();
 
@@ -57,30 +58,32 @@ const compressImage = async (uri, quality = 0.7) => {
  * @returns {Promise}
  */
 export const uploadProfilePhoto = async (userId, localUri) => {
-  try {
-    logger.debug('StorageService.uploadProfilePhoto: Starting', { userId });
+  return withTrace('profile/upload_photo', async () => {
+    try {
+      logger.debug('StorageService.uploadProfilePhoto: Starting', { userId });
 
-    const compressedUri = await compressImage(localUri, 0.7);
-    const filePath = uriToFilePath(compressedUri);
+      const compressedUri = await compressImage(localUri, 0.7);
+      const filePath = uriToFilePath(compressedUri);
 
-    // Path: profile-photos/{userId}/{filename} - matches storage.rules
-    const storageRef = ref(storageInstance, `profile-photos/${userId}/profile.jpg`);
+      // Path: profile-photos/{userId}/{filename} - matches storage.rules
+      const storageRef = ref(storageInstance, `profile-photos/${userId}/profile.jpg`);
 
-    // Upload file directly (no blob needed with RN Firebase)
-    // Cache-Control: immutable images cached at CDN edge for 1 year
-    await storageRef.putFile(filePath, {
-      contentType: 'image/jpeg',
-      cacheControl: 'public, max-age=31536000',
-    });
+      // Upload file directly (no blob needed with RN Firebase)
+      // Cache-Control: immutable images cached at CDN edge for 1 year
+      await storageRef.putFile(filePath, {
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=31536000',
+      });
 
-    const downloadURL = await storageRef.getDownloadURL();
+      const downloadURL = await storageRef.getDownloadURL();
 
-    logger.info('StorageService.uploadProfilePhoto: Upload successful', { userId });
-    return { success: true, url: downloadURL };
-  } catch (error) {
-    logger.error('StorageService.uploadProfilePhoto: Failed', { userId, error: error.message });
-    return { success: false, error: error.message };
-  }
+      logger.info('StorageService.uploadProfilePhoto: Upload successful', { userId });
+      return { success: true, url: downloadURL };
+    } catch (error) {
+      logger.error('StorageService.uploadProfilePhoto: Failed', { userId, error: error.message });
+      return { success: false, error: error.message };
+    }
+  });
 };
 
 /**
@@ -91,30 +94,32 @@ export const uploadProfilePhoto = async (userId, localUri) => {
  * @returns {Promise}
  */
 export const uploadPhoto = async (userId, photoId, localUri) => {
-  try {
-    logger.debug('StorageService.uploadPhoto: Starting', { userId, photoId });
+  return withTrace('camera/upload', async () => {
+    try {
+      logger.debug('StorageService.uploadPhoto: Starting', { userId, photoId });
 
-    const compressedUri = await compressImage(localUri, 0.8);
-    const filePath = uriToFilePath(compressedUri);
+      const compressedUri = await compressImage(localUri, 0.8);
+      const filePath = uriToFilePath(compressedUri);
 
-    // Path: photos/{userId}/{photoId}.jpg - matches storage.rules
-    const storageRef = ref(storageInstance, `photos/${userId}/${photoId}.jpg`);
+      // Path: photos/{userId}/{photoId}.jpg - matches storage.rules
+      const storageRef = ref(storageInstance, `photos/${userId}/${photoId}.jpg`);
 
-    // Upload file directly (no blob needed with RN Firebase)
-    // Cache-Control: immutable images cached at CDN edge for 1 year
-    await storageRef.putFile(filePath, {
-      contentType: 'image/jpeg',
-      cacheControl: 'public, max-age=31536000',
-    });
+      // Upload file directly (no blob needed with RN Firebase)
+      // Cache-Control: immutable images cached at CDN edge for 1 year
+      await storageRef.putFile(filePath, {
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=31536000',
+      });
 
-    const downloadURL = await storageRef.getDownloadURL();
+      const downloadURL = await storageRef.getDownloadURL();
 
-    logger.info('StorageService.uploadPhoto: Upload successful', { photoId });
-    return { success: true, url: downloadURL };
-  } catch (error) {
-    logger.error('StorageService.uploadPhoto: Failed', { photoId, error: error.message });
-    return { success: false, error: error.message };
-  }
+      logger.info('StorageService.uploadPhoto: Upload successful', { photoId });
+      return { success: true, url: downloadURL };
+    } catch (error) {
+      logger.error('StorageService.uploadPhoto: Failed', { photoId, error: error.message });
+      return { success: false, error: error.message };
+    }
+  });
 };
 
 /**

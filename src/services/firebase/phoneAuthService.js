@@ -10,6 +10,7 @@
 import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import logger from '../../utils/logger';
+import { withTrace } from './performanceService';
 
 /**
  * Map Firebase phone auth error codes to user-friendly messages
@@ -115,48 +116,50 @@ export const validatePhoneNumber = (phoneNumber, countryCode) => {
  * @returns {Promise<object>} - { success, confirmation?, formattedNumber?, error? }
  */
 export const sendVerificationCode = async (phoneNumber, countryCode) => {
-  logger.debug('phoneAuthService.sendVerificationCode: Starting', {
-    phoneNumber: phoneNumber ? `${phoneNumber.slice(0, 3)}***` : null,
-    countryCode,
+  return withTrace('auth/login', async () => {
+    logger.debug('phoneAuthService.sendVerificationCode: Starting', {
+      phoneNumber: phoneNumber ? `${phoneNumber.slice(0, 3)}***` : null,
+      countryCode,
+    });
+
+    const validation = validatePhoneNumber(phoneNumber, countryCode);
+    if (!validation.valid) {
+      logger.warn('phoneAuthService.sendVerificationCode: Validation failed', {
+        error: validation.error,
+      });
+      return { success: false, error: validation.error };
+    }
+
+    try {
+      logger.debug('phoneAuthService.sendVerificationCode: Calling signInWithPhoneNumber', {
+        e164: validation.e164,
+      });
+
+      const auth = getAuth();
+      const confirmation = await signInWithPhoneNumber(auth, validation.e164);
+
+      logger.info('phoneAuthService.sendVerificationCode: Code sent successfully', {
+        formattedNumber: validation.formatted,
+        hasConfirmation: !!confirmation,
+      });
+
+      return {
+        success: true,
+        confirmation,
+        formattedNumber: validation.formatted,
+        e164: validation.e164,
+      };
+    } catch (error) {
+      const errorMessage = getPhoneAuthErrorMessage(error.code);
+      logger.error('phoneAuthService.sendVerificationCode: Failed', {
+        errorCode: error.code,
+        errorMessage: error.message,
+        userMessage: errorMessage,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      });
+      return { success: false, error: errorMessage };
+    }
   });
-
-  const validation = validatePhoneNumber(phoneNumber, countryCode);
-  if (!validation.valid) {
-    logger.warn('phoneAuthService.sendVerificationCode: Validation failed', {
-      error: validation.error,
-    });
-    return { success: false, error: validation.error };
-  }
-
-  try {
-    logger.debug('phoneAuthService.sendVerificationCode: Calling signInWithPhoneNumber', {
-      e164: validation.e164,
-    });
-
-    const auth = getAuth();
-    const confirmation = await signInWithPhoneNumber(auth, validation.e164);
-
-    logger.info('phoneAuthService.sendVerificationCode: Code sent successfully', {
-      formattedNumber: validation.formatted,
-      hasConfirmation: !!confirmation,
-    });
-
-    return {
-      success: true,
-      confirmation,
-      formattedNumber: validation.formatted,
-      e164: validation.e164,
-    };
-  } catch (error) {
-    const errorMessage = getPhoneAuthErrorMessage(error.code);
-    logger.error('phoneAuthService.sendVerificationCode: Failed', {
-      errorCode: error.code,
-      errorMessage: error.message,
-      userMessage: errorMessage,
-      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-    });
-    return { success: false, error: errorMessage };
-  }
 };
 
 /**
@@ -166,46 +169,48 @@ export const sendVerificationCode = async (phoneNumber, countryCode) => {
  * @returns {Promise<object>} - { success, user?, error? }
  */
 export const verifyCode = async (confirmation, code) => {
-  logger.debug('phoneAuthService.verifyCode: Starting', {
-    hasConfirmation: !!confirmation,
-    codeLength: code?.length,
-  });
-
-  if (!confirmation) {
-    logger.error('phoneAuthService.verifyCode: No confirmation object');
-    return { success: false, error: 'Verification session expired. Please request a new code.' };
-  }
-
-  if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
-    logger.warn('phoneAuthService.verifyCode: Invalid code format', {
+  return withTrace('auth/verify_code', async () => {
+    logger.debug('phoneAuthService.verifyCode: Starting', {
+      hasConfirmation: !!confirmation,
       codeLength: code?.length,
-      isNumeric: /^\d+$/.test(code || ''),
-    });
-    return { success: false, error: 'Please enter the 6-digit code.' };
-  }
-
-  try {
-    logger.debug('phoneAuthService.verifyCode: Confirming code');
-
-    const userCredential = await confirmation.confirm(code);
-
-    logger.info('phoneAuthService.verifyCode: Success', {
-      userId: userCredential.user?.uid,
     });
 
-    return {
-      success: true,
-      user: userCredential.user,
-    };
-  } catch (error) {
-    const errorMessage = getPhoneAuthErrorMessage(error.code);
-    logger.error('phoneAuthService.verifyCode: Failed', {
-      errorCode: error.code,
-      errorMessage: error.message,
-      userMessage: errorMessage,
-    });
-    return { success: false, error: errorMessage };
-  }
+    if (!confirmation) {
+      logger.error('phoneAuthService.verifyCode: No confirmation object');
+      return { success: false, error: 'Verification session expired. Please request a new code.' };
+    }
+
+    if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+      logger.warn('phoneAuthService.verifyCode: Invalid code format', {
+        codeLength: code?.length,
+        isNumeric: /^\d+$/.test(code || ''),
+      });
+      return { success: false, error: 'Please enter the 6-digit code.' };
+    }
+
+    try {
+      logger.debug('phoneAuthService.verifyCode: Confirming code');
+
+      const userCredential = await confirmation.confirm(code);
+
+      logger.info('phoneAuthService.verifyCode: Success', {
+        userId: userCredential.user?.uid,
+      });
+
+      return {
+        success: true,
+        user: userCredential.user,
+      };
+    } catch (error) {
+      const errorMessage = getPhoneAuthErrorMessage(error.code);
+      logger.error('phoneAuthService.verifyCode: Failed', {
+        errorCode: error.code,
+        errorMessage: error.message,
+        userMessage: errorMessage,
+      });
+      return { success: false, error: errorMessage };
+    }
+  });
 };
 
 /**
