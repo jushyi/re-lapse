@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 47.1 of 53 (Comment @-Tagging for Mutual Friends)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-11 — Completed 47.1-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-11 — Completed 47.1-02-PLAN.md
 
-Progress: █████████░ 10/10 (v1.0.0 phases)
+Progress: █████░░░░░░ 5/11 (v1.0.0 phases)
 
 ## Performance Metrics
 
@@ -42,12 +42,13 @@ Progress: █████████░ 10/10 (v1.0.0 phases)
 
 See PROJECT.md Key Decisions table for full history.
 
-| Phase | Decision                                          | Rationale                                                       |
-| ----- | ------------------------------------------------- | --------------------------------------------------------------- |
-| 46.1  | OtherUserProfile card instead of fullScreenModal  | fullScreenModal prevents child card screens from pushing on iOS |
-| 47    | Custom code traces, not startScreenTrace()        | startScreenTrace() crashes on iOS                               |
-| 47    | **DEV** guard skips trace creation entirely       | Prevent polluting production metrics with dev data              |
-| 47.1  | Direct set intersection for mutual friend tagging | Simpler/cheaper than friends-of-friends graph traversal         |
+| Phase | Decision                                                  | Rationale                                                       |
+| ----- | --------------------------------------------------------- | --------------------------------------------------------------- |
+| 46.1  | OtherUserProfile card instead of fullScreenModal          | fullScreenModal prevents child card screens from pushing on iOS |
+| 47    | Custom code traces, not startScreenTrace()                | startScreenTrace() crashes on iOS                               |
+| 47    | **DEV** guard skips trace creation entirely               | Prevent polluting production metrics with dev data              |
+| 47.1  | Direct set intersection for mutual friend tagging         | Simpler/cheaper than friends-of-friends graph traversal         |
+| 47.1  | Inline overlay (not Modal/Portal) for mention suggestions | CommentsBottomSheet uses Animated.View — Modal breaks layering  |
 
 ### Deferred Issues
 
@@ -71,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 47.1-01-PLAN.md (Cloud Function Backend)
-Resume file: .planning/phases/47.1-comment-at-tagging/47.1-02-PLAN.md
+Stopped at: Completed 47.1-02-PLAN.md (Autocomplete UI + Integration) — Phase 47.1 complete
+Resume file: None
