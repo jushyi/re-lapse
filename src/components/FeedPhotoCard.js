@@ -96,14 +96,22 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
   // Ref for measuring photo position (expand/collapse animation)
   const photoContainerRef = useRef(null);
 
-  const handlePhotoPress = () => {
+  const measurePhotoAndCall = callback => {
     if (photoContainerRef.current) {
       photoContainerRef.current.measureInWindow((x, y, width, height) => {
-        if (onPress) onPress({ x, y, width, height, borderRadius: 0 });
+        if (callback) callback({ x, y, width, height, borderRadius: 0 });
       });
-    } else if (onPress) {
-      onPress(null);
+    } else if (callback) {
+      callback(null);
     }
+  };
+
+  const handlePhotoPress = () => {
+    measurePhotoAndCall(onPress);
+  };
+
+  const handleCommentPreviewPress = () => {
+    measurePhotoAndCall(onCommentPress || onPress);
   };
 
   return (
@@ -172,7 +180,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
           <CommentPreview
             comments={previewComments}
             totalCount={commentCount}
-            onPress={onCommentPress || onPress}
+            onPress={handleCommentPreviewPress}
             compact
           />
         </View>
