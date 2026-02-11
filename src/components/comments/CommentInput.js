@@ -70,12 +70,15 @@ const CommentInput = forwardRef(
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef(null);
     const cursorPositionRef = useRef(0);
+    const prevTextLengthRef = useRef(0);
 
     // Pre-fill input with @mention when replying
     useEffect(() => {
       if (initialMention) {
         logger.debug('CommentInput: Pre-filling with @mention', { initialMention });
-        setText(`@${initialMention} `);
+        const mentionText = `@${initialMention} `;
+        prevTextLengthRef.current = mentionText.length;
+        setText(mentionText);
       }
     }, [initialMention]);
 
@@ -111,14 +114,20 @@ const CommentInput = forwardRef(
       },
       setText: newText => {
         logger.debug('CommentInput: setText called via ref', { textLength: newText?.length });
+        prevTextLengthRef.current = newText?.length || 0;
         setText(newText);
       },
     }));
 
     const handleChangeText = useCallback(
       newText => {
+        const lengthDiff = newText.length - prevTextLengthRef.current;
+        prevTextLengthRef.current = newText.length;
         setText(newText);
-        onTextChangeForMentions?.(newText, cursorPositionRef.current);
+        // Adjust cursor: onChangeText fires before onSelectionChange,
+        // so cursorPositionRef is stale. Advance by the length difference.
+        const adjustedCursor = cursorPositionRef.current + Math.max(0, lengthDiff);
+        onTextChangeForMentions?.(newText, adjustedCursor);
       },
       [onTextChangeForMentions]
     );
