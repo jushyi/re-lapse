@@ -115,6 +115,7 @@ const CommentInput = forwardRef(
       setText: newText => {
         logger.debug('CommentInput: setText called via ref', { textLength: newText?.length });
         prevTextLengthRef.current = newText?.length || 0;
+        cursorPositionRef.current = newText?.length || 0;
         setText(newText);
       },
     }));
