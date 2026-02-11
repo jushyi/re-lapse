@@ -625,7 +625,13 @@ export const usePhotoDetailModal = ({
   // Gesture tracking state for interactive horizontal swipe
   const isHorizontalSwipeActiveRef = useRef(false);
   const swipeDirectionRef = useRef(null); // 'forward' | 'backward'
-  const firstMoveSkippedRef = useRef(false);
+
+  // Gesture axis lock - once a gesture is determined to be vertical or horizontal,
+  // it stays locked for the entire gesture to prevent conflicts from diagonal finger movement
+  const gestureLockRef = useRef(null); // null | 'vertical' | 'horizontal'
+
+  // Track initial vertical direction so reversing mid-gesture doesn't trigger the opposite action
+  const verticalDirectionRef = useRef(null); // null | 'down' | 'up'
 
   // Track if comments are visible (to disable swipe-to-dismiss when scrolling comments)
   const [commentsVisible, setCommentsVisible] = useState(false);
@@ -674,8 +680,8 @@ export const usePhotoDetailModal = ({
 
         // Horizontal swipe detection for friend-to-friend transitions
         const isHorizontalSwipe = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-        const isLeftSwipe = gestureState.dx < -15;
-        const isRightSwipe = gestureState.dx > 15;
+        const isLeftSwipe = gestureState.dx < -10;
+        const isRightSwipe = gestureState.dx > 10;
         if (isHorizontalSwipe && (isLeftSwipe || isRightSwipe)) {
           const hasNext = isLeftSwipe && onFriendTransitionRef.current;
           const hasPrev = isRightSwipe && onPreviousFriendTransitionRef.current;
@@ -703,8 +709,8 @@ export const usePhotoDetailModal = ({
 
         // Capture horizontal swipes for friend transitions
         const isHorizontalSwipe = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-        const isLeftSwipe = gestureState.dx < -15;
-        const isRightSwipe = gestureState.dx > 15;
+        const isLeftSwipe = gestureState.dx < -10;
+        const isRightSwipe = gestureState.dx > 10;
         if (isHorizontalSwipe && (isLeftSwipe || isRightSwipe)) {
           const hasNext = isLeftSwipe && onFriendTransitionRef.current;
           const hasPrev = isRightSwipe && onPreviousFriendTransitionRef.current;
@@ -716,24 +722,49 @@ export const usePhotoDetailModal = ({
       onPanResponderMove: (_, gestureState) => {
         const { dx, dy } = gestureState;
 
-        // HORIZONTAL - interactive cube tracking
+        // HORIZONTAL - interactive cube tracking (already locked)
         if (isHorizontalSwipeActiveRef.current) {
-          // Skip first frame after prepare to let React render new transitionDirection
-          if (!firstMoveSkippedRef.current) {
-            firstMoveSkippedRef.current = true;
-            return;
-          }
-          // Drive cubeProgress proportional to finger displacement
-          const progress = Math.min(1, Math.max(0, Math.abs(dx) / SCREEN_WIDTH));
+          // Drive cubeProgress using signed displacement in the original swipe direction
+          // so reversing past origin clamps to 0 instead of driving the cube backwards.
+          // Offset by detection threshold (10px) so cube starts smoothly from 0.
+          const signedDx = swipeDirectionRef.current === 'forward' ? -dx : dx;
+          const adjustedDx = Math.max(0, signedDx - 10);
+          const progress = Math.min(1, adjustedDx / SCREEN_WIDTH);
           if (cubeProgressRef.current) {
             cubeProgressRef.current.setValue(progress);
           }
           return;
         }
 
+        // If already locked to vertical, skip horizontal detection
+        if (gestureLockRef.current === 'vertical') {
+          if (verticalDirectionRef.current === 'down') {
+            // Swipe-down dismiss: clamp so reversing above origin resets to resting state
+            const clampedDy = Math.max(0, dy);
+            translateY.setValue(clampedDy);
+            const dragRatio = Math.min(1, clampedDy / SCREEN_HEIGHT);
+            dismissScale.setValue(1 - dragRatio * 0.15);
+            const fadeAmount = Math.max(0, 1 - dragRatio * 0.8);
+            opacity.setValue(fadeAmount);
+          }
+          // Swipe-up: no visual tracking needed (commits on release)
+          return;
+        }
+
+        // If already locked to horizontal, only handle horizontal (waiting for prepare)
+        if (gestureLockRef.current === 'horizontal') {
+          return;
+        }
+
+        // No lock yet - determine axis from first significant movement
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
         // Check if this should be an interactive horizontal swipe
-        const isHorizontalGesture = Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 15;
-        if (isHorizontalGesture && !isHorizontalSwipeActiveRef.current) {
+        const isHorizontalGesture = absDx > absDy && absDx > 10;
+        if (isHorizontalGesture) {
+          gestureLockRef.current = 'horizontal';
+
           const direction = dx < 0 ? 'forward' : 'backward';
 
           // Check if transition callback is available
@@ -749,17 +780,28 @@ export const usePhotoDetailModal = ({
 
           isHorizontalSwipeActiveRef.current = true;
           swipeDirectionRef.current = direction;
-          firstMoveSkippedRef.current = false;
-          return; // Skip driving cubeProgress this frame
+
+          // Immediately drive cubeProgress (offset by threshold so it starts at 0)
+          const adjustedDx = Math.max(0, absDx - 10);
+          const progress = Math.min(1, adjustedDx / SCREEN_WIDTH);
+          if (cubeProgressRef.current) {
+            cubeProgressRef.current.setValue(progress);
+          }
+          return;
         }
 
-        // VERTICAL - swipe down to dismiss with scale effect
-        if (dy > 0) {
-          translateY.setValue(dy);
-          // Scale down as user drags (1.0 → 0.85 at full screen)
-          const dragRatio = Math.min(1, dy / SCREEN_HEIGHT);
+        // Vertical gesture detected - lock it and record initial direction
+        if (absDy > absDx && absDy > 5) {
+          gestureLockRef.current = 'vertical';
+          verticalDirectionRef.current = dy > 0 ? 'down' : 'up';
+        }
+
+        // VERTICAL - only apply dismiss effects for downward gestures
+        if (gestureLockRef.current === 'vertical' && verticalDirectionRef.current === 'down') {
+          const clampedDy = Math.max(0, dy);
+          translateY.setValue(clampedDy);
+          const dragRatio = Math.min(1, clampedDy / SCREEN_HEIGHT);
           dismissScale.setValue(1 - dragRatio * 0.15);
-          // Background fades
           const fadeAmount = Math.max(0, 1 - dragRatio * 0.8);
           opacity.setValue(fadeAmount);
         }
@@ -769,26 +811,31 @@ export const usePhotoDetailModal = ({
 
         // HORIZONTAL SWIPES - interactive cube transition
         if (isHorizontalSwipeActiveRef.current) {
-          const absDx = Math.abs(dx);
-          const absVx = Math.abs(vx);
-          const currentProgress = Math.min(1, absDx / SCREEN_WIDTH);
+          // Use signed displacement in original direction (negative = reversed past origin)
+          const signedDx = swipeDirectionRef.current === 'forward' ? -dx : dx;
+          const clampedDx = Math.max(0, signedDx);
+          const currentProgress = Math.min(1, clampedDx / SCREEN_WIDTH);
 
-          const COMMIT_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
-          const COMMIT_VELOCITY_THRESHOLD = 0.5;
+          // Only use velocity in the original swipe direction for commit check
+          const signedVx = swipeDirectionRef.current === 'forward' ? -vx : vx;
+          const forwardVx = Math.max(0, signedVx);
+
+          const COMMIT_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.25;
+          const COMMIT_VELOCITY_THRESHOLD = 0.4;
           const shouldCommit =
-            absDx > COMMIT_DISTANCE_THRESHOLD || absVx > COMMIT_VELOCITY_THRESHOLD;
+            clampedDx > COMMIT_DISTANCE_THRESHOLD || forwardVx > COMMIT_VELOCITY_THRESHOLD;
 
           if (shouldCommit && cubeProgressRef.current) {
             // Commit: animate remaining distance to 1
             const remainingDistance = 1 - currentProgress;
-            const baseDuration = remainingDistance * 350;
-            const velocityFactor = Math.max(0.3, 1 - absVx * 0.3);
-            const duration = Math.max(80, Math.min(250, baseDuration * velocityFactor));
+            const baseDuration = remainingDistance * 220;
+            const velocityFactor = Math.max(0.25, 1 - forwardVx * 0.4);
+            const duration = Math.max(60, Math.min(180, baseDuration * velocityFactor));
 
             Animated.timing(cubeProgressRef.current, {
               toValue: 1,
               duration,
-              easing: Easing.out(Easing.ease),
+              easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
             }).start(() => {
               onCommitSwipeTransitionRef.current?.();
@@ -797,7 +844,7 @@ export const usePhotoDetailModal = ({
             // Cancel: spring back to 0
             Animated.spring(cubeProgressRef.current, {
               toValue: 0,
-              tension: 80,
+              tension: 150,
               friction: 12,
               useNativeDriver: true,
             }).start(() => {
@@ -808,32 +855,49 @@ export const usePhotoDetailModal = ({
           // Reset horizontal gesture state
           isHorizontalSwipeActiveRef.current = false;
           swipeDirectionRef.current = null;
-          firstMoveSkippedRef.current = false;
+          gestureLockRef.current = null;
+          verticalDirectionRef.current = null;
           return;
         }
 
-        // SWIPE UP - open comments
-        if (dy < -50 || vy < -0.5) {
+        const gestureDir = verticalDirectionRef.current;
+
+        // Reset gesture lock for next gesture
+        gestureLockRef.current = null;
+        verticalDirectionRef.current = null;
+
+        // SWIPE UP - open comments (only if gesture started upward)
+        if (gestureDir === 'up' && (dy < -50 || vy < -0.5)) {
           if (onSwipeUpRef.current) {
             onSwipeUpRef.current();
           }
           return;
         }
 
-        // SWIPE DOWN - close modal (existing behavior)
-        const dismissThreshold = SCREEN_HEIGHT / 3;
-        if (dy > dismissThreshold || vy > 0.5) {
-          closeWithAnimation();
-        } else {
-          springBack();
+        // SWIPE DOWN - close modal (only if gesture started downward)
+        if (gestureDir === 'down') {
+          const dismissThreshold = SCREEN_HEIGHT / 3;
+          if (dy > dismissThreshold || vy > 0.5) {
+            closeWithAnimation();
+          } else {
+            springBack();
+          }
+          return;
         }
+
+        // Fallback: spring back if direction unclear
+        springBack();
       },
       onPanResponderTerminate: () => {
-        // Gesture interrupted by system - cancel any active horizontal swipe
+        // Gesture interrupted by system - reset all locks
+        gestureLockRef.current = null;
+        verticalDirectionRef.current = null;
+
+        // Cancel any active horizontal swipe
         if (isHorizontalSwipeActiveRef.current && cubeProgressRef.current) {
           Animated.spring(cubeProgressRef.current, {
             toValue: 0,
-            tension: 80,
+            tension: 150,
             friction: 12,
             useNativeDriver: true,
           }).start(() => {
@@ -842,7 +906,6 @@ export const usePhotoDetailModal = ({
 
           isHorizontalSwipeActiveRef.current = false;
           swipeDirectionRef.current = null;
-          firstMoveSkippedRef.current = false;
         }
       },
     })
