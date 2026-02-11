@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { useRef, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,10 +31,17 @@ const MeStoryCardInner = ({ friend, onPress, isFirst = false, isViewed = false }
   // Use thumbnailURL (most recent photo) if available, fallback to first photo in array
   const thumbnailUrl = thumbnailURL || topPhotos?.[0]?.imageURL || null;
 
+  // Ref for measuring card position (expand/collapse animation)
+  const cardRef = useRef(null);
+
   const handlePress = () => {
     logger.debug('MeStoryCard: Card pressed', { userId });
-    if (onPress) {
-      onPress();
+    if (cardRef.current) {
+      cardRef.current.measureInWindow((x, y, width, height) => {
+        if (onPress) onPress({ x, y, width, height, borderRadius: 4 });
+      });
+    } else if (onPress) {
+      onPress(null);
     }
   };
 
@@ -90,7 +97,7 @@ const MeStoryCardInner = ({ friend, onPress, isFirst = false, isViewed = false }
       activeOpacity={0.8}
     >
       {/* Card with gradient or viewed border */}
-      <View style={styles.cardWrapper}>
+      <View ref={cardRef} style={styles.cardWrapper}>
         {hasPhotos && !isViewed ? (
           <LinearGradient
             colors={colors.brand.gradient.developing}

@@ -45,6 +45,7 @@ export const usePhotoDetailModal = ({
   onFriendTransition, // Callback for friend-to-friend transition with cube animation (taps)
   onPreviousFriendTransition, // Callback for backward friend transition with reverse cube (taps)
   onSwipeUp, // Callback when user swipes up to open comments
+  sourceRect, // Source card position for expand/collapse animation { x, y, width, height, borderRadius }
   // Interactive swipe support
   cubeProgress, // Animated.Value from PhotoDetailScreen for interactive gesture tracking
   onPrepareSwipeTransition, // (direction) => boolean - prepare transition at drag start
@@ -71,15 +72,77 @@ export const usePhotoDetailModal = ({
 
   // Animated values for swipe gesture
   const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(0)).current; // Start invisible to prevent first-frame flash
+
+  // Expand/collapse animation values
+  const openProgress = useRef(new Animated.Value(0)).current; // 0=source, 1=full-screen (start at source)
+  const dismissScale = useRef(new Animated.Value(1)).current; // shrinks during dismiss drag
+  const suckTranslateX = useRef(new Animated.Value(0)).current; // X offset for suck-back
+  const animatedBorderRadius = useRef(new Animated.Value(0)).current; // JS-driven, non-native
+
+  // Source rect ref for close animation (stable across re-renders)
+  const sourceRectRef = useRef(sourceRect);
+  sourceRectRef.current = sourceRect;
+
+  // Compute source transform from sourceRect
+  const sourceTransform = useMemo(() => {
+    if (!sourceRect) return null;
+    const scaleX = sourceRect.width / SCREEN_WIDTH;
+    const scaleY = sourceRect.height / SCREEN_HEIGHT;
+    const scale = Math.min(scaleX, scaleY);
+    const sourceCenterX = sourceRect.x + sourceRect.width / 2;
+    const sourceCenterY = sourceRect.y + sourceRect.height / 2;
+    return {
+      scale,
+      translateX: sourceCenterX - SCREEN_WIDTH / 2,
+      translateY: sourceCenterY - SCREEN_HEIGHT / 2,
+      borderRadius: sourceRect.borderRadius || 0,
+    };
+  }, [sourceRect]);
+
+  // Opening animation - expand from source card to full screen
+  const hasAnimatedOpen = useRef(false);
+  useEffect(() => {
+    if (visible && sourceTransform && !hasAnimatedOpen.current) {
+      hasAnimatedOpen.current = true;
+      // Start at source position
+      openProgress.setValue(0);
+      opacity.setValue(0);
+      dismissScale.setValue(1);
+      suckTranslateX.setValue(0);
+      translateY.setValue(0);
+
+      // Spring to full screen immediately
+      Animated.parallel([
+        Animated.spring(openProgress, {
+          toValue: 1,
+          tension: 180,
+          friction: 16,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (visible && !sourceTransform && !hasAnimatedOpen.current) {
+      // No source rect - instant show
+      hasAnimatedOpen.current = true;
+      openProgress.setValue(1);
+      opacity.setValue(1);
+    }
+    if (!visible) {
+      hasAnimatedOpen.current = false;
+    }
+  }, [visible, sourceTransform]);
 
   // Reset index when modal opens or initialIndex changes
   useEffect(() => {
     if (visible && mode === 'stories') {
       const validIndex = Math.min(Math.max(0, initialIndex), Math.max(0, photos.length - 1));
       setCurrentIndex(validIndex);
-      translateY.setValue(0);
-      opacity.setValue(1);
+      // Note: translateY/opacity resets handled by opening animation useEffect above
       logger.debug('usePhotoDetailModal: Stories mode opened', {
         photoCount: photos.length,
         startingIndex: validIndex,
@@ -418,28 +481,83 @@ export const usePhotoDetailModal = ({
 
   /**
    * Close modal with animation
+   * Two-phase if sourceRect exists: settle (soft lock) → suck-back to source
+   * Fallback: simple slide-down + fade
    */
   const closeWithAnimation = useCallback(() => {
+    const source = sourceRectRef.current;
+    const transform = source
+      ? {
+          scale: Math.min(source.width / SCREEN_WIDTH, source.height / SCREEN_HEIGHT),
+          translateX: source.x + source.width / 2 - SCREEN_WIDTH / 2,
+          translateY: source.y + source.height / 2 - SCREEN_HEIGHT / 2,
+          borderRadius: source.borderRadius || 0,
+        }
+      : null;
+
+    const resetAll = () => {
+      setTimeout(() => {
+        translateY.setValue(0);
+        opacity.setValue(0); // Keep invisible — screen is unmounting
+        openProgress.setValue(0); // Keep at source — screen is unmounting
+        dismissScale.setValue(1);
+        suckTranslateX.setValue(0);
+      }, 100);
+    };
+
+    if (!transform) {
+      // Fallback: slide down + fade
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: SCREEN_HEIGHT,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onClose();
+        resetAll();
+      });
+      return;
+    }
+
+    // Suck-back — fast ease-in to source position
+    const suckDuration = 200;
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: SCREEN_HEIGHT,
-        duration: 300,
+        toValue: transform.translateY,
+        duration: suckDuration,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(suckTranslateX, {
+        toValue: transform.translateX,
+        duration: suckDuration,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(dismissScale, {
+        toValue: transform.scale,
+        duration: suckDuration,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: suckDuration,
+        easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start(() => {
       onClose();
-      // Reset after a short delay to ensure smooth transition
-      setTimeout(() => {
-        translateY.setValue(0);
-        opacity.setValue(1);
-      }, 100);
+      resetAll();
     });
-  }, [translateY, opacity, onClose]);
+  }, [translateY, opacity, openProgress, dismissScale, suckTranslateX, onClose]);
 
   /**
    * Spring back to original position
@@ -458,8 +576,14 @@ export const usePhotoDetailModal = ({
         friction: 10,
         useNativeDriver: true,
       }),
+      Animated.spring(dismissScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 10,
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, [translateY, opacity]);
+  }, [translateY, opacity, dismissScale]);
 
   // Store callbacks in refs for panResponder access (created once, needs current values)
   const onSwipeUpRef = useRef(onSwipeUp);
@@ -629,10 +753,14 @@ export const usePhotoDetailModal = ({
           return; // Skip driving cubeProgress this frame
         }
 
-        // VERTICAL - existing behavior (swipe down to dismiss)
+        // VERTICAL - swipe down to dismiss with scale effect
         if (dy > 0) {
           translateY.setValue(dy);
-          const fadeAmount = Math.max(0, 1 - dy / SCREEN_HEIGHT);
+          // Scale down as user drags (1.0 → 0.85 at full screen)
+          const dragRatio = Math.min(1, dy / SCREEN_HEIGHT);
+          dismissScale.setValue(1 - dragRatio * 0.15);
+          // Background fades
+          const fadeAmount = Math.max(0, 1 - dragRatio * 0.8);
           opacity.setValue(fadeAmount);
         }
       },
@@ -753,6 +881,13 @@ export const usePhotoDetailModal = ({
     translateY,
     opacity,
     panResponder,
+
+    // Expand/collapse animation
+    openProgress,
+    dismissScale,
+    suckTranslateX,
+    animatedBorderRadius,
+    sourceTransform,
 
     // Reactions
     groupedReactions,

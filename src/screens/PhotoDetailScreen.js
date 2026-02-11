@@ -21,6 +21,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Animated,
   Dimensions,
   Alert,
@@ -74,6 +75,7 @@ const PhotoDetailScreen = () => {
     hasNextFriend: contextHasNextFriend,
     hasPreviousFriend: contextHasPreviousFriend,
     currentUserId: contextUserId,
+    sourceRect: contextSourceRect,
     showComments,
     setShowComments,
     handleReactionToggle,
@@ -289,6 +291,13 @@ const PhotoDetailScreen = () => {
     opacity,
     panResponder,
 
+    // Expand/collapse animation
+    openProgress,
+    dismissScale,
+    suckTranslateX,
+    animatedBorderRadius,
+    sourceTransform,
+
     // Reactions
     groupedReactions,
     orderedEmojis,
@@ -317,6 +326,7 @@ const PhotoDetailScreen = () => {
     onFriendTransition: contextMode === 'stories' ? handleFriendTransition : null,
     onPreviousFriendTransition: contextMode === 'stories' ? handlePreviousFriendTransition : null,
     onSwipeUp: handleSwipeUpToOpenComments,
+    sourceRect: contextSourceRect,
     // Interactive swipe support
     cubeProgress,
     onPrepareSwipeTransition: handlePrepareSwipeTransition,
@@ -343,6 +353,37 @@ const PhotoDetailScreen = () => {
       userId: currentPhoto?.userId,
     };
   }
+
+  // Compute combined expand/collapse + dismiss transforms
+  const expandScale = useMemo(() => {
+    if (!sourceTransform) return dismissScale;
+    return Animated.multiply(
+      openProgress.interpolate({ inputRange: [0, 1], outputRange: [sourceTransform.scale, 1] }),
+      dismissScale
+    );
+  }, [sourceTransform, openProgress, dismissScale]);
+
+  const expandTranslateX = useMemo(() => {
+    if (!sourceTransform) return suckTranslateX;
+    return Animated.add(
+      openProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [sourceTransform.translateX, 0],
+      }),
+      suckTranslateX
+    );
+  }, [sourceTransform, openProgress, suckTranslateX]);
+
+  const expandTranslateY = useMemo(() => {
+    if (!sourceTransform) return translateY;
+    return Animated.add(
+      openProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [sourceTransform.translateY, 0],
+      }),
+      translateY
+    );
+  }, [sourceTransform, openProgress, translateY]);
 
   // Sync comments visibility with hook (so panResponder knows not to capture gestures)
   useEffect(() => {
@@ -582,410 +623,431 @@ const PhotoDetailScreen = () => {
   if (!currentPhoto) return null;
 
   return (
-    <Animated.View style={[styles.container, { opacity }]} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }} {...panResponder.panHandlers}>
       <StatusBar barStyle="light-content" />
 
-      {/* Main content wrapper - incoming face during cube transition */}
+      {/* Background overlay - fades independently from content */}
       <Animated.View
-        style={[
-          styles.contentWrapper,
-          {
-            backfaceVisibility: 'hidden',
-            transform: [
-              { translateY },
-              { perspective: 800 },
-              {
-                translateX: cubeProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange:
-                    transitionDirection === 'forward' ? [SCREEN_WIDTH, 0] : [-SCREEN_WIDTH, 0],
-                }),
-              },
-              {
-                translateX:
-                  transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
-              },
-              {
-                rotateY: cubeProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange:
-                    transitionDirection === 'forward' ? ['90deg', '0deg'] : ['-90deg', '0deg'],
-                }),
-              },
-              {
-                translateX:
-                  transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
-              },
-            ],
-          },
-        ]}
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.98)', opacity }]}
+      />
+
+      {/* Expand/collapse wrapper - scales + translates content from/to source card */}
+      <Animated.View
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          opacity,
+          transform: [
+            { translateX: expandTranslateX },
+            { translateY: expandTranslateY },
+            { scale: expandScale },
+          ],
+        }}
       >
-        {/* Header with close button */}
-        <View style={styles.header}>
-          <View style={styles.headerSpacer} />
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Photo - TouchableWithoutFeedback for swipe-to-close gesture support */}
-        <TouchableWithoutFeedback
-          onPress={contextMode === 'stories' ? handleTapNavigation : undefined}
-        >
-          <View style={styles.photoScrollView}>
-            <Image
-              source={{ uri: imageURL, cacheKey: `photo-${currentPhoto?.id}` }}
-              style={styles.photo}
-              contentFit="cover"
-              transition={0}
-            />
-          </View>
-        </TouchableWithoutFeedback>
-
-        {/* Profile photo - overlapping top left of photo, tappable to navigate to profile */}
-        <TouchableOpacity
-          style={styles.profilePicContainer}
-          onPress={handleAvatarPress}
-          activeOpacity={isOwnPhoto ? 1 : 0.7}
-          disabled={isOwnPhoto}
-        >
-          {profilePhotoURL ? (
-            <Image
-              source={{ uri: profilePhotoURL, cacheKey: `profile-${currentPhoto?.userId}` }}
-              style={styles.profilePic}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-            />
-          ) : (
-            <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-              <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* User info - bottom left of photo */}
-        <View
+        {/* Main content wrapper - incoming face during cube transition */}
+        <Animated.View
           style={[
-            styles.userInfoOverlay,
+            styles.contentWrapper,
             {
-              bottom:
-                contextMode === 'stories'
-                  ? previewComments?.length > 0
-                    ? 130
-                    : 110
-                  : previewComments?.length > 0
-                    ? 120
-                    : 100,
+              backfaceVisibility: 'hidden',
+              transform: [
+                { perspective: 800 },
+                {
+                  translateX: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? [SCREEN_WIDTH, 0] : [-SCREEN_WIDTH, 0],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
+                },
+                {
+                  rotateY: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? ['90deg', '0deg'] : ['-90deg', '0deg'],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
+                },
+              ],
             },
           ]}
         >
-          <Text style={styles.displayName} numberOfLines={1}>
-            {displayName || 'Unknown User'}
-          </Text>
-          <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
-        </View>
-
-        {/* Comment preview - below user info, above progress bar */}
-        {previewComments.length > 0 && (
-          <View
-            style={[
-              styles.commentPreviewContainer,
-              { bottom: contextMode === 'stories' ? 100 : 90 },
-            ]}
-          >
-            <CommentPreview
-              comments={previewComments}
-              totalCount={currentPhoto?.commentCount || 0}
-              onPress={() => setShowComments(true)}
-              showViewAll={false}
-            />
+          {/* Header with close button */}
+          <View style={styles.header}>
+            <View style={styles.headerSpacer} />
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Tag button - visible for owner always, non-owner only when tags exist */}
-        {(isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
-          <TouchableOpacity
-            style={styles.tagButton}
-            onPress={() => {
-              if (isOwnPhoto) {
-                setTagModalVisible(true);
-              } else {
-                setTaggedPeopleModalVisible(true);
-              }
-            }}
-            activeOpacity={0.7}
+          {/* Photo - TouchableWithoutFeedback for swipe-to-close gesture support */}
+          <TouchableWithoutFeedback
+            onPress={contextMode === 'stories' ? handleTapNavigation : undefined}
           >
-            <PixelIcon
-              name={isOwnPhoto ? 'person-add-outline' : 'people-outline'}
-              size={18}
-              color={colors.text.primary}
-            />
-          </TouchableOpacity>
-        )}
-
-        {/* Photo menu button */}
-        {menuOptions.length > 0 && (
-          <TouchableOpacity
-            style={styles.photoMenuButton}
-            onPress={() => setShowPhotoMenu(true)}
-            onLayout={handleMenuButtonLayout}
-            activeOpacity={0.7}
-          >
-            <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
-          </TouchableOpacity>
-        )}
-
-        {/* Progress bar - stories mode only */}
-        {showProgressBar && totalPhotos > 0 && (
-          <ScrollView
-            ref={progressScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            scrollEnabled={needsScroll}
-            style={styles.progressBarScrollView}
-            contentContainerStyle={styles.progressBarContainer}
-          >
-            {Array.from({ length: totalPhotos }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressSegment,
-                  { width: segmentWidth },
-                  index <= currentIndex
-                    ? styles.progressSegmentActive
-                    : styles.progressSegmentInactive,
-                ]}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Footer - Comment Input + Emoji Pills */}
-        <View style={styles.footer}>
-          {/* Comment input trigger - left side */}
-          <TouchableOpacity
-            style={styles.commentInputTrigger}
-            onPress={() => setShowComments(true)}
-            activeOpacity={0.8}
-          >
-            <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
-            <Text style={styles.commentInputTriggerText} numberOfLines={1}>
-              {currentPhoto?.commentCount > 0
-                ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
-                : 'Add a comment...'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Emoji pills - right side */}
-          <ScrollView
-            ref={emojiScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.emojiPickerContainer}
-            style={[styles.emojiPickerScrollView, contextIsOwnStory && styles.disabledEmojiRow]}
-          >
-            {orderedEmojis.map(emoji => {
-              const totalCount = groupedReactions[emoji] || 0;
-              const userCount = getUserReactionCount(emoji);
-              const isSelected = userCount > 0;
-              const isNewlyAdded = emoji === newlyAddedEmoji;
-
-              // For own stories, render as non-interactive View
-              if (contextIsOwnStory) {
-                return (
-                  <View key={emoji} style={{ position: 'relative' }}>
-                    <View style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}>
-                      <Text style={styles.emojiPillEmoji}>{emoji}</Text>
-                      {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
-                    </View>
-                  </View>
-                );
-              }
-
-              return (
-                <View key={emoji} style={{ position: 'relative' }}>
-                  <TouchableOpacity
-                    style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
-                    onPress={() => handleEmojiPress(emoji)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.emojiPillEmoji}>{emoji}</Text>
-                    {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
-                  </TouchableOpacity>
-                  {/* Purple highlight overlay that fades out */}
-                  {isNewlyAdded && (
-                    <Animated.View
-                      pointerEvents="none"
-                      style={[styles.emojiHighlightOverlay, { opacity: highlightOpacity }]}
-                    />
-                  )}
-                </View>
-              );
-            })}
-
-            {/* Add custom emoji button - hidden for own stories */}
-            {!contextIsOwnStory && (
-              <TouchableOpacity
-                style={[styles.emojiPill, styles.addEmojiButton]}
-                onPress={handleOpenEmojiPicker}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.addEmojiText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-        </View>
-      </Animated.View>
-
-      {/* Outgoing cube face - always rendered, naturally hidden at cubeProgress=1
-           (off-screen left + rotated -90deg). Native driver reveals it instantly
-           when cubeProgress goes to 0, eliminating the flash. */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.contentWrapper,
-          {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backfaceVisibility: 'hidden',
-            transform: [
-              { perspective: 800 },
-              {
-                translateX: cubeProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange:
-                    transitionDirection === 'forward' ? [0, -SCREEN_WIDTH] : [0, SCREEN_WIDTH],
-                }),
-              },
-              {
-                translateX:
-                  transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
-              },
-              {
-                rotateY: cubeProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange:
-                    transitionDirection === 'forward' ? ['0deg', '-90deg'] : ['0deg', '90deg'],
-                }),
-              },
-              {
-                translateX:
-                  transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
-              },
-            ],
-          },
-        ]}
-      >
-        {snapshotRef.current.imageURL && (
-          <>
-            {/* Header with close button */}
-            <View style={styles.header}>
-              <View style={styles.headerSpacer} />
-              <View style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </View>
-            </View>
-
-            {/* Photo */}
             <View style={styles.photoScrollView}>
               <Image
-                source={{
-                  uri: snapshotRef.current.imageURL,
-                  cacheKey: snapshotRef.current.photoId
-                    ? `photo-${snapshotRef.current.photoId}`
-                    : undefined,
-                }}
+                source={{ uri: imageURL, cacheKey: `photo-${currentPhoto?.id}` }}
                 style={styles.photo}
                 contentFit="cover"
                 transition={0}
               />
             </View>
+          </TouchableWithoutFeedback>
 
-            {/* Profile photo */}
-            <View style={styles.profilePicContainer}>
-              {snapshotRef.current.profilePhotoURL ? (
-                <Image
-                  source={{
-                    uri: snapshotRef.current.profilePhotoURL,
-                    cacheKey: snapshotRef.current.userId
-                      ? `profile-${snapshotRef.current.userId}`
-                      : undefined,
-                  }}
-                  style={styles.profilePic}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={0}
-                />
-              ) : (
-                <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-                  <Text style={styles.profilePicText}>
-                    {snapshotRef.current.displayName?.[0]?.toUpperCase() || '?'}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* User info */}
-            <View style={[styles.userInfoOverlay, { bottom: 110 }]}>
-              <Text style={styles.displayName} numberOfLines={1}>
-                {snapshotRef.current.displayName || 'Unknown User'}
-              </Text>
-              <Text style={styles.timestamp}>{getTimeAgo(snapshotRef.current.capturedAt)}</Text>
-            </View>
-
-            {/* Progress bar */}
-            {snapshotRef.current.showProgressBar && snapshotRef.current.totalPhotos > 0 && (
-              <View style={[styles.progressBarScrollView, { overflow: 'hidden' }]}>
-                <View style={styles.progressBarContainer}>
-                  {Array.from({ length: snapshotRef.current.totalPhotos }).map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.progressSegment,
-                        { width: snapshotRef.current.segmentWidth },
-                        index <= snapshotRef.current.currentIndex
-                          ? styles.progressSegmentActive
-                          : styles.progressSegmentInactive,
-                      ]}
-                    />
-                  ))}
-                </View>
+          {/* Profile photo - overlapping top left of photo, tappable to navigate to profile */}
+          <TouchableOpacity
+            style={styles.profilePicContainer}
+            onPress={handleAvatarPress}
+            activeOpacity={isOwnPhoto ? 1 : 0.7}
+            disabled={isOwnPhoto}
+          >
+            {profilePhotoURL ? (
+              <Image
+                source={{ uri: profilePhotoURL, cacheKey: `profile-${currentPhoto?.userId}` }}
+                style={styles.profilePic}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={0}
+              />
+            ) : (
+              <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
               </View>
             )}
+          </TouchableOpacity>
 
-            {/* Footer */}
-            <View style={styles.footer}>
-              <View style={styles.commentInputTrigger}>
-                <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
-                <Text style={styles.commentInputTriggerText} numberOfLines={1}>
-                  {snapshotRef.current.commentCount > 0
-                    ? `${snapshotRef.current.commentCount} comment${snapshotRef.current.commentCount === 1 ? '' : 's'}`
-                    : 'Add a comment...'}
-                </Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.emojiPickerContainer}
-                style={styles.emojiPickerScrollView}
-              >
-                {(snapshotRef.current.orderedEmojis || []).map(emoji => {
-                  const totalCount = snapshotRef.current.groupedReactions?.[emoji] || 0;
+          {/* User info - bottom left of photo */}
+          <View
+            style={[
+              styles.userInfoOverlay,
+              {
+                bottom:
+                  contextMode === 'stories'
+                    ? previewComments?.length > 0
+                      ? 130
+                      : 110
+                    : previewComments?.length > 0
+                      ? 120
+                      : 100,
+              },
+            ]}
+          >
+            <Text style={styles.displayName} numberOfLines={1}>
+              {displayName || 'Unknown User'}
+            </Text>
+            <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
+          </View>
+
+          {/* Comment preview - below user info, above progress bar */}
+          {previewComments.length > 0 && (
+            <View
+              style={[
+                styles.commentPreviewContainer,
+                { bottom: contextMode === 'stories' ? 100 : 90 },
+              ]}
+            >
+              <CommentPreview
+                comments={previewComments}
+                totalCount={currentPhoto?.commentCount || 0}
+                onPress={() => setShowComments(true)}
+                showViewAll={false}
+              />
+            </View>
+          )}
+
+          {/* Tag button - visible for owner always, non-owner only when tags exist */}
+          {(isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
+            <TouchableOpacity
+              style={styles.tagButton}
+              onPress={() => {
+                if (isOwnPhoto) {
+                  setTagModalVisible(true);
+                } else {
+                  setTaggedPeopleModalVisible(true);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <PixelIcon
+                name={isOwnPhoto ? 'person-add-outline' : 'people-outline'}
+                size={18}
+                color={colors.text.primary}
+              />
+            </TouchableOpacity>
+          )}
+
+          {/* Photo menu button */}
+          {menuOptions.length > 0 && (
+            <TouchableOpacity
+              style={styles.photoMenuButton}
+              onPress={() => setShowPhotoMenu(true)}
+              onLayout={handleMenuButtonLayout}
+              activeOpacity={0.7}
+            >
+              <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
+            </TouchableOpacity>
+          )}
+
+          {/* Progress bar - stories mode only */}
+          {showProgressBar && totalPhotos > 0 && (
+            <ScrollView
+              ref={progressScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={needsScroll}
+              style={styles.progressBarScrollView}
+              contentContainerStyle={styles.progressBarContainer}
+            >
+              {Array.from({ length: totalPhotos }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressSegment,
+                    { width: segmentWidth },
+                    index <= currentIndex
+                      ? styles.progressSegmentActive
+                      : styles.progressSegmentInactive,
+                  ]}
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Footer - Comment Input + Emoji Pills */}
+          <View style={styles.footer}>
+            {/* Comment input trigger - left side */}
+            <TouchableOpacity
+              style={styles.commentInputTrigger}
+              onPress={() => setShowComments(true)}
+              activeOpacity={0.8}
+            >
+              <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
+              <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                {currentPhoto?.commentCount > 0
+                  ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
+                  : 'Add a comment...'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Emoji pills - right side */}
+            <ScrollView
+              ref={emojiScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.emojiPickerContainer}
+              style={[styles.emojiPickerScrollView, contextIsOwnStory && styles.disabledEmojiRow]}
+            >
+              {orderedEmojis.map(emoji => {
+                const totalCount = groupedReactions[emoji] || 0;
+                const userCount = getUserReactionCount(emoji);
+                const isSelected = userCount > 0;
+                const isNewlyAdded = emoji === newlyAddedEmoji;
+
+                // For own stories, render as non-interactive View
+                if (contextIsOwnStory) {
                   return (
-                    <View key={emoji} style={styles.emojiPill}>
-                      <Text style={styles.emojiPillEmoji}>{emoji}</Text>
-                      {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                    <View key={emoji} style={{ position: 'relative' }}>
+                      <View style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}>
+                        <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                        {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                      </View>
                     </View>
                   );
-                })}
-              </ScrollView>
-            </View>
-          </>
-        )}
+                }
+
+                return (
+                  <View key={emoji} style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
+                      onPress={() => handleEmojiPress(emoji)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                      {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                    </TouchableOpacity>
+                    {/* Purple highlight overlay that fades out */}
+                    {isNewlyAdded && (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[styles.emojiHighlightOverlay, { opacity: highlightOpacity }]}
+                      />
+                    )}
+                  </View>
+                );
+              })}
+
+              {/* Add custom emoji button - hidden for own stories */}
+              {!contextIsOwnStory && (
+                <TouchableOpacity
+                  style={[styles.emojiPill, styles.addEmojiButton]}
+                  onPress={handleOpenEmojiPicker}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.addEmojiText}>+</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </Animated.View>
+
+        {/* Outgoing cube face - always rendered, naturally hidden at cubeProgress=1
+           (off-screen left + rotated -90deg). Native driver reveals it instantly
+           when cubeProgress goes to 0, eliminating the flash. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.contentWrapper,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backfaceVisibility: 'hidden',
+              transform: [
+                { perspective: 800 },
+                {
+                  translateX: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? [0, -SCREEN_WIDTH] : [0, SCREEN_WIDTH],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
+                },
+                {
+                  rotateY: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? ['0deg', '-90deg'] : ['0deg', '90deg'],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
+                },
+              ],
+            },
+          ]}
+        >
+          {snapshotRef.current.imageURL && (
+            <>
+              {/* Header with close button */}
+              <View style={styles.header}>
+                <View style={styles.headerSpacer} />
+                <View style={styles.closeButton}>
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </View>
+              </View>
+
+              {/* Photo */}
+              <View style={styles.photoScrollView}>
+                <Image
+                  source={{
+                    uri: snapshotRef.current.imageURL,
+                    cacheKey: snapshotRef.current.photoId
+                      ? `photo-${snapshotRef.current.photoId}`
+                      : undefined,
+                  }}
+                  style={styles.photo}
+                  contentFit="cover"
+                  transition={0}
+                />
+              </View>
+
+              {/* Profile photo */}
+              <View style={styles.profilePicContainer}>
+                {snapshotRef.current.profilePhotoURL ? (
+                  <Image
+                    source={{
+                      uri: snapshotRef.current.profilePhotoURL,
+                      cacheKey: snapshotRef.current.userId
+                        ? `profile-${snapshotRef.current.userId}`
+                        : undefined,
+                    }}
+                    style={styles.profilePic}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                  />
+                ) : (
+                  <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                    <Text style={styles.profilePicText}>
+                      {snapshotRef.current.displayName?.[0]?.toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* User info */}
+              <View style={[styles.userInfoOverlay, { bottom: 110 }]}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {snapshotRef.current.displayName || 'Unknown User'}
+                </Text>
+                <Text style={styles.timestamp}>{getTimeAgo(snapshotRef.current.capturedAt)}</Text>
+              </View>
+
+              {/* Progress bar */}
+              {snapshotRef.current.showProgressBar && snapshotRef.current.totalPhotos > 0 && (
+                <View style={[styles.progressBarScrollView, { overflow: 'hidden' }]}>
+                  <View style={styles.progressBarContainer}>
+                    {Array.from({ length: snapshotRef.current.totalPhotos }).map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.progressSegment,
+                          { width: snapshotRef.current.segmentWidth },
+                          index <= snapshotRef.current.currentIndex
+                            ? styles.progressSegmentActive
+                            : styles.progressSegmentInactive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Footer */}
+              <View style={styles.footer}>
+                <View style={styles.commentInputTrigger}>
+                  <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
+                  <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                    {snapshotRef.current.commentCount > 0
+                      ? `${snapshotRef.current.commentCount} comment${snapshotRef.current.commentCount === 1 ? '' : 's'}`
+                      : 'Add a comment...'}
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.emojiPickerContainer}
+                  style={styles.emojiPickerScrollView}
+                >
+                  {(snapshotRef.current.orderedEmojis || []).map(emoji => {
+                    const totalCount = snapshotRef.current.groupedReactions?.[emoji] || 0;
+                    return (
+                      <View key={emoji} style={styles.emojiPill}>
+                        <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                        {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </>
+          )}
+        </Animated.View>
+
+        {/* Close expand/collapse wrapper */}
       </Animated.View>
 
       {/* Comments Bottom Sheet */}
@@ -1058,7 +1120,7 @@ const PhotoDetailScreen = () => {
           contextAvatarPress?.(userId, userName);
         }}
       />
-    </Animated.View>
+    </View>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useRef, useState, useEffect, memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import PixelIcon from './PixelIcon';
@@ -93,10 +93,23 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
   // Check if this is the current user's own photo
   const isOwnPhoto = userId === currentUserId;
 
+  // Ref for measuring photo position (expand/collapse animation)
+  const photoContainerRef = useRef(null);
+
+  const handlePhotoPress = () => {
+    if (photoContainerRef.current) {
+      photoContainerRef.current.measureInWindow((x, y, width, height) => {
+        if (onPress) onPress({ x, y, width, height, borderRadius: 0 });
+      });
+    } else if (onPress) {
+      onPress(null);
+    }
+  };
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
+    <TouchableOpacity style={styles.card} onPress={handlePhotoPress} activeOpacity={0.95}>
       {/* Photo - full width with rounded top corners */}
-      <View style={styles.photoContainer}>
+      <View ref={photoContainerRef} style={styles.photoContainer}>
         <Image
           source={{ uri: imageURL, cacheKey: `photo-${id}` }}
           style={styles.photo}

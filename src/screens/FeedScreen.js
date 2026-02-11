@@ -376,7 +376,7 @@ const FeedScreen = () => {
    * Handle opening stories for a friend
    * Starts at the first unviewed photo, or beginning if all viewed
    */
-  const handleOpenStories = friend => {
+  const handleOpenStories = (friend, sourceRect) => {
     // Calculate starting index based on viewed photos
     const startIndex = getFirstUnviewedIndex(friend.topPhotos || []);
 
@@ -416,6 +416,7 @@ const FeedScreen = () => {
       hasNextFriend: friendIdx < sortedFriends.length - 1,
       hasPreviousFriend: friendIdx > 0,
       isOwnStory: false,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -424,7 +425,7 @@ const FeedScreen = () => {
    * Handle opening own stories
    * Starts at the first unviewed photo, or beginning if all viewed
    */
-  const handleOpenMyStories = () => {
+  const handleOpenMyStories = sourceRect => {
     if (!myStories?.hasPhotos) {
       logger.debug('FeedScreen: No own photos to show');
       return;
@@ -451,6 +452,7 @@ const FeedScreen = () => {
       currentUserId: user?.uid,
       hasNextFriend: false,
       isOwnStory: true,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -715,25 +717,27 @@ const FeedScreen = () => {
   handleRequestPreviousFriendRef.current = handleRequestPreviousFriend;
   handleCancelFriendTransitionRef.current = handleCancelFriendTransition;
 
-  const handlePhotoPress = photo => {
+  const handlePhotoPress = (photo, sourceRect) => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
       mode: 'feed',
       photo,
       currentUserId: user?.uid,
       initialShowComments: false,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
 
   // Navigate to photo detail with comments panel visible
-  const handleCommentPress = photo => {
+  const handleCommentPress = (photo, sourceRect) => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
       mode: 'feed',
       photo,
       currentUserId: user?.uid,
       initialShowComments: true,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -880,8 +884,8 @@ const FeedScreen = () => {
     ({ item }) => (
       <FeedPhotoCard
         photo={item}
-        onPress={() => handlePhotoPress(item)}
-        onCommentPress={() => handleCommentPress(item)}
+        onPress={sourceRect => handlePhotoPress(item, sourceRect)}
+        onCommentPress={sourceRect => handleCommentPress(item, sourceRect)}
         onAvatarPress={handleAvatarPress}
         currentUserId={user?.uid}
       />
@@ -1062,7 +1066,7 @@ const FeedScreen = () => {
             <FriendStoryCard
               key={friend.userId}
               friend={friend}
-              onPress={() => handleOpenStories(friend)}
+              onPress={sourceRect => handleOpenStories(friend, sourceRect)}
               onAvatarPress={handleAvatarPress}
               isFirst={false}
               isViewed={hasViewedAllPhotos(friend.topPhotos)}

@@ -310,7 +310,7 @@ const PhotoDetailModal = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Animated.View style={[styles.container, { opacity }]} {...panResponder.panHandlers}>
+      <Animated.View style={[styles.container]} {...panResponder.panHandlers}>
         <StatusBar barStyle="light-content" />
 
         {/* Animated content wrapper with cube transition */}

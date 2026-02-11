@@ -68,6 +68,9 @@ export const PhotoDetailProvider = ({ children }) => {
   // Comments visibility - stored in context to persist across navigation
   const [showComments, setShowComments] = useState(false);
 
+  // Source card position for expand/collapse animation
+  const [sourceRect, setSourceRect] = useState(null);
+
   // Callback refs - using refs to avoid re-renders when callbacks change
   const callbacksRef = useRef({
     onReactionToggle: null,
@@ -110,6 +113,7 @@ export const PhotoDetailProvider = ({ children }) => {
    * @param {boolean} params.initialShowComments - Whether to show comments on open
    * @param {string} params.currentUserId - Current user's ID
    * @param {Object} params.callbacks - Callbacks to register
+   * @param {Object} params.sourceRect - Source card position {x, y, width, height, borderRadius}
    */
   const openPhotoDetail = useCallback(
     params => {
@@ -124,6 +128,7 @@ export const PhotoDetailProvider = ({ children }) => {
         initialShowComments: showComments = false,
         currentUserId: userId = null,
         callbacks = {},
+        sourceRect: newSourceRect = null,
       } = params;
 
       // Set photo state
@@ -136,6 +141,7 @@ export const PhotoDetailProvider = ({ children }) => {
       setHasPreviousFriend(prevFriend);
       setInitialShowComments(showComments);
       setCurrentUserId(userId);
+      setSourceRect(newSourceRect);
 
       // Register callbacks if provided
       if (Object.keys(callbacks).length > 0) {
@@ -165,6 +171,7 @@ export const PhotoDetailProvider = ({ children }) => {
       setHasNextFriend(false);
       setHasPreviousFriend(false);
       setInitialShowComments(false);
+      setSourceRect(null);
     }, 300);
   }, []);
 
@@ -311,6 +318,7 @@ export const PhotoDetailProvider = ({ children }) => {
     currentUserId,
     isActive,
     showComments,
+    sourceRect,
 
     // Methods
     openPhotoDetail,

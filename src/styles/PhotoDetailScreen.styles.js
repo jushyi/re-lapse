@@ -13,9 +13,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // Semi-transparent background for transparentModal presentation
-    // Previous screen (Feed) remains visible with darkened overlay
-    backgroundColor: 'rgba(0, 0, 0, 0.98)',
+    backgroundColor: 'transparent',
   },
   contentWrapper: {
     flex: 1,
