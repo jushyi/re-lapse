@@ -7,7 +7,7 @@ import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/si
 import { colors } from './src/constants/colors';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
-import { getAuth } from '@react-native-firebase/auth';
+import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { AuthProvider, ThemeProvider } from './src/context';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import { ErrorBoundary, AnimatedSplash, InAppNotificationBanner } from './src/components';
@@ -133,19 +133,19 @@ export default function App() {
   useEffect(() => {
     initializeNotifications();
 
-    // Request notification permissions and store token for authenticated users
-    // This ensures existing users who already completed profile setup get prompted
-    const requestPermissionsAndToken = async () => {
-      const currentUser = getAuth().currentUser;
-      if (currentUser) {
+    // Register notification token whenever a user authenticates
+    // This handles: app startup with existing session, fresh login, and re-login after logout
+    const auth = getAuth();
+    const unsubscribeAuth = onAuthStateChanged(auth, async firebaseUser => {
+      if (firebaseUser) {
         try {
           const permResult = await requestNotificationPermission();
           if (permResult.success) {
             const tokenResult = await getNotificationToken();
             if (tokenResult.success && tokenResult.data) {
-              await storeNotificationToken(currentUser.uid, tokenResult.data);
-              logger.info('App: Notification token stored on startup', {
-                userId: currentUser.uid,
+              await storeNotificationToken(firebaseUser.uid, tokenResult.data);
+              logger.info('App: Notification token stored for user', {
+                userId: firebaseUser.uid,
               });
             }
           }
@@ -153,10 +153,7 @@ export default function App() {
           logger.error('App: Failed to setup notifications', { error: error.message });
         }
       }
-    };
-
-    // Small delay to ensure auth state is ready
-    const timeoutId = setTimeout(requestPermissionsAndToken, 1000);
+    });
 
     // Listener for token refresh (handles token changes on app reinstall)
     tokenRefreshListener.current = Notifications.addPushTokenListener(async ({ data }) => {
@@ -189,7 +186,7 @@ export default function App() {
     });
 
     return () => {
-      clearTimeout(timeoutId);
+      unsubscribeAuth();
       if (notificationListener.current) {
         notificationListener.current.remove();
       }
