@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 46.1 of 53 (Other Users Albums View Fix)
+Phase: 47 of 53 (Firebase Performance Monitoring)
 Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-10 — Completed 46.1-01-PLAN.md
+Status: In progress
+Last activity: 2026-02-11 — Completed 47-01-PLAN.md
 
-Progress: ████████░░ 8/8 (Phase 46 + 46.1)
+Progress: █████████░ 9/10 (v1.0.0 phases)
 
 ## Performance Metrics
 
@@ -45,6 +45,8 @@ See PROJECT.md Key Decisions table for full history.
 | Phase | Decision                                         | Rationale                                                       |
 | ----- | ------------------------------------------------ | --------------------------------------------------------------- |
 | 46.1  | OtherUserProfile card instead of fullScreenModal | fullScreenModal prevents child card screens from pushing on iOS |
+| 47    | Custom code traces, not startScreenTrace()       | startScreenTrace() crashes on iOS                               |
+| 47    | **DEV** guard skips trace creation entirely      | Prevent polluting production metrics with dev data              |
 
 ### Deferred Issues
 
@@ -62,9 +64,10 @@ None.
 - Milestone v0.9.0 shipped: Engagement & Polish, 14 phases (Phase 32-45)
 - Milestone v1.0.0 created: Release Readiness, 8 phases (Phase 46-53)
 - Phase 46.1 inserted after Phase 46: Other Users Albums View Fix (URGENT)
+- Phase 46.2 inserted after Phase 46: Album Viewer Nav Bar Optimistic Updates (URGENT)
 
 ## Session Continuity
 
-Last session: 2026-02-10
-Stopped at: Completed 46.1-01-PLAN.md — Phase 46.1 complete
+Last session: 2026-02-11
+Stopped at: Completed 47-01-PLAN.md
 Resume file: None

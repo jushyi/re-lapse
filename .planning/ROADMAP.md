@@ -137,17 +137,28 @@ Plans:
 
 - [x] 46.1-01: Diagnose and fix other-user album viewing regression
 
+#### Phase 46.2: Album Viewer Nav Bar Optimistic Updates (INSERTED)
+
+**Goal**: Fix album grid full-screen viewer so the bottom nav bar updates optimistically during swipe gestures instead of waiting until the user lands on a photo — currently the nav outline jumps to the new position only after settling, rather than tracking the swipe
+**Depends on**: Phase 46
+**Research**: Unlikely (bug fix — investigating existing swipe/scroll event handling)
+**Plans**: TBD
+
+Plans:
+
+- [ ] 46.2-01: TBD
+
 #### Phase 47: Firebase Performance Monitoring
 
 **Goal**: Integrate Firebase Performance Monitoring SDK for ongoing production metrics — network traces, custom traces, screen rendering performance, baseline establishment
 **Depends on**: Phase 46
 **Research**: Likely (new SDK integration — not currently in codebase)
 **Research topics**: Firebase Performance Monitoring SDK setup for React Native/Expo, custom trace API, network trace configuration
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
 
-- [ ] 47-01: TBD
+- [x] 47-01: SDK Installation & Core Utilities
 
 #### Phase 48: UI/UX Consistency Audit
 
@@ -229,7 +240,8 @@ Plans:
 | v0.9.0 (Phases 32-45)          | v0.9.0    | 30    | Complete    | 2026-02-10 |
 | 46. Performance Optimization   | v1.0.0    | 7/7   | Complete    | 2026-02-10 |
 | 46.1 Other Users Albums Fix    | v1.0.0    | 1/1   | Complete    | 2026-02-10 |
-| 47. Firebase Perf Monitoring   | v1.0.0    | 0/?   | Not started | -          |
+| 46.2 Album Viewer Nav Optimism | v1.0.0    | 0/?   | Not started | -          |
+| 47. Firebase Perf Monitoring   | v1.0.0    | 1/1   | Complete    | 2026-02-11 |
 | 48. UI/UX Consistency Audit    | v1.0.0    | 0/?   | Not started | -          |
 | 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |
 | 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
