@@ -12,14 +12,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { successNotification } from '../utils/haptics';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Confetti configuration
 const CONFETTI_COUNT = 20;
-const CONFETTI_COLORS = ['#FF3B30', '#34C759', '#007AFF', '#FFCC00'];
+const CONFETTI_COLORS = [
+  colors.status.danger,
+  colors.status.ready,
+  colors.interactive.primary,
+  colors.brand.lime,
+];
 const ANIMATION_DURATION = 2000;
 const MAX_STAGGER_DELAY = 500;
 
@@ -184,7 +191,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: layout.borderRadius.round,
   },
   content: {
     flex: 1,
@@ -194,13 +201,13 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 80,
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: typography.size.display,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   subtitle: {
     fontSize: typography.size.lg,
@@ -208,13 +215,13 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   button: {
-    marginTop: 48,
+    marginTop: spacing.xxxl,
   },
   buttonInner: {
     backgroundColor: colors.interactive.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 48,
-    borderRadius: 6,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxxl,
+    borderRadius: layout.borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
