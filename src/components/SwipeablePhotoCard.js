@@ -113,7 +113,11 @@ const SwipeablePhotoCard = forwardRef(
             onPress={onTagPress}
             activeOpacity={0.7}
           >
-            <PixelIcon name="add" size={20} color={colors.icon.primary} />
+            <PixelIcon
+              name={hasTagged ? 'people-outline' : 'person-add-outline'}
+              size={20}
+              color={colors.icon.primary}
+            />
             {hasTagged && <View style={styles.tagOverlayBadge} />}
           </TouchableOpacity>
         )}
