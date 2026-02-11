@@ -162,6 +162,18 @@ Plans:
 - [x] 47-02: Service File Instrumentation
 - [x] 47-03: Screen Traces & Build Verification
 
+#### Phase 47.1: Comment @-Tagging for Mutual Friends (INSERTED)
+
+**Goal**: Add Instagram-style @-mention tagging in comments — users can @ mutual friends (friends of both the commenter and the photo owner) with autocomplete suggestions, linked mentions, and notification integration. Builds on existing comment reply architecture.
+**Depends on**: Phase 47
+**Research**: Unlikely (extending existing comment system — reviewing current reply/mention patterns)
+**Plans**: 2
+
+Plans:
+
+- [ ] 47.1-01: Cloud Function Backend (mutual friends + reply @mention notifications)
+- [ ] 47.1-02: Autocomplete UI + Integration (service, hook, overlay, input, wiring)
+
 #### Phase 48: UI/UX Consistency Audit
 
 **Goal**: Review all screens for visual and interaction consistency — spacing, colors, typography, component patterns, navigation flows, gesture patterns, loading/error states, feedback patterns
@@ -244,6 +256,7 @@ Plans:
 | 46.1 Other Users Albums Fix    | v1.0.0    | 1/1   | Complete    | 2026-02-10 |
 | 46.2 Album Viewer Nav Optimism | v1.0.0    | 1/1   | Complete    | 2026-02-11 |
 | 47. Firebase Perf Monitoring   | v1.0.0    | 3/3   | Complete    | 2026-02-11 |
+| 47.1 Comment @-Tagging         | v1.0.0    | 0/?   | Not started | -          |
 | 48. UI/UX Consistency Audit    | v1.0.0    | 0/?   | Not started | -          |
 | 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |
 | 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
