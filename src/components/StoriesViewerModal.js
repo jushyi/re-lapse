@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 
@@ -48,6 +49,10 @@ const StoriesViewerModal = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
+  // Screen load trace - measures time from mount to stories data ready
+  const { markLoaded } = useScreenTrace('StoriesViewer');
+  const screenTraceMarkedRef = useRef(false);
+
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -77,6 +82,12 @@ const StoriesViewerModal = ({
       setCurrentIndex(validIndex);
       translateY.setValue(0);
       opacity.setValue(1);
+
+      // Mark screen trace as loaded after stories data is ready (once only)
+      if (!screenTraceMarkedRef.current) {
+        screenTraceMarkedRef.current = true;
+        markLoaded({ story_count: topPhotos.length });
+      }
     }
   }, [visible, friend?.userId, topPhotos.length, initialIndex, onClose]);
 

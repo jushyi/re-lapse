@@ -38,6 +38,7 @@ import {
 } from '../services/firebase/feedService';
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import { useAuth } from '../context/AuthContext';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import logger from '../utils/logger';
@@ -74,6 +75,10 @@ const FeedScreen = () => {
   // Shimmer animation for skeleton
   const shimmerPosition = useRef(new Animated.Value(-SHIMMER_WIDTH)).current;
   const shimmerAnimation = useRef(null);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('FeedScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   const {
     photos,
@@ -176,6 +181,14 @@ const FeedScreen = () => {
       loadMyStories();
     }
   }, [user?.uid]);
+
+  // Mark screen trace as loaded after initial feed data loads (once only)
+  useEffect(() => {
+    if (!loading && !screenTraceMarkedRef.current) {
+      screenTraceMarkedRef.current = true;
+      markLoaded({ photo_count: photos.length });
+    }
+  }, [loading]);
 
   /**
    * Fade-in animation when loading completes

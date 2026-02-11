@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
 import {
@@ -46,6 +47,10 @@ const NotificationsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('NotificationsScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   // Check if push notifications are enabled (fcmToken exists)
   const hasPushToken = !!userProfile?.fcmToken;
@@ -123,6 +128,12 @@ const NotificationsScreen = () => {
 
       logger.info('NotificationsScreen: Loaded notifications', { count: notificationsList.length });
       setNotifications(notificationsList);
+
+      // Mark screen trace as loaded after first notification fetch (once only)
+      if (!screenTraceMarkedRef.current) {
+        screenTraceMarkedRef.current = true;
+        markLoaded({ notif_count: notificationsList.length });
+      }
     } catch (error) {
       logger.error('NotificationsScreen: Failed to fetch notifications', { error: error.message });
     } finally {

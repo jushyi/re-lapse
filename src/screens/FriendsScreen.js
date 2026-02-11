@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -50,6 +50,7 @@ import {
   getBlockedUserIds,
 } from '../services/firebase/blockService';
 import { mediumImpact } from '../utils/haptics';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendsScreen.styles';
 import logger from '../utils/logger';
@@ -67,6 +68,11 @@ const db = getFirestore();
  */
 const FriendsScreen = ({ navigation }) => {
   const { user, userProfile } = useAuth();
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('FriendsScreen');
+  const screenTraceMarkedRef = useRef(false);
+
   const [activeTab, setActiveTab] = useState('requests');
 
   // Friends tab state
@@ -300,6 +306,14 @@ const FriendsScreen = ({ navigation }) => {
 
     return () => unsubscribe();
   }, [user.uid]);
+
+  // Mark screen trace as loaded after initial data load (once only)
+  useEffect(() => {
+    if (!loading && !screenTraceMarkedRef.current) {
+      screenTraceMarkedRef.current = true;
+      markLoaded({ friend_count: friends.length });
+    }
+  }, [loading, friends.length]);
 
   useEffect(() => {
     if (!friendsSearchQuery.trim()) {

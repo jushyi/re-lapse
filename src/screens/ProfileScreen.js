@@ -31,6 +31,7 @@ import {
   isBlocked,
 } from '../services/firebase';
 import { typography } from '../constants/typography';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -83,6 +84,10 @@ const ProfileScreen = () => {
   // Track if initial data fetch is done (to avoid re-fetching on focus for other user profiles)
   const initialFetchDoneRef = useRef(false);
   const albumsFetchedRef = useRef(false);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('ProfileScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -308,6 +313,16 @@ const ProfileScreen = () => {
   // Resolve profile data based on own vs other user
   const profileData = isOwnProfile ? userProfile : otherUserProfile;
   const isFriend = friendshipStatus === 'friends';
+
+  // Mark screen trace as loaded after profile data is ready (once only)
+  useEffect(() => {
+    if (screenTraceMarkedRef.current) return;
+    const dataReady = isOwnProfile ? !!userProfile : !otherUserLoading && !!otherUserProfile;
+    if (dataReady) {
+      screenTraceMarkedRef.current = true;
+      markLoaded();
+    }
+  }, [isOwnProfile, userProfile, otherUserLoading, otherUserProfile]);
 
   const handleBackPress = () => {
     logger.info('ProfileScreen: Back button pressed');
