@@ -2083,6 +2083,123 @@ exports.getMutualFriendSuggestions = onCall(
 );
 
 /**
+ * Cloud Function: Get mutual friends between the caller and a photo owner
+ * Returns the intersection of both users' accepted friend lists, plus the photo owner.
+ * Used by the @-mention autocomplete UI to show taggable users in comments.
+ *
+ * Input: { photoOwnerId: string }
+ * Output: { mutualFriends: [{ userId, username, displayName, profilePhotoURL }] }
+ */
+exports.getMutualFriendsForComments = onCall(
+  { memory: '512MiB', timeoutSeconds: 60 },
+  async request => {
+    const callerId = request.auth?.uid;
+
+    if (!callerId) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { photoOwnerId } = request.data || {};
+
+    if (!photoOwnerId || typeof photoOwnerId !== 'string') {
+      throw new HttpsError('invalid-argument', 'photoOwnerId is required and must be a string');
+    }
+
+    try {
+      // Step 1: Get caller's accepted friendships AND photo owner's accepted friendships in parallel
+      const [callerSnap1, callerSnap2, ownerSnap1, ownerSnap2] = await Promise.all([
+        db.collection('friendships').where('user1Id', '==', callerId).get(),
+        db.collection('friendships').where('user2Id', '==', callerId).get(),
+        db.collection('friendships').where('user1Id', '==', photoOwnerId).get(),
+        db.collection('friendships').where('user2Id', '==', photoOwnerId).get(),
+      ]);
+
+      // Step 2: Build caller's friend set (accepted only)
+      const callerFriendIds = new Set();
+      const extractFriends = (docs, userId, targetSet) => {
+        docs.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.status === 'accepted') {
+            const otherId = data.user1Id === userId ? data.user2Id : data.user1Id;
+            targetSet.add(otherId);
+          }
+        });
+      };
+
+      extractFriends(callerSnap1.docs, callerId, callerFriendIds);
+      extractFriends(callerSnap2.docs, callerId, callerFriendIds);
+
+      // Step 3: Build photo owner's friend set (accepted only)
+      const ownerFriendIds = new Set();
+      extractFriends(ownerSnap1.docs, photoOwnerId, ownerFriendIds);
+      extractFriends(ownerSnap2.docs, photoOwnerId, ownerFriendIds);
+
+      // Step 4: Compute intersection (friends in common)
+      const mutualIds = new Set();
+      for (const id of callerFriendIds) {
+        if (ownerFriendIds.has(id)) {
+          mutualIds.add(id);
+        }
+      }
+
+      // Always include the photo owner as a valid tag target
+      mutualIds.add(photoOwnerId);
+
+      // Remove the caller from the result (don't tag yourself)
+      mutualIds.delete(callerId);
+
+      // Step 5: Cap at 50 mutual friends
+      const mutualIdsArray = Array.from(mutualIds).slice(0, 50);
+
+      if (mutualIdsArray.length === 0) {
+        return { mutualFriends: [] };
+      }
+
+      // Step 6: Fetch user profiles in parallel
+      const profileFetches = mutualIdsArray.map(async userId => {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) return null;
+
+        const userData = userDoc.data();
+        return {
+          userId,
+          username: userData.username || null,
+          displayName: userData.displayName || null,
+          profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+        };
+      });
+      const profiles = await Promise.all(profileFetches);
+
+      // Step 7: Filter nulls and sort alphabetically by displayName
+      const mutualFriends = profiles
+        .filter(p => p !== null)
+        .sort((a, b) => {
+          const nameA = (a.displayName || '').toLowerCase();
+          const nameB = (b.displayName || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+      logger.info('getMutualFriendsForComments: Complete', {
+        callerId,
+        photoOwnerId,
+        callerFriendCount: callerFriendIds.size,
+        ownerFriendCount: ownerFriendIds.size,
+        mutualCount: mutualFriends.length,
+      });
+
+      return { mutualFriends };
+    } catch (error) {
+      logger.error('getMutualFriendsForComments: Failed', {
+        callerId,
+        photoOwnerId,
+        error: error.message,
+      });
+      throw new HttpsError('internal', 'Failed to get mutual friends for comments');
+    }
+  }
+);
+
+/**
  * Schedule user account for deletion after 30-day grace period
  * Sets scheduledForDeletionAt to 30 days from now
  * User is logged out after scheduling - if they log back in, they can cancel
