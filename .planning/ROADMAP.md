@@ -193,15 +193,21 @@ Plans:
 
 #### Phase 49: Automated Test Suite
 
-**Goal**: Jest unit tests for business logic + Detox E2E tests for critical user flows (auth, camera, feed, social) — regression guards for future development
+**Goal**: Jest unit tests for business logic + Maestro E2E tests for critical user flows (auth, camera, feed, social) — regression guards for future development
 **Depends on**: Phase 48
-**Research**: Likely (Detox E2E framework likely new to project)
-**Research topics**: Detox setup with Expo/React Native, Jest configuration for React Native, test structure patterns
-**Plans**: TBD
+**Research**: Complete (49-RESEARCH.md — Maestro over Detox, RNTL v13 for hooks, firebase-functions-test for Cloud Functions)
+**Plans**: 8
 
 Plans:
 
-- [ ] 49-01: TBD
+- [ ] 49-01: Test Infrastructure & Utility Tests
+- [ ] 49-02: Service Tests — Social Layer (comments, mentions, blocks, reports)
+- [ ] 49-03: Service Tests — Content & Account Layer (albums, users, accounts, notifications)
+- [ ] 49-04: Hook Tests (mentions, comments, feed, darkroom)
+- [ ] 49-05: Cloud Functions Test Infrastructure & Notification Tests
+- [ ] 49-06: Cloud Functions Trigger & Callable Tests
+- [ ] 49-07: Maestro E2E Setup & Auth Flow
+- [ ] 49-08: Maestro E2E Critical Flows & Final Verification
 
 #### Phase 50: CI/CD Pipeline
 
