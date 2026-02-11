@@ -126,6 +126,17 @@ Plans:
 - [x] 46-06: Cloud Functions Performance
 - [x] 46-07: Verification & Documentation
 
+#### Phase 46.1: Other Users Albums View Fix (INSERTED)
+
+**Goal**: Fix bug where viewing other users' albums doesn't work
+**Depends on**: Phase 46
+**Research**: Unlikely (bug fix — investigating existing code)
+**Plans**: 1
+
+Plans:
+
+- [x] 46.1-01: Diagnose and fix other-user album viewing regression
+
 #### Phase 47: Firebase Performance Monitoring
 
 **Goal**: Integrate Firebase Performance Monitoring SDK for ongoing production metrics — network traces, custom traces, screen rendering performance, baseline establishment
@@ -217,6 +228,7 @@ Plans:
 | v1.6 (Phases 1-31)             | v1.6      | 108   | Complete    | 2026-02-06 |
 | v0.9.0 (Phases 32-45)          | v0.9.0    | 30    | Complete    | 2026-02-10 |
 | 46. Performance Optimization   | v1.0.0    | 7/7   | Complete    | 2026-02-10 |
+| 46.1 Other Users Albums Fix    | v1.0.0    | 1/1   | Complete    | 2026-02-10 |
 | 47. Firebase Perf Monitoring   | v1.0.0    | 0/?   | Not started | -          |
 | 48. UI/UX Consistency Audit    | v1.0.0    | 0/?   | Not started | -          |
 | 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |

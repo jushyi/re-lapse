@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 46 of 53 (Performance Optimization)
-Plan: 7 of 7 in current phase
+Phase: 46.1 of 53 (Other Users Albums View Fix)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-10 — Completed 46-07-PLAN.md
+Last activity: 2026-02-10 — Completed 46.1-01-PLAN.md
 
-Progress: ███████░░░ 7/7
+Progress: ████████░░ 8/8 (Phase 46 + 46.1)
 
 ## Performance Metrics
 
@@ -42,6 +42,10 @@ Progress: ███████░░░ 7/7
 
 See PROJECT.md Key Decisions table for full history.
 
+| Phase | Decision                                         | Rationale                                                       |
+| ----- | ------------------------------------------------ | --------------------------------------------------------------- |
+| 46.1  | OtherUserProfile card instead of fullScreenModal | fullScreenModal prevents child card screens from pushing on iOS |
+
 ### Deferred Issues
 
 ISS-012: Friends screen N+1 query pattern causes slow initial load
@@ -57,9 +61,10 @@ None.
 - Milestone v1.6 shipped: Auth & Profile Refactor, 31 phases (Phase 1-31)
 - Milestone v0.9.0 shipped: Engagement & Polish, 14 phases (Phase 32-45)
 - Milestone v1.0.0 created: Release Readiness, 8 phases (Phase 46-53)
+- Phase 46.1 inserted after Phase 46: Other Users Albums View Fix (URGENT)
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 46-07-PLAN.md — Phase 46 complete
+Stopped at: Completed 46.1-01-PLAN.md — Phase 46.1 complete
 Resume file: None
