@@ -142,26 +142,51 @@ const useMentionSuggestions = (photoOwnerId, currentUserId) => {
    */
   const selectSuggestion = useCallback(
     (user, fullText, cursorPosition) => {
-      const activeMention = findActiveMention(fullText, cursorPosition);
-
-      if (!activeMention) {
-        logger.warn('useMentionSuggestions.selectSuggestion: No active mention found');
-        return { newText: fullText, newCursorPosition: cursorPosition };
-      }
-
-      const { atIndex } = activeMention;
       const username = user.username || user.displayName || 'user';
       const replacement = `@${username} `;
 
-      // Build new text: text before @ + replacement + text after cursor
+      // Use queryText (hook state) to find the exact @mention being typed.
+      // This avoids depending on potentially stale cursor position.
+      const searchPattern = `@${queryText}`;
+      let atIndex = -1;
+      let matchEnd = -1;
+
+      // Search from end of text to find the most recent matching @mention
+      const lastIndex = fullText.lastIndexOf(searchPattern);
+      if (lastIndex !== -1) {
+        // Validate: @ must be at start of text or preceded by space/newline
+        if (
+          lastIndex === 0 ||
+          fullText[lastIndex - 1] === ' ' ||
+          fullText[lastIndex - 1] === '\n'
+        ) {
+          atIndex = lastIndex;
+          matchEnd = lastIndex + searchPattern.length;
+        }
+      }
+
+      // Fallback to cursor-based approach if queryText search fails
+      if (atIndex === -1) {
+        const activeMention = findActiveMention(fullText, cursorPosition);
+        if (!activeMention) {
+          logger.warn('useMentionSuggestions.selectSuggestion: No active mention found');
+          return { newText: fullText, newCursorPosition: cursorPosition };
+        }
+        atIndex = activeMention.atIndex;
+        matchEnd = cursorPosition; // Original behavior as fallback
+      }
+
+      // Build new text: text before @ + replacement + text after the matched query
       const textBefore = fullText.slice(0, atIndex);
-      const textAfter = fullText.slice(cursorPosition);
+      const textAfter = fullText.slice(matchEnd);
       const newText = textBefore + replacement + textAfter;
       const newCursorPosition = atIndex + replacement.length;
 
       logger.info('useMentionSuggestions.selectSuggestion: Inserted mention', {
         username,
         atIndex,
+        matchEnd,
+        usedQueryText: true,
       });
 
       setShowSuggestions(false);
@@ -170,7 +195,7 @@ const useMentionSuggestions = (photoOwnerId, currentUserId) => {
 
       return { newText, newCursorPosition };
     },
-    [findActiveMention]
+    [findActiveMention, queryText]
   );
 
   /**
