@@ -20,6 +20,7 @@ export {
   handleNotificationTapped,
   checkNotificationPermissions,
   scheduleTestNotification,
+  markNotificationPermissionCompleted,
 } from './notificationService';
 
 export {

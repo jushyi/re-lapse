@@ -418,6 +418,36 @@ export const scheduleTestNotification = async (title, body, seconds = 5) => {
 };
 
 /**
+ * Mark notification permission onboarding step as completed
+ * @param {string} userId - User ID
+ * @param {boolean} completed - Whether step is completed (default: true)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const markNotificationPermissionCompleted = async (userId, completed = true) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    logger.debug('notificationService.markNotificationPermissionCompleted', {
+      userId,
+      completed,
+    });
+
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      notificationPermissionCompleted: completed,
+    });
+
+    logger.info('notificationService.markNotificationPermissionCompleted: Success');
+    return { success: true };
+  } catch (error) {
+    logger.error('notificationService.markNotificationPermissionCompleted: Error', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Mark all unread notifications as read for a user
  * @param {string} userId - User ID whose notifications to mark as read
  * @returns {Promise<{success: boolean, count?: number, error?: string}>}

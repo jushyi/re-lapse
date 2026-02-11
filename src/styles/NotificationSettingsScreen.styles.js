@@ -87,4 +87,44 @@ export const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 0,
   },
+  permissionBanner: {
+    backgroundColor: colors.background.secondary,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 4,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.status.danger,
+  },
+  permissionBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  permissionBannerText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  permissionBannerTitle: {
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
+  },
+  permissionBannerSubtitle: {
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.secondary,
+    marginTop: 4,
+  },
+  permissionBannerButton: {
+    backgroundColor: colors.brand.purple,
+    paddingVertical: 10,
+    borderRadius: 4,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  permissionBannerButtonText: {
+    color: colors.text.primary,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
+  },
 });

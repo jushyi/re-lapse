@@ -91,19 +91,17 @@ const ContactsSyncScreen = ({ navigation }) => {
     }
   };
 
-  // Marks sync as completed (even though skipped) so auth listener transitions to main app
   const handleSkip = async () => {
     mediumImpact();
-    // Mark as completed with false to indicate skipped (but still done with this step)
     await markContactsSyncCompleted(user.uid, true);
     await refreshUserProfile();
-    // Navigation will auto-transition via auth state listener
+    navigation.navigate('NotificationPermission');
   };
 
   const handleContinue = async () => {
     mediumImpact();
     await refreshUserProfile();
-    // Navigation will auto-transition via auth state listener
+    navigation.navigate('NotificationPermission');
   };
 
   const renderInitialState = () => (

@@ -17,11 +17,6 @@ import { Button, Input, StepIndicator, ProfileSongCard } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto } from '../services/firebase/storageService';
 import {
-  requestNotificationPermission,
-  getNotificationToken,
-  storeNotificationToken,
-} from '../services/firebase/notificationService';
-import {
   validateLength,
   validateUsername,
   sanitizeDisplayName,
@@ -264,32 +259,6 @@ const ProfileSetupScreen = ({ navigation, route }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const requestNotificationPermissionsAsync = async () => {
-    try {
-      // Request notification permission
-      const permissionResult = await requestNotificationPermission();
-
-      if (permissionResult.success) {
-        // Get FCM token
-        const tokenResult = await getNotificationToken();
-
-        if (tokenResult.success && tokenResult.data) {
-          // Store token in user document
-          await storeNotificationToken(user.uid, tokenResult.data);
-          logger.info('Notification permissions granted and token stored');
-        } else {
-          logger.warn('Could not get notification token', { error: tokenResult.error });
-        }
-      } else {
-        logger.info('Notification permission denied', { error: permissionResult.error });
-        // Don't show error to user - notifications are optional
-      }
-    } catch (error) {
-      logger.error('Error requesting notification permissions', error);
-      // Don't block user flow - continue even if notifications fail
-    }
-  };
-
   const handleNextStep = async () => {
     if (!validate()) {
       Alert.alert('Required Fields', 'Please fill in all required fields before continuing.');
@@ -338,10 +307,6 @@ const ProfileSetupScreen = ({ navigation, route }) => {
           ...userProfile,
           ...updateData,
         });
-
-        // Request notification permissions after profile setup
-        // This runs in background, doesn't block navigation
-        requestNotificationPermissionsAsync();
 
         // Navigate to Selects screen (now in same Onboarding stack)
         navigation.navigate('Selects');

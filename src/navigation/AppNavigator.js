@@ -20,6 +20,7 @@ import VerificationScreen from '../screens/VerificationScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import SelectsScreen from '../screens/SelectsScreen';
 import ContactsSyncScreen from '../screens/ContactsSyncScreen';
+import NotificationPermissionScreen from '../screens/NotificationPermissionScreen';
 
 // Import main app screens
 import FeedScreen from '../screens/FeedScreen';
@@ -71,6 +72,7 @@ const OnboardingStackNavigator = ({ initialRouteName }) => {
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Selects" component={SelectsScreen} />
       <Stack.Screen name="ContactsSync" component={ContactsSyncScreen} />
+      <Stack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
       <Stack.Screen
         name="SongSearch"
         component={SongSearchScreen}
@@ -394,12 +396,26 @@ const AppNavigator = () => {
     userProfile.selectsCompleted === true &&
     userProfile.contactsSyncCompleted === undefined;
 
-  // Determine if user needs onboarding (profile setup, selects, or contacts sync)
-  const needsOnboarding = needsProfileSetup || needsSelects || needsContactsSync;
+  // Show NotificationPermission if user completed contacts sync but hasn't been prompted for notifications
+  // Skip for existing users who already have a push token registered
+  const needsNotificationPermission =
+    isAuthenticated &&
+    userProfile &&
+    userProfile.profileSetupCompleted === true &&
+    userProfile.selectsCompleted === true &&
+    userProfile.contactsSyncCompleted !== undefined &&
+    userProfile.notificationPermissionCompleted !== true &&
+    !userProfile.fcmToken;
 
-  // Start at appropriate screen
+  // Determine if user needs onboarding (profile setup, selects, contacts sync, or notification permission)
+  const needsOnboarding =
+    needsProfileSetup || needsSelects || needsContactsSync || needsNotificationPermission;
+
+  // Start at appropriate screen (furthest progress first)
   let onboardingInitialRoute = 'ProfileSetup';
-  if (needsContactsSync) {
+  if (needsNotificationPermission) {
+    onboardingInitialRoute = 'NotificationPermission';
+  } else if (needsContactsSync) {
     onboardingInitialRoute = 'ContactsSync';
   } else if (needsSelects) {
     onboardingInitialRoute = 'Selects';
