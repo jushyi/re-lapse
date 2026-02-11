@@ -28,6 +28,7 @@ import * as Haptics from 'expo-haptics';
 import CommentWithReplies from './CommentWithReplies';
 import CommentInput from './CommentInput';
 import useComments from '../../hooks/useComments';
+import useMentionSuggestions from '../../hooks/useMentionSuggestions';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
 import {
@@ -205,6 +206,11 @@ const CommentsBottomSheet = ({
     isLikedByUser,
   } = useComments(photoId, currentUserId, photoOwnerId);
 
+  // @-mention autocomplete state
+  const mentionSuggestions = useMentionSuggestions(photoOwnerId, currentUserId);
+  const latestTextRef = useRef('');
+  const latestCursorRef = useRef(0);
+
   // Track which reply sections to auto-expand for @mention navigation
   const [expandedReplyParents, setExpandedReplyParents] = useState({});
 
@@ -277,6 +283,9 @@ const CommentsBottomSheet = ({
         isReply: !!replyingTo,
       });
 
+      // Dismiss mention suggestions on submit
+      mentionSuggestions.dismissSuggestions();
+
       const result = await addComment(text, mediaUrl, mediaType);
 
       if (result.success) {
@@ -299,7 +308,7 @@ const CommentsBottomSheet = ({
         });
       }
     },
-    [photoId, replyingTo, addComment, onCommentAdded]
+    [photoId, replyingTo, addComment, onCommentAdded, mentionSuggestions]
   );
 
   const handleReply = useCallback(
@@ -346,6 +355,94 @@ const CommentsBottomSheet = ({
   );
 
   /**
+   * Handle text changes from CommentInput for @-mention detection.
+   */
+  const handleTextChangeForMentions = useCallback(
+    (text, cursorPosition) => {
+      latestTextRef.current = text;
+      latestCursorRef.current = cursorPosition;
+      mentionSuggestions.handleTextChange(text, cursorPosition);
+    },
+    [mentionSuggestions]
+  );
+
+  /**
+   * Handle mention suggestion selection.
+   * Replaces @query with @username in the input text.
+   */
+  const handleMentionSelect = useCallback(
+    user => {
+      const { newText } = mentionSuggestions.selectSuggestion(
+        user,
+        latestTextRef.current,
+        latestCursorRef.current
+      );
+      inputRef.current?.setText(newText);
+      inputRef.current?.focus();
+    },
+    [mentionSuggestions]
+  );
+
+  /**
+   * Handle @mention profile press - navigate to user profile for non-reply mentions.
+   * Searches comments and mutual friends for the username, then navigates.
+   */
+  const handleMentionProfilePress = useCallback(
+    username => {
+      logger.info('CommentsBottomSheet: @mention profile press', { username });
+
+      if (!username) return;
+
+      const lowerUsername = username.toLowerCase();
+
+      // Search comments for a user with this username
+      for (let i = 0; i < threadedComments.length; i++) {
+        const comment = threadedComments[i];
+        const commentUsername = (comment.user?.username || '').toLowerCase();
+        const commentDisplayName = (comment.user?.displayName || '').toLowerCase();
+
+        if (commentUsername === lowerUsername || commentDisplayName === lowerUsername) {
+          if (comment.userId !== currentUserId && onAvatarPress) {
+            onAvatarPress(comment.userId, comment.user?.displayName);
+            return;
+          }
+        }
+
+        // Search replies
+        if (comment.replies) {
+          for (const reply of comment.replies) {
+            const replyUsername = (reply.user?.username || '').toLowerCase();
+            const replyDisplayName = (reply.user?.displayName || '').toLowerCase();
+
+            if (replyUsername === lowerUsername || replyDisplayName === lowerUsername) {
+              if (reply.userId !== currentUserId && onAvatarPress) {
+                onAvatarPress(reply.userId, reply.user?.displayName);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Search mutual friends list
+      for (const friend of mentionSuggestions.allMutualFriends) {
+        const friendUsername = (friend.username || '').toLowerCase();
+        const friendDisplayName = (friend.displayName || '').toLowerCase();
+
+        if (friendUsername === lowerUsername || friendDisplayName === lowerUsername) {
+          if (friend.userId !== currentUserId && onAvatarPress) {
+            onAvatarPress(friend.userId, friend.displayName);
+            return;
+          }
+        }
+      }
+
+      logger.debug('CommentsBottomSheet: @mention user not found for profile', { username });
+    },
+    [threadedComments, currentUserId, onAvatarPress, mentionSuggestions.allMutualFriends]
+  );
+
+  /**
    * Handle @mention press - scroll to referenced comment.
    * Finds the comment in threadedComments, scrolls to it, and highlights it.
    */
@@ -356,9 +453,10 @@ const CommentsBottomSheet = ({
         mentionedCommentId,
       });
 
-      // If no mentionedCommentId, this is a manually typed @mention - silent no-op
+      // If no mentionedCommentId, this is a manually typed @mention - navigate to profile
       if (!mentionedCommentId) {
-        logger.debug('CommentsBottomSheet: No mentionedCommentId, skipping scroll');
+        logger.debug('CommentsBottomSheet: No mentionedCommentId, navigating to profile');
+        handleMentionProfilePress(username);
         return;
       }
 
@@ -445,7 +543,7 @@ const CommentsBottomSheet = ({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [threadedComments, currentUserId, highlightComment]
+    [threadedComments, currentUserId, highlightComment, handleMentionProfilePress]
   );
 
   /**
@@ -689,9 +787,17 @@ const CommentsBottomSheet = ({
                   logger.debug('CommentsBottomSheet: Image picker');
                 }}
                 replyingTo={replyingTo}
-                onCancelReply={cancelReply}
+                onCancelReply={() => {
+                  cancelReply();
+                  mentionSuggestions.dismissSuggestions();
+                }}
                 initialMention={initialMention}
                 placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                mentionSuggestions={mentionSuggestions.filteredSuggestions}
+                showMentionSuggestions={mentionSuggestions.showSuggestions}
+                mentionSuggestionsLoading={mentionSuggestions.loading}
+                onTextChangeForMentions={handleTextChangeForMentions}
+                onMentionSelect={handleMentionSelect}
               />
             </View>
           </Animated.View>
