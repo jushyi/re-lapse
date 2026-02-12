@@ -16,11 +16,8 @@
 const {
   createTestUser,
   createTestPhoto,
-  createRevealedPhoto,
   createJournaledPhoto,
-  createArchivedPhoto,
   createTestDarkroom,
-  createReadyDarkroom,
   createTimestamp,
 } = require('../setup/testFactories');
 
@@ -86,8 +83,6 @@ jest.mock('@react-native-firebase/firestore', () => ({
 // Import services AFTER mocks are set up
 const {
   createPhoto,
-  getUserPhotos,
-  getDevelopingPhotos,
   revealPhotos,
   triagePhoto,
   batchTriagePhotos,

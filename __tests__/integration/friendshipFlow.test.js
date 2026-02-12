@@ -80,10 +80,8 @@ const {
   declineFriendRequest,
   removeFriend,
   getFriendships,
-  getPendingRequests,
   getSentRequests,
   checkFriendshipStatus,
-  getFriendUserIds,
 } = require('../../src/services/firebase/friendshipService');
 
 const { getFeedPhotos } = require('../../src/services/firebase/feedService');
@@ -327,7 +325,7 @@ describe('Friendship Flow Integration Tests', () => {
       // Arrange
       const userA = 'user-a';
       const userB = 'user-b';
-      const friendshipId = generateFriendshipId(userA, userB);
+      generateFriendshipId(userA, userB);
       const acceptedFriendship = createTestFriendship({
         user1Id: userA,
         user2Id: userB,
