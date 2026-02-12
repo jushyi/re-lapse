@@ -184,12 +184,23 @@ Plans:
 Plans:
 
 - [x] 48-01: Auth Flow Screens (audit & fix auth/onboarding screens)
-- [ ] 48-02: Settings & Account Screens (audit & fix settings/account screens)
+- [x] 48-02: Settings & Account Screens (audit & fix settings/account screens)
 - [ ] 48-03: Social & Friends Screens (audit & fix social screens & components)
 - [ ] 48-04: FriendsScreen N+1 Query Fix — ISS-012 (batch user fetching, optimize subscriptions)
 - [ ] 48-05: Albums, Photos & Selects (audit & fix album screens & components)
 - [ ] 48-06: Feed, Camera & Core (audit & fix core screens & components)
 - [ ] 48-07: Profile, Notifications & Shared Components (audit & fix remaining screens & all shared components)
+
+#### Phase 48.1: PhotoDetail Profile Navigation Fix — ISS-014 (INSERTED)
+
+**Goal**: Fix regression where navigating to OtherUserProfile from PhotoDetail renders the profile behind the transparentModal. OtherUserProfile uses `presentation: 'card'` (changed from `fullScreenModal` in Phase 46.1 to allow child card screens on iOS), but PhotoDetail uses `presentation: 'transparentModal'` which renders on a higher native layer. All profile navigation from PhotoDetail/comments is blocked.
+**Depends on**: Phase 48
+**Research**: Unlikely (bug fix — investigating presentation mode alternatives)
+**Plans**: 1
+
+Plans:
+
+- [ ] 48.1-01: Fix profile navigation z-order from PhotoDetail/comments views
 
 #### Phase 49: Automated Test Suite
 
@@ -269,7 +280,8 @@ Plans:
 | 46.2 Album Viewer Nav Optimism | v1.0.0    | 1/1   | Complete    | 2026-02-11 |
 | 47. Firebase Perf Monitoring   | v1.0.0    | 3/3   | Complete    | 2026-02-11 |
 | 47.1 Comment @-Tagging         | v1.0.0    | 2/2   | Complete    | 2026-02-11 |
-| 48. UI/UX Consistency Audit    | v1.0.0    | 1/7   | In progress | -          |
+| 48. UI/UX Consistency Audit    | v1.0.0    | 2/7   | In progress | -          |
+| 48.1 PhotoDetail Profile Nav   | v1.0.0    | 0/1   | Not started | -          |
 | 49. Automated Test Suite       | v1.0.0    | 0/?   | Not started | -          |
 | 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
 | 51. iOS Release Preparation    | v1.0.0    | 0/?   | Not started | -          |

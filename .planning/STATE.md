@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 48 of 53 (UI/UX Consistency Audit)
-Plan: 1 of 7 in current phase
-Status: Plan complete
-Last activity: 2026-02-11 — Completed 48-01-PLAN.md
+Plan: 2 of 7 in current phase
+Status: In progress
+Last activity: 2026-02-12 — Completed 48-02-PLAN.md
 
 Progress: █████░░░░░░ 5/11 (v1.0.0 phases)
 
@@ -52,10 +52,12 @@ See PROJECT.md Key Decisions table for full history.
 | 48    | Callback pattern for SongSearch navigation                | Preserves source screen local state; matches ProfilePhotoCrop    |
 | 48    | Edge masks for directional overflow clipping              | RN lacks overflow-x/y; opaque masks clip H while allowing V      |
 | 47.1  | requestAnimationFrame for Text.onPress navigation         | Text.onPress vs TouchableOpacity.onPress differ in Animated.View |
+| 48    | Modal screens skip paddingTop: insets.top                 | presentation: 'modal' already offsets from status bar on iOS     |
 
 ### Deferred Issues
 
 ISS-012: Friends screen N+1 query pattern causes slow initial load
+ISS-014: Profile navigation from PhotoDetail renders behind transparentModal → Phase 48.1
 
 **Closed:** ISS-001, ISS-002, ISS-003, ISS-004, ISS-005, ISS-006, ISS-007, ISS-008, ISS-011, ISS-013
 
@@ -71,9 +73,10 @@ None.
 - Phase 46.1 inserted after Phase 46: Other Users Albums View Fix (URGENT)
 - Phase 46.2 inserted after Phase 46: Album Viewer Nav Bar Optimistic Updates (URGENT)
 - Phase 47.1 inserted after Phase 47: Comment @-Tagging for Mutual Friends (URGENT)
+- Phase 48.1 inserted after Phase 48: PhotoDetail Profile Navigation Fix — ISS-014 (URGENT)
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Completed 47.1-02-FIX2 (Reply Autocomplete Fix) — Phase 48 in progress
+Last session: 2026-02-12
+Stopped at: Completed 48-02-PLAN.md (Settings & Account Screens Audit)
 Resume file: None
