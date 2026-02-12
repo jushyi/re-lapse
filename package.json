@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,json}\" \"*.{js,json}\"",
-    "test": "jest",
+    "test": "jest && cd functions && npx jest",
     "test:watch": "jest --watchAll",
     "test:coverage": "jest --coverage"
   },
