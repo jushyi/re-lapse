@@ -7,10 +7,11 @@
  * - Heart icon on right for likes
  * - Support for media comments (thumbnail)
  * - Author badge for photo owner's comments
- * - Long-press to delete when canDelete
+ * - Swipe left to delete when canDelete
  */
 import React, { useCallback, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +37,7 @@ import MentionText from './MentionText';
  * @param {boolean} isTopLevel - Whether this is a top-level comment (shows Reply button)
  * @param {function} onMentionPress - Callback when @mention is tapped (username, mentionedCommentId)
  * @param {boolean} isHighlighted - Whether this comment is currently highlighted
+ * @param {boolean} isNewComment - Whether this comment should show entrance animation
  */
 const CommentRow = ({
   comment,
@@ -51,8 +53,10 @@ const CommentRow = ({
   isTopLevel = true,
   onMentionPress,
   isHighlighted = false,
+  isNewComment = false,
 }) => {
   const highlightAnim = useRef(new Animated.Value(0)).current;
+  const entranceAnim = useRef(new Animated.Value(0)).current;
 
   // Trigger highlight animation when isHighlighted changes
   useEffect(() => {
@@ -73,11 +77,43 @@ const CommentRow = ({
     }
   }, [isHighlighted, highlightAnim]);
 
+  // Trigger entrance animation on mount if new comment
+  useEffect(() => {
+    if (isNewComment) {
+      // Start from hidden position
+      entranceAnim.setValue(0);
+
+      // Use requestAnimationFrame to wait for layout to complete before animating
+      // This prevents jittery animation caused by simultaneous layout changes
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Animate in: slide down + fade (retro timing: 150ms)
+          Animated.timing(entranceAnim, {
+            toValue: 1,
+            duration: 150, // animations.normal - matches PixelSpinner frame rate
+            useNativeDriver: true,
+          }).start();
+        });
+      });
+    } else {
+      // Existing comments start visible (no animation)
+      entranceAnim.setValue(1);
+    }
+  }, [isNewComment, entranceAnim]);
+
   // Interpolate background color for highlight flash
   const highlightBackgroundColor = highlightAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['transparent', 'rgba(139, 92, 246, 0.2)'], // colors.brand.purple with 20% opacity
   });
+
+  // Interpolate for entrance animation
+  const entranceTranslateY = entranceAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-15, 0], // Slide down 15px (retro-style pop-in)
+  });
+
+  const entranceOpacity = entranceAnim; // Direct mapping 0→1
   logger.debug('CommentRow: Rendering', {
     commentId: comment?.id,
     hasMedia: !!comment?.mediaUrl,
@@ -123,10 +159,10 @@ const CommentRow = ({
     }
   }, [comment?.id, comment?.userId, user?.displayName, onAvatarPress, isOwnComment, isDeletedUser]);
 
-  const handleLongPress = useCallback(() => {
-    if (!canDelete) return;
+  const swipeableRef = useRef(null);
 
-    logger.info('CommentRow: Long press for delete', { commentId: comment?.id });
+  const handleDelete = useCallback(() => {
+    logger.info('CommentRow: Delete button pressed', { commentId: comment?.id });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     Alert.alert(
@@ -136,6 +172,10 @@ const CommentRow = ({
         {
           text: 'Cancel',
           style: 'cancel',
+          onPress: () => {
+            // Close the swipeable on cancel
+            swipeableRef.current?.close();
+          },
         },
         {
           text: 'Delete',
@@ -150,7 +190,35 @@ const CommentRow = ({
       ],
       { cancelable: true }
     );
-  }, [canDelete, comment, onDelete]);
+  }, [comment, onDelete]);
+
+  const renderRightActions = useCallback(
+    (progress, dragX) => {
+      if (!canDelete) return null;
+
+      const scale = dragX.interpolate({
+        inputRange: [-80, 0],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      });
+
+      const opacity = dragX.interpolate({
+        inputRange: [-80, -40, 0],
+        outputRange: [1, 0.8, 0],
+        extrapolate: 'clamp',
+      });
+
+      return (
+        <Animated.View style={{ transform: [{ scale }], opacity }}>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete} activeOpacity={0.7}>
+            <PixelIcon name="trash" size={20} color={colors.text.primary} />
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    },
+    [canDelete, handleDelete]
+  );
 
   if (!comment || !user) {
     logger.warn('CommentRow: Missing comment or user data');
@@ -164,93 +232,103 @@ const CommentRow = ({
   const initials = displayName ? displayName[0].toUpperCase() : '?';
 
   return (
-    <Animated.View style={{ backgroundColor: highlightBackgroundColor, borderRadius: 8 }}>
-      <TouchableOpacity
-        style={styles.container}
-        activeOpacity={canDelete ? 0.7 : 1}
-        onLongPress={handleLongPress}
-        delayLongPress={500}
+    <Animated.View
+      style={{
+        backgroundColor: highlightBackgroundColor,
+        borderRadius: 8,
+        opacity: entranceOpacity,
+        transform: [{ translateY: entranceTranslateY }],
+      }}
+    >
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        overshootRight={false}
+        friction={2}
+        rightThreshold={40}
       >
-        {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments and deleted users) */}
-        <TouchableOpacity
-          style={styles.profilePhotoContainer}
-          onPress={handleAvatarPress}
-          activeOpacity={isOwnComment || isDeletedUser ? 1 : 0.7}
-          disabled={isOwnComment || isDeletedUser}
-        >
-          {profilePhotoURL ? (
-            <Image
-              source={{ uri: profilePhotoURL, cacheKey: `avatar-${comment.userId}` }}
-              style={styles.profilePhoto}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-            />
-          ) : (
-            <View style={styles.profilePhotoPlaceholder}>
-              <Text style={styles.profilePhotoInitial}>{initials}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Content - Name, Text, Reply */}
-        <View style={styles.contentContainer}>
-          {/* Name Row with optional Author badge */}
-          <View style={styles.nameRow}>
-            <Text style={styles.displayName} numberOfLines={1}>
-              {displayName || 'Unknown User'}
-            </Text>
-            {isOwnerComment && (
-              <View style={styles.authorBadge}>
-                <Text style={styles.authorBadgeText}>Author</Text>
+        <View style={styles.container}>
+          {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments and deleted users) */}
+          <TouchableOpacity
+            style={styles.profilePhotoContainer}
+            onPress={handleAvatarPress}
+            activeOpacity={isOwnComment || isDeletedUser ? 1 : 0.7}
+            disabled={isOwnComment || isDeletedUser}
+          >
+            {profilePhotoURL ? (
+              <Image
+                source={{ uri: profilePhotoURL, cacheKey: `avatar-${comment.userId}` }}
+                style={styles.profilePhoto}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={0}
+              />
+            ) : (
+              <View style={styles.profilePhotoPlaceholder}>
+                <Text style={styles.profilePhotoInitial}>{initials}</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
-          {/* Comment Text - uses MentionText for @mention parsing */}
-          {text ? (
-            <MentionText
-              text={text}
-              onMentionPress={onMentionPress}
-              mentionedCommentId={comment.mentionedCommentId}
-              style={styles.commentText}
-            />
-          ) : null}
+          {/* Content - Name, Text, Reply */}
+          <View style={styles.contentContainer}>
+            {/* Name Row with optional Author badge */}
+            <View style={styles.nameRow}>
+              <Text style={styles.displayName} numberOfLines={1}>
+                {displayName || 'Unknown User'}
+              </Text>
+              {isOwnerComment && (
+                <View style={styles.authorBadge}>
+                  <Text style={styles.authorBadgeText}>Author</Text>
+                </View>
+              )}
+            </View>
 
-          {/* Media Thumbnail (if exists) */}
-          {mediaUrl && (
-            <Image
-              source={{ uri: mediaUrl, cacheKey: `comment-media-${comment.id}` }}
-              style={styles.mediaThumbnail}
-              contentFit="cover"
-              transition={200}
-            />
-          )}
+            {/* Comment Text - uses MentionText for @mention parsing */}
+            {text ? (
+              <MentionText
+                text={text}
+                onMentionPress={onMentionPress}
+                mentionedCommentId={comment.mentionedCommentId}
+                style={styles.commentText}
+              />
+            ) : null}
 
-          {/* Footer Row - Reply and Timestamp */}
-          <View style={styles.footerRow}>
-            {onReply && (
-              <>
-                <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
-                  <Text style={styles.replyButtonText}>Reply</Text>
-                </TouchableOpacity>
-                <Text style={styles.dot}>·</Text>
-              </>
+            {/* Media Thumbnail (if exists) */}
+            {mediaUrl && (
+              <Image
+                source={{ uri: mediaUrl, cacheKey: `comment-media-${comment.id}` }}
+                style={styles.mediaThumbnail}
+                contentFit="cover"
+                transition={200}
+              />
             )}
-            <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
-          </View>
-        </View>
 
-        {/* Heart Icon */}
-        <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
-          <PixelIcon
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isLiked ? colors.status.danger : colors.text.secondary}
-          />
-          {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
-        </TouchableOpacity>
-      </TouchableOpacity>
+            {/* Footer Row - Reply and Timestamp */}
+            <View style={styles.footerRow}>
+              {onReply && (
+                <>
+                  <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
+                    <Text style={styles.replyButtonText}>Reply</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.dot}>·</Text>
+                </>
+              )}
+              <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
+            </View>
+          </View>
+
+          {/* Heart Icon */}
+          <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
+            <PixelIcon
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={18}
+              color={isLiked ? colors.status.danger : colors.text.secondary}
+            />
+            {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
+          </TouchableOpacity>
+        </View>
+      </Swipeable>
     </Animated.View>
   );
 };

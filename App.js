@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
 import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/silkscreen';
@@ -235,31 +236,33 @@ export default function App() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <AuthProvider>
-              <AppNavigator />
-              <StatusBar style="auto" />
-              {showAnimatedSplash && (
-                <AnimatedSplash
-                  onAnimationComplete={handleSplashComplete}
-                  fontsLoaded={fontsLoaded}
-                />
-              )}
-            </AuthProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-        <InAppNotificationBanner
-          visible={!!bannerData}
-          title={bannerData?.title || ''}
-          body={bannerData?.body || ''}
-          avatarUrl={bannerData?.avatarUrl}
-          onPress={handleBannerPress}
-          onDismiss={() => setBannerData(null)}
-        />
-      </SafeAreaProvider>
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <ThemeProvider>
+              <AuthProvider>
+                <AppNavigator />
+                <StatusBar style="auto" />
+                {showAnimatedSplash && (
+                  <AnimatedSplash
+                    onAnimationComplete={handleSplashComplete}
+                    fontsLoaded={fontsLoaded}
+                  />
+                )}
+              </AuthProvider>
+            </ThemeProvider>
+          </ErrorBoundary>
+          <InAppNotificationBanner
+            visible={!!bannerData}
+            title={bannerData?.title || ''}
+            body={bannerData?.body || ''}
+            avatarUrl={bannerData?.avatarUrl}
+            onPress={handleBannerPress}
+            onDismiss={() => setBannerData(null)}
+          />
+        </SafeAreaProvider>
+      </View>
+    </GestureHandlerRootView>
   );
 }

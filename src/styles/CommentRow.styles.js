@@ -118,4 +118,19 @@ export const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: 2,
   },
+  // Swipe to delete
+  deleteButton: {
+    backgroundColor: colors.status.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+    borderRadius: 8,
+  },
+  deleteButtonText: {
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
+    marginTop: 4,
+  },
 });
