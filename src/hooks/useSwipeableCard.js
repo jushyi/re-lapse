@@ -5,8 +5,8 @@
  * Contains all stateful logic, animated values, gesture handling, and imperative methods.
  *
  * Features:
- * - Arc motion: Card curves downward as it moves horizontally (like flicking from wrist)
- * - Rotation: Card tilts in direction of swipe
+ * - Vertical swipe: Up swipe = Journal, Down swipe = Archive
+ * - Rotation: Card tilts slightly during vertical drag
  * - On-card overlays: Color overlays with icons fade in during swipe
  * - Three-stage haptic feedback: threshold, release, completion
  * - Spring-back animation when threshold not met
@@ -19,8 +19,8 @@ import { Gesture } from 'react-native-gesture-handler';
 import {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
+  withSequence,
   withDelay,
   runOnJS,
   interpolate,
@@ -29,27 +29,19 @@ import {
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Thresholds for action triggers
-const HORIZONTAL_THRESHOLD = 100;
+const VERTICAL_THRESHOLD = 200;
+// Velocity threshold for fast swipe trigger (px/s) - triggers full cinematic animation
+const VELOCITY_THRESHOLD = 500;
+// Threshold for locking swipe direction (prevents accidental opposite-action)
+const DIRECTION_LOCK_THRESHOLD = 30;
 // Delete overlay threshold (used for button-triggered animation overlay only)
 const DELETE_OVERLAY_THRESHOLD = 150;
 
-// Exit animation duration
-const EXIT_DURATION = 800;
-
-// Button-triggered animations use slower duration for satisfying pace
-// Swipe gestures have natural lead-in time from drag, but button taps are instant
-const BUTTON_EXIT_DURATION = 800;
-
 // Delay for front card transition gives exiting card time to clear
 const CASCADE_DELAY_MS = 0;
-
-// Clearance delay - time before cascade animation triggers
-// 100ms gives instant feel while allowing exit animation to start
-const SWIPE_CLEARANCE_DELAY = 100;
-const BUTTON_CLEARANCE_DELAY = 100;
 
 // Fade-in duration for new cards entering the visible stack
 const STACK_ENTRY_FADE_DURATION = 300;
@@ -84,8 +76,8 @@ const getStackOpacity = idx => (idx === 0 ? 1 : idx === 1 ? 0.85 : 0.7);
  *
  * @param {object} params - Hook parameters
  * @param {object} params.photo - Photo object to display
- * @param {function} params.onSwipeLeft - Callback when Archive action triggered (left swipe or button)
- * @param {function} params.onSwipeRight - Callback when Journal action triggered (right swipe or button)
+ * @param {function} params.onSwipeLeft - Callback when Archive action triggered (down swipe or button)
+ * @param {function} params.onSwipeRight - Callback when Journal action triggered (up swipe or button)
  * @param {function} params.onSwipeDown - Callback when Delete action triggered (button only)
  * @param {function} params.onDeleteComplete - Callback when delete animation completes
  * @param {function} params.onExitClearance - Callback when card has cleared enough for cascade
@@ -116,8 +108,25 @@ const useSwipeableCard = ({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
-  // Scale for delete suction animation (card shrinks as it gets sucked into delete button)
+  // Scale for animations (delete suction, journal pickup pop)
   const cardScale = useSharedValue(1);
+  // Horizontal scale modifier for journal pickup narrowing effect
+  const cardScaleX = useSharedValue(1);
+
+  // Glow overlay opacity for journal "item pickup" flash
+  const journalGlowOpacity = useSharedValue(0);
+
+  // Archive crush progress (drives scaleY: 0=full, 1=crushed)
+  const boxClipProgress = useSharedValue(0);
+
+  // Archive overlay flash (shows box icon before crush)
+  const archiveFlashOpacity = useSharedValue(0);
+
+  // Delete dissolve progress (0=idle, 0→1 during dissolve animation)
+  const dissolveProgress = useSharedValue(0);
+
+  // Direction lock for gesture (0=none, 1=up, -1=down)
+  const lockedDirection = useSharedValue(0);
 
   // Track if this card has completed its entry animation
   // Used to detect when a card is newly entering the visible stack
@@ -150,7 +159,7 @@ const useSwipeableCard = ({
   const isButtonDelete = useSharedValue(false);
 
   // Context for gesture start position
-  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
   // Stack index animation effect
   useEffect(() => {
@@ -222,26 +231,81 @@ const useSwipeableCard = ({
   useEffect(() => {
     if (enterFrom && isActive) {
       // Start card off-screen in the direction it exited
-      if (enterFrom === 'left') {
-        translateX.value = -SCREEN_WIDTH * 1.5;
-        translateY.value = SCREEN_HEIGHT * 0.5;
-      } else if (enterFrom === 'right') {
-        translateX.value = SCREEN_WIDTH * 1.5;
-        translateY.value = SCREEN_HEIGHT * 0.5;
-      } else if (enterFrom === 'down') {
+      if (enterFrom === 'up') {
+        // Drop-in from above thin, then expand (reverse of thinning exit)
         translateX.value = 0;
-        translateY.value = SCREEN_HEIGHT;
+        translateY.value = -SCREEN_HEIGHT * 1.2;
+        cardScale.value = 1;
+        cardScaleX.value = 0.05;
+      } else if (enterFrom === 'down') {
+        // Start as small box: crushed on both axes, below screen
+        translateX.value = 0;
+        translateY.value = SCREEN_HEIGHT * 0.5;
+        cardScale.value = 1;
+        cardScaleX.value = 0.2;
+        cardOpacity.value = 0;
+        archiveFlashOpacity.value = 0;
+        boxClipProgress.value = 1;
+      } else if (enterFrom === 'delete') {
+        // Deleted cards re-enter with quick fade-in + scale pop (no reverse dissolve)
+        translateX.value = 0;
+        translateY.value = 0;
+        cardScale.value = 0.8;
+        cardScaleX.value = 1;
+        cardOpacity.value = 0;
+        dissolveProgress.value = 0;
+        // Fade in
+        cardOpacity.value = withTiming(1, {
+          duration: ENTRY_DURATION * 0.4,
+          easing: Easing.out(Easing.cubic),
+        });
+        // Scale pop: 0.8 → 1.03 → 1.0
+        cardScale.value = withSequence(
+          withTiming(1.03, { duration: ENTRY_DURATION * 0.6, easing: Easing.out(Easing.cubic) }),
+          withTiming(1, { duration: ENTRY_DURATION * 0.3 })
+        );
       }
 
-      // Animate to center position
-      translateX.value = withTiming(0, {
-        duration: ENTRY_DURATION,
-        easing: Easing.out(Easing.cubic),
-      });
-      translateY.value = withTiming(0, {
-        duration: ENTRY_DURATION,
-        easing: Easing.out(Easing.cubic),
-      });
+      // Animate to center position (for up/down entries)
+      if (enterFrom === 'up') {
+        translateY.value = withTiming(0, {
+          duration: ENTRY_DURATION,
+          easing: Easing.out(Easing.cubic),
+        });
+        // Scale bounce: overshoot slightly then settle
+        cardScale.value = withSequence(
+          withTiming(1.03, { duration: ENTRY_DURATION * 0.8, easing: Easing.out(Easing.cubic) }),
+          withTiming(1, { duration: ENTRY_DURATION * 0.2 })
+        );
+        // Expand horizontal scale back to normal
+        cardScaleX.value = withTiming(1, {
+          duration: ENTRY_DURATION,
+          easing: Easing.out(Easing.cubic),
+        });
+      } else if (enterFrom === 'down') {
+        // Reverse crush: expand width first, then height, slide up
+        cardOpacity.value = withTiming(1, {
+          duration: ENTRY_DURATION * 0.3,
+          easing: Easing.out(Easing.cubic),
+        });
+        translateY.value = withTiming(0, {
+          duration: ENTRY_DURATION,
+          easing: Easing.out(Easing.cubic),
+        });
+        // Expand width first (dot → stripe)
+        cardScaleX.value = withTiming(1, {
+          duration: ENTRY_DURATION * 0.5,
+          easing: Easing.out(Easing.cubic),
+        });
+        // Then expand height (stripe → full card)
+        boxClipProgress.value = withDelay(
+          ENTRY_DURATION * 0.2,
+          withTiming(0, {
+            duration: ENTRY_DURATION * 0.6,
+            easing: Easing.out(Easing.cubic),
+          })
+        );
+      }
 
       logger.debug('useSwipeableCard: Entry animation started', {
         photoId: photo?.id,
@@ -321,12 +385,115 @@ const useSwipeableCard = ({
     triggerHeavyHaptic();
   }, [photo?.id, onSwipeDown, triggerWarningHaptic, triggerHeavyHaptic]);
 
+  // Shared archive "boxing up" animation - used by both button press and swipe
+  // Sequential crush to small box, overlay stamps on, box drops away.
+  const playArchiveCinematic = useCallback(() => {
+    // Schedule clearance after crush, before drop
+    if (onExitClearance) {
+      setTimeout(() => {
+        onExitClearance();
+      }, 550);
+    }
+
+    // Phase 1: Height crushes to small box (scaleY 1 → 0.2)
+    boxClipProgress.value = withTiming(1, {
+      duration: 250,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    // Phase 2: Width crushes to match (scaleX 1 → 0.2) — small square box
+    cardScaleX.value = withDelay(
+      200,
+      withTiming(0.2, {
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+      })
+    );
+
+    // Phase 3: Box stamp overlay appears on the small box (looks like a package)
+    archiveFlashOpacity.value = withDelay(
+      380,
+      withTiming(1, {
+        duration: 80,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
+
+    // Phase 4: Box drops off-screen through the footer
+    translateY.value = withDelay(
+      480,
+      withTiming(
+        SCREEN_HEIGHT * 1.5,
+        {
+          duration: 400,
+          easing: Easing.in(Easing.quad),
+        },
+        () => {
+          'worklet';
+          runOnJS(handleArchive)();
+        }
+      )
+    );
+  }, [
+    archiveFlashOpacity,
+    cardScaleX,
+    boxClipProgress,
+    translateY,
+    onExitClearance,
+    handleArchive,
+  ]);
+
+  // Shared journal cinematic animation - used by both button press and fast swipe
+  // Runs on JS thread so value resets from worklets take effect before animations start
+  const playJournalCinematic = useCallback(() => {
+    // Schedule clearance so pop/glow/thin play before cascade
+    if (onExitClearance) {
+      setTimeout(() => {
+        onExitClearance();
+      }, 500);
+    }
+
+    // Scale pop then settle back (height stays full)
+    cardScale.value = withSequence(
+      withTiming(1.08, { duration: 100, easing: Easing.out(Easing.back(2)) }),
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
+    );
+
+    // Thin out horizontally (sides squeeze in)
+    cardScaleX.value = withSequence(
+      withTiming(1, { duration: 100 }),
+      withTiming(0.05, { duration: 600, easing: Easing.in(Easing.cubic) })
+    );
+
+    // Cyan glow flash
+    journalGlowOpacity.value = withSequence(
+      withTiming(0.6, { duration: 60 }),
+      withTiming(0, { duration: 350 })
+    );
+
+    // Upward flight - hold briefly during pop, then accelerate upward
+    translateY.value = withSequence(
+      withTiming(0, { duration: 150 }),
+      withTiming(
+        -SCREEN_HEIGHT * 1.5,
+        {
+          duration: 750,
+          easing: Easing.in(Easing.quad),
+        },
+        () => {
+          'worklet';
+          runOnJS(handleJournal)();
+        }
+      )
+    );
+  }, [cardScale, cardScaleX, journalGlowOpacity, translateY, onExitClearance, handleJournal]);
+
   // Imperative methods for button-triggered animations
   useImperativeHandle(
     ref,
     () => ({
       /**
-       * Trigger archive animation (left exit with arc).
+       * Trigger archive animation (downward exit).
        * Called when user taps the archive button.
        * @returns {void}
        */
@@ -334,79 +501,43 @@ const useSwipeableCard = ({
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerArchive called', { photoId: photo?.id });
         actionInProgress.value = true;
-        // Fire clearance callback early to trigger cascade while card still visible
-        if (onExitClearance) {
-          setTimeout(() => {
-            onExitClearance();
-          }, BUTTON_CLEARANCE_DELAY);
-        }
-        // Animate to archive position (arc to bottom-left)
-        translateX.value = withTiming(
-          -SCREEN_WIDTH * 1.5,
-          {
-            duration: BUTTON_EXIT_DURATION,
-            easing: Easing.out(Easing.cubic),
-          },
-          () => {
-            'worklet';
-            runOnJS(handleArchive)();
-          }
-        );
-        translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
-          duration: BUTTON_EXIT_DURATION,
-          easing: Easing.out(Easing.cubic),
-        });
+        playArchiveCinematic();
       },
       /**
-       * Trigger journal animation (right exit with arc).
+       * Trigger journal animation (upward "item pickup" exit).
        * Called when user taps the journal button.
+       * Scale pop + cyan glow flash + rapid upward flight.
        * @returns {void}
        */
       triggerJournal: () => {
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerJournal called', { photoId: photo?.id });
         actionInProgress.value = true;
-        // Fire clearance callback early to trigger cascade while card still visible
-        if (onExitClearance) {
-          setTimeout(() => {
-            onExitClearance();
-          }, BUTTON_CLEARANCE_DELAY);
-        }
-        // Animate to journal position (arc to bottom-right)
-        translateX.value = withTiming(
-          SCREEN_WIDTH * 1.5,
-          {
-            duration: BUTTON_EXIT_DURATION,
-            easing: Easing.out(Easing.cubic),
-          },
-          () => {
-            'worklet';
-            runOnJS(handleJournal)();
-          }
-        );
-        translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
-          duration: BUTTON_EXIT_DURATION,
-          easing: Easing.out(Easing.cubic),
-        });
+        playJournalCinematic();
       },
       /**
-       * Trigger delete animation (suction effect toward delete button).
-       * Card shrinks while moving toward button position.
+       * Trigger delete animation (pixel dissolve).
+       * Photo breaks into pixel blocks that scatter and fall.
        * @returns {void}
        */
       triggerDelete: () => {
         if (actionInProgress.value) return;
         logger.info('useSwipeableCard: triggerDelete called', { photoId: photo?.id });
         actionInProgress.value = true;
-        isButtonDelete.value = true;
 
-        const SUCTION_DURATION = 450;
+        // Schedule cascade clearance AFTER blocks have settled
+        if (onExitClearance) {
+          setTimeout(() => {
+            onExitClearance();
+          }, 1000);
+        }
 
-        cardScale.value = withTiming(
-          0.1,
+        // Drive dissolve progress — blocks scatter based on this value
+        dissolveProgress.value = withTiming(
+          1,
           {
-            duration: SUCTION_DURATION,
-            easing: Easing.in(Easing.cubic),
+            duration: 1100,
+            easing: Easing.linear,
           },
           () => {
             'worklet';
@@ -416,116 +547,234 @@ const useSwipeableCard = ({
             runOnJS(handleDelete)();
           }
         );
-
-        translateY.value = withTiming(SCREEN_HEIGHT * 0.35, {
-          duration: SUCTION_DURATION,
-          easing: Easing.in(Easing.cubic),
-        });
-
-        translateX.value = withTiming(0, {
-          duration: SUCTION_DURATION,
-          easing: Easing.in(Easing.cubic),
-        });
       },
     }),
     [
       photo?.id,
       actionInProgress,
-      isButtonDelete,
+      dissolveProgress,
       translateX,
       translateY,
       cardScale,
-      handleArchive,
-      handleJournal,
+      cardScaleX,
+      journalGlowOpacity,
+      playArchiveCinematic,
+      playJournalCinematic,
       handleDelete,
       onDeleteComplete,
       onExitClearance,
     ]
   );
 
-  // Pan gesture using new Gesture API
+  // Pan gesture using new Gesture API (vertical: up = journal, down = archive)
   const panGesture = Gesture.Pan()
+    .activeOffsetY([-5, 5])
     .onStart(() => {
       'worklet';
-      startX.value = translateX.value;
+      startY.value = translateY.value;
+      lockedDirection.value = 0;
+      cardScale.value = 1;
+      cardScaleX.value = 1;
+      journalGlowOpacity.value = 0;
+      archiveFlashOpacity.value = 0;
+      boxClipProgress.value = 0;
+      dissolveProgress.value = 0;
+      cardOpacity.value = 1;
       runOnJS(resetThreshold)();
     })
     .onUpdate(event => {
       'worklet';
-      translateX.value = startX.value + event.translationX;
+      const rawY = event.translationY;
 
-      const absX = Math.abs(translateX.value);
+      // Lock direction on first significant movement
+      if (lockedDirection.value === 0) {
+        if (rawY < -DIRECTION_LOCK_THRESHOLD) {
+          lockedDirection.value = 1; // up
+        } else if (rawY > DIRECTION_LOCK_THRESHOLD) {
+          lockedDirection.value = -1; // down
+        }
+      }
 
-      if (absX > HORIZONTAL_THRESHOLD) {
-        runOnJS(markThresholdTriggered)();
+      // Archive: card stays centered, drag distance drives crush only
+      if (lockedDirection.value === -1 && rawY > 0) {
+        // Don't update translateY — card stays in place while crushing
+        const dragDist = rawY;
+
+        if (dragDist > VERTICAL_THRESHOLD) {
+          runOnJS(markThresholdTriggered)();
+        }
+
+        // Progressive archive "boxing up" effects
+        if (dragDist < VERTICAL_THRESHOLD) {
+          // Before threshold: height starts crushing (scaleY compresses)
+          const preProgress = dragDist / VERTICAL_THRESHOLD;
+          boxClipProgress.value = preProgress * 0.6; // 0 → 0.6 (scaleY: 1 → ~0.52)
+          cardScaleX.value = 1;
+          archiveFlashOpacity.value = 0;
+        } else {
+          // Past threshold: width crushes too, stamp starts fading in
+          const postProgress = Math.min((dragDist - VERTICAL_THRESHOLD) / 200, 1);
+          boxClipProgress.value = 0.6 + postProgress * 0.4; // 0.6 → 1.0 (scaleY → 0.2)
+          cardScaleX.value = 1 - postProgress * 0.8; // 1.0 → 0.2 (width crushes)
+          archiveFlashOpacity.value = postProgress * 0.7; // stamp fades in
+        }
+      } else {
+        // Journal and neutral: card moves with finger
+        translateY.value = startY.value + rawY;
+
+        const absY = Math.abs(translateY.value);
+
+        if (absY > VERTICAL_THRESHOLD) {
+          runOnJS(markThresholdTriggered)();
+        }
+
+        // Progressive journal pickup effects during upward drag
+        if (lockedDirection.value === 1 && translateY.value < 0) {
+          if (absY < VERTICAL_THRESHOLD) {
+            // Before threshold: scale pops up + glow builds (collecting moment)
+            const preProgress = absY / VERTICAL_THRESHOLD;
+            cardScale.value = 1 + preProgress * 0.08; // 1.0 → 1.08
+            journalGlowOpacity.value = preProgress * 0.15;
+            cardScaleX.value = 1;
+          } else {
+            // Past threshold: pop settles back, card thins horizontally (sides squeeze in)
+            const postProgress = Math.min((absY - VERTICAL_THRESHOLD) / 200, 1);
+            cardScale.value = 1.08 - postProgress * 0.08; // 1.08 → 1.0 (pop settles)
+            cardScaleX.value = 1 - postProgress * 0.95; // 1.0 → 0.05 (thins out)
+            journalGlowOpacity.value = 0.15 + postProgress * 0.45; // 0.15 → 0.6
+          }
+        } else {
+          // Reset when not dragging in locked direction
+          cardScale.value = 1;
+          journalGlowOpacity.value = 0;
+          cardScaleX.value = 1;
+          boxClipProgress.value = 0;
+          archiveFlashOpacity.value = 0;
+        }
       }
     })
     .onEnd(event => {
       'worklet';
       if (actionInProgress.value) return;
 
-      const velocityX = event.velocityX;
+      const velY = event.velocityY;
 
-      const isLeftSwipe = translateX.value < -HORIZONTAL_THRESHOLD || velocityX < -500;
-      const isRightSwipe = translateX.value > HORIZONTAL_THRESHOLD || velocityX > 500;
+      // Detect upward/downward intent from direction lock or velocity
+      // Archive uses event.translationY (translateY stays at 0 during archive drag)
+      const isUpAction = lockedDirection.value === 1 && translateY.value < -VERTICAL_THRESHOLD;
+      const isUpVelocity = velY < -VELOCITY_THRESHOLD && event.translationY < 0;
+      const isDownAction = lockedDirection.value === -1 && event.translationY > VERTICAL_THRESHOLD;
+      const isDownVelocity = velY > VELOCITY_THRESHOLD && event.translationY > 0;
 
-      if (isLeftSwipe) {
+      // Up swipe: either crossed position threshold or had enough velocity
+      const isUpSwipe = isUpAction || isUpVelocity;
+      const isDownSwipe = isDownAction || isDownVelocity;
+
+      if (isUpSwipe) {
         actionInProgress.value = true;
-        runOnJS(scheduleClearanceCallback)(SWIPE_CLEARANCE_DELAY);
-        translateX.value = withTiming(
-          -SCREEN_WIDTH * 1.5,
-          {
-            duration: EXIT_DURATION,
-            easing: Easing.out(Easing.cubic),
-          },
-          () => {
-            'worklet';
-            runOnJS(handleArchive)();
-          }
-        );
-        translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
-          duration: EXIT_DURATION,
-          easing: Easing.out(Easing.cubic),
-        });
-      } else if (isRightSwipe) {
+
+        // Determine fast vs slow: check how much progressive thinning has applied
+        // If cardScaleX still > 0.7, the user swiped fast through the zone (barely thinned)
+        // If cardScaleX <= 0.7, the user dragged slowly and effects are well underway
+        const wasFastSwipe = cardScaleX.value > 0.7;
+
+        if (wasFastSwipe) {
+          // Fast swipe - reset to clean state, then delegate to JS thread
+          // for full cinematic (same as button press).
+          // Resets take effect on UI thread immediately; playJournalCinematic
+          // runs on JS thread next tick, so animations start from clean values.
+          cardScale.value = 1;
+          cardScaleX.value = 1;
+          journalGlowOpacity.value = 0;
+          translateY.value = 0;
+          runOnJS(playJournalCinematic)();
+        } else {
+          // Slow drag - progressive effects already built up, smooth continue
+          cardScale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+          cardScaleX.value = withTiming(0.05, { duration: 450, easing: Easing.in(Easing.cubic) });
+          journalGlowOpacity.value = withTiming(0, { duration: 200 });
+
+          // Fly immediately - handler in completion callback keeps card alive
+          translateY.value = withTiming(
+            -SCREEN_HEIGHT * 1.5,
+            {
+              duration: 600,
+              easing: Easing.in(Easing.quad),
+            },
+            () => {
+              'worklet';
+              runOnJS(handleJournal)();
+            }
+          );
+          runOnJS(scheduleClearanceCallback)(500);
+        }
+      } else if (isDownSwipe) {
+        // Archive - "boxing up" animation
         actionInProgress.value = true;
-        runOnJS(scheduleClearanceCallback)(SWIPE_CLEARANCE_DELAY);
-        translateX.value = withTiming(
-          SCREEN_WIDTH * 1.5,
-          {
-            duration: EXIT_DURATION,
-            easing: Easing.out(Easing.cubic),
-          },
-          () => {
-            'worklet';
-            runOnJS(handleJournal)();
-          }
-        );
-        translateY.value = withTiming(SCREEN_HEIGHT * 0.5, {
-          duration: EXIT_DURATION,
-          easing: Easing.out(Easing.cubic),
-        });
+
+        // Determine fast vs slow: check how much progressive crushing has applied
+        // If boxClipProgress < 0.3, the user swiped fast (barely crushed)
+        // If boxClipProgress >= 0.3, effects are well underway
+        const wasFastSwipe = boxClipProgress.value < 0.3;
+
+        if (wasFastSwipe) {
+          // Fast swipe - reset to clean state, play full cinematic
+          cardScale.value = 1;
+          cardScaleX.value = 1;
+          translateY.value = 0;
+          archiveFlashOpacity.value = 0;
+          boxClipProgress.value = 0;
+          cardOpacity.value = 1;
+          runOnJS(playArchiveCinematic)();
+        } else {
+          // Slow drag - progressive crush already built up, smooth continue
+          // Card is already centered (translateY stayed at 0 during drag)
+          // Finish the crush from current state
+          boxClipProgress.value = withTiming(1, {
+            duration: 200,
+            easing: Easing.in(Easing.cubic),
+          });
+          cardScaleX.value = withTiming(0.2, {
+            duration: 250,
+            easing: Easing.in(Easing.cubic),
+          });
+          // Stamp fully visible
+          archiveFlashOpacity.value = withTiming(1, { duration: 100 });
+
+          // Drop the box after crush finishes
+          translateY.value = withDelay(
+            280,
+            withTiming(
+              SCREEN_HEIGHT * 1.5,
+              {
+                duration: 400,
+                easing: Easing.in(Easing.quad),
+              },
+              () => {
+                'worklet';
+                runOnJS(handleArchive)();
+              }
+            )
+          );
+          runOnJS(scheduleClearanceCallback)(450);
+        }
       } else {
-        translateX.value = withSpring(0, {
-          damping: 15,
-          stiffness: 150,
-        });
-        translateY.value = withSpring(0, {
-          damping: 15,
-          stiffness: 150,
-        });
+        // Clean snap back (no bounce)
+        const snapConfig = { duration: 200, easing: Easing.out(Easing.cubic) };
+        translateY.value = withTiming(0, snapConfig);
+        translateX.value = withTiming(0, snapConfig);
+        cardScale.value = withTiming(1, snapConfig);
+        cardScaleX.value = withTiming(1, snapConfig);
+        journalGlowOpacity.value = withTiming(0, { duration: 150 });
+        archiveFlashOpacity.value = withTiming(0, { duration: 150 });
+        boxClipProgress.value = withTiming(0, { duration: 150 });
+        cardOpacity.value = withTiming(1, { duration: 150 });
         runOnJS(resetThreshold)();
       }
     });
 
-  // Animated card style with arc motion, rotation, and stack transforms
+  // Animated card style with vertical movement and stack transforms
   const cardStyle = useAnimatedStyle(() => {
-    const normalizedX = Math.abs(translateX.value) / (SCREEN_WIDTH * 1.5);
-    const curveProgress = Math.pow(normalizedX, 2.5);
-    const arcY = SCREEN_HEIGHT * 0.5 * curveProgress;
-
-    const rotation = isActive ? translateX.value / 15 : 0;
-
     const actionActive = actionInProgress.value;
 
     const useStackAnimation = !actionActive && (isTransitioningToFront.value === 1 || !isActive);
@@ -535,7 +784,6 @@ const useSwipeableCard = ({
         transform: [
           { translateX: 0 },
           { translateY: stackOffsetAnim.value },
-          { rotate: '0deg' },
           { scale: stackScaleAnim.value },
         ],
         opacity: stackOpacityAnim.value,
@@ -544,20 +792,24 @@ const useSwipeableCard = ({
       return {
         transform: [
           { translateX: translateX.value },
-          { translateY: translateY.value + arcY },
-          { rotate: `${rotation}deg` },
+          { translateY: translateY.value },
           { scale: cardScale.value },
+          { scaleX: cardScaleX.value },
+          { scaleY: interpolate(boxClipProgress.value, [0, 1], [1, 0.2], 'clamp') },
         ],
         opacity: cardOpacity.value,
+        // Allow pixels to fall below card during dissolve
+        overflow: dissolveProgress.value > 0 ? 'visible' : 'hidden',
       };
     }
   });
 
-  // Archive overlay (left swipe) - gray with box icon
+  // Archive overlay (down swipe) - gray with box icon (driven by crush progress)
   const archiveOverlayStyle = useAnimatedStyle(() => {
+    // Driven by boxClipProgress since card stays centered during archive drag
     const opacity =
-      translateX.value < 0
-        ? interpolate(Math.abs(translateX.value), [0, HORIZONTAL_THRESHOLD], [0, 0.7], 'clamp')
+      boxClipProgress.value > 0
+        ? interpolate(boxClipProgress.value, [0, 0.6], [0, 0.7], 'clamp')
         : 0;
 
     return {
@@ -565,11 +817,11 @@ const useSwipeableCard = ({
     };
   });
 
-  // Journal overlay (right swipe) - green with checkmark icon
+  // Journal overlay (up swipe) - green with checkmark icon
   const journalOverlayStyle = useAnimatedStyle(() => {
     const opacity =
-      translateX.value > 0
-        ? interpolate(translateX.value, [0, HORIZONTAL_THRESHOLD], [0, 0.7], 'clamp')
+      translateY.value < 0
+        ? interpolate(Math.abs(translateY.value), [0, VERTICAL_THRESHOLD], [0, 0.7], 'clamp')
         : 0;
 
     return {
@@ -591,12 +843,35 @@ const useSwipeableCard = ({
     };
   });
 
+  // Journal pickup glow flash overlay (cyan)
+  const journalGlowStyle = useAnimatedStyle(() => ({
+    opacity: journalGlowOpacity.value,
+  }));
+
+  // Archive box stamp - solid box that appears on the crushed card
+  const archiveBoxStyle = useAnimatedStyle(() => ({
+    opacity: archiveFlashOpacity.value,
+  }));
+
+  // Photo fade during delete dissolve — photo vanishes quickly as pixels burst out
+  const photoFadeStyle = useAnimatedStyle(() => {
+    if (dissolveProgress.value <= 0) return { opacity: 1 };
+    // Photo fades out fast in the first 15% of dissolve (instant shatter feel)
+    const opacity = interpolate(dissolveProgress.value, [0, 0.15], [1, 0], 'clamp');
+    return { opacity };
+  });
+
   return {
     // Animated styles
     cardStyle,
     archiveOverlayStyle,
     journalOverlayStyle,
     deleteOverlayStyle,
+    journalGlowStyle,
+    archiveBoxStyle,
+    photoFadeStyle,
+    // Shared values for child components
+    dissolveProgress,
     // Gesture handler
     panGesture,
     // State

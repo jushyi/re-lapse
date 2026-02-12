@@ -21,11 +21,11 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   Image,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PixelIcon from './PixelIcon';
+import PixelSpinner from './PixelSpinner';
 import { useAuth } from '../context/AuthContext';
 import { getFriendships } from '../services/firebase/friendshipService';
 import { getUserProfile } from '../services/firebase/userService';
@@ -201,7 +201,7 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
           {/* Content */}
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.icon.primary} />
+              <PixelSpinner size="large" color={colors.icon.primary} />
               <Text style={styles.loadingText}>Loading friends...</Text>
             </View>
           ) : friends.length === 0 ? (
@@ -215,6 +215,10 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
               keyExtractor={keyExtractor}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={true}
             />
           )}
         </Animated.View>

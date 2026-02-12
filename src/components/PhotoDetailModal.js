@@ -29,8 +29,6 @@ import { getTimeAgo } from '../utils/timeUtils';
 import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
 import { styles } from '../styles/PhotoDetailModal.styles';
 import CommentsBottomSheet from './comments/CommentsBottomSheet';
-import CommentPreview from './comments/CommentPreview';
-import { getPreviewComments } from '../services/firebase/commentService';
 import { colors } from '../constants/colors';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
@@ -80,7 +78,6 @@ const PhotoDetailModal = ({
 
   // Comments state
   const [showComments, setShowComments] = useState(false);
-  const [previewComments, setPreviewComments] = useState([]);
 
   // Progress bar scroll ref for auto-scrolling
   const progressScrollRef = useRef(null);
@@ -172,6 +169,9 @@ const PhotoDetailModal = ({
     handleOpenEmojiPicker,
     handleEmojiPickerSelect,
     newlyAddedEmoji,
+
+    // Close handler (animated)
+    handleClose,
   } = usePhotoDetailModal({
     mode,
     photo,
@@ -213,25 +213,6 @@ const PhotoDetailModal = ({
     },
     [onAvatarPress]
   );
-
-  // Fetch preview comments when photo changes
-  useEffect(() => {
-    const fetchPreviewComments = async () => {
-      if (!visible || !currentPhoto?.id) {
-        setPreviewComments([]);
-        return;
-      }
-
-      const result = await getPreviewComments(currentPhoto.id, currentPhoto.userId);
-      if (result.success) {
-        setPreviewComments(result.previewComments || []);
-      } else {
-        setPreviewComments([]);
-      }
-    };
-
-    fetchPreviewComments();
-  }, [visible, currentPhoto?.id, currentPhoto?.userId, showComments]);
 
   // Calculate segment width based on total photos
   const { segmentWidth, needsScroll } = useMemo(() => {
@@ -307,10 +288,10 @@ const PhotoDetailModal = ({
       visible={visible}
       transparent={true}
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <Animated.View style={[styles.container, { opacity }]} {...panResponder.panHandlers}>
+      <Animated.View style={[styles.container]} {...panResponder.panHandlers}>
         <StatusBar barStyle="light-content" />
 
         {/* Animated content wrapper with cube transition */}
@@ -334,7 +315,7 @@ const PhotoDetailModal = ({
           {/* Header with close button */}
           <View style={styles.header}>
             <View style={styles.headerSpacer} />
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -345,7 +326,7 @@ const PhotoDetailModal = ({
           <TouchableWithoutFeedback onPress={mode === 'stories' ? handleTapNavigation : undefined}>
             <View style={styles.photoScrollView}>
               <Image
-                source={{ uri: imageURL }}
+                source={{ uri: imageURL, cacheKey: `photo-${currentPhoto?.id}` }}
                 style={styles.photo}
                 contentFit="cover"
                 transition={0}
@@ -362,7 +343,7 @@ const PhotoDetailModal = ({
           >
             {profilePhotoURL ? (
               <Image
-                source={{ uri: profilePhotoURL }}
+                source={{ uri: profilePhotoURL, cacheKey: `profile-${currentPhoto?.userId}` }}
                 style={styles.profilePic}
                 contentFit="cover"
               />
@@ -380,14 +361,7 @@ const PhotoDetailModal = ({
             style={[
               styles.userInfoOverlay,
               {
-                bottom:
-                  mode === 'stories'
-                    ? previewComments?.length > 0
-                      ? 130
-                      : 110
-                    : previewComments?.length > 0
-                      ? 120
-                      : 100,
+                bottom: mode === 'stories' ? 110 : 100,
               },
             ]}
           >
@@ -396,22 +370,6 @@ const PhotoDetailModal = ({
             </Text>
             <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
           </View>
-
-          {/* Comment preview - below user info, above progress bar
-              Stories mode: raised to match userInfoOverlay
-              Feed mode: original position */}
-          {previewComments.length > 0 && (
-            <View
-              style={[styles.commentPreviewContainer, { bottom: mode === 'stories' ? 100 : 90 }]}
-            >
-              <CommentPreview
-                comments={previewComments}
-                totalCount={currentPhoto?.commentCount || 0}
-                onPress={() => setShowComments(true)}
-                showViewAll={false}
-              />
-            </View>
-          )}
 
           {/* Progress bar - stories mode only, positioned below user info */}
           {showProgressBar && totalPhotos > 0 && (

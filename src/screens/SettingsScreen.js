@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useNavigation } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 /**
@@ -155,65 +157,67 @@ const SettingsScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Sectioned Menu Items */}
-      <View style={styles.menuContainer}>
-        {sections.map(section => (
-          <View key={section.title}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>{section.title}</Text>
+      <ScrollView style={styles.scrollView} bounces={false}>
+        {/* Sectioned Menu Items */}
+        <View style={styles.menuContainer}>
+          {sections.map(section => (
+            <View key={section.title}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>{section.title}</Text>
+              </View>
+              {section.items.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.menuItem}
+                  onPress={item.onPress}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <PixelIcon
+                      name={item.icon}
+                      size={22}
+                      color={item.danger ? colors.status.danger : colors.icon.primary}
+                    />
+                    <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
+                      {item.label}
+                    </Text>
+                  </View>
+                  <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
+                </TouchableOpacity>
+              ))}
             </View>
-            {section.items.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.menuItem}
-                onPress={item.onPress}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <PixelIcon
-                    name={item.icon}
-                    size={22}
-                    color={item.danger ? colors.status.danger : colors.icon.primary}
-                  />
-                  <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
-                    {item.label}
-                  </Text>
-                </View>
-                <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
+          ))}
 
-        {/* Action Items (Sign Out, Delete Account) - no header */}
-        {actionItems.map(item => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.menuItem}
-            onPress={item.onPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <PixelIcon
-                name={item.icon}
-                size={22}
-                color={item.danger ? colors.status.danger : colors.icon.primary}
-              />
-              <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
-                {item.label}
-              </Text>
-            </View>
-            <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
-          </TouchableOpacity>
-        ))}
-      </View>
+          {/* Action Items (Sign Out, Delete Account) - no header */}
+          {actionItems.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuItem}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <PixelIcon
+                  name={item.icon}
+                  size={22}
+                  color={item.danger ? colors.status.danger : colors.icon.primary}
+                />
+                <Text style={[styles.menuItemLabel, item.danger && styles.menuItemLabelDanger]}>
+                  {item.label}
+                </Text>
+              </View>
+              <PixelIcon name="chevron-forward" size={20} color={colors.icon.tertiary} />
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* App Version */}
-      <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>
-          Version {Application.nativeApplicationVersion || '0.1.0'}
-        </Text>
-      </View>
+        {/* App Version */}
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>
+            Version {Application.nativeApplicationVersion || '0.1.0'}
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -223,17 +227,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
+  scrollView: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   backButton: {
-    padding: 4,
+    padding: spacing.xxs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -244,11 +251,11 @@ const styles = StyleSheet.create({
     width: 36, // Balance the back button width
   },
   menuContainer: {
-    marginTop: 24,
+    marginTop: spacing.lg,
   },
   sectionHeader: {
     backgroundColor: colors.background.primary,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
@@ -277,14 +284,14 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
-    marginLeft: 16,
+    marginLeft: spacing.md,
   },
   menuItemLabelDanger: {
     color: colors.status.danger,
   },
   versionContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
   },
   versionText: {

@@ -1,16 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Animated,
-} from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import PixelIcon from './PixelIcon';
+import PixelSpinner from './PixelSpinner';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 
 /**
  * Retro 16-Bit Input Component
@@ -134,7 +129,7 @@ const Input = ({
         )}
         {rightIcon === 'loading' && (
           <View style={styles.rightIcon}>
-            <ActivityIndicator size="small" color={colors.text.secondary} />
+            <PixelSpinner size="small" color={colors.text.secondary} />
           </View>
         )}
         {rightIcon === 'check' && (
@@ -155,24 +150,24 @@ const Input = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   label: {
     fontSize: typography.size.xs,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     letterSpacing: 2,
   },
   inputContainer: {
     position: 'relative',
   },
   input: {
-    height: 52,
+    height: layout.dimensions.inputHeight,
     borderWidth: 2,
     borderColor: colors.border.subtle,
-    borderRadius: 2,
-    paddingHorizontal: 16,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.md,
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     backgroundColor: colors.background.secondary,
@@ -194,28 +189,28 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     fontFamily: typography.fontFamily.body,
     color: colors.status.danger,
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
+    right: spacing.md,
     top: 14,
-    padding: 4,
+    padding: spacing.xxs,
   },
   eyeIconText: {
     fontSize: 20,
   },
   rightIcon: {
     position: 'absolute',
-    right: 16,
-    top: 16,
+    right: spacing.md,
+    top: spacing.md,
   },
   characterCounter: {
     fontSize: typography.size.xs,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
     textAlign: 'right',
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
 });
 

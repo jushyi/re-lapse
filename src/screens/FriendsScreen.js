@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
-  RefreshControl,
   Alert,
+  RefreshControl,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PixelSpinner from '../components/PixelSpinner';
 import {
   getFirestore,
   collection,
@@ -17,8 +18,6 @@ import {
   where,
   limit,
   getDocs,
-  doc,
-  getDoc,
 } from '@react-native-firebase/firestore';
 import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +33,7 @@ import {
   removeFriend,
   checkFriendshipStatus,
   getMutualFriendSuggestions,
+  batchGetUsers,
 } from '../services/firebase/friendshipService';
 import {
   hasUserSyncedContacts,
@@ -50,6 +50,7 @@ import {
   getBlockedUserIds,
 } from '../services/firebase/blockService';
 import { mediumImpact } from '../utils/haptics';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/FriendsScreen.styles';
 import logger from '../utils/logger';
@@ -67,6 +68,12 @@ const db = getFirestore();
  */
 const FriendsScreen = ({ navigation }) => {
   const { user, userProfile } = useAuth();
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('FriendsScreen');
+  const screenTraceMarkedRef = useRef(false);
+  const initialLoadCompleteRef = useRef(false);
+
   const [activeTab, setActiveTab] = useState('requests');
 
   // Friends tab state
@@ -105,32 +112,32 @@ const FriendsScreen = ({ navigation }) => {
         return;
       }
 
-      // Fetch user data for each friend
-      const friendsWithUserData = await Promise.all(
-        result.friendships.map(async friendship => {
+      // Collect all friend userIds for batch fetch
+      const friendUserIds = result.friendships.map(friendship =>
+        friendship.user1Id === user.uid ? friendship.user2Id : friendship.user1Id
+      );
+
+      // Batch fetch all user data at once (ceil(N/30) queries instead of N)
+      const userMap = await batchGetUsers(friendUserIds);
+
+      // Map friendship docs to friend objects using the batch-fetched Map
+      const friendsWithUserData = result.friendships
+        .map(friendship => {
           const otherUserId =
             friendship.user1Id === user.uid ? friendship.user2Id : friendship.user1Id;
-          try {
-            const userRef = doc(db, 'users', otherUserId);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-              return {
-                friendshipId: friendship.id,
-                userId: otherUserId,
-                acceptedAt: friendship.acceptedAt,
-                displayName: userDoc.data().displayName,
-                username: userDoc.data().username,
-                profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
-              };
-            }
-          } catch (err) {
-            logger.error('Error fetching friend user data', err);
+          const userData = userMap.get(otherUserId);
+          if (userData) {
+            return {
+              friendshipId: friendship.id,
+              userId: otherUserId,
+              acceptedAt: friendship.acceptedAt,
+              displayName: userData.displayName,
+              username: userData.username,
+              profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+            };
           }
           return null;
         })
-      );
-
-      const validFriends = friendsWithUserData
         .filter(f => f !== null)
         .sort((a, b) => {
           const nameA = (a.displayName || a.username || '').toLowerCase();
@@ -138,8 +145,8 @@ const FriendsScreen = ({ navigation }) => {
           return nameA.localeCompare(nameB);
         });
 
-      setFriends(validFriends);
-      setFilteredFriends(validFriends);
+      setFriends(friendsWithUserData);
+      setFilteredFriends(friendsWithUserData);
     } catch (err) {
       logger.error('Error in fetchFriends', err);
     }
@@ -152,56 +159,64 @@ const FriendsScreen = ({ navigation }) => {
         getSentRequests(user.uid),
       ]);
 
+      // Collect all userIds from both incoming and sent requests for a single batch fetch
+      const allRequestUserIds = [];
+
       if (incomingResult.success) {
-        // Fetch user data for incoming requests
-        const incomingWithUserData = await Promise.all(
-          incomingResult.requests.map(async request => {
-            const otherUserId = request.user1Id === user.uid ? request.user2Id : request.user1Id;
-            try {
-              const userRef = doc(db, 'users', otherUserId);
-              const userDoc = await getDoc(userRef);
-              if (userDoc.exists()) {
-                return {
-                  ...request,
-                  userId: otherUserId,
-                  displayName: userDoc.data().displayName,
-                  username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
-                };
-              }
-            } catch (err) {
-              logger.error('Error fetching request user data', err);
-            }
-            return null;
-          })
-        );
-        setIncomingRequests(incomingWithUserData.filter(r => r !== null));
+        incomingResult.requests.forEach(request => {
+          const otherUserId = request.user1Id === user.uid ? request.user2Id : request.user1Id;
+          allRequestUserIds.push(otherUserId);
+        });
       }
 
       if (sentResult.success) {
-        // Fetch user data for sent requests
-        const sentWithUserData = await Promise.all(
-          sentResult.requests.map(async request => {
+        sentResult.requests.forEach(request => {
+          const otherUserId = request.user1Id === user.uid ? request.user2Id : request.user1Id;
+          allRequestUserIds.push(otherUserId);
+        });
+      }
+
+      // Batch fetch all user data at once
+      const userMap = await batchGetUsers(allRequestUserIds);
+
+      if (incomingResult.success) {
+        const incomingWithUserData = incomingResult.requests
+          .map(request => {
             const otherUserId = request.user1Id === user.uid ? request.user2Id : request.user1Id;
-            try {
-              const userRef = doc(db, 'users', otherUserId);
-              const userDoc = await getDoc(userRef);
-              if (userDoc.exists()) {
-                return {
-                  ...request,
-                  userId: otherUserId,
-                  displayName: userDoc.data().displayName,
-                  username: userDoc.data().username,
-                  profilePhotoURL: userDoc.data().profilePhotoURL || userDoc.data().photoURL,
-                };
-              }
-            } catch (err) {
-              logger.error('Error fetching sent request user data', err);
+            const userData = userMap.get(otherUserId);
+            if (userData) {
+              return {
+                ...request,
+                userId: otherUserId,
+                displayName: userData.displayName,
+                username: userData.username,
+                profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+              };
             }
             return null;
           })
-        );
-        setSentRequests(sentWithUserData.filter(r => r !== null));
+          .filter(r => r !== null);
+        setIncomingRequests(incomingWithUserData);
+      }
+
+      if (sentResult.success) {
+        const sentWithUserData = sentResult.requests
+          .map(request => {
+            const otherUserId = request.user1Id === user.uid ? request.user2Id : request.user1Id;
+            const userData = userMap.get(otherUserId);
+            if (userData) {
+              return {
+                ...request,
+                userId: otherUserId,
+                displayName: userData.displayName,
+                username: userData.username,
+                profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+              };
+            }
+            return null;
+          })
+          .filter(r => r !== null);
+        setSentRequests(sentWithUserData);
       }
     } catch (err) {
       logger.error('Error in fetchRequests', err);
@@ -271,7 +286,32 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  const loadData = async () => {
+  // Load critical data first (friends + requests), then defer non-critical data
+  const loadCriticalData = async () => {
+    setError(null);
+    try {
+      await Promise.all([fetchFriends(), fetchRequests()]);
+    } catch (err) {
+      logger.error('Error loading critical data', err);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Lazy-load non-critical sections after critical path renders
+  const loadDeferredData = useCallback(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      Promise.all([fetchSuggestions(), fetchBlockedUsers(), fetchMutualSuggestions()]).catch(err =>
+        logger.error('Error loading deferred data', err)
+      );
+    });
+    return task;
+  }, [user.uid]);
+
+  // Full reload for pull-to-refresh
+  const loadAllData = async () => {
     setError(null);
     try {
       await Promise.all([
@@ -290,16 +330,160 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    loadData();
+  // Process incremental subscription changes instead of full reload
+  const handleSubscriptionChanges = useCallback(
+    async (allFriendships, changes) => {
+      // Skip if no changes (initial snapshot is handled by loadCriticalData)
+      if (!initialLoadCompleteRef.current) return;
 
-    const unsubscribe = subscribeFriendships(user.uid, () => {
-      // Re-fetch all data when friendships change
-      loadData();
+      // If changes array is empty or too large, fall back to full reload
+      if (!changes || changes.length === 0) return;
+      if (changes.length > 10) {
+        // Too many changes at once — full reload is simpler
+        await Promise.all([fetchFriends(), fetchRequests()]);
+        return;
+      }
+
+      // Collect userIds that need user data for added/modified docs
+      const userIdsToFetch = [];
+      changes.forEach(change => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const otherUserId =
+            change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+          userIdsToFetch.push(otherUserId);
+        }
+      });
+
+      // Batch fetch user data for new/modified items
+      const userMap = userIdsToFetch.length > 0 ? await batchGetUsers(userIdsToFetch) : new Map();
+
+      // Apply incremental updates to friends state
+      setFriends(prevFriends => {
+        let updated = [...prevFriends];
+
+        changes.forEach(change => {
+          const friendshipId = change.id;
+          const otherUserId =
+            change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+
+          if (change.type === 'removed') {
+            updated = updated.filter(f => f.friendshipId !== friendshipId);
+          } else if (change.data.status === 'accepted') {
+            const userData = userMap.get(otherUserId);
+            if (!userData) return;
+
+            const friendObj = {
+              friendshipId,
+              userId: otherUserId,
+              acceptedAt: change.data.acceptedAt,
+              displayName: userData.displayName,
+              username: userData.username,
+              profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+            };
+
+            const existingIdx = updated.findIndex(f => f.friendshipId === friendshipId);
+            if (existingIdx >= 0) {
+              updated[existingIdx] = friendObj;
+            } else if (change.type === 'added' || change.type === 'modified') {
+              updated.push(friendObj);
+            }
+          } else if (change.data.status === 'pending') {
+            // If a friendship changed from accepted to pending (unlikely) or was never accepted,
+            // remove it from friends list
+            updated = updated.filter(f => f.friendshipId !== friendshipId);
+          }
+        });
+
+        // Re-sort alphabetically
+        updated.sort((a, b) => {
+          const nameA = (a.displayName || a.username || '').toLowerCase();
+          const nameB = (b.displayName || b.username || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        return updated;
+      });
+
+      // Apply incremental updates to requests state
+      changes.forEach(change => {
+        const friendshipId = change.id;
+        const otherUserId =
+          change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+
+        if (change.type === 'removed') {
+          setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+        } else if (change.data.status === 'pending') {
+          const userData = userMap.get(otherUserId);
+          if (!userData) return;
+
+          const requestObj = {
+            id: friendshipId,
+            ...change.data,
+            userId: otherUserId,
+            displayName: userData.displayName,
+            username: userData.username,
+            profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+          };
+
+          if (change.data.requestedBy === user.uid) {
+            // Sent request
+            setSentRequests(prev => {
+              const exists = prev.some(r => r.id === friendshipId);
+              if (exists) {
+                return prev.map(r => (r.id === friendshipId ? requestObj : r));
+              }
+              return [...prev, requestObj];
+            });
+            // Ensure not in incoming
+            setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          } else {
+            // Incoming request
+            setIncomingRequests(prev => {
+              const exists = prev.some(r => r.id === friendshipId);
+              if (exists) {
+                return prev.map(r => (r.id === friendshipId ? requestObj : r));
+              }
+              return [...prev, requestObj];
+            });
+            // Ensure not in sent
+            setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+          }
+        } else if (change.data.status === 'accepted') {
+          // Accepted — remove from both request lists (already added to friends above)
+          setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+        }
+      });
+    },
+    [user.uid]
+  );
+
+  useEffect(() => {
+    // Load critical data (friends + requests) first
+    loadCriticalData().then(() => {
+      initialLoadCompleteRef.current = true;
     });
 
-    return () => unsubscribe();
+    // Lazy-load non-critical data after interactions settle
+    const deferredTask = loadDeferredData();
+
+    // Subscribe to real-time changes with incremental updates
+    const unsubscribe = subscribeFriendships(user.uid, handleSubscriptionChanges);
+
+    return () => {
+      unsubscribe();
+      deferredTask.cancel();
+    };
   }, [user.uid]);
+
+  // Mark screen trace as loaded after initial data load (once only)
+  useEffect(() => {
+    if (!loading && !screenTraceMarkedRef.current) {
+      screenTraceMarkedRef.current = true;
+      markLoaded({ friend_count: friends.length });
+    }
+  }, [loading, friends.length]);
 
   useEffect(() => {
     if (!friendsSearchQuery.trim()) {
@@ -386,7 +570,7 @@ const FriendsScreen = ({ navigation }) => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadData();
+    loadAllData();
   };
 
   const handleAddFriend = async userId => {
@@ -703,9 +887,10 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  const renderSearchBar = (value, setValue, placeholder) => (
+  const renderSearchBar = (value, setValue, placeholder, testID) => (
     <View style={styles.searchContainer}>
       <TextInput
+        testID={testID}
         style={styles.searchInput}
         placeholder={placeholder}
         placeholderTextColor={colors.text.tertiary}
@@ -741,7 +926,7 @@ const FriendsScreen = ({ navigation }) => {
       <PixelIcon
         name="people-outline"
         size={40}
-        color={colors.brand.purple}
+        color={colors.interactive.primary}
         style={styles.syncPromptIcon}
       />
       <Text style={styles.syncPromptTitle}>Find Friends from Contacts</Text>
@@ -753,7 +938,7 @@ const FriendsScreen = ({ navigation }) => {
         disabled={suggestionsLoading}
       >
         {suggestionsLoading ? (
-          <ActivityIndicator size="small" color={colors.text.primary} />
+          <PixelSpinner size="small" color={colors.text.primary} />
         ) : (
           <Text style={styles.syncPromptButtonText}>Sync Contacts</Text>
         )}
@@ -790,7 +975,7 @@ const FriendsScreen = ({ navigation }) => {
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.primary} />
+          <PixelSpinner size="large" color={colors.text.primary} />
           <Text style={styles.loadingText}>Loading friends...</Text>
         </View>
       );
@@ -798,8 +983,14 @@ const FriendsScreen = ({ navigation }) => {
 
     return (
       <>
-        {renderSearchBar(friendsSearchQuery, setFriendsSearchQuery, 'Search friends...')}
+        {renderSearchBar(
+          friendsSearchQuery,
+          setFriendsSearchQuery,
+          'Search friends...',
+          'friends-search-input'
+        )}
         <FlatList
+          testID="friends-list"
           data={filteredFriends}
           renderItem={({ item }) => (
             <TouchableOpacity onLongPress={() => handleRemoveFriend(item)}>
@@ -825,11 +1016,17 @@ const FriendsScreen = ({ navigation }) => {
           keyExtractor={item => item.friendshipId}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.text.primary}
+              tintColor={colors.interactive.primary}
+              colors={[colors.interactive.primary]}
+              progressBackgroundColor={colors.background.secondary}
             />
           }
           ListEmptyComponent={
@@ -854,7 +1051,7 @@ const FriendsScreen = ({ navigation }) => {
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.primary} />
+          <PixelSpinner size="large" color={colors.text.primary} />
           <Text style={styles.loadingText}>Loading requests...</Text>
         </View>
       );
@@ -867,7 +1064,7 @@ const FriendsScreen = ({ navigation }) => {
           {renderSearchBar(requestsSearchQuery, setRequestsSearchQuery, 'Search users to add...')}
           {searchLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.text.primary} />
+              <PixelSpinner size="large" color={colors.text.primary} />
               <Text style={styles.loadingText}>Searching...</Text>
             </View>
           ) : (
@@ -901,6 +1098,10 @@ const FriendsScreen = ({ navigation }) => {
               keyExtractor={item => item.userId}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={true}
               ListEmptyComponent={renderEmptyState(
                 'search-outline',
                 'No users found',
@@ -1065,11 +1266,17 @@ const FriendsScreen = ({ navigation }) => {
             keyExtractor={keyExtractor}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={10}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={colors.text.primary}
+                tintColor={colors.interactive.primary}
+                colors={[colors.interactive.primary]}
+                progressBackgroundColor={colors.background.secondary}
               />
             }
           />

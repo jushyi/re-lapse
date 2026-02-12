@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Modal,
-  Image,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Dimensions,
@@ -12,11 +11,15 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -48,6 +51,10 @@ const StoriesViewerModal = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
+  // Screen load trace - measures time from mount to stories data ready
+  const { markLoaded } = useScreenTrace('StoriesViewer');
+  const screenTraceMarkedRef = useRef(false);
+
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -77,6 +84,12 @@ const StoriesViewerModal = ({
       setCurrentIndex(validIndex);
       translateY.setValue(0);
       opacity.setValue(1);
+
+      // Mark screen trace as loaded after stories data is ready (once only)
+      if (!screenTraceMarkedRef.current) {
+        screenTraceMarkedRef.current = true;
+        markLoaded({ story_count: topPhotos.length });
+      }
     }
   }, [visible, friend?.userId, topPhotos.length, initialIndex, onClose]);
 
@@ -164,8 +177,7 @@ const StoriesViewerModal = ({
       // Left tap - previous
       if (currentIndex === 0) {
         logger.debug('StoriesViewer: At first photo, closing');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        onClose();
+        closeWithAnimation();
       } else {
         const newIndex = currentIndex - 1;
         logger.debug('StoriesViewer: Navigating', { direction: 'previous', newIndex });
@@ -179,8 +191,7 @@ const StoriesViewerModal = ({
       // Right tap - next
       if (currentIndex === topPhotos.length - 1) {
         logger.debug('StoriesViewer: At last photo, closing');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        onClose();
+        closeWithAnimation();
       } else {
         const newIndex = currentIndex + 1;
         logger.debug('StoriesViewer: Navigating', { direction: 'next', newIndex });
@@ -194,10 +205,27 @@ const StoriesViewerModal = ({
     // Center tap (40%) - no action
   };
 
-  const handleClose = () => {
-    logger.debug('StoriesViewer: Close button pressed');
+  const closeWithAnimation = () => {
+    logger.debug('StoriesViewer: Animated close triggered');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onClose();
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: SCREEN_HEIGHT,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+      setTimeout(() => {
+        translateY.setValue(0);
+        opacity.setValue(1);
+      }, 100);
+    });
   };
 
   const handleAvatarPress = () => {
@@ -232,7 +260,7 @@ const StoriesViewerModal = ({
       visible={visible}
       transparent={true}
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={closeWithAnimation}
       statusBarTranslucent
     >
       <Animated.View style={[styles.container, { opacity }]} {...panResponder.panHandlers}>
@@ -255,7 +283,13 @@ const StoriesViewerModal = ({
             <View style={styles.friendInfo}>
               <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
                 {profilePhotoURL ? (
-                  <Image source={{ uri: profilePhotoURL }} style={styles.profilePic} />
+                  <Image
+                    source={{ uri: profilePhotoURL, cacheKey: `profile-${userId}` }}
+                    style={styles.profilePic}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    priority="high"
+                  />
                 ) : (
                   <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
                     <Text style={styles.profilePicText}>
@@ -271,7 +305,7 @@ const StoriesViewerModal = ({
                 <Text style={styles.timestamp}>{getTimeAgo(currentPhoto.capturedAt)}</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={closeWithAnimation} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>X</Text>
             </TouchableOpacity>
           </View>
@@ -280,9 +314,11 @@ const StoriesViewerModal = ({
           <TouchableWithoutFeedback onPress={handleTap}>
             <View style={styles.photoContainer}>
               <Image
-                source={{ uri: currentPhoto.imageURL }}
+                source={{ uri: currentPhoto.imageURL, cacheKey: `story-${currentPhoto.id}` }}
                 style={styles.photo}
-                resizeMode="contain"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
               />
             </View>
           </TouchableWithoutFeedback>
@@ -303,8 +339,8 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     flexDirection: 'row',
     paddingTop: (StatusBar.currentHeight || 54) + 8,
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingHorizontal: spacing.xs,
+    gap: spacing.xxs,
   },
   progressSegment: {
     flex: 1,
@@ -321,8 +357,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   friendInfo: {
     flexDirection: 'row',
@@ -330,9 +366,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profilePic: {
-    width: 32,
-    height: 32,
-    borderRadius: 9999,
+    width: layout.dimensions.avatarSmall,
+    height: layout.dimensions.avatarSmall,
+    borderRadius: layout.borderRadius.full,
     borderWidth: 1,
     borderColor: colors.overlay.light,
   },
@@ -362,8 +398,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   closeButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: spacing.xs,
+    marginLeft: spacing.xs,
   },
   closeButtonText: {
     fontSize: typography.size.xl,

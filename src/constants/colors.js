@@ -130,10 +130,23 @@ export const colors = {
     textSecondary: '#7B7B9E',
   },
 
+  // Retro animation palette — charge bars, dissolves, wipes
+  retro: {
+    chargeCyan: '#00D4FF', // Phase 1 (0-25%) — electric cyan
+    chargeGold: '#FFD700', // Phase 2 (25-50%) — coin gold
+    chargeAmber: '#FF8C00', // Phase 3 (50-75%) — retro amber
+    chargeMagenta: '#FF2D78', // Phase 4 (75-100%) — hot magenta
+    completionFlash: '#FFFFFF', // Full-bar white flash
+    readyText: '#FF2D78', // "READY!" text (matches final phase)
+    readyBackground: '#FFFFFF', // "READY!" backdrop
+    segmentBorder: 'rgba(255, 255, 255, 0.15)', // Empty segment outline
+  },
+
   // Story card styling (retro mini-cards)
   storyCard: {
     frame: '#1E1E35', // Dark indigo frame
     glowViewed: '#252540', // Subtle glow when viewed
     textName: '#E0E0F0', // Phosphor white name text
+    gradientUnviewed: ['#00D4FF', '#FF8C00', '#00D4FF'], // Cyan → Amber → Cyan
   },
 };

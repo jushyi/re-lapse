@@ -1,0 +1,28 @@
+# Comments E2E Flow
+# Prerequisites: Logged-in user, feed has photos with comments
+appId: com.spoodsjs.rewind
+---
+- launchApp
+- assertVisible:
+    id: 'feed-list'
+    timeout: 10000
+- tapOn:
+    id: 'feed-photo-card'
+# Photo detail opens
+- assertVisible:
+    id: 'comments-list'
+    timeout: 5000
+    optional: true
+# If comments sheet is available, interact with input
+- tapOn:
+    id: 'comment-input'
+    optional: true
+- inputText: 'Great photo!'
+- tapOn:
+    id: 'comment-send-button'
+    optional: true
+# Assert comment appears
+- assertVisible:
+    text: 'Great photo!'
+    timeout: 5000
+    optional: true

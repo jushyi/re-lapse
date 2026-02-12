@@ -27,9 +27,11 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { sanitizeInput } from '../../utils/validation';
 
 const db = getFirestore();
 
@@ -64,6 +66,9 @@ export const createAlbum = async (userId, name, photoIds) => {
       return { success: false, error: `Album name must be ${MAX_NAME_LENGTH} characters or less` };
     }
 
+    // Sanitize album name (strip HTML/script injection)
+    const sanitizedName = sanitizeInput(trimmedName);
+
     if (!photoIds || !Array.isArray(photoIds) || photoIds.length === 0) {
       return { success: false, error: 'At least one photo is required' };
     }
@@ -72,7 +77,7 @@ export const createAlbum = async (userId, name, photoIds) => {
     const albumsCollection = collection(db, 'albums');
     const albumRef = await addDoc(albumsCollection, {
       userId,
-      name: trimmedName,
+      name: sanitizedName,
       coverPhotoId: photoIds[0], // First photo becomes cover
       photoIds,
       createdAt: serverTimestamp(),
@@ -82,7 +87,7 @@ export const createAlbum = async (userId, name, photoIds) => {
     const album = {
       id: albumRef.id,
       userId,
-      name: trimmedName,
+      name: sanitizedName,
       coverPhotoId: photoIds[0],
       photoIds,
     };
@@ -142,7 +147,8 @@ export const getUserAlbums = async userId => {
     const albumsQuery = query(
       collection(db, 'albums'),
       where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      orderBy('updatedAt', 'desc'),
+      limit(50) // Safety bound on album count per user
     );
     const snapshot = await getDocs(albumsQuery);
 
@@ -200,7 +206,8 @@ export const updateAlbum = async (albumId, updates) => {
         };
       }
 
-      validUpdates.name = trimmedName;
+      // Sanitize album name (strip HTML/script injection)
+      validUpdates.name = sanitizeInput(trimmedName);
     }
 
     // Validate coverPhotoId if provided

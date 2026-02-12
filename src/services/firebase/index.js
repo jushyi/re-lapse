@@ -20,6 +20,7 @@ export {
   handleNotificationTapped,
   checkNotificationPermissions,
   scheduleTestNotification,
+  markNotificationPermissionCompleted,
 } from './notificationService';
 
 export {
@@ -59,6 +60,7 @@ export {
   acceptFriendRequest,
   declineFriendRequest,
   generateFriendshipId,
+  getFriendships,
 } from './friendshipService';
 
 export {
@@ -87,3 +89,7 @@ export {
 } from './blockService';
 
 export { submitReport, REPORT_REASONS } from './reportService';
+
+export { initPerformanceMonitoring, withTrace } from './performanceService';
+
+export { getMutualFriendsForTagging } from './mentionService';

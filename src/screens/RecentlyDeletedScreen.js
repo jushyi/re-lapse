@@ -5,14 +5,14 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Modal,
-  RefreshControl,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import PixelSpinner from '../components/PixelSpinner';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import ReanimatedModule, {
@@ -24,6 +24,7 @@ import ReanimatedModule, {
 import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import {
   getDeletedPhotos,
   restoreDeletedPhoto,
@@ -335,7 +336,7 @@ const RecentlyDeletedScreen = () => {
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: item.imageURL }}
+          source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
           style={styles.photoImage}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -404,7 +405,7 @@ const RecentlyDeletedScreen = () => {
     ({ item }) => (
       <View style={styles.viewerPhotoContainer}>
         <Image
-          source={{ uri: item.imageURL }}
+          source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
           style={styles.viewerImage}
           contentFit="contain"
           cachePolicy="memory-disk"
@@ -474,14 +475,14 @@ const RecentlyDeletedScreen = () => {
               </View>
 
               {/* Footer actions */}
-              <View style={[styles.viewerFooter, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={[styles.viewerFooter, { paddingBottom: insets.bottom + spacing.md }]}>
                 <TouchableOpacity
                   style={[styles.viewerButton, styles.viewerRestoreButton]}
                   onPress={handleSingleRestore}
                   disabled={actionLoading}
                 >
                   {actionLoading ? (
-                    <ActivityIndicator size="small" color={colors.text.primary} />
+                    <PixelSpinner size="small" color={colors.text.primary} />
                   ) : (
                     <>
                       <PixelIcon name="arrow-undo" size={20} color={colors.text.primary} />
@@ -524,7 +525,7 @@ const RecentlyDeletedScreen = () => {
           </View>
         </SafeAreaView>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.secondary} />
+          <PixelSpinner size="large" color={colors.text.secondary} />
         </View>
       </View>
     );
@@ -587,7 +588,9 @@ const RecentlyDeletedScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.text.secondary}
+              tintColor={colors.brand.purple}
+              colors={[colors.brand.purple]}
+              progressBackgroundColor={colors.background.secondary}
             />
           }
         />
@@ -595,14 +598,14 @@ const RecentlyDeletedScreen = () => {
 
       {/* Bottom action bar (multi-select mode) */}
       {multiSelectMode && selectedIds.length > 0 && (
-        <View style={[styles.bottomActionBar, { bottom: tabBarHeight, paddingBottom: 16 }]}>
+        <View style={[styles.bottomActionBar, { bottom: tabBarHeight, paddingBottom: spacing.md }]}>
           <TouchableOpacity
             style={[styles.actionButton, styles.restoreButton]}
             onPress={handleBatchRestore}
             disabled={actionLoading}
           >
             {actionLoading ? (
-              <ActivityIndicator size="small" color={colors.text.primary} />
+              <PixelSpinner size="small" color={colors.text.primary} />
             ) : (
               <>
                 <PixelIcon name="arrow-undo" size={20} color={colors.text.primary} />

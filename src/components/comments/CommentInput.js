@@ -29,6 +29,7 @@ import { uploadCommentImage } from '../../services/firebase/storageService';
 // Giphy SDK requires dev client build, not Expo Go
 import { openGifPicker, useGifSelection } from './GifPicker';
 import { styles } from '../../styles/CommentInput.styles';
+import MentionSuggestionsOverlay from './MentionSuggestionsOverlay';
 
 /**
  * CommentInput Component
@@ -39,6 +40,11 @@ import { styles } from '../../styles/CommentInput.styles';
  * @param {string} initialMention - @username to pre-fill in input when replying
  * @param {string} placeholder - Custom placeholder text
  * @param {boolean} autoFocus - Whether to auto-focus input
+ * @param {Array} mentionSuggestions - Array of suggestion objects for @-mention overlay
+ * @param {boolean} showMentionSuggestions - Whether to show the mention overlay
+ * @param {boolean} mentionSuggestionsLoading - Whether mention suggestions are loading
+ * @param {function} onTextChangeForMentions - Callback (text, cursorPosition) for mention detection
+ * @param {function} onMentionSelect - Callback (user) when a mention suggestion is selected
  * @param {ref} ref - Ref forwarded to TextInput for external focus control
  */
 const CommentInput = forwardRef(
@@ -50,6 +56,11 @@ const CommentInput = forwardRef(
       initialMention = null,
       placeholder = 'Add a comment...',
       autoFocus = false,
+      mentionSuggestions = [],
+      showMentionSuggestions = false,
+      mentionSuggestionsLoading = false,
+      onTextChangeForMentions,
+      onMentionSelect,
     },
     ref
   ) => {
@@ -58,12 +69,17 @@ const CommentInput = forwardRef(
     const [selectedMedia, setSelectedMedia] = useState(null); // { uri, type: 'image' | 'gif' }
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef(null);
+    const cursorPositionRef = useRef(0);
+    const prevTextLengthRef = useRef(0);
 
     // Pre-fill input with @mention when replying
     useEffect(() => {
       if (initialMention) {
         logger.debug('CommentInput: Pre-filling with @mention', { initialMention });
-        setText(`@${initialMention} `);
+        const mentionText = `@${initialMention} `;
+        prevTextLengthRef.current = mentionText.length;
+        cursorPositionRef.current = mentionText.length;
+        setText(mentionText);
       }
     }, [initialMention]);
 
@@ -97,10 +113,29 @@ const CommentInput = forwardRef(
         logger.debug('CommentInput: setMedia called via ref', { mediaType: media?.type });
         setSelectedMedia(media);
       },
+      setText: newText => {
+        logger.debug('CommentInput: setText called via ref', { textLength: newText?.length });
+        prevTextLengthRef.current = newText?.length || 0;
+        cursorPositionRef.current = newText?.length || 0;
+        setText(newText);
+      },
     }));
 
-    const handleChangeText = useCallback(newText => {
-      setText(newText);
+    const handleChangeText = useCallback(
+      newText => {
+        const lengthDiff = newText.length - prevTextLengthRef.current;
+        prevTextLengthRef.current = newText.length;
+        setText(newText);
+        // Adjust cursor: onChangeText fires before onSelectionChange,
+        // so cursorPositionRef is stale. Advance by the length difference.
+        const adjustedCursor = cursorPositionRef.current + Math.max(0, lengthDiff);
+        onTextChangeForMentions?.(newText, adjustedCursor);
+      },
+      [onTextChangeForMentions]
+    );
+
+    const handleSelectionChange = useCallback(event => {
+      cursorPositionRef.current = event.nativeEvent.selection.start;
     }, []);
 
     const clearMedia = useCallback(() => {
@@ -214,6 +249,14 @@ const CommentInput = forwardRef(
 
     return (
       <View style={styles.container}>
+        {/* @-Mention Suggestions Overlay - positioned above the input */}
+        <MentionSuggestionsOverlay
+          suggestions={mentionSuggestions}
+          onSelect={onMentionSelect}
+          visible={showMentionSuggestions}
+          loading={mentionSuggestionsLoading}
+        />
+
         {/* Reply Banner - shown when replying to a comment */}
         {replyingTo && (
           <View style={styles.replyBanner}>
@@ -252,12 +295,14 @@ const CommentInput = forwardRef(
           {/* Input Wrapper with rounded background */}
           <View style={styles.inputWrapper}>
             <TextInput
+              testID="comment-input"
               ref={inputRef}
               style={styles.textInput}
               placeholder={placeholder}
               placeholderTextColor={colors.text.tertiary}
               value={text}
               onChangeText={handleChangeText}
+              onSelectionChange={handleSelectionChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               multiline
@@ -298,6 +343,7 @@ const CommentInput = forwardRef(
 
           {/* Send Button */}
           <TouchableOpacity
+            testID="comment-send-button"
             style={[styles.sendButton, isDisabled && styles.sendButtonDisabled]}
             onPress={handleSend}
             disabled={isDisabled}

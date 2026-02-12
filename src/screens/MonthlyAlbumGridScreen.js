@@ -5,7 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import { useAuth } from '../context/AuthContext';
 import { getMonthPhotos } from '../services/firebase/monthlyAlbumService';
 import { AlbumPhotoViewer } from '../components';
@@ -169,7 +171,7 @@ const MonthlyAlbumGridScreen = () => {
         activeOpacity={0.8}
       >
         <Image
-          source={{ uri: item.photo.imageURL }}
+          source={{ uri: item.photo.imageURL, cacheKey: `photo-${item.photo.id}` }}
           style={styles.photoImage}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -200,7 +202,7 @@ const MonthlyAlbumGridScreen = () => {
         activeOpacity={0.8}
       >
         <Image
-          source={{ uri: item.photo.imageURL }}
+          source={{ uri: item.photo.imageURL, cacheKey: `photo-${item.photo.id}` }}
           style={styles.photoImage}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -276,7 +278,7 @@ const MonthlyAlbumGridScreen = () => {
               activeOpacity={0.8}
             >
               <Image
-                source={{ uri: photoItem.photo.imageURL }}
+                source={{ uri: photoItem.photo.imageURL, cacheKey: `photo-${photoItem.photo.id}` }}
                 style={styles.photoImage}
                 contentFit="cover"
                 cachePolicy="memory-disk"
@@ -402,22 +404,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: layout.dimensions.avatarMedium,
+    height: layout.dimensions.avatarMedium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: spacing.xs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -435,8 +437,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Tab bar clearance
   },
   dayHeaderContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.primary,
   },
   dayHeaderText: {

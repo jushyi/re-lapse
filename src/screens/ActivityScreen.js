@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  RefreshControl,
   Image,
-  ActivityIndicator,
   Alert,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
+import PixelSpinner from '../components/PixelSpinner';
 import {
   getFirestore,
   collection,
@@ -25,6 +25,8 @@ import {
   limit,
 } from '@react-native-firebase/firestore';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import { useAuth } from '../context/AuthContext';
 import {
   getPendingRequests,
@@ -34,10 +36,55 @@ import {
 import { getTimeAgo } from '../utils/timeUtils';
 import { mediumImpact } from '../utils/haptics';
 import { markSingleNotificationAsRead } from '../services/firebase/notificationService';
+import { getPhotoById, getUserStoriesData } from '../services/firebase/feedService';
+import { usePhotoDetailActions } from '../context/PhotoDetailContext';
 import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
 const db = getFirestore();
+
+/**
+ * Group notifications into time-based sections: Today, This Week, Earlier.
+ * Handles Firestore Timestamps (with .seconds or .toDate()) and plain Dates.
+ * Empty sections are omitted. Order within sections is preserved (already desc by createdAt).
+ */
+const groupNotificationsByTime = notifs => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const weekAgo = todayStart - 6 * 24 * 60 * 60 * 1000; // 7 days including today
+
+  const today = [];
+  const thisWeek = [];
+  const earlier = [];
+
+  for (const notif of notifs) {
+    let ts;
+    if (notif.createdAt?.seconds != null) {
+      ts = notif.createdAt.seconds * 1000;
+    } else if (notif.createdAt?.toDate) {
+      ts = notif.createdAt.toDate().getTime();
+    } else if (notif.createdAt instanceof Date) {
+      ts = notif.createdAt.getTime();
+    } else {
+      ts = 0; // Unknown format -> earliest bucket
+    }
+
+    if (ts >= todayStart) {
+      today.push(notif);
+    } else if (ts >= weekAgo) {
+      thisWeek.push(notif);
+    } else {
+      earlier.push(notif);
+    }
+  }
+
+  const sections = [];
+  if (today.length > 0) sections.push({ title: 'Today', data: today });
+  if (thisWeek.length > 0) sections.push({ title: 'This Week', data: thisWeek });
+  if (earlier.length > 0) sections.push({ title: 'Earlier', data: earlier });
+
+  return sections;
+};
 
 /**
  * ActivityScreen - Friend requests + reaction notifications
@@ -46,6 +93,7 @@ const db = getFirestore();
 const ActivityScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { openPhotoDetail } = usePhotoDetailActions();
   const [friendRequests, setFriendRequests] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +171,45 @@ const ActivityScreen = () => {
     loadData();
   };
 
+  // Deduplicate reaction notifications: keep only the latest per (senderId, photoId)
+  const clumpedNotifications = useMemo(() => {
+    const reactionKeys = new Map(); // key -> notification
+    const result = [];
+
+    for (const notif of notifications) {
+      if (notif.type === 'reaction' && notif.senderId && notif.photoId) {
+        const key = `${notif.senderId}-${notif.photoId}`;
+        const existing = reactionKeys.get(key);
+        if (!existing) {
+          reactionKeys.set(key, notif);
+          result.push(notif);
+        } else {
+          // Keep the one with the latest createdAt
+          const existingTime = existing.createdAt?.seconds || 0;
+          const newTime = notif.createdAt?.seconds || 0;
+          if (newTime > existingTime) {
+            // Replace existing in result array
+            const idx = result.indexOf(existing);
+            result[idx] = notif;
+            reactionKeys.set(key, notif);
+          }
+          // else discard the older duplicate
+        }
+      } else {
+        // Non-reaction notifications pass through unchanged
+        result.push(notif);
+      }
+    }
+
+    return result;
+  }, [notifications]);
+
+  // Group clumped notifications into time-based sections
+  const groupedSections = useMemo(
+    () => groupNotificationsByTime(clumpedNotifications),
+    [clumpedNotifications]
+  );
+
   const handleAccept = async requestId => {
     mediumImpact();
     const result = await acceptFriendRequest(requestId, user.uid);
@@ -164,6 +251,11 @@ const ActivityScreen = () => {
   const getActionText = item => {
     const senderName = item.senderName || 'Someone';
 
+    // Story notifications use templates that may embed the name mid-sentence
+    if (item.type === 'story') {
+      return 'posted to their story';
+    }
+
     if (item.message) {
       // If message starts with sender name, strip the prefix
       if (item.message.startsWith(senderName)) {
@@ -193,20 +285,48 @@ const ActivityScreen = () => {
     await markSingleNotificationAsRead(item.id);
 
     // Navigate based on notification type/data
-    const { type, photoId, userId: notifUserId, taggerId } = item;
-    if (type === 'reaction' && photoId) {
-      navigation.navigate('MainTabs', { screen: 'Feed', params: { photoId } });
-    } else if (type === 'story' && notifUserId) {
-      navigation.navigate('MainTabs', {
-        screen: 'Feed',
-        params: { highlightUserId: notifUserId, openStory: true },
-      });
-    } else if (type === 'tagged' && taggerId) {
-      navigation.navigate('MainTabs', {
-        screen: 'Feed',
-        params: { highlightUserId: taggerId, highlightPhotoId: photoId, openStory: true },
-      });
-    } else if (type === 'friend_accepted' || type === 'friend_request') {
+    const { type, photoId } = item;
+    if ((type === 'reaction' || type === 'comment' || type === 'mention') && photoId) {
+      // Fetch the photo and open PhotoDetail directly
+      const result = await getPhotoById(photoId);
+      if (result.success) {
+        openPhotoDetail({
+          mode: 'feed',
+          photo: result.photo,
+          currentUserId: user?.uid,
+          initialShowComments: type === 'comment' || type === 'mention',
+        });
+        navigation.navigate('PhotoDetail');
+      }
+    } else if (type === 'story' && item.senderId) {
+      // Fetch the poster's story photos and open in stories mode
+      const result = await getUserStoriesData(item.senderId);
+      if (result.success && result.userStory?.hasPhotos) {
+        openPhotoDetail({
+          mode: 'stories',
+          photos: result.userStory.topPhotos,
+          initialIndex: 0,
+          currentUserId: user?.uid,
+          isOwnStory: false,
+          hasNextFriend: false,
+        });
+        navigation.navigate('PhotoDetail');
+      }
+    } else if (type === 'tagged' && photoId) {
+      // Fetch the tagged photo and open PhotoDetail directly
+      const result = await getPhotoById(photoId);
+      if (result.success) {
+        openPhotoDetail({
+          mode: 'feed',
+          photo: result.photo,
+          currentUserId: user?.uid,
+          initialShowComments: false,
+        });
+        navigation.navigate('PhotoDetail');
+      }
+    } else if (type === 'friend_accepted' && item.senderId) {
+      handleAvatarPress(item.senderId, item.senderName);
+    } else if (type === 'friend_request') {
       navigation.navigate('FriendsList');
     } else if (item.senderId) {
       // Default: navigate to sender's profile
@@ -291,12 +411,12 @@ const ActivityScreen = () => {
   const renderEmpty = () => {
     if (loading) return null;
 
-    if (friendRequests.length === 0 && notifications.length === 0) {
+    if (friendRequests.length === 0 && clumpedNotifications.length === 0) {
       return (
         <View style={styles.emptyContainer}>
           <PixelIcon name="heart-outline" size={64} color={colors.text.tertiary} />
           <Text style={styles.emptyTitle}>No activity yet</Text>
-          <Text style={styles.emptyText}>Friend requests and reactions will appear here</Text>
+          <Text style={styles.emptyText}>Likes, comments, and other activity will appear here</Text>
         </View>
       );
     }
@@ -314,7 +434,7 @@ const ActivityScreen = () => {
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.primary} />
+          <PixelSpinner size="large" color={colors.text.primary} />
         </View>
       </SafeAreaView>
     );
@@ -338,7 +458,9 @@ const ActivityScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={colors.text.primary}
+            tintColor={colors.interactive.primary}
+            colors={[colors.interactive.primary]}
+            progressBackgroundColor={colors.background.secondary}
           />
         }
       >
@@ -361,14 +483,16 @@ const ActivityScreen = () => {
           </View>
         )}
 
-        {/* Reactions Section */}
-        {notifications.length > 0 && (
+        {/* Time-grouped Notifications */}
+        {groupedSections.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { paddingHorizontal: 16, paddingVertical: 12 }]}>
-              Reactions
-            </Text>
-            {notifications.map(item => (
-              <View key={item.id}>{renderNotification({ item })}</View>
+            {groupedSections.map(section => (
+              <View key={section.title}>
+                <Text style={[styles.sectionTitle, styles.timeSectionHeader]}>{section.title}</Text>
+                {section.data.map(item => (
+                  <View key={item.id}>{renderNotification({ item })}</View>
+                ))}
+              </View>
             ))}
           </View>
         )}
@@ -388,12 +512,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.primary,
   },
   backButton: {
-    padding: 4,
+    padding: spacing.xxs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -412,13 +536,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   section: {
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
   },
   sectionTitle: {
@@ -428,12 +552,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  timeSectionHeader: {
+    paddingHorizontal: spacing.md,
+    paddingTop: 20,
+    paddingBottom: spacing.xs,
+  },
   sectionBadge: {
     backgroundColor: colors.brand.pink,
-    borderRadius: 2,
-    paddingHorizontal: 8,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    marginLeft: 8,
+    marginLeft: spacing.xs,
     marginRight: 'auto',
   },
   sectionBadgeText: {
@@ -444,17 +573,17 @@ const styles = StyleSheet.create({
   requestItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   requestPhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
+    width: layout.dimensions.avatarMedium + 4,
+    height: layout.dimensions.avatarMedium + 4,
+    borderRadius: layout.borderRadius.round,
+    marginRight: spacing.sm,
   },
   requestPhotoPlaceholder: {
     backgroundColor: colors.background.tertiary,
@@ -468,7 +597,7 @@ const styles = StyleSheet.create({
   },
   requestInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   requestName: {
     fontSize: typography.size.md,
@@ -483,13 +612,13 @@ const styles = StyleSheet.create({
   },
   requestActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
   },
   acceptButton: {
-    backgroundColor: colors.brand.purple,
+    backgroundColor: colors.interactive.primary,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: layout.borderRadius.round,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -497,24 +626,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: layout.borderRadius.round,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   notifPhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
+    width: layout.dimensions.avatarMedium + 4,
+    height: layout.dimensions.avatarMedium + 4,
+    borderRadius: layout.borderRadius.round,
+    marginRight: spacing.sm,
   },
   notifPhotoPlaceholder: {
     backgroundColor: colors.background.tertiary,
@@ -523,7 +652,7 @@ const styles = StyleSheet.create({
   },
   notifContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   notifMessage: {
     fontSize: typography.size.md,
@@ -532,14 +661,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   notifSenderName: {
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   unreadDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.brand.purple,
+    backgroundColor: colors.interactive.primary,
     marginRight: 6,
   },
   readSpacer: {
@@ -557,20 +686,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 80,
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
   },
   emptyTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   emptyText: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.xs,
     lineHeight: 20,
   },
 });

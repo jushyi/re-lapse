@@ -17,11 +17,6 @@ import { Button, Input, StepIndicator, ProfileSongCard } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto } from '../services/firebase/storageService';
 import {
-  requestNotificationPermission,
-  getNotificationToken,
-  storeNotificationToken,
-} from '../services/firebase/notificationService';
-import {
   validateLength,
   validateUsername,
   sanitizeDisplayName,
@@ -30,6 +25,8 @@ import {
 import { checkUsernameAvailability, cancelProfileSetup } from '../services/firebase/userService';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 const ProfileSetupScreen = ({ navigation, route }) => {
@@ -54,15 +51,11 @@ const ProfileSetupScreen = ({ navigation, route }) => {
   const [errors, setErrors] = useState({});
   const usernameCheckTimeout = useRef(null);
 
-  // Detect selectedSong from route params (passed back from SongSearchScreen)
-  useEffect(() => {
-    const { selectedSong: songParam } = route.params || {};
-    if (songParam) {
-      navigation.setParams({ selectedSong: undefined });
-      setSelectedSong(songParam);
-      logger.info('ProfileSetupScreen: Song selected', { songId: songParam.id });
-    }
-  }, [route.params, navigation]);
+  // Callback for SongSearchScreen — receives selected song without re-navigating
+  const handleSongSelect = useCallback(song => {
+    setSelectedSong(song);
+    logger.info('ProfileSetupScreen: Song selected', { songId: song.id });
+  }, []);
 
   // Handle cancel profile setup
   const handleCancel = () => {
@@ -228,6 +221,7 @@ const ProfileSetupScreen = ({ navigation, route }) => {
   const handleSongPress = () => {
     navigation.navigate('SongSearch', {
       source: 'ProfileSetup',
+      onSongSelect: handleSongSelect,
     });
   };
 
@@ -263,32 +257,6 @@ const ProfileSetupScreen = ({ navigation, route }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const requestNotificationPermissionsAsync = async () => {
-    try {
-      // Request notification permission
-      const permissionResult = await requestNotificationPermission();
-
-      if (permissionResult.success) {
-        // Get FCM token
-        const tokenResult = await getNotificationToken();
-
-        if (tokenResult.success && tokenResult.data) {
-          // Store token in user document
-          await storeNotificationToken(user.uid, tokenResult.data);
-          logger.info('Notification permissions granted and token stored');
-        } else {
-          logger.warn('Could not get notification token', { error: tokenResult.error });
-        }
-      } else {
-        logger.info('Notification permission denied', { error: permissionResult.error });
-        // Don't show error to user - notifications are optional
-      }
-    } catch (error) {
-      logger.error('Error requesting notification permissions', error);
-      // Don't block user flow - continue even if notifications fail
-    }
   };
 
   const handleNextStep = async () => {
@@ -339,10 +307,6 @@ const ProfileSetupScreen = ({ navigation, route }) => {
           ...userProfile,
           ...updateData,
         });
-
-        // Request notification permissions after profile setup
-        // This runs in background, doesn't block navigation
-        requestNotificationPermissionsAsync();
 
         // Navigate to Selects screen (now in same Onboarding stack)
         navigation.navigate('Selects');
@@ -402,6 +366,7 @@ const ProfileSetupScreen = ({ navigation, route }) => {
                 error={errors.displayName}
                 maxLength={24}
                 showCharacterCount={true}
+                testID="profile-display-name-input"
               />
 
               <Input
@@ -421,6 +386,7 @@ const ProfileSetupScreen = ({ navigation, route }) => {
                 }
                 maxLength={24}
                 showCharacterCount={true}
+                testID="profile-username-input"
               />
 
               <Input
@@ -462,6 +428,7 @@ const ProfileSetupScreen = ({ navigation, route }) => {
                 onPress={handleNextStep}
                 loading={uploading}
                 style={styles.nextButton}
+                testID="profile-next-button"
               />
             </View>
           </View>
@@ -484,23 +451,23 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   header: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    marginBottom: 8,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
   },
   backButton: {
-    padding: 4,
+    padding: spacing.xxs,
   },
   title: {
     fontSize: typography.size.xxxl,
     fontFamily: typography.fontFamily.display,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     color: colors.text.primary,
   },
   subtitle: {
@@ -508,11 +475,11 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     textAlign: 'center',
     color: colors.text.secondary,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   photoContainer: {
     alignSelf: 'center',
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   profilePhoto: {
     width: 120,
@@ -531,7 +498,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   placeholderText: {
-    marginTop: 8,
+    marginTop: spacing.xs,
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
@@ -547,20 +514,20 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   songSection: {
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   songLabel: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   stepIndicator: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   nextButton: {
-    marginTop: 8,
+    marginTop: spacing.xs,
   },
 });
 

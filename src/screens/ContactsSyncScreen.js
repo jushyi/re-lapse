@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PixelIcon from '../components/PixelIcon';
+import PixelSpinner from '../components/PixelSpinner';
 import { useAuth } from '../context/AuthContext';
 import FriendCard from '../components/FriendCard';
 import {
@@ -90,19 +91,17 @@ const ContactsSyncScreen = ({ navigation }) => {
     }
   };
 
-  // Marks sync as completed (even though skipped) so auth listener transitions to main app
   const handleSkip = async () => {
     mediumImpact();
-    // Mark as completed with false to indicate skipped (but still done with this step)
     await markContactsSyncCompleted(user.uid, true);
     await refreshUserProfile();
-    // Navigation will auto-transition via auth state listener
+    navigation.navigate('NotificationPermission');
   };
 
   const handleContinue = async () => {
     mediumImpact();
     await refreshUserProfile();
-    // Navigation will auto-transition via auth state listener
+    navigation.navigate('NotificationPermission');
   };
 
   const renderInitialState = () => (
@@ -111,7 +110,7 @@ const ContactsSyncScreen = ({ navigation }) => {
         <PixelIcon
           name="people-outline"
           size={64}
-          color={colors.brand.purple}
+          color={colors.interactive.primary}
           style={styles.privacyIcon}
         />
         <Text style={styles.privacyTitle}>Find Your Friends</Text>
@@ -126,7 +125,12 @@ const ContactsSyncScreen = ({ navigation }) => {
         >
           <Text style={styles.syncButtonText}>Sync Contacts</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={handleSkip}
+          activeOpacity={0.7}
+          testID="contacts-skip-button"
+        >
           <Text style={styles.skipButtonText}>Skip for now</Text>
         </TouchableOpacity>
       </View>
@@ -135,7 +139,7 @@ const ContactsSyncScreen = ({ navigation }) => {
 
   const renderSyncingState = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.brand.purple} />
+      <PixelSpinner size="large" color={colors.interactive.primary} />
       <Text style={styles.loadingText}>Finding your friends...</Text>
     </View>
   );
@@ -176,6 +180,10 @@ const ContactsSyncScreen = ({ navigation }) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
         <View style={styles.continueContainer}>
           <TouchableOpacity

@@ -6,14 +6,14 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   LayoutAnimation,
   Keyboard,
 } from 'react-native';
 import PixelIcon from '../components/PixelIcon';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PixelSpinner from '../components/PixelSpinner';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { submitReport, REPORT_REASONS } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +38,6 @@ const REASON_ICONS = {
 };
 
 const ReportUserScreen = () => {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
@@ -101,7 +100,7 @@ const ReportUserScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
@@ -172,7 +171,7 @@ const ReportUserScreen = () => {
             disabled={submitting}
           >
             {submitting ? (
-              <ActivityIndicator color={colors.text.primary} />
+              <PixelSpinner color={colors.text.primary} />
             ) : (
               <Text style={styles.submitButtonText}>Submit Report</Text>
             )}

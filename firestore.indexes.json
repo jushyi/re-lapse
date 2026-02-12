@@ -24,7 +24,62 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "deletionScheduledAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "photoState", "order": "ASCENDING" },
+        { "fieldPath": "triagedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "photoState", "order": "ASCENDING" },
+        { "fieldPath": "triagedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "capturedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "capturedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "photos", "fieldPath": "reactions", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "imageURL", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "visibility", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "reactionCount", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "commentCount", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "revealedAt", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "taggedUserIds", "indexes": [] },
+    { "collectionGroup": "photos", "fieldPath": "taggedAt", "indexes": [] },
+    { "collectionGroup": "notifications", "fieldPath": "body", "indexes": [] },
+    { "collectionGroup": "notifications", "fieldPath": "title", "indexes": [] },
+    { "collectionGroup": "notifications", "fieldPath": "data", "indexes": [] },
+    { "collectionGroup": "notifications", "fieldPath": "senderProfilePhotoURL", "indexes": [] }
+  ]
 }

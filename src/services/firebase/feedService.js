@@ -22,14 +22,61 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   onSnapshot,
   Timestamp,
+  getCountFromServer,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 import { getFriendUserIds } from './friendshipService';
 import { getBlockedByUserIds } from './blockService';
+import { withTrace } from './performanceService';
 
 const db = getFirestore();
+
+// Firestore `in` operator limit
+const FIRESTORE_IN_LIMIT = 30;
+
+/**
+ * Chunk an array into batches for Firestore `in` operator (max 30 values)
+ */
+const chunkArray = (array, size = FIRESTORE_IN_LIMIT) => {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+};
+
+/**
+ * Batch fetch user data for a set of user IDs with deduplication
+ * Returns a Map of userId -> userData for O(1) lookups
+ * Eliminates N+1 reads by fetching each unique user only once
+ *
+ * @param {string[]} userIds - Array of user IDs (may contain duplicates)
+ * @returns {Promise<Map<string, object>>} Map of userId to user data object
+ */
+const batchFetchUserData = async userIds => {
+  const uniqueIds = [...new Set(userIds)];
+  const userMap = new Map();
+
+  if (uniqueIds.length === 0) return userMap;
+
+  const userDocs = await Promise.all(uniqueIds.map(id => getDoc(doc(db, 'users', id))));
+
+  userDocs.forEach((userDocSnap, index) => {
+    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    userMap.set(uniqueIds[index], {
+      uid: uniqueIds[index],
+      username: userData.username || 'unknown',
+      displayName: userData.displayName || 'Unknown User',
+      profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+    });
+  });
+
+  return userMap;
+};
 
 // Content visibility duration constants
 const STORIES_VISIBILITY_DAYS = 7; // Stories visible for 7 days
@@ -51,11 +98,14 @@ const getCutoffTimestamp = days => {
  * Feed shows friend activity from the last 1 day (FEED_VISIBILITY_DAYS)
  * Own posts excluded - feed is 100% friend activity
  *
+ * Uses Firestore `in` operator for server-side friend filtering (chunked at 30).
+ * Cursor-based pagination with DocumentSnapshot for efficient paging.
+ *
  * @param {number} limitCount - Number of photos to fetch (default: 20)
- * @param {object} lastDoc - Last document for pagination (optional)
+ * @param {object} lastDoc - Last DocumentSnapshot for cursor pagination (optional)
  * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
  * @param {string} currentUserId - Current user ID (to exclude own photos)
- * @returns {Promise} - Feed photos array and last document
+ * @returns {Promise} - Feed photos array and last document snapshot
  */
 export const getFeedPhotos = async (
   limitCount = 20,
@@ -63,135 +113,52 @@ export const getFeedPhotos = async (
   friendUserIds = null,
   currentUserId = null
 ) => {
-  try {
-    // Query: photoState = 'journal' AND triagedAt >= cutoff (server-side time filter)
-    // Uses triagedAt so visibility window starts from when user shared the photo, not when it was captured
-    const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
-    const q = query(
-      collection(db, 'photos'),
-      where('photoState', '==', 'journal'),
-      where('triagedAt', '>=', cutoff)
-    );
-    const snapshot = await getDocs(q);
+  return withTrace(
+    'feed/load',
+    async trace => {
+      try {
+        if (!friendUserIds || friendUserIds.length === 0) {
+          return { success: true, photos: [], lastDoc: null, hasMore: false };
+        }
 
-    // Fetch all photos with user data
-    const allPhotos = await Promise.all(
-      snapshot.docs.map(async photoDoc => {
-        const photoData = photoDoc.data();
+        const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
 
-        // Fetch user data for each photo
-        const userDocRef = doc(db, 'users', photoData.userId);
-        const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+        // Chunk friendIds into batches of 30 (Firestore `in` operator limit)
+        const chunks = chunkArray(friendUserIds);
 
-        return {
-          id: photoDoc.id,
-          ...photoData,
-          user: {
-            uid: photoData.userId,
-            username: userData.username || 'unknown',
-            displayName: userData.displayName || 'Unknown User',
-            profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-          },
-        };
-      })
-    );
+        // Query each chunk with server-side filtering
+        const chunkPromises = chunks.map(chunk => {
+          const constraints = [
+            where('userId', 'in', chunk),
+            where('photoState', '==', 'journal'),
+            where('triagedAt', '>=', cutoff),
+            orderBy('triagedAt', 'desc'),
+            limit(limitCount),
+          ];
 
-    // Get users who have blocked the current user
-    let blockedByUserIds = [];
-    if (currentUserId) {
-      const blockedByResult = await getBlockedByUserIds(currentUserId);
-      blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
-    }
+          if (lastDoc) {
+            constraints.push(startAfter(lastDoc));
+          }
 
-    // Filter by friends only (exclude current user's own photos from feed)
-    // Also filter out users who have blocked the current user
-    let filteredPhotos = allPhotos;
-    if (friendUserIds !== null) {
-      filteredPhotos = allPhotos.filter(
-        photo => friendUserIds.includes(photo.userId) && !blockedByUserIds.includes(photo.userId)
-      );
-    } else if (blockedByUserIds.length > 0) {
-      filteredPhotos = allPhotos.filter(photo => !blockedByUserIds.includes(photo.userId));
-    }
+          return getDocs(query(collection(db, 'photos'), ...constraints));
+        });
 
-    // Sort by capturedAt in descending order (newest first) - client-side
-    const sortedPhotos = filteredPhotos.sort((a, b) => {
-      const aTime = a.capturedAt?.seconds || 0;
-      const bTime = b.capturedAt?.seconds || 0;
-      return bTime - aTime;
-    });
+        const snapshots = await Promise.all(chunkPromises);
 
-    // Handle pagination manually
-    const startIndex = lastDoc ? lastDoc.paginationIndex + 1 : 0;
-    const endIndex = startIndex + limitCount;
-    const paginatedPhotos = sortedPhotos.slice(startIndex, endIndex);
-
-    // Create pagination marker
-    const lastVisible = paginatedPhotos.length > 0 ? { paginationIndex: endIndex - 1 } : null;
-
-    return {
-      success: true,
-      photos: paginatedPhotos,
-      lastDoc: lastVisible,
-      hasMore: endIndex < sortedPhotos.length,
-    };
-  } catch (error) {
-    logger.error('Error fetching feed photos', error);
-    return { success: false, error: error.message, photos: [] };
-  }
-};
-
-/**
- * Subscribe to real-time feed updates
- * Listens for friend posts from the last 1 day (FEED_VISIBILITY_DAYS)
- * Own posts excluded - feed is 100% friend activity
- *
- * @param {function} callback - Callback function to handle updates
- * @param {number} limitCount - Number of photos to watch (default: 20)
- * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
- * @param {string} currentUserId - Current user ID (to exclude own photos)
- * @returns {function} - Unsubscribe function
- */
-export const subscribeFeedPhotos = (
-  callback,
-  limitCount = 20,
-  friendUserIds = null,
-  currentUserId = null
-) => {
-  try {
-    // Set up real-time listener with server-side time filter
-    // Uses triagedAt so visibility window starts from when user shared the photo
-    const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
-    const q = query(
-      collection(db, 'photos'),
-      where('photoState', '==', 'journal'),
-      where('triagedAt', '>=', cutoff)
-    );
-    const unsubscribe = onSnapshot(
-      q,
-      async snapshot => {
-        const allPhotos = await Promise.all(
-          snapshot.docs.map(async photoDoc => {
-            const photoData = photoDoc.data();
-
-            // Fetch user data for each photo
-            const userDocRef = doc(db, 'users', photoData.userId);
-            const userDocSnap = await getDoc(userDocRef);
-            const userData = userDocSnap.exists() ? userDocSnap.data() : {};
-
-            return {
-              id: photoDoc.id,
-              ...photoData,
-              user: {
-                uid: photoData.userId,
-                username: userData.username || 'unknown',
-                displayName: userData.displayName || 'Unknown User',
-                profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-              },
-            };
-          })
+        // Collect all docs with their snapshots for cursor tracking
+        const allDocsWithSnapshots = snapshots.flatMap(snapshot =>
+          snapshot.docs.map(d => ({ docSnap: d, data: d.data() }))
         );
+
+        // Sort by triagedAt desc across all chunks
+        allDocsWithSnapshots.sort((a, b) => {
+          const aTime = a.data.triagedAt?.seconds || 0;
+          const bTime = b.data.triagedAt?.seconds || 0;
+          return bTime - aTime;
+        });
+
+        // Apply limit across merged results
+        const limitedDocs = allDocsWithSnapshots.slice(0, limitCount);
 
         // Get users who have blocked the current user
         let blockedByUserIds = [];
@@ -200,40 +167,167 @@ export const subscribeFeedPhotos = (
           blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
         }
 
-        // Filter by friends only (exclude current user's own photos from feed)
-        // Also filter out users who have blocked the current user
-        let filteredPhotos = allPhotos;
-        if (friendUserIds !== null) {
-          filteredPhotos = allPhotos.filter(
-            photo =>
-              friendUserIds.includes(photo.userId) && !blockedByUserIds.includes(photo.userId)
-          );
-        } else if (blockedByUserIds.length > 0) {
-          filteredPhotos = allPhotos.filter(photo => !blockedByUserIds.includes(photo.userId));
-        }
+        // Batch fetch user data with deduplication (eliminates N+1 reads)
+        const userIds = limitedDocs.map(({ data: photoData }) => photoData.userId);
+        const userMap = await batchFetchUserData(userIds);
 
-        // Sort by capturedAt in descending order (newest first)
-        const sortedPhotos = filteredPhotos.sort((a, b) => {
-          const aTime = a.capturedAt?.seconds || 0;
-          const bTime = b.capturedAt?.seconds || 0;
-          return bTime - aTime;
-        });
+        // Build photo objects using the lookup map
+        const allPhotos = limitedDocs.map(({ docSnap: photoDocSnap, data: photoData }) => ({
+          id: photoDocSnap.id,
+          ...photoData,
+          user: userMap.get(photoData.userId) || {
+            uid: photoData.userId,
+            username: 'unknown',
+            displayName: 'Unknown User',
+            profilePhotoURL: null,
+          },
+        }));
 
-        // Limit to requested count
-        const limitedPhotos = sortedPhotos.slice(0, limitCount);
+        // Client-side: filter blocked users only (friend filtering done server-side)
+        const filteredPhotos =
+          blockedByUserIds.length > 0
+            ? allPhotos.filter(photo => !blockedByUserIds.includes(photo.userId))
+            : allPhotos;
 
-        callback({ success: true, photos: limitedPhotos });
-      },
-      error => {
-        logger.error('Error in feed subscription', error);
-        callback({ success: false, error: error.message, photos: [] });
+        // Last document snapshot for cursor-based pagination
+        const lastVisible =
+          limitedDocs.length > 0 ? limitedDocs[limitedDocs.length - 1].docSnap : null;
+
+        trace.putMetric('photo_count', filteredPhotos.length);
+        trace.putMetric('friend_count', friendUserIds.length);
+
+        return {
+          success: true,
+          photos: filteredPhotos,
+          lastDoc: lastVisible,
+          hasMore: limitedDocs.length === limitCount,
+        };
+      } catch (error) {
+        logger.error('Error fetching feed photos', error);
+        return { success: false, error: error.message, photos: [] };
       }
-    );
+    },
+    { cache_status: lastDoc ? 'paginated' : 'initial' }
+  );
+};
 
-    return unsubscribe;
+/**
+ * Subscribe to real-time feed updates
+ * Listens for friend posts from the last 1 day (FEED_VISIBILITY_DAYS)
+ * Own posts excluded - feed is 100% friend activity
+ *
+ * Uses Firestore `in` operator for server-side friend filtering (chunked at 30).
+ * Creates one onSnapshot listener per chunk, merges results client-side.
+ *
+ * @param {function} callback - Callback function to handle updates
+ * @param {number} limitCount - Number of photos to watch (default: 20)
+ * @param {Array<string>} friendUserIds - Array of friend user IDs (optional)
+ * @param {string} currentUserId - Current user ID (to exclude own photos)
+ * @returns {function} - Unsubscribe function that cleans up ALL chunk listeners
+ */
+export const subscribeFeedPhotos = (
+  callback,
+  limitCount = 20,
+  friendUserIds = null,
+  currentUserId = null
+) => {
+  try {
+    if (!friendUserIds || friendUserIds.length === 0) {
+      callback({ success: true, photos: [] });
+      return () => {};
+    }
+
+    const cutoff = getCutoffTimestamp(FEED_VISIBILITY_DAYS);
+
+    // Chunk friendIds into batches of 30 (Firestore `in` operator limit)
+    const chunks = chunkArray(friendUserIds);
+
+    // Map to store photos by chunk index for merging across listeners
+    const photosByChunk = new Map();
+    const unsubscribes = [];
+
+    // Merge all chunk results, filter, sort, and notify caller
+    const mergeAndNotify = async () => {
+      const mergedMap = new Map();
+      photosByChunk.forEach(chunkMap => {
+        chunkMap.forEach((photo, id) => mergedMap.set(id, photo));
+      });
+
+      // Get users who have blocked the current user
+      let blockedByUserIds = [];
+      if (currentUserId) {
+        const blockedByResult = await getBlockedByUserIds(currentUserId);
+        blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
+      }
+
+      // Convert to array, filter blocked users, sort by triagedAt desc, apply limit
+      let photos = Array.from(mergedMap.values());
+      if (blockedByUserIds.length > 0) {
+        photos = photos.filter(photo => !blockedByUserIds.includes(photo.userId));
+      }
+
+      photos.sort((a, b) => {
+        const aTime = a.triagedAt?.seconds || 0;
+        const bTime = b.triagedAt?.seconds || 0;
+        return bTime - aTime;
+      });
+
+      callback({ success: true, photos: photos.slice(0, limitCount) });
+    };
+
+    // Create one listener per chunk
+    chunks.forEach((chunk, chunkIndex) => {
+      const q = query(
+        collection(db, 'photos'),
+        where('userId', 'in', chunk),
+        where('photoState', '==', 'journal'),
+        where('triagedAt', '>=', cutoff),
+        orderBy('triagedAt', 'desc'),
+        limit(limitCount)
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        async snapshot => {
+          const chunkPhotos = new Map();
+
+          // Batch fetch user data with deduplication (eliminates N+1 reads)
+          const chunkUserIds = snapshot.docs.map(photoDoc => photoDoc.data().userId);
+          const userMap = await batchFetchUserData(chunkUserIds);
+
+          snapshot.docs.forEach(photoDoc => {
+            const photoData = photoDoc.data();
+            chunkPhotos.set(photoDoc.id, {
+              id: photoDoc.id,
+              ...photoData,
+              user: userMap.get(photoData.userId) || {
+                uid: photoData.userId,
+                username: 'unknown',
+                displayName: 'Unknown User',
+                profilePhotoURL: null,
+              },
+            });
+          });
+
+          photosByChunk.set(chunkIndex, chunkPhotos);
+          await mergeAndNotify();
+        },
+        error => {
+          logger.error('Error in feed subscription chunk', { chunkIndex, error });
+          callback({ success: false, error: error.message, photos: [] });
+        }
+      );
+
+      unsubscribes.push(unsubscribe);
+    });
+
+    // Return cleanup that unsubscribes ALL chunk listeners
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
   } catch (error) {
     logger.error('Error subscribing to feed photos', error);
-    return () => {}; // Return empty unsubscribe function
+    return () => {};
   }
 };
 
@@ -280,44 +374,63 @@ export const getPhotoById = async photoId => {
 };
 
 /**
- * Get all photos from a specific user (for Friend Photo Viewer)
+ * Get photos from a specific user (for Friend Photo Viewer)
  * Includes both journaled AND archived photos
+ * Supports cursor-based pagination with limit
  *
  * @param {string} userId - User ID
- * @returns {Promise} - Array of user's photos
+ * @param {number} limitCount - Number of photos to fetch (default: 50)
+ * @param {object} lastDoc - Last DocumentSnapshot for cursor pagination (optional)
+ * @returns {Promise} - Array of user's photos with pagination info
  */
-export const getUserFeedPhotos = async userId => {
-  try {
-    // Query for all triaged photos (journaled + archived)
-    const q = query(
-      collection(db, 'photos'),
-      where('userId', '==', userId),
-      where('status', '==', 'triaged'),
-      orderBy('capturedAt', 'desc')
-    );
-    const snapshot = await getDocs(q);
+export const getUserFeedPhotos = async (userId, limitCount = 50, lastDoc = null) => {
+  return withTrace('feed/refresh', async trace => {
+    try {
+      const constraints = [
+        where('userId', '==', userId),
+        where('status', '==', 'triaged'),
+        orderBy('capturedAt', 'desc'),
+        limit(limitCount),
+      ];
 
-    // Fetch user data once
-    const userDocRef = doc(db, 'users', userId);
-    const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
 
-    const photos = snapshot.docs.map(photoDoc => ({
-      id: photoDoc.id,
-      ...photoDoc.data(),
-      user: {
-        uid: userId,
-        username: userData.username || 'unknown',
-        displayName: userData.displayName || 'Unknown User',
-        profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-      },
-    }));
+      const q = query(collection(db, 'photos'), ...constraints);
+      const snapshot = await getDocs(q);
 
-    return { success: true, photos };
-  } catch (error) {
-    logger.error('Error fetching user feed photos', error);
-    return { success: false, error: error.message, photos: [] };
-  }
+      // Fetch user data once
+      const userDocRef = doc(db, 'users', userId);
+      const userDocSnap = await getDoc(userDocRef);
+      const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+
+      const photos = snapshot.docs.map(photoDoc => ({
+        id: photoDoc.id,
+        ...photoDoc.data(),
+        user: {
+          uid: userId,
+          username: userData.username || 'unknown',
+          displayName: userData.displayName || 'Unknown User',
+          profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+        },
+      }));
+
+      const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+
+      trace.putMetric('photo_count', photos.length);
+
+      return {
+        success: true,
+        photos,
+        lastDoc: lastVisible,
+        hasMore: snapshot.docs.length === limitCount,
+      };
+    } catch (error) {
+      logger.error('Error fetching user feed photos', error);
+      return { success: false, error: error.message, photos: [] };
+    }
+  });
 };
 
 /**
@@ -327,6 +440,7 @@ export const getUserFeedPhotos = async userId => {
  */
 export const getFeedStats = async () => {
   try {
+    // Use count() aggregation to avoid downloading documents — just returns counts
     const journaledQuery = query(
       collection(db, 'photos'),
       where('status', '==', 'triaged'),
@@ -339,19 +453,23 @@ export const getFeedStats = async () => {
     );
     const developingQuery = query(collection(db, 'photos'), where('status', '==', 'developing'));
 
-    const [journaledSnapshot, archivedSnapshot, developingSnapshot] = await Promise.all([
-      getDocs(journaledQuery),
-      getDocs(archivedQuery),
-      getDocs(developingQuery),
+    const [journaledCount, archivedCount, developingCount] = await Promise.all([
+      getCountFromServer(journaledQuery),
+      getCountFromServer(archivedQuery),
+      getCountFromServer(developingQuery),
     ]);
+
+    const journaled = journaledCount.data().count;
+    const archived = archivedCount.data().count;
+    const developing = developingCount.data().count;
 
     return {
       success: true,
       stats: {
-        journaledCount: journaledSnapshot.size,
-        archivedCount: archivedSnapshot.size,
-        developingCount: developingSnapshot.size,
-        totalPhotos: journaledSnapshot.size + archivedSnapshot.size + developingSnapshot.size,
+        journaledCount: journaled,
+        archivedCount: archived,
+        developingCount: developing,
+        totalPhotos: journaled + archived + developing,
       },
     };
   } catch (error) {
@@ -420,11 +538,11 @@ export const toggleReaction = async (photoId, userId, emoji, currentCount) => {
  * Used for Stories feature - shows most engaging photos first
  *
  * @param {string} userId - User ID to fetch photos for
- * @param {number} limit - Maximum number of photos to return (default: 5)
+ * @param {number} maxCount - Maximum number of photos to return (default: 5)
  * @returns {Promise<{success: boolean, photos?: Array, error?: string}>}
  */
-export const getTopPhotosByEngagement = async (userId, limit = 5) => {
-  logger.debug('feedService.getTopPhotosByEngagement: Starting', { userId, limit });
+export const getTopPhotosByEngagement = async (userId, maxCount = 5) => {
+  logger.debug('feedService.getTopPhotosByEngagement: Starting', { userId, maxCount });
 
   try {
     if (!userId) {
@@ -437,7 +555,8 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
     const q = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('photoState', '==', 'journal')
+      where('photoState', '==', 'journal'),
+      limit(100) // Safety bound; client-side sort picks top N from this set
     );
     const snapshot = await getDocs(q);
 
@@ -458,11 +577,11 @@ export const getTopPhotosByEngagement = async (userId, limit = 5) => {
       return bCount - aCount;
     });
 
-    const topPhotos = photos.slice(0, limit);
+    const topPhotos = photos.slice(0, maxCount);
 
     logger.info('feedService.getTopPhotosByEngagement: Success', {
       userId,
-      requested: limit,
+      requested: maxCount,
       returned: topPhotos.length,
     });
 
@@ -504,7 +623,8 @@ export const getUserStoriesData = async userId => {
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('photoState', '==', 'journal'),
-      where('triagedAt', '>=', cutoff)
+      where('triagedAt', '>=', cutoff),
+      limit(100) // Safety bound on user's own stories within 7-day window
     );
     const photosSnapshot = await getDocs(photosQuery);
 
@@ -628,7 +748,8 @@ export const getFriendStoriesData = async currentUserId => {
         collection(db, 'photos'),
         where('userId', '==', friendId),
         where('photoState', '==', 'journal'),
-        where('triagedAt', '>=', cutoff)
+        where('triagedAt', '>=', cutoff),
+        limit(100) // Safety bound on friend's stories within 7-day window
       );
       const photosSnapshot = await getDocs(photosQuery);
 
@@ -723,8 +844,12 @@ export const getFriendStoriesData = async currentUserId => {
  * Returns historical photos from friends when no recent posts exist
  * No time filter - gets all journaled photos from friends
  *
+ * Uses Firestore `in` operator for server-side friend filtering (chunked at 30).
+ * Limited to 50 docs per chunk to avoid unbounded reads.
+ *
  * @param {Array<string>} friendUserIds - Array of friend user IDs
  * @param {number} limitCount - Maximum number of photos to return (default: 10)
+ * @param {string} currentUserId - Current user ID (to exclude blocked users)
  * @returns {Promise<{success: boolean, photos?: Array, error?: string}>}
  */
 export const getRandomFriendPhotos = async (
@@ -750,38 +875,51 @@ export const getRandomFriendPhotos = async (
       blockedByUserIds = blockedByResult.success ? blockedByResult.blockedByUserIds : [];
     }
 
-    // Query all journaled photos (no time filter)
-    const q = query(collection(db, 'photos'), where('photoState', '==', 'journal'));
-    const snapshot = await getDocs(q);
+    // Filter out blocked users before querying
+    const visibleFriendIds =
+      blockedByUserIds.length > 0
+        ? friendUserIds.filter(id => !blockedByUserIds.includes(id))
+        : friendUserIds;
 
-    // Filter to only friend photos, excluding blocked users
-    const friendPhotos = await Promise.all(
-      snapshot.docs
-        .filter(photoDoc => {
-          const userId = photoDoc.data().userId;
-          return friendUserIds.includes(userId) && !blockedByUserIds.includes(userId);
-        })
-        .map(async photoDoc => {
-          const photoData = photoDoc.data();
+    if (visibleFriendIds.length === 0) {
+      return { success: true, photos: [] };
+    }
 
-          // Fetch user data for each photo
-          const userDocRef = doc(db, 'users', photoData.userId);
-          const userDocSnap = await getDoc(userDocRef);
-          const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    // Chunk friendIds into batches of 30 (Firestore `in` operator limit)
+    const chunks = chunkArray(visibleFriendIds);
 
-          return {
-            id: photoDoc.id,
-            ...photoData,
-            user: {
-              uid: photoData.userId,
-              username: userData.username || 'unknown',
-              displayName: userData.displayName || 'Unknown User',
-              profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
-            },
-            isArchivePhoto: true, // Mark as historical/archive photo for UI indicator
-          };
-        })
-    );
+    // Query each chunk with server-side filtering and limit
+    const chunkPromises = chunks.map(chunk => {
+      const q = query(
+        collection(db, 'photos'),
+        where('userId', 'in', chunk),
+        where('photoState', '==', 'journal'),
+        limit(50)
+      );
+      return getDocs(q);
+    });
+
+    const snapshots = await Promise.all(chunkPromises);
+
+    // Merge results and batch fetch user data with deduplication
+    const allDocs = snapshots.flatMap(snapshot => snapshot.docs);
+    const randomUserIds = allDocs.map(photoDoc => photoDoc.data().userId);
+    const userMap = await batchFetchUserData(randomUserIds);
+
+    const friendPhotos = allDocs.map(photoDoc => {
+      const photoData = photoDoc.data();
+      return {
+        id: photoDoc.id,
+        ...photoData,
+        user: userMap.get(photoData.userId) || {
+          uid: photoData.userId,
+          username: 'unknown',
+          displayName: 'Unknown User',
+          profilePhotoURL: null,
+        },
+        isArchivePhoto: true,
+      };
+    });
 
     // Shuffle randomly using Fisher-Yates algorithm
     const shuffled = [...friendPhotos];

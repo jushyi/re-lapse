@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import {
   SelectsBanner,
   FullscreenSelectsViewer,
@@ -24,12 +27,14 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   generateFriendshipId,
+  getFriendships,
   removeFriend,
   blockUser,
   unblockUser,
   isBlocked,
 } from '../services/firebase';
 import { typography } from '../constants/typography';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import logger from '../utils/logger';
 
 const HEADER_HEIGHT = 64;
@@ -75,6 +80,9 @@ const ProfileScreen = () => {
   const [friendshipLoading, setFriendshipLoading] = useState(false);
   const [friendshipStatusLoaded, setFriendshipStatusLoaded] = useState(false);
 
+  // Friend count state
+  const [friendCount, setFriendCount] = useState(0);
+
   // Block status state
   const [isBlockedByMe, setIsBlockedByMe] = useState(false);
   const [hasBlockedMe, setHasBlockedMe] = useState(false);
@@ -82,6 +90,10 @@ const ProfileScreen = () => {
   // Track if initial data fetch is done (to avoid re-fetching on focus for other user profiles)
   const initialFetchDoneRef = useRef(false);
   const albumsFetchedRef = useRef(false);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('ProfileScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   // Get route params for viewing other users' profiles
   const { userId, username: routeUsername } = route.params || {};
@@ -150,6 +162,20 @@ const ProfileScreen = () => {
     }
   }, [isOwnProfile, userId, user?.uid]);
 
+  // Fetch friend count for own profile (queries friendships directly for accuracy)
+  const fetchFriendCount = useCallback(async () => {
+    if (!isOwnProfile || !user?.uid) return;
+
+    try {
+      const result = await getFriendships(user.uid);
+      if (result.success) {
+        setFriendCount(result.friendships.length);
+      }
+    } catch (error) {
+      logger.error('ProfileScreen: Error fetching friend count', { error: error.message });
+    }
+  }, [isOwnProfile, user?.uid]);
+
   // Reset fetch refs when userId changes
   useEffect(() => {
     initialFetchDoneRef.current = false;
@@ -166,6 +192,13 @@ const ProfileScreen = () => {
         fetchFriendshipStatus();
       }
     }, [isOwnProfile, fetchOtherUserProfile, fetchFriendshipStatus])
+  );
+
+  // Refresh friend count on every focus (reflects add/remove friend changes)
+  useFocusEffect(
+    useCallback(() => {
+      fetchFriendCount();
+    }, [fetchFriendCount])
   );
 
   // Fetch albums function (reusable for refresh after operations)
@@ -224,18 +257,20 @@ const ProfileScreen = () => {
 
   // Fetch albums when screen gains focus (refreshes after editing albums)
   // For own profile: re-fetch on every focus to reflect edits
-  // For other profiles: only fetch once when friendship status is determined (read-only, preserve scroll)
+  // For other profiles: only fetch once when friendship status confirms friend access
   useFocusEffect(
     useCallback(() => {
       if (isOwnProfile) {
         // Own profile: always refresh to reflect any album edits
         fetchAlbums();
-      } else if (friendshipStatusLoaded && !albumsFetchedRef.current) {
-        // Other profile: only fetch once when friendship is determined
+      } else if (friendshipStatusLoaded && isFriend && !albumsFetchedRef.current) {
+        // Other profile: only fetch once when confirmed as friends
+        // Guard on isFriend prevents fetching with empty results if friendshipStatus
+        // hasn't resolved to 'friends' yet (race condition with block checks)
         albumsFetchedRef.current = true;
         fetchAlbums();
       }
-    }, [isOwnProfile, user?.uid, userId, friendshipStatus, friendshipStatusLoaded])
+    }, [isOwnProfile, isFriend, user?.uid, userId, friendshipStatusLoaded])
   );
 
   // Run new album animation sequence
@@ -274,14 +309,10 @@ const ProfileScreen = () => {
     }
   }, [route.params, albums, navigation, runNewAlbumAnimation]);
 
-  // Detect selectedSong from route params (passed back from SongSearchScreen)
-  useEffect(() => {
-    const { selectedSong } = route.params || {};
-    if (selectedSong) {
-      navigation.setParams({ selectedSong: undefined });
-      handleSaveSong(selectedSong);
-    }
-  }, [route.params, navigation]);
+  // Callback for SongSearchScreen — receives selected song via goBack()
+  const handleSongSelect = useCallback(song => {
+    handleSaveSong(song);
+  }, []);
 
   // Scroll to top when profile tab icon is pressed while already on profile
   const isFocused = useIsFocused();
@@ -304,7 +335,20 @@ const ProfileScreen = () => {
 
   // Resolve profile data based on own vs other user
   const profileData = isOwnProfile ? userProfile : otherUserProfile;
+
+  // Friend count: own profile uses live query, other profiles use denormalized field
+  const displayFriendCount = isOwnProfile ? friendCount : profileData?.friendCount || 0;
   const isFriend = friendshipStatus === 'friends';
+
+  // Mark screen trace as loaded after profile data is ready (once only)
+  useEffect(() => {
+    if (screenTraceMarkedRef.current) return;
+    const dataReady = isOwnProfile ? !!userProfile : !otherUserLoading && !!otherUserProfile;
+    if (dataReady) {
+      screenTraceMarkedRef.current = true;
+      markLoaded();
+    }
+  }, [isOwnProfile, userProfile, otherUserLoading, otherUserProfile]);
 
   const handleBackPress = () => {
     logger.info('ProfileScreen: Back button pressed');
@@ -567,6 +611,7 @@ const ProfileScreen = () => {
       logger.info('ProfileScreen: Add song pressed');
       navigation.navigate('SongSearch', {
         source: 'ProfileMain',
+        onSongSelect: handleSongSelect,
       });
     }
     // Play/pause handled internally by ProfileSongCard
@@ -585,6 +630,7 @@ const ProfileScreen = () => {
           navigation.navigate('SongSearch', {
             source: 'ProfileMain',
             editSong: profileData.profileSong,
+            onSongSelect: handleSongSelect,
           });
         },
       },
@@ -827,7 +873,16 @@ const ProfileScreen = () => {
           {/* Profile Photo (absolutely positioned, overlapping Selects) */}
           <View style={styles.profilePhotoContainer}>
             {profileData?.photoURL ? (
-              <Image source={{ uri: profileData.photoURL }} style={styles.profilePhoto} />
+              <Image
+                source={{
+                  uri: profileData.photoURL,
+                  cacheKey: `profile-${isOwnProfile ? user?.uid : userId}`,
+                }}
+                style={styles.profilePhoto}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
+              />
             ) : (
               <View style={[styles.profilePhoto, styles.profilePhotoPlaceholder]}>
                 <PixelIcon name="person" size={60} color={colors.text.secondary} />
@@ -835,13 +890,21 @@ const ProfileScreen = () => {
             )}
           </View>
 
-          {/* Profile Info Card - left half, best friends will go on right */}
+          {/* Profile Info Card */}
           <View style={styles.profileInfoCard}>
             <Text style={styles.displayName}>{profileData?.displayName || 'New User'}</Text>
             <Text style={styles.username}>@{profileData?.username || 'username'}</Text>
             <Text style={[styles.bio, !profileData?.bio && styles.bioPlaceholder]}>
               {profileData?.bio || 'No bio yet'}
             </Text>
+
+            {/* Friend Count Scoreboard */}
+            <View style={styles.friendCounter}>
+              <Text style={styles.friendCounterLabel}>FRIENDS</Text>
+              <Text style={styles.friendCounterValue}>
+                {String(Math.min(displayFriendCount, 999)).padStart(3, '0')}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -983,14 +1046,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   headerButton: {
-    padding: 8,
+    padding: spacing.xs,
   },
   headerTitle: {
     flex: 1,
@@ -1007,12 +1070,12 @@ const styles = StyleSheet.create({
   },
   // Selects Banner Container
   selectsBannerContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: spacing.md,
   },
   // Profile Section
   profileSection: {
-    marginTop: 16,
-    marginHorizontal: 16,
+    marginTop: spacing.md,
+    marginHorizontal: spacing.md,
     flexDirection: 'row',
   },
   profilePhotoContainer: {
@@ -1038,40 +1101,62 @@ const styles = StyleSheet.create({
   profileInfoCard: {
     flex: 1,
     backgroundColor: colors.background.tertiary,
-    borderRadius: 2,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
     paddingTop: 70, // Space for profile photo overlay
   },
   displayName: {
     fontSize: typography.size.xxl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
+    paddingRight: '35%', // Stop text before friend counter
   },
   username: {
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
   bio: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
-    marginTop: 8,
+    marginTop: spacing.xs,
   },
   bioPlaceholder: {
     fontStyle: 'italic',
   },
+  // Friend Counter Scoreboard - absolutely positioned in right portion of card
+  friendCounter: {
+    position: 'absolute',
+    top: 52,
+    right: '10%',
+    alignItems: 'center',
+  },
+  friendCounterLabel: {
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.xxs,
+  },
+  friendCounterValue: {
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
+    color: colors.brand.purple,
+    textAlign: 'center',
+    letterSpacing: 3,
+  },
   // Profile Song
   songContainer: {
-    marginHorizontal: 16,
-    marginTop: 16,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
   },
   // Add Friend Section (for non-friends)
   addFriendSection: {
-    marginHorizontal: 16,
-    marginTop: 24,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.lg,
     alignItems: 'center',
   },
   addFriendButton: {
@@ -1079,11 +1164,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand.purple,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 4,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: layout.borderRadius.md,
     width: '100%',
-    gap: 8,
+    gap: spacing.xs,
   },
   addFriendButtonDisabled: {
     opacity: 0.6,
@@ -1094,8 +1179,8 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
   },
   cancelRequestButton: {
-    marginTop: 12,
-    padding: 8,
+    marginTop: spacing.sm,
+    padding: spacing.xs,
   },
   cancelText: {
     color: colors.text.secondary,

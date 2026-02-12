@@ -13,29 +13,24 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   FlatList,
   Platform,
   Animated,
   Easing,
-  ActivityIndicator,
   Keyboard,
   PanResponder,
 } from 'react-native';
+import PixelSpinner from '../PixelSpinner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PixelIcon from '../PixelIcon';
 import * as Haptics from 'expo-haptics';
 import CommentWithReplies from './CommentWithReplies';
 import CommentInput from './CommentInput';
 import useComments from '../../hooks/useComments';
+import useMentionSuggestions from '../../hooks/useMentionSuggestions';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
-import {
-  styles,
-  SHEET_HEIGHT,
-  EXPANDED_HEIGHT,
-  SCREEN_HEIGHT,
-} from '../../styles/CommentsBottomSheet.styles';
+import { styles, SHEET_HEIGHT, SCREEN_HEIGHT } from '../../styles/CommentsBottomSheet.styles';
 
 /**
  * CommentsBottomSheet Component
@@ -46,6 +41,7 @@ import {
  * @param {string} photoOwnerId - Photo owner's user ID (for delete permissions)
  * @param {string} currentUserId - Current user's ID
  * @param {function} onCommentAdded - Callback after comment successfully added
+ * @param {function} onCommentCountChange - Callback for optimistic count updates (delta)
  * @param {function} onAvatarPress - Callback when avatar pressed (userId, displayName) -> navigate to profile
  */
 const CommentsBottomSheet = ({
@@ -55,19 +51,27 @@ const CommentsBottomSheet = ({
   photoOwnerId,
   currentUserId,
   onCommentAdded,
+  onCommentCountChange,
   onAvatarPress,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const sheetTranslateY = useRef(new Animated.Value(0)).current; // Sheet position offset for keyboard
   const swipeY = useRef(new Animated.Value(0)).current; // Swipe gesture tracking
   const sheetHeight = useRef(new Animated.Value(SHEET_HEIGHT)).current; // Animated height for expand/collapse
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const inputRef = useRef(null);
   const flatListRef = useRef(null);
+  const contentHeightRef = useRef(0); // Actual content height from onContentSizeChange
+  const viewportHeightRef = useRef(0); // Actual FlatList viewport height from onLayout
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isExpandedRef = useRef(false); // Ref (not state) so PanResponder closure reads current value
+  const keyboardHeightRef = useRef(0); // For PanResponder closure access
   const isAtTopRef = useRef(true); // Track if FlatList is scrolled to top
+  const expandedHeight = SCREEN_HEIGHT - Math.max(insets.top - 10, 0); // Full screen, pushed slightly above profile photo
+  const expandedHeightRef = useRef(expandedHeight); // For PanResponder closure access
+  expandedHeightRef.current = expandedHeight; // Keep in sync with insets
 
   /**
    * PanResponder for bidirectional expand/collapse on handle bar
@@ -99,8 +103,9 @@ const CommentsBottomSheet = ({
           if (!expanded && (fastSwipe || dy < -50)) {
             // Expand to fullscreen
             isExpandedRef.current = true; // Update ref immediately for next gesture
+            setIsExpanded(true);
             Animated.spring(sheetHeight, {
-              toValue: EXPANDED_HEIGHT,
+              toValue: expandedHeightRef.current,
               useNativeDriver: false, // Height animation requires JS driver
               damping: 20,
               stiffness: 100,
@@ -115,6 +120,8 @@ const CommentsBottomSheet = ({
           if (expanded && (fastSwipe || dy > 50)) {
             // Collapse from fullscreen to normal
             isExpandedRef.current = false; // Update ref immediately for next gesture
+            setIsExpanded(false);
+            Keyboard.dismiss(); // Dismiss keyboard when collapsing
             Animated.spring(sheetHeight, {
               toValue: SHEET_HEIGHT,
               useNativeDriver: false,
@@ -125,11 +132,18 @@ const CommentsBottomSheet = ({
           } else if (!expanded && (dy > SHEET_HEIGHT * 0.25 || fastSwipe)) {
             // Close sheet entirely (existing behavior)
             // Note: swipeY reset happens in useEffect when visible becomes false
-            Animated.timing(swipeY, {
-              toValue: SHEET_HEIGHT,
-              duration: 200,
-              useNativeDriver: true,
-            }).start(() => {
+            Animated.parallel([
+              Animated.timing(swipeY, {
+                toValue: SHEET_HEIGHT,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(backdropOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
               if (onClose) {
                 onClose();
               }
@@ -145,7 +159,8 @@ const CommentsBottomSheet = ({
           return;
         }
 
-        // No significant gesture - spring back
+        // No significant gesture - spring back and dismiss keyboard if visible
+        Keyboard.dismiss();
         Animated.spring(swipeY, {
           toValue: 0,
           useNativeDriver: true,
@@ -154,37 +169,93 @@ const CommentsBottomSheet = ({
     })
   ).current;
 
-  // Track keyboard visibility and animate sheet up to clear suggestions bar
+  /**
+   * Backdrop PanResponder for swipe-up expand + tap-to-close
+   * Allows swiping up on the backdrop area above the sheet to expand
+   */
+  const backdropPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+      onPanResponderRelease: (_, gestureState) => {
+        const { dy, vy } = gestureState;
+        const fastSwipe = Math.abs(vy) > 0.5;
+
+        // Swipe UP on backdrop: expand sheet to fullscreen
+        if (dy < -10 && !isExpandedRef.current && (fastSwipe || dy < -50)) {
+          isExpandedRef.current = true;
+          setIsExpanded(true);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Animated.spring(sheetHeight, {
+            toValue: expandedHeightRef.current,
+            useNativeDriver: false,
+            damping: 20,
+            stiffness: 100,
+          }).start();
+          logger.debug('CommentsBottomSheet: Expanding via backdrop swipe');
+          return;
+        }
+
+        // Tap or swipe down on backdrop: close sheet
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Animated.parallel([
+          Animated.timing(backdropOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: SHEET_HEIGHT,
+            duration: 250,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          if (onClose) {
+            onClose();
+          }
+        });
+      },
+    })
+  ).current;
+
+  // Track keyboard visibility and auto-expand sheet to fullscreen
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard.addListener(showEvent, event => {
-      const keyboardHeight = event.endCoordinates.height;
+      const kbHeight = event.endCoordinates.height;
       setKeyboardVisible(true);
-      // Move up 88.5% of keyboard height to clear autocomplete suggestions bar
-      Animated.timing(sheetTranslateY, {
-        toValue: -(keyboardHeight * 0.885),
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+      setKeyboardHeight(kbHeight);
+      keyboardHeightRef.current = kbHeight;
+
+      // Auto-expand to fullscreen when keyboard opens (if not already expanded)
+      if (!isExpandedRef.current) {
+        isExpandedRef.current = true;
+        setIsExpanded(true);
+        Animated.spring(sheetHeight, {
+          toValue: expandedHeight,
+          useNativeDriver: false,
+          damping: 20,
+          stiffness: 100,
+        }).start();
+      }
+      // No sheet translation — bottom padding handles keyboard avoidance
     });
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setKeyboardVisible(false);
-      // Animate sheet back to original position
-      Animated.timing(sheetTranslateY, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      setKeyboardHeight(0);
+      keyboardHeightRef.current = 0;
+      // Stay expanded — don't collapse sheet on keyboard hide
     });
 
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [sheetTranslateY]);
+  }, [sheetHeight, expandedHeight]);
 
   // Use comments hook for state management
   const {
@@ -194,6 +265,7 @@ const CommentsBottomSheet = ({
     replyingTo,
     initialMention,
     highlightedCommentId,
+    justAddedReplyTo,
     addComment,
     deleteComment,
     toggleLike,
@@ -203,10 +275,19 @@ const CommentsBottomSheet = ({
     canDeleteComment,
     isOwnerComment,
     isLikedByUser,
+    isNewComment,
   } = useComments(photoId, currentUserId, photoOwnerId);
+
+  // @-mention autocomplete state
+  const mentionSuggestions = useMentionSuggestions(photoOwnerId, currentUserId);
+  const latestTextRef = useRef('');
+  const latestCursorRef = useRef(0);
 
   // Track which reply sections to auto-expand for @mention navigation
   const [expandedReplyParents, setExpandedReplyParents] = useState({});
+
+  // Track pending scroll target after comment submission
+  const [pendingScrollTarget, setPendingScrollTarget] = useState(null);
 
   logger.debug('CommentsBottomSheet: Render', {
     visible,
@@ -246,24 +327,92 @@ const CommentsBottomSheet = ({
       swipeY.setValue(0); // Reset swipe position here, not in animation callback
       backdropOpacity.setValue(0);
       isExpandedRef.current = false;
+      setIsExpanded(false);
+      setKeyboardHeight(0);
+      keyboardHeightRef.current = 0;
+      setPendingScrollTarget(null); // Clear pending scroll
     }
   }, [visible, translateY, photoId, sheetHeight, backdropOpacity]);
 
-  const handleBackdropPress = useCallback(() => {
-    logger.debug('CommentsBottomSheet: Backdrop pressed, closing');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onClose) {
-      onClose();
+  /**
+   * Handle pending scroll after comment added.
+   * Waits for both pendingScrollTarget to be set AND threadedComments to update
+   * (new comment appears via real-time subscription) before scrolling.
+   * Uses scrollToEnd for top-level comments (avoids height estimation errors).
+   * 300ms delay ensures the FlatList has fully laid out the new comment.
+   */
+  useEffect(() => {
+    if (!pendingScrollTarget || !flatListRef.current || threadedComments.length === 0) {
+      return;
     }
-  }, [onClose]);
+
+    const { type, parentId } = pendingScrollTarget;
+
+    const timer = setTimeout(() => {
+      if (!flatListRef.current) return;
+
+      if (type === 'top-level') {
+        // Use tracked dimensions for accurate scroll (scrollToEnd uses stale cached values)
+        const contentH = contentHeightRef.current;
+        const viewportH = viewportHeightRef.current;
+        if (contentH > 0 && viewportH > 0 && contentH > viewportH) {
+          flatListRef.current.scrollToOffset({
+            offset: contentH - viewportH,
+            animated: true,
+          });
+        } else {
+          flatListRef.current.scrollToEnd({ animated: true });
+        }
+        logger.debug('CommentsBottomSheet: Scrolled to end for new top-level comment', {
+          contentH,
+          viewportH,
+        });
+      } else if (type === 'reply' && parentId) {
+        const parentIndex = threadedComments.findIndex(c => c.id === parentId);
+        if (parentIndex >= 0) {
+          flatListRef.current.scrollToIndex({
+            index: parentIndex,
+            animated: true,
+            viewPosition: 0,
+          });
+          logger.debug('CommentsBottomSheet: Scrolled to parent for new reply', {
+            parentIndex,
+            parentId,
+          });
+        }
+      }
+
+      setPendingScrollTarget(null);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [threadedComments, pendingScrollTarget]);
+
+  const animateClose = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: SHEET_HEIGHT,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      if (onClose) {
+        onClose();
+      }
+    });
+  }, [backdropOpacity, translateY, onClose]);
 
   const handleClose = useCallback(() => {
     logger.debug('CommentsBottomSheet: Close button pressed');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onClose) {
-      onClose();
-    }
-  }, [onClose]);
+    animateClose();
+  }, [animateClose]);
 
   /**
    * Handle comment submit.
@@ -277,6 +426,14 @@ const CommentsBottomSheet = ({
         isReply: !!replyingTo,
       });
 
+      // Calculate if top-level BEFORE adding (for optimistic update)
+      const isTopLevel = !replyingTo;
+      // Track parent for scrolling
+      const parentCommentId = replyingTo?.parentId || replyingTo?.id;
+
+      // Dismiss mention suggestions on submit
+      mentionSuggestions.dismissSuggestions();
+
       const result = await addComment(text, mediaUrl, mediaType);
 
       if (result.success) {
@@ -284,9 +441,28 @@ const CommentsBottomSheet = ({
           commentId: result.commentId,
         });
 
+        // Optimistically update count if top-level comment
+        if (isTopLevel && onCommentCountChange) {
+          onCommentCountChange(1); // Increment by 1
+        }
+
         // Trigger callback (but don't close sheet)
         if (onCommentAdded) {
           onCommentAdded();
+        }
+
+        // Set pending scroll target - useEffect will scroll when comment appears in list
+        if (isTopLevel) {
+          setPendingScrollTarget({
+            type: 'top-level',
+            commentId: result.commentId,
+          });
+        } else if (parentCommentId) {
+          setPendingScrollTarget({
+            type: 'reply',
+            commentId: result.commentId,
+            parentId: parentCommentId,
+          });
         }
 
         // Refocus input to allow adding more comments
@@ -299,7 +475,7 @@ const CommentsBottomSheet = ({
         });
       }
     },
-    [photoId, replyingTo, addComment, onCommentAdded]
+    [photoId, replyingTo, addComment, onCommentAdded, onCommentCountChange, mentionSuggestions]
   );
 
   const handleReply = useCallback(
@@ -346,6 +522,104 @@ const CommentsBottomSheet = ({
   );
 
   /**
+   * Handle text changes from CommentInput for @-mention detection.
+   */
+  const handleTextChangeForMentions = useCallback(
+    (text, cursorPosition) => {
+      latestTextRef.current = text;
+      latestCursorRef.current = cursorPosition;
+      mentionSuggestions.handleTextChange(text, cursorPosition);
+    },
+    [mentionSuggestions]
+  );
+
+  /**
+   * Handle mention suggestion selection.
+   * Replaces @query with @username in the input text.
+   */
+  const handleMentionSelect = useCallback(
+    user => {
+      const { newText } = mentionSuggestions.selectSuggestion(
+        user,
+        latestTextRef.current,
+        latestCursorRef.current
+      );
+      inputRef.current?.setText(newText);
+      inputRef.current?.focus();
+    },
+    [mentionSuggestions]
+  );
+
+  /**
+   * Handle @mention profile press - navigate to user profile for non-reply mentions.
+   * Searches comments and mutual friends for the username, then navigates.
+   */
+  const handleMentionProfilePress = useCallback(
+    username => {
+      logger.info('CommentsBottomSheet: @mention profile press', { username });
+
+      if (!username) return;
+
+      const lowerUsername = username.toLowerCase();
+
+      // Helper: defer onAvatarPress to next frame so the navigation runs
+      // outside the current React/Text.onPress event batch. Without this,
+      // the new screen renders behind the Animated.View overlay.
+      const navigateToProfile = (userId, displayName) => {
+        logger.info('CommentsBottomSheet: @mention navigating to profile', { userId, displayName });
+        requestAnimationFrame(() => {
+          onAvatarPress(userId, displayName);
+        });
+      };
+
+      // Search comments for a user with this username
+      for (let i = 0; i < threadedComments.length; i++) {
+        const comment = threadedComments[i];
+        const commentUsername = (comment.user?.username || '').toLowerCase();
+        const commentDisplayName = (comment.user?.displayName || '').toLowerCase();
+
+        if (commentUsername === lowerUsername || commentDisplayName === lowerUsername) {
+          if (comment.userId !== currentUserId && onAvatarPress) {
+            navigateToProfile(comment.userId, comment.user?.displayName);
+            return;
+          }
+        }
+
+        // Search replies
+        if (comment.replies) {
+          for (const reply of comment.replies) {
+            const replyUsername = (reply.user?.username || '').toLowerCase();
+            const replyDisplayName = (reply.user?.displayName || '').toLowerCase();
+
+            if (replyUsername === lowerUsername || replyDisplayName === lowerUsername) {
+              if (reply.userId !== currentUserId && onAvatarPress) {
+                navigateToProfile(reply.userId, reply.user?.displayName);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Search mutual friends list
+      for (const friend of mentionSuggestions.allMutualFriends) {
+        const friendUsername = (friend.username || '').toLowerCase();
+        const friendDisplayName = (friend.displayName || '').toLowerCase();
+
+        if (friendUsername === lowerUsername || friendDisplayName === lowerUsername) {
+          if (friend.userId !== currentUserId && onAvatarPress) {
+            navigateToProfile(friend.userId, friend.displayName);
+            return;
+          }
+        }
+      }
+
+      logger.debug('CommentsBottomSheet: @mention user not found for profile', { username });
+    },
+    [threadedComments, currentUserId, onAvatarPress, mentionSuggestions.allMutualFriends]
+  );
+
+  /**
    * Handle @mention press - scroll to referenced comment.
    * Finds the comment in threadedComments, scrolls to it, and highlights it.
    */
@@ -356,9 +630,10 @@ const CommentsBottomSheet = ({
         mentionedCommentId,
       });
 
-      // If no mentionedCommentId, this is a manually typed @mention - silent no-op
+      // If no mentionedCommentId, this is a manually typed @mention - navigate to profile
       if (!mentionedCommentId) {
-        logger.debug('CommentsBottomSheet: No mentionedCommentId, skipping scroll');
+        logger.debug('CommentsBottomSheet: No mentionedCommentId, navigating to profile');
+        handleMentionProfilePress(username);
         return;
       }
 
@@ -445,7 +720,7 @@ const CommentsBottomSheet = ({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [threadedComments, currentUserId, highlightComment]
+    [threadedComments, currentUserId, highlightComment, handleMentionProfilePress]
   );
 
   /**
@@ -489,6 +764,9 @@ const CommentsBottomSheet = ({
 
   const renderCommentItem = useCallback(
     ({ item: comment }) => {
+      // Combine @mention expansion with just-added-reply expansion
+      const shouldForceExpand = expandedReplyParents[comment.id] || justAddedReplyTo === comment.id;
+
       return (
         <CommentWithReplies
           comment={comment}
@@ -502,7 +780,8 @@ const CommentsBottomSheet = ({
           isLikedByUser={isLikedByUser}
           onMentionPress={handleMentionPress}
           highlightedCommentId={highlightedCommentId}
-          forceExpanded={expandedReplyParents[comment.id]}
+          forceExpanded={shouldForceExpand}
+          isNewComment={isNewComment}
         />
       );
     },
@@ -518,6 +797,8 @@ const CommentsBottomSheet = ({
       handleMentionPress,
       highlightedCommentId,
       expandedReplyParents,
+      justAddedReplyTo,
+      isNewComment,
     ]
   );
 
@@ -535,7 +816,7 @@ const CommentsBottomSheet = ({
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.brand.purple} />
+      <PixelSpinner size="large" color={colors.brand.purple} />
     </View>
   );
 
@@ -571,6 +852,8 @@ const CommentsBottomSheet = ({
         if (isExpandedRef.current) {
           // Collapse from fullscreen to normal
           isExpandedRef.current = false;
+          setIsExpanded(false);
+          Keyboard.dismiss(); // Dismiss keyboard when collapsing
           Animated.spring(sheetHeight, {
             toValue: SHEET_HEIGHT,
             useNativeDriver: false,
@@ -582,12 +865,19 @@ const CommentsBottomSheet = ({
           // Close sheet entirely - use timing with easing for clean close (no bounce)
           // Note: swipeY reset happens in useEffect when visible becomes false
           if (onClose) {
-            Animated.timing(swipeY, {
-              toValue: SHEET_HEIGHT,
-              duration: 250,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: true,
-            }).start(() => {
+            Animated.parallel([
+              Animated.timing(swipeY, {
+                toValue: SHEET_HEIGHT,
+                duration: 250,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(backdropOpacity, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
               onClose();
             });
             logger.debug('CommentsBottomSheet: Closing via scroll pull-down');
@@ -597,6 +887,19 @@ const CommentsBottomSheet = ({
     },
     [sheetHeight, swipeY, onClose]
   );
+
+  /**
+   * Track FlatList content height and viewport height for accurate scrollToOffset.
+   * These refs provide the actual measured values that scrollToEnd() gets wrong
+   * when removeClippedSubviews replaces measured heights with estimates.
+   */
+  const handleContentSizeChange = useCallback((contentWidth, contentHeight) => {
+    contentHeightRef.current = contentHeight;
+  }, []);
+
+  const handleListLayout = useCallback(event => {
+    viewportHeightRef.current = event.nativeEvent.layout.height;
+  }, []);
 
   const totalCommentCount = threadedComments.reduce(
     (count, comment) => count + 1 + (comment.replies?.length || 0),
@@ -610,12 +913,10 @@ const CommentsBottomSheet = ({
       style={[styles.overlay, styles.animatedOverlay, { opacity: backdropOpacity }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      {/* Backdrop - tap to close */}
-      <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={styles.backdrop} />
-      </TouchableWithoutFeedback>
+      {/* Backdrop - tap to close, swipe up to expand */}
+      <View style={styles.backdrop} {...backdropPanResponder.panHandlers} />
 
-      {/* Sheet container - uses translateY instead of KeyboardAvoidingView */}
+      {/* Sheet container - bottom padding handles keyboard avoidance */}
       <View style={styles.keyboardAvoidContainer} pointerEvents="box-none">
         {/* Outer: Height animation (JS driver) for expand/collapse */}
         <Animated.View style={{ height: sheetHeight }}>
@@ -626,30 +927,28 @@ const CommentsBottomSheet = ({
               {
                 flex: 1, // Fill the height-animated container
                 maxHeight: undefined, // Override fixed maxHeight for expansion
-                transform: [
-                  { translateY },
-                  { translateY: sheetTranslateY },
-                  { translateY: swipeY },
-                ],
+                transform: [{ translateY }, { translateY: swipeY }],
               },
             ]}
           >
-            {/* Handle bar - swipe gestures for expand/collapse/close */}
-            <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
-              <View style={styles.handleBar} />
-            </View>
-
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.headerTitle}>Comments</Text>
-                {totalCommentCount > 0 && (
-                  <Text style={styles.headerCount}>({totalCommentCount})</Text>
-                )}
+            {/* Handle bar + Header - swipe gestures for expand/collapse/close */}
+            <View {...panResponder.panHandlers}>
+              <View style={styles.handleBarContainer}>
+                <View style={styles.handleBar} />
               </View>
-              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                <PixelIcon name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
+
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.headerTitle}>Comments</Text>
+                  {totalCommentCount > 0 && (
+                    <Text style={styles.headerCount}>({totalCommentCount})</Text>
+                  )}
+                </View>
+                <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                  <PixelIcon name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Comments List */}
@@ -659,6 +958,7 @@ const CommentsBottomSheet = ({
               renderError()
             ) : (
               <FlatList
+                testID="comments-list"
                 ref={flatListRef}
                 style={styles.commentsList}
                 contentContainerStyle={styles.commentsListContent}
@@ -667,17 +967,26 @@ const CommentsBottomSheet = ({
                 keyExtractor={keyExtractor}
                 ListEmptyComponent={renderEmpty}
                 showsVerticalScrollIndicator={false}
+                initialNumToRender={10}
+                maxToRenderPerBatch={5}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
                 onScroll={handleScroll}
                 onScrollEndDrag={handleScrollEndDrag}
                 scrollEventThrottle={16}
                 onScrollToIndexFailed={handleScrollToIndexFailed}
+                onContentSizeChange={handleContentSizeChange}
+                onLayout={handleListLayout}
               />
             )}
 
-            {/* Comment Input */}
-            <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+            {/* Comment Input - paddingBottom accounts for keyboard or safe area */}
+            <View
+              testID="comment-input-area"
+              style={{
+                paddingBottom: keyboardVisible ? keyboardHeight : Math.max(insets.bottom, 8),
+              }}
+            >
               <CommentInput
                 ref={inputRef}
                 onSubmit={handleSubmitComment}
@@ -685,9 +994,17 @@ const CommentsBottomSheet = ({
                   logger.debug('CommentsBottomSheet: Image picker');
                 }}
                 replyingTo={replyingTo}
-                onCancelReply={cancelReply}
+                onCancelReply={() => {
+                  cancelReply();
+                  mentionSuggestions.dismissSuggestions();
+                }}
                 initialMention={initialMention}
                 placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                mentionSuggestions={mentionSuggestions.filteredSuggestions}
+                showMentionSuggestions={mentionSuggestions.showSuggestions}
+                mentionSuggestionsLoading={mentionSuggestions.loading}
+                onTextChangeForMentions={handleTextChangeForMentions}
+                onMentionSelect={handleMentionSelect}
               />
             </View>
           </Animated.View>

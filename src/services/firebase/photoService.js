@@ -25,15 +25,18 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
   writeBatch,
   Timestamp,
   FieldValue,
+  getCountFromServer,
 } from '@react-native-firebase/firestore';
 import { uploadPhoto, deletePhoto } from './storageService';
 import { ensureDarkroomInitialized } from './darkroomService';
 import { getUserAlbums, removePhotoFromAlbum, deleteAlbum } from './albumService';
 import logger from '../../utils/logger';
+import { withTrace } from './performanceService';
 
 const db = getFirestore();
 
@@ -146,7 +149,8 @@ export const getUserPhotos = async userId => {
     const photosQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      orderBy('capturedAt', 'desc')
+      orderBy('capturedAt', 'desc'),
+      limit(100) // Safety bound on user's photo library; paginate if needed
     );
     const snapshot = await getDocs(photosQuery);
 
@@ -176,14 +180,14 @@ export const getDevelopingPhotoCount = async userId => {
   logger.debug('PhotoService.getDevelopingPhotoCount: Starting', { userId });
 
   try {
+    // Use count() aggregation — downloads zero documents, just returns the count
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('status', '==', 'developing')
     );
-    const snapshot = await getDocs(developingQuery);
-
-    const count = snapshot.size;
+    const countSnapshot = await getCountFromServer(developingQuery);
+    const count = countSnapshot.data().count;
 
     logger.info('PhotoService.getDevelopingPhotoCount: Retrieved count', {
       userId,
@@ -209,29 +213,26 @@ export const getDarkroomCounts = async userId => {
   logger.debug('PhotoService.getDarkroomCounts: Starting', { userId });
 
   try {
-    // Query for developing photos
+    // Use count() aggregation — downloads zero documents, just returns counts
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('status', '==', 'developing')
     );
-    const developingPromise = getDocs(developingQuery);
 
-    // Query for revealed photos
     const revealedQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('status', '==', 'revealed')
     );
-    const revealedPromise = getDocs(revealedQuery);
 
-    const [developingSnapshot, revealedSnapshot] = await Promise.all([
-      developingPromise,
-      revealedPromise,
+    const [developingCountSnap, revealedCountSnap] = await Promise.all([
+      getCountFromServer(developingQuery),
+      getCountFromServer(revealedQuery),
     ]);
 
-    const developingCount = developingSnapshot.size;
-    const revealedCount = revealedSnapshot.size;
+    const developingCount = developingCountSnap.data().count;
+    const revealedCount = revealedCountSnap.data().count;
     const totalCount = developingCount + revealedCount;
 
     logger.info('PhotoService.getDarkroomCounts: Retrieved counts', {
@@ -267,14 +268,16 @@ export const getDevelopingPhotos = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound on developing photos in darkroom
     );
     const developingPromise = getDocs(developingQuery);
 
     const revealedQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'revealed')
+      where('status', '==', 'revealed'),
+      limit(500) // Safety bound on revealed photos in darkroom
     );
     const revealedPromise = getDocs(revealedQuery);
 
@@ -328,7 +331,8 @@ export const revealPhotos = async userId => {
     const developingQuery = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'developing')
+      where('status', '==', 'developing'),
+      limit(500) // Safety bound on batch reveal
     );
     const snapshot = await getDocs(developingQuery);
 
@@ -359,43 +363,45 @@ export const revealPhotos = async userId => {
  * @returns {Promise}
  */
 export const triagePhoto = async (photoId, action) => {
-  try {
-    const photoRef = doc(db, 'photos', photoId);
+  return withTrace('photo/triage', async () => {
+    try {
+      const photoRef = doc(db, 'photos', photoId);
 
-    if (action === 'delete') {
-      // Soft delete: Set photoState to 'deleted' with 30-day grace period
-      // Photo will be permanently deleted by Cloud Function after grace period
-      const scheduledForPermanentDeletionAt = Timestamp.fromDate(
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      );
+      if (action === 'delete') {
+        // Soft delete: Set photoState to 'deleted' with 30-day grace period
+        // Photo will be permanently deleted by Cloud Function after grace period
+        const scheduledForPermanentDeletionAt = Timestamp.fromDate(
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        );
+        await updateDoc(photoRef, {
+          status: 'triaged',
+          photoState: 'deleted',
+          scheduledForPermanentDeletionAt,
+          deletionScheduledAt: serverTimestamp(),
+        });
+        return { success: true };
+      }
+
+      // Get photo document to retrieve capturedAt for correct month assignment
+      // ISS-010 fix: Old photos need month derived from capturedAt, not creation time
+      const photoDoc = await getDoc(photoRef);
+      const photoData = photoDoc.exists() ? photoDoc.data() : {};
+      const correctMonth = getMonthFromTimestamp(photoData.capturedAt);
+
+      // Update photo state with correct month and triage timestamp
       await updateDoc(photoRef, {
         status: 'triaged',
-        photoState: 'deleted',
-        scheduledForPermanentDeletionAt,
-        deletionScheduledAt: serverTimestamp(),
+        photoState: action, // 'journal' or 'archive'
+        month: correctMonth, // ISS-010: Ensure month matches capturedAt
+        triagedAt: serverTimestamp(), // UAT-004: Track when photo was triaged for visibility windows
       });
+
       return { success: true };
+    } catch (error) {
+      logger.error('Error triaging photo', error);
+      return { success: false, error: error.message };
     }
-
-    // Get photo document to retrieve capturedAt for correct month assignment
-    // ISS-010 fix: Old photos need month derived from capturedAt, not creation time
-    const photoDoc = await getDoc(photoRef);
-    const photoData = photoDoc.exists() ? photoDoc.data() : {};
-    const correctMonth = getMonthFromTimestamp(photoData.capturedAt);
-
-    // Update photo state with correct month and triage timestamp
-    await updateDoc(photoRef, {
-      status: 'triaged',
-      photoState: action, // 'journal' or 'archive'
-      month: correctMonth, // ISS-010: Ensure month matches capturedAt
-      triagedAt: serverTimestamp(), // UAT-004: Track when photo was triaged for visibility windows
-    });
-
-    return { success: true };
-  } catch (error) {
-    logger.error('Error triaging photo', error);
-    return { success: false, error: error.message };
-  }
+  });
 };
 
 /**
@@ -565,7 +571,8 @@ export const migratePhotoStateField = async userId => {
     const q = query(
       collection(db, 'photos'),
       where('userId', '==', userId),
-      where('status', '==', 'triaged')
+      where('status', '==', 'triaged'),
+      limit(1000) // Safety bound on migration batch
     );
     const snapshot = await getDocs(q);
 
@@ -1000,7 +1007,8 @@ export const getDeletedPhotos = async userId => {
       collection(db, 'photos'),
       where('userId', '==', userId),
       where('photoState', '==', 'deleted'),
-      orderBy('deletionScheduledAt', 'desc')
+      orderBy('deletionScheduledAt', 'desc'),
+      limit(200) // Safety bound on recently deleted photos
     );
     const snapshot = await getDocs(deletedQuery);
 
@@ -1083,6 +1091,14 @@ export const updatePhotoTags = async (photoId, taggedUserIds) => {
   });
 
   try {
+    const MAX_TAGS_PER_PHOTO = 20;
+
+    // Validate taggedUserIds is an array
+    if (taggedUserIds && !Array.isArray(taggedUserIds)) {
+      logger.warn('PhotoService.updatePhotoTags: taggedUserIds is not an array');
+      return { success: false, error: 'Invalid tag data' };
+    }
+
     const photoRef = doc(db, 'photos', photoId);
 
     if (!taggedUserIds || taggedUserIds.length === 0) {
@@ -1093,14 +1109,30 @@ export const updatePhotoTags = async (photoId, taggedUserIds) => {
       });
       logger.info('PhotoService.updatePhotoTags: Tags removed (fields deleted)', { photoId });
     } else {
-      await updateDoc(photoRef, {
-        taggedUserIds,
-        taggedAt: serverTimestamp(),
-      });
-      logger.info('PhotoService.updatePhotoTags: Tags updated', {
-        photoId,
-        tagCount: taggedUserIds.length,
-      });
+      // Deduplicate and cap at MAX_TAGS_PER_PHOTO
+      const uniqueIds = [...new Set(taggedUserIds)].slice(0, MAX_TAGS_PER_PHOTO);
+
+      // Validate each ID is a non-empty string
+      const validIds = uniqueIds.filter(id => typeof id === 'string' && id.length > 0);
+
+      if (validIds.length === 0) {
+        // All IDs were invalid, remove tags
+        await updateDoc(photoRef, {
+          taggedUserIds: FieldValue.delete(),
+          taggedAt: FieldValue.delete(),
+        });
+        logger.info('PhotoService.updatePhotoTags: No valid IDs, tags removed', { photoId });
+      } else {
+        await updateDoc(photoRef, {
+          taggedUserIds: validIds,
+          taggedAt: serverTimestamp(),
+        });
+        logger.info('PhotoService.updatePhotoTags: Tags updated', {
+          photoId,
+          tagCount: validIds.length,
+          originalCount: taggedUserIds.length,
+        });
+      }
     }
 
     return { success: true };

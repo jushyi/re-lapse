@@ -10,17 +10,24 @@
  * - Component: This file (thin render layer with JSX)
  */
 
-import { View, Text, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import PixelIcon from '../components/PixelIcon';
+import PixelSpinner from '../components/PixelSpinner';
 import useDarkroom from '../hooks/useDarkroom';
 import { SwipeablePhotoCard, TagFriendsModal } from '../components';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { styles } from '../styles/DarkroomScreen.styles';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
 
 const DarkroomScreen = () => {
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('DarkroomScreen');
+  const screenTraceMarkedRef = useRef(false);
+
   const {
     // State
     visiblePhotos,
@@ -57,13 +64,21 @@ const DarkroomScreen = () => {
     handleCloseTagModal,
   } = useDarkroom();
 
+  // Mark screen trace as loaded after darkroom photos load (once only)
+  useEffect(() => {
+    if (!loading && !screenTraceMarkedRef.current) {
+      screenTraceMarkedRef.current = true;
+      markLoaded();
+    }
+  }, [loading]);
+
   // Loading state
   if (loading) {
     return (
       <GestureHandlerRootView style={styles.gestureRootView}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.icon.primary} />
+            <PixelSpinner size="large" color={colors.icon.primary} />
             <Text style={styles.loadingText}>Loading darkroom...</Text>
           </View>
         </SafeAreaView>

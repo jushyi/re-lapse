@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native
 import PixelIcon from './PixelIcon';
 import { AlbumCard, AddAlbumCard } from './AlbumCard';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 /**
  * AlbumBar - Horizontal scrolling album bar for profile
@@ -119,6 +121,9 @@ const AlbumBar = forwardRef(
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          initialNumToRender={4}
+          maxToRenderPerBatch={3}
+          windowSize={3}
         />
       </View>
     );
@@ -129,28 +134,28 @@ AlbumBar.displayName = 'AlbumBar';
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   header: {
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   separator: {
-    width: 12,
+    width: spacing.sm,
   },
   emptyPrompt: {
-    marginHorizontal: 16,
+    marginHorizontal: spacing.md,
     height: 100,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     justifyContent: 'center',
     alignItems: 'center',

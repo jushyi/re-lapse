@@ -7,15 +7,17 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   Alert,
   Platform,
 } from 'react-native';
 import PixelIcon from './PixelIcon';
+import PixelSpinner from './PixelSpinner';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import { getUserAlbums, getPhotosByIds, addPhotosToAlbum } from '../services/firebase';
 import logger from '../utils/logger';
 
@@ -160,7 +162,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
         {/* Status indicator */}
         <View style={styles.statusContainer}>
           {isAdding ? (
-            <ActivityIndicator size="small" color={colors.brand.primary} />
+            <PixelSpinner size="small" color={colors.brand.primary} />
           ) : isPhotoInAlbum ? (
             <PixelIcon name="checkmark-circle" size={24} color={colors.brand.primary} />
           ) : (
@@ -205,7 +207,7 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
           {/* Albums List */}
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.brand.primary} />
+              <PixelSpinner size="large" color={colors.brand.primary} />
               <Text style={styles.loadingText}>Loading albums...</Text>
             </View>
           ) : albums.length === 0 ? (
@@ -221,6 +223,9 @@ const AddToAlbumSheet = ({ visible, photoId, onClose, onAlbumCreated }) => {
               keyExtractor={item => item.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              initialNumToRender={6}
+              maxToRenderPerBatch={4}
+              windowSize={5}
             />
           )}
         </View>
@@ -240,8 +245,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
+    borderTopLeftRadius: layout.borderRadius.xl,
+    borderTopRightRadius: layout.borderRadius.xl,
     maxHeight: '70%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
@@ -251,7 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: spacing.md,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -265,12 +270,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
   },
   createIcon: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     borderWidth: 2,
     borderColor: colors.brand.primary,
     borderStyle: 'dashed',
@@ -281,13 +286,13 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.brand.primary,
-    marginLeft: 12,
+    marginLeft: spacing.sm,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border.subtle,
     marginHorizontal: 20,
-    marginVertical: 8,
+    marginVertical: spacing.xs,
   },
   listContent: {
     paddingHorizontal: 20,
@@ -304,7 +309,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: THUMBNAIL_SIZE,
     height: THUMBNAIL_SIZE,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     overflow: 'hidden',
   },
   thumbnailImage: {
@@ -320,7 +325,7 @@ const styles = StyleSheet.create({
   },
   albumInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: spacing.sm,
   },
   albumName: {
     fontSize: typography.size.lg,
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   statusContainer: {
-    width: 32,
+    width: layout.dimensions.avatarSmall,
     alignItems: 'center',
   },
   loadingContainer: {
@@ -348,7 +353,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   emptyContainer: {
     paddingVertical: 40,
@@ -358,13 +363,13 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   emptySubtext: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
 });
 

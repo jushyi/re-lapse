@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useRef, useState, useEffect, memo } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import PixelIcon from './PixelIcon';
 import { getTimeAgo } from '../utils/timeUtils';
 import { styles } from '../styles/FeedPhotoCard.styles';
@@ -92,11 +93,43 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
   // Check if this is the current user's own photo
   const isOwnPhoto = userId === currentUserId;
 
+  // Ref for measuring photo position (expand/collapse animation)
+  const photoContainerRef = useRef(null);
+
+  const measurePhotoAndCall = callback => {
+    if (photoContainerRef.current) {
+      photoContainerRef.current.measureInWindow((x, y, width, height) => {
+        if (callback) callback({ x, y, width, height, borderRadius: 0 });
+      });
+    } else if (callback) {
+      callback(null);
+    }
+  };
+
+  const handlePhotoPress = () => {
+    measurePhotoAndCall(onPress);
+  };
+
+  const handleCommentPreviewPress = () => {
+    measurePhotoAndCall(onCommentPress || onPress);
+  };
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
+    <TouchableOpacity
+      testID="feed-photo-card"
+      style={styles.card}
+      onPress={handlePhotoPress}
+      activeOpacity={0.95}
+    >
       {/* Photo - full width with rounded top corners */}
-      <View style={styles.photoContainer}>
-        <Image source={{ uri: imageURL }} style={styles.photo} resizeMode="cover" />
+      <View ref={photoContainerRef} style={styles.photoContainer}>
+        <Image
+          source={{ uri: imageURL, cacheKey: `photo-${id}` }}
+          style={styles.photo}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
       </View>
 
       {/* User info row - profile photo + name + timestamp */}
@@ -108,7 +141,12 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
           disabled={isOwnPhoto}
         >
           {profilePhotoURL ? (
-            <Image source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+            <Image
+              source={{ uri: profilePhotoURL, cacheKey: `profile-${userId}` }}
+              style={styles.profilePhoto}
+              cachePolicy="memory-disk"
+              transition={0}
+            />
           ) : (
             <View style={styles.profilePhotoFallback}>
               <PixelIcon name="person-circle" size={36} color={colors.text.secondary} />
@@ -143,11 +181,11 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
 
       {/* Comment preview - tapping opens modal with comments sheet */}
       {previewComments.length > 0 && (
-        <View style={styles.commentPreview}>
+        <View testID="feed-comments-button" style={styles.commentPreview}>
           <CommentPreview
             comments={previewComments}
             totalCount={commentCount}
-            onPress={onCommentPress || onPress}
+            onPress={handleCommentPreviewPress}
             compact
           />
         </View>
@@ -156,4 +194,7 @@ const FeedPhotoCard = ({ photo, onPress, onCommentPress, onAvatarPress, currentU
   );
 };
 
-export default FeedPhotoCard;
+export default memo(FeedPhotoCard, (prevProps, nextProps) => {
+  // Only re-render when photo data actually changes
+  return prevProps.photo === nextProps.photo && prevProps.currentUserId === nextProps.currentUserId;
+});

@@ -1,0 +1,54 @@
+name: EAS Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Target platform
+        required: true
+        type: choice
+        options:
+          - ios
+        default: ios
+      profile:
+        description: Build profile
+        required: true
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+        default: production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build iOS (release tag)
+        if: github.event_name == 'push'
+        run: eas build --platform ios --profile production --non-interactive --no-wait
+
+      - name: Build iOS (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: eas build --platform ios --profile ${{ inputs.profile }} --non-interactive --no-wait

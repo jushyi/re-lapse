@@ -12,7 +12,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 const MAX_NAME_LENGTH = 24;
@@ -90,7 +92,7 @@ const CreateAlbumScreen = () => {
       </View>
 
       {/* Next Button */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <TouchableOpacity
           style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
           onPress={handleNextPress}
@@ -114,8 +116,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xl,
     paddingTop: 80,
     alignItems: 'center',
   },
@@ -142,27 +144,27 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
   },
   underline: {
     width: '100%',
     height: 1,
     backgroundColor: colors.border.subtle,
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
   charCount: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   footer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   nextButton: {
     backgroundColor: colors.text.primary,
-    borderRadius: 4,
-    paddingVertical: 16,
+    borderRadius: layout.borderRadius.md,
+    paddingVertical: spacing.md,
     alignItems: 'center',
   },
   nextButtonDisabled: {

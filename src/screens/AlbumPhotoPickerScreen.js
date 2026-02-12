@@ -7,14 +7,16 @@ import {
   FlatList,
   Dimensions,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
+import PixelSpinner from '../components/PixelSpinner';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import { useAuth } from '../context/AuthContext';
 import { getUserPhotos } from '../services/firebase/photoService';
 import { createAlbum, addPhotosToAlbum } from '../services/firebase/albumService';
@@ -158,7 +160,7 @@ const AlbumPhotoPickerScreen = () => {
           activeOpacity={0.7}
         >
           <Image
-            source={{ uri: item.imageURL }}
+            source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
             style={styles.photoImage}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -208,7 +210,7 @@ const AlbumPhotoPickerScreen = () => {
           disabled={isCreateDisabled}
         >
           {saving ? (
-            <ActivityIndicator size="small" color={colors.system.blue} />
+            <PixelSpinner size="small" color={colors.system.blue} />
           ) : (
             <Text
               style={[styles.actionButtonText, isCreateDisabled && styles.actionButtonDisabled]}
@@ -222,7 +224,7 @@ const AlbumPhotoPickerScreen = () => {
       {/* Photo Grid */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.secondary} />
+          <PixelSpinner size="large" color={colors.text.secondary} />
         </View>
       ) : photos.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -258,8 +260,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
@@ -301,19 +303,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xl,
   },
   emptyText: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.secondary,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   emptySubtext: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
-    marginTop: 8,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
   gridContent: {
@@ -332,22 +334,22 @@ const styles = StyleSheet.create({
   },
   selectionOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: colors.overlay.dark,
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     padding: 6,
   },
   disabledOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: colors.overlay.darker,
   },
   inAlbumBadge: {
     position: 'absolute',
     bottom: 6,
     left: 6,
     right: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 4,
-    paddingVertical: 4,
+    backgroundColor: colors.overlay.dark,
+    borderRadius: layout.borderRadius.md,
+    paddingVertical: spacing.xxs,
   },
   inAlbumText: {
     fontSize: typography.size.xs,
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
   checkmark: {
     width: 24,
     height: 24,
-    borderRadius: 9999,
+    borderRadius: layout.borderRadius.round,
     backgroundColor: colors.system.blue,
     justifyContent: 'center',
     alignItems: 'center',

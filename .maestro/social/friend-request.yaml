@@ -1,0 +1,20 @@
+# Friend Request E2E Flow
+# Prerequisites: Logged-in user
+appId: com.spoodsjs.rewind
+---
+- launchApp
+- assertVisible:
+    id: 'feed-list'
+    timeout: 10000
+# Navigate to friends screen via header button
+- tapOn:
+    id: 'friends-button'
+    optional: true
+# Fallback: tap Friends text in navigation
+- assertVisible:
+    text: 'Friends'
+    timeout: 5000
+# Verify friends screen loads with search
+- assertVisible:
+    id: 'friends-search-input'
+    timeout: 5000

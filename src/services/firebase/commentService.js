@@ -45,8 +45,25 @@ import {
   increment,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
+import { isValidUrl } from '../../utils/validation';
 
 const db = getFirestore();
+
+const MAX_COMMENT_LENGTH = 2000;
+const MAX_MENTIONS_PER_COMMENT = 10;
+const VALID_MEDIA_TYPES = ['image', 'gif'];
+
+/**
+ * Generate a comment ID without writing to Firestore
+ * Used to mark comments as "new" before write to prevent flash on real-time subscription
+ *
+ * @param {string} photoId - Photo document ID
+ * @returns {string} Generated comment ID
+ */
+export const generateCommentId = photoId => {
+  const commentsRef = collection(db, 'photos', photoId, 'comments');
+  return doc(commentsRef).id;
+};
 
 /**
  * Add a comment to a photo
@@ -63,6 +80,7 @@ const db = getFirestore();
  * @param {string|null} mediaType - Type of media: 'image' | 'gif' | null
  * @param {string|null} parentId - Comment ID being replied to (null = top-level). Service resolves to original thread parent.
  * @param {string|null} mentionedCommentId - ID of specific comment being replied to (for @mention tracking)
+ * @param {string|null} commentId - Optional pre-generated comment ID (from generateCommentId)
  * @returns {Promise<{success: boolean, commentId?: string, error?: string}>}
  */
 export const addComment = async (
@@ -72,7 +90,8 @@ export const addComment = async (
   mediaUrl = null,
   mediaType = null,
   parentId = null,
-  mentionedCommentId = null
+  mentionedCommentId = null,
+  commentId = null
 ) => {
   logger.debug('commentService.addComment: Starting', {
     photoId,
@@ -94,6 +113,27 @@ export const addComment = async (
     if (!text && !mediaUrl) {
       logger.warn('commentService.addComment: Comment must have text or media');
       return { success: false, error: 'Comment must have text or media' };
+    }
+
+    // Validate text length
+    if (text && text.length > MAX_COMMENT_LENGTH) {
+      logger.warn('commentService.addComment: Text exceeds max length', {
+        length: text.length,
+        max: MAX_COMMENT_LENGTH,
+      });
+      return { success: false, error: 'Comment text is too long' };
+    }
+
+    // Validate media URL format
+    if (mediaUrl && !isValidUrl(mediaUrl)) {
+      logger.warn('commentService.addComment: Invalid media URL');
+      return { success: false, error: 'Invalid media URL' };
+    }
+
+    // Validate media type enum
+    if (mediaUrl && mediaType && !VALID_MEDIA_TYPES.includes(mediaType)) {
+      logger.warn('commentService.addComment: Invalid media type', { mediaType });
+      return { success: false, error: 'Invalid media type' };
     }
 
     // Verify photo exists
@@ -142,6 +182,11 @@ export const addComment = async (
 
     // Create comment document
     const commentsRef = collection(db, 'photos', photoId, 'comments');
+
+    // Use pre-generated ID if provided, otherwise generate new one
+    const finalCommentId = commentId || doc(commentsRef).id;
+    const commentDocRef = doc(commentsRef, finalCommentId);
+
     const commentData = {
       userId,
       text: text || '',
@@ -153,10 +198,12 @@ export const addComment = async (
       createdAt: serverTimestamp(),
     };
 
-    const commentDocRef = await addDoc(commentsRef, commentData);
-    const commentId = commentDocRef.id;
+    await setDoc(commentDocRef, commentData);
 
-    logger.debug('commentService.addComment: Comment created', { commentId, photoId });
+    logger.debug('commentService.addComment: Comment created', {
+      commentId: finalCommentId,
+      photoId,
+    });
 
     // Increment photo's comment count
     await updateDoc(photoRef, {
@@ -164,7 +211,7 @@ export const addComment = async (
     });
 
     logger.info('commentService.addComment: Success', {
-      commentId,
+      commentId: finalCommentId,
       photoId,
       userId,
       isReply: !!resolvedParentId,
@@ -172,7 +219,7 @@ export const addComment = async (
       mentionedCommentId: resolvedMentionedCommentId,
     });
 
-    return { success: true, commentId };
+    return { success: true, commentId: finalCommentId };
   } catch (error) {
     logger.error('commentService.addComment: Failed', {
       photoId,

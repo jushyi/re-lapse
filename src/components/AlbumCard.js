@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useEffect, memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +10,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const CARD_SIZE = 150;
 
@@ -23,7 +26,7 @@ const CARD_SIZE = 150;
  * @param {function} onLongPress - Optional callback for long press (edit menu)
  * @param {boolean} isHighlighted - Whether to show scale bounce animation
  */
-export const AlbumCard = ({
+const AlbumCard = ({
   album,
   coverPhotoUrl,
   stackPhotoUrls = [],
@@ -65,21 +68,42 @@ export const AlbumCard = ({
         {/* Back card (2nd back) - only show if we have 2+ stack photos */}
         {stackCount >= 2 && (
           <View style={[styles.stackCard, styles.stackCardBack]}>
-            <Image source={{ uri: stackPhotoUrls[1] }} style={styles.stackImage} />
+            <Image
+              source={{ uri: stackPhotoUrls[1], cacheKey: `album-stack-${album.id}-1` }}
+              style={styles.stackImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="normal"
+              recyclingKey={album.id}
+            />
           </View>
         )}
 
         {/* Middle card (1st back) - only show if we have 1+ stack photos */}
         {stackCount >= 1 && (
           <View style={[styles.stackCard, styles.stackCardMiddle]}>
-            <Image source={{ uri: stackPhotoUrls[0] }} style={styles.stackImage} />
+            <Image
+              source={{ uri: stackPhotoUrls[0], cacheKey: `album-stack-${album.id}-0` }}
+              style={styles.stackImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="normal"
+              recyclingKey={album.id}
+            />
           </View>
         )}
 
         {/* Front card (cover) */}
         <View style={styles.imageContainer}>
           {coverPhotoUrl ? (
-            <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
+            <Image
+              source={{ uri: coverPhotoUrl, cacheKey: `album-cover-${album.id}` }}
+              style={styles.coverImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="normal"
+              recyclingKey={album.id}
+            />
           ) : (
             <View style={styles.placeholder}>
               <PixelIcon name="images-outline" size={40} color={colors.text.secondary} />
@@ -117,7 +141,7 @@ const styles = StyleSheet.create({
   stackContainer: {
     width: CARD_SIZE,
     height: CARD_SIZE,
-    paddingTop: 12,
+    paddingTop: spacing.sm,
     overflow: 'visible',
   },
   stackCard: {
@@ -125,13 +149,12 @@ const styles = StyleSheet.create({
     width: CARD_SIZE,
     height: CARD_SIZE,
     backgroundColor: colors.background.tertiary,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     overflow: 'hidden',
   },
   stackImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   stackCardBack: {
     transform: [{ scale: 0.94 }, { translateY: 0 }],
@@ -146,17 +169,16 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: CARD_SIZE,
     height: CARD_SIZE,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
     zIndex: 3,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: colors.retro.segmentBorder,
   },
   coverImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   placeholder: {
     flex: 1,
@@ -174,7 +196,7 @@ const styles = StyleSheet.create({
     width: CARD_SIZE,
     height: CARD_SIZE,
     marginTop: 6,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,
@@ -184,4 +206,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AlbumCard;
+const MemoizedAlbumCard = memo(AlbumCard);
+export { MemoizedAlbumCard as AlbumCard };
+export default MemoizedAlbumCard;

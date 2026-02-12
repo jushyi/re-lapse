@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image as RNImage } from 'react-native';
+import React, { useRef, memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 /**
@@ -25,16 +26,23 @@ import logger from '../utils/logger';
  * @param {boolean} isFirst - Whether this is the first card (for left margin)
  * @param {boolean} isViewed - Whether all stories have been viewed (default false)
  */
-export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false }) => {
+const MeStoryCardInner = ({ friend, onPress, isFirst = false, isViewed = false }) => {
   const { userId, profilePhotoURL, topPhotos, thumbnailURL, hasPhotos } = friend || {};
 
   // Use thumbnailURL (most recent photo) if available, fallback to first photo in array
   const thumbnailUrl = thumbnailURL || topPhotos?.[0]?.imageURL || null;
 
+  // Ref for measuring card position (expand/collapse animation)
+  const cardRef = useRef(null);
+
   const handlePress = () => {
     logger.debug('MeStoryCard: Card pressed', { userId });
-    if (onPress) {
-      onPress();
+    if (cardRef.current) {
+      cardRef.current.measureInWindow((x, y, width, height) => {
+        if (onPress) onPress({ x, y, width, height, borderRadius: 4 });
+      });
+    } else if (onPress) {
+      onPress(null);
     }
   };
 
@@ -46,7 +54,7 @@ export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false
     <View style={styles.photoContainer}>
       {thumbnailUrl ? (
         <Image
-          source={{ uri: thumbnailUrl }}
+          source={{ uri: thumbnailUrl, cacheKey: `story-thumb-${userId}` }}
           style={styles.photoThumbnail}
           contentFit="cover"
           transition={0}
@@ -69,7 +77,12 @@ export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false
   const renderProfilePhoto = () => (
     <View style={styles.profileContainer}>
       {profilePhotoURL ? (
-        <RNImage source={{ uri: profilePhotoURL }} style={styles.profilePhoto} />
+        <Image
+          source={{ uri: profilePhotoURL, cacheKey: `profile-${userId}` }}
+          style={styles.profilePhoto}
+          cachePolicy="memory-disk"
+          transition={0}
+        />
       ) : (
         <View style={styles.profilePlaceholder}>
           <PixelIcon name="person" size={18} color={colors.text.secondary} />
@@ -85,10 +98,10 @@ export const MeStoryCard = ({ friend, onPress, isFirst = false, isViewed = false
       activeOpacity={0.8}
     >
       {/* Card with gradient or viewed border */}
-      <View style={styles.cardWrapper}>
+      <View ref={cardRef} style={styles.cardWrapper}>
         {hasPhotos && !isViewed ? (
           <LinearGradient
-            colors={colors.brand.gradient.developing}
+            colors={colors.storyCard.gradientUnviewed}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gradientBorder}
@@ -136,13 +149,13 @@ const styles = StyleSheet.create({
   gradientBorder: {
     width: PHOTO_WIDTH + BORDER_WIDTH * 2,
     height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     padding: BORDER_WIDTH,
   },
   viewedBorder: {
     width: PHOTO_WIDTH + BORDER_WIDTH * 2,
     height: PHOTO_HEIGHT + BORDER_WIDTH * 2,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     padding: BORDER_WIDTH,
     borderWidth: 2,
     borderColor: colors.storyCard.glowViewed,
@@ -152,7 +165,7 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     flex: 1,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
   },
@@ -205,4 +218,5 @@ const styles = StyleSheet.create({
   },
 });
 
+export const MeStoryCard = memo(MeStoryCardInner);
 export default MeStoryCard;

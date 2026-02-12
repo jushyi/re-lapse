@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -10,7 +11,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CYCLE_INTERVAL_MS = 750; // Faster cycling
@@ -134,7 +137,9 @@ const FullscreenSelectsViewer = ({ visible, selects = [], initialIndex = 0, onCl
               <Image
                 source={{ uri: selects[currentIndex] }}
                 style={styles.image}
-                resizeMode="contain"
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                priority="high"
               />
 
               {/* Pause indicator */}
@@ -164,12 +169,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: spacing.md,
+    right: spacing.md,
     zIndex: 10,
     width: 44,
     height: 44,
-    borderRadius: 9999,
+    borderRadius: layout.borderRadius.round,
     backgroundColor: colors.overlay.dark,
     justifyContent: 'center',
     alignItems: 'center',
@@ -181,11 +186,11 @@ const styles = StyleSheet.create({
   },
   pauseIndicator: {
     position: 'absolute',
-    bottom: 32,
+    bottom: spacing.xl,
     alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: layout.borderRadius.md,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
 });

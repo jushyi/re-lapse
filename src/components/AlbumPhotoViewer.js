@@ -22,7 +22,9 @@ import ReanimatedModule, {
 } from 'react-native-reanimated';
 import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import { deleteAlbum } from '../services/firebase';
 import { softDeletePhoto, archivePhoto, restorePhoto } from '../services/firebase/photoService';
 import DropdownMenu from './DropdownMenu';
@@ -68,6 +70,7 @@ const AlbumPhotoViewer = ({
   const flatListRef = useRef(null);
   const thumbnailListRef = useRef(null);
   const menuButtonRef = useRef(null);
+  const isUserDragging = useRef(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Thumbnail dimensions (50x67 for 3:4 ratio)
@@ -142,9 +145,28 @@ const AlbumPhotoViewer = ({
     }
   }, [currentIndex, visible, photos.length]);
 
+  // Mark beginning of a user-initiated drag so handleScroll can update the index optimistically
+  const handleScrollBeginDrag = useCallback(() => {
+    isUserDragging.current = true;
+  }, []);
+
+  // Optimistically update currentIndex during user swipes so the thumbnail bar tracks the gesture
+  const handleScroll = useCallback(
+    event => {
+      if (!isUserDragging.current) return; // skip programmatic scrolls from goToIndex / edge taps
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const newIndex = Math.round(offsetX / SCREEN_WIDTH);
+      if (newIndex >= 0 && newIndex < photos.length) {
+        setCurrentIndex(prevIndex => (prevIndex !== newIndex ? newIndex : prevIndex));
+      }
+    },
+    [photos.length]
+  );
+
   // Handle momentum scroll end for stable index updates (prevents oscillation)
   const handleMomentumScrollEnd = useCallback(
     event => {
+      isUserDragging.current = false;
       const offsetX = event.nativeEvent.contentOffset.x;
       const newIndex = Math.round(offsetX / SCREEN_WIDTH);
       if (newIndex >= 0 && newIndex < photos.length) {
@@ -401,7 +423,7 @@ const AlbumPhotoViewer = ({
     ({ item }) => (
       <TouchableOpacity activeOpacity={1} onPress={handleImagePress} style={styles.photoContainer}>
         <Image
-          source={{ uri: item.imageURL }}
+          source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
           style={styles.photo}
           contentFit="contain"
           cachePolicy="memory-disk"
@@ -441,7 +463,7 @@ const AlbumPhotoViewer = ({
         style={styles.thumbnailWrapper}
       >
         <Image
-          source={{ uri: item.imageURL }}
+          source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
           style={[styles.thumbnail, index === currentIndex && styles.thumbnailActive]}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -472,6 +494,9 @@ const AlbumPhotoViewer = ({
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
+              onScrollBeginDrag={handleScrollBeginDrag}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
               onMomentumScrollEnd={handleMomentumScrollEnd}
               getItemLayout={getItemLayout}
               initialScrollIndex={initialIndex}
@@ -573,8 +598,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.overlay.dark,
   },
   headerButton: {
@@ -586,7 +611,7 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: spacing.xs,
   },
   albumNameText: {
     fontSize: typography.size.lg,
@@ -613,8 +638,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 6,
-    gap: 8,
+    borderRadius: layout.borderRadius.xl,
+    gap: spacing.xs,
   },
   toastText: {
     color: colors.text.primary,
@@ -627,18 +652,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.overlay.dark,
-    paddingTop: 8,
+    paddingTop: spacing.xs,
   },
   thumbnailContent: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.xs,
   },
   thumbnailWrapper: {
-    marginHorizontal: 4,
+    marginHorizontal: spacing.xxs,
   },
   thumbnail: {
     width: 50,
     height: 67,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
   },
   thumbnailActive: {
     borderWidth: 2,

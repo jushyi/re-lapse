@@ -1,6 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32; // 16px margins on each side
@@ -30,7 +34,14 @@ const MonthlyAlbumCard = ({ month, coverPhotoUrl, onPress }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       {coverPhotoUrl ? (
-        <Image source={{ uri: coverPhotoUrl }} style={styles.coverImage} />
+        <Image
+          source={{ uri: coverPhotoUrl, cacheKey: `month-cover-${month}` }}
+          style={styles.coverImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="normal"
+          recyclingKey={month}
+        />
       ) : (
         <View style={styles.placeholder} />
       )}
@@ -45,14 +56,13 @@ const styles = StyleSheet.create({
   container: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     overflow: 'hidden',
     backgroundColor: colors.background.tertiary,
   },
   coverImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   placeholder: {
     width: '100%',
@@ -61,8 +71,8 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
+    bottom: spacing.sm,
+    left: spacing.sm,
   },
   monthText: {
     color: colors.text.primary,
@@ -74,4 +84,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MonthlyAlbumCard;
+export default memo(MonthlyAlbumCard);

@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  RefreshControl,
-  ActivityIndicator,
   TouchableOpacity,
   ScrollView,
   Animated,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import PixelSpinner from '../components/PixelSpinner';
 import {
   getFirestore,
   collection,
@@ -23,7 +23,7 @@ import {
 import PixelIcon from '../components/PixelIcon';
 import useFeedPhotos from '../hooks/useFeedPhotos';
 import { useViewedStories } from '../hooks/useViewedStories';
-import { usePhotoDetail } from '../context/PhotoDetailContext';
+import { usePhotoDetailActions } from '../context/PhotoDetailContext';
 import FeedPhotoCard from '../components/FeedPhotoCard';
 import FeedLoadingSkeleton from '../components/FeedLoadingSkeleton';
 import { FriendStoryCard } from '../components';
@@ -38,8 +38,11 @@ import {
 } from '../services/firebase/feedService';
 import { getFriendUserIds } from '../services/firebase/friendshipService';
 import { useAuth } from '../context/AuthContext';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 import logger from '../utils/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,12 +59,17 @@ const FeedScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  // Photo detail context for feed mode navigation
+  // Photo detail actions only - using usePhotoDetailActions to avoid re-renders
+  // when photo detail state changes (e.g. during modal close)
   const { openPhotoDetail, setCallbacks, updatePhotoAtIndex, updateCurrentPhoto } =
-    usePhotoDetail();
+    usePhotoDetailActions();
 
   // Track current feed photo for reaction updates (ref to avoid re-renders)
   const currentFeedPhotoRef = useRef(null);
+
+  // Ref for scrolling FlatList to top
+  const flatListRef = useRef(null);
+  const scrollOffsetRef = useRef(0);
 
   // Animated scroll value for header hide/show
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -73,6 +81,10 @@ const FeedScreen = () => {
   // Shimmer animation for skeleton
   const shimmerPosition = useRef(new Animated.Value(-SHIMMER_WIDTH)).current;
   const shimmerAnimation = useRef(null);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('FeedScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   const {
     photos,
@@ -121,9 +133,15 @@ const FeedScreen = () => {
   // Track current index in stories modal (ref to avoid closure capture issues in callbacks)
   const storiesCurrentIndexRef = useRef(0);
 
-  // Refs to hold latest close handlers (avoids stale closures in setCallbacks effect)
+  // Refs to hold latest handlers (avoids stale closures in setCallbacks effect)
   const handleCloseMyStoriesRef = useRef(() => {});
   const handleCloseStoriesRef = useRef(() => {});
+  const handleRequestNextFriendRef = useRef(() => {});
+  const handleRequestPreviousFriendRef = useRef(() => {});
+  const handleCancelFriendTransitionRef = useRef(() => {});
+
+  // Save pre-transition state for cancel (interactive swipe cancel restores without side effects)
+  const preTransitionRef = useRef(null);
 
   const loadFriendStories = async () => {
     if (!user?.uid) return;
@@ -169,6 +187,14 @@ const FeedScreen = () => {
       loadMyStories();
     }
   }, [user?.uid]);
+
+  // Mark screen trace as loaded after initial feed data loads (once only)
+  useEffect(() => {
+    if (!loading && !screenTraceMarkedRef.current) {
+      screenTraceMarkedRef.current = true;
+      markLoaded({ photo_count: photos.length });
+    }
+  }, [loading]);
 
   /**
    * Fade-in animation when loading completes
@@ -300,7 +326,9 @@ const FeedScreen = () => {
         }
       },
       onPhotoChange: handleStoriesPhotoChange,
-      onRequestNextFriend: handleRequestNextFriend,
+      onRequestNextFriend: () => handleRequestNextFriendRef.current(),
+      onRequestPreviousFriend: () => handleRequestPreviousFriendRef.current(),
+      onCancelFriendTransition: () => handleCancelFriendTransitionRef.current(),
       onClose: () => {
         if (isInStoriesModeRef.current) {
           if (isOwnStoriesRef.current) {
@@ -322,7 +350,7 @@ const FeedScreen = () => {
         if (isOwnStoriesRef.current && userId === user?.uid) {
           navigation.navigate('Profile');
         } else {
-          handleAvatarPress(userId, username);
+          navigation.navigate('ProfileFromPhotoDetail', { userId, username });
         }
       },
       onPhotoStateChanged: () => {
@@ -331,14 +359,37 @@ const FeedScreen = () => {
         loadFriendStories();
         loadMyStories();
       },
+      onCommentCountChange: handleCommentCountChange,
     });
-  }, [setCallbacks, user?.uid]);
+  }, [setCallbacks, user?.uid, handleCommentCountChange]);
 
   const handleRefresh = async () => {
     logger.debug('FeedScreen: Pull-to-refresh triggered');
     // Refresh all data sources in parallel
     await Promise.all([refreshFeed(), loadFriendStories(), loadMyStories()]);
   };
+
+  // Track scroll offset on the JS side for tab-press logic
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      scrollOffsetRef.current = value;
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY]);
+
+  // Tap Feed tab: scroll to top if scrolled down, refresh if already at top
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', e => {
+      if (navigation.isFocused()) {
+        if (scrollOffsetRef.current > 5) {
+          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        } else {
+          handleRefresh();
+        }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleAvatarPress = (userId, username) => {
     logger.debug('FeedScreen: Avatar pressed, navigating to profile', { userId, username });
@@ -354,7 +405,7 @@ const FeedScreen = () => {
    * Handle opening stories for a friend
    * Starts at the first unviewed photo, or beginning if all viewed
    */
-  const handleOpenStories = friend => {
+  const handleOpenStories = (friend, sourceRect) => {
     // Calculate starting index based on viewed photos
     const startIndex = getFirstUnviewedIndex(friend.topPhotos || []);
 
@@ -392,7 +443,9 @@ const FeedScreen = () => {
       initialIndex: startIndex,
       currentUserId: user?.uid,
       hasNextFriend: friendIdx < sortedFriends.length - 1,
+      hasPreviousFriend: friendIdx > 0,
       isOwnStory: false,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -401,7 +454,7 @@ const FeedScreen = () => {
    * Handle opening own stories
    * Starts at the first unviewed photo, or beginning if all viewed
    */
-  const handleOpenMyStories = () => {
+  const handleOpenMyStories = sourceRect => {
     if (!myStories?.hasPhotos) {
       logger.debug('FeedScreen: No own photos to show');
       return;
@@ -428,6 +481,7 @@ const FeedScreen = () => {
       currentUserId: user?.uid,
       hasNextFriend: false,
       isOwnStory: true,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -486,6 +540,13 @@ const FeedScreen = () => {
     const selectedFriendIndex = selectedFriendIndexRef.current;
     if (!selectedFriend) return;
 
+    // Save pre-transition state for potential cancel
+    preTransitionRef.current = {
+      friend: selectedFriend,
+      friendIndex: selectedFriendIndex,
+      currentIndex: storiesCurrentIndexRef.current,
+    };
+
     const sortedFriends = getSortedFriends();
     const nextFriendIdx = selectedFriendIndex + 1;
 
@@ -495,11 +556,16 @@ const FeedScreen = () => {
       return;
     }
 
-    // Mark current friend's photos as viewed before transitioning
+    // Mark photos up to current index as viewed (user may be mid-story due to swipe)
     const currentPhotos = selectedFriend.topPhotos || [];
-    const photoIds = currentPhotos.map(p => p.id);
-    if (photoIds.length > 0) {
-      markPhotosAsViewed(photoIds);
+    const viewedPhotoIds = currentPhotos
+      .slice(0, storiesCurrentIndexRef.current + 1)
+      .map(p => p.id);
+    if (viewedPhotoIds.length > 0) {
+      markPhotosAsViewed(viewedPhotoIds);
+    }
+    // Only mark friend as fully viewed if user saw all photos
+    if (storiesCurrentIndexRef.current >= currentPhotos.length - 1) {
       markAsViewed(selectedFriend.userId);
     }
 
@@ -519,8 +585,84 @@ const FeedScreen = () => {
     selectedFriendIndexRef.current = nextFriendIdx;
     storiesCurrentIndexRef.current = nextStartIndex;
 
-    // Note: PhotoDetailScreen will need to update its photos via context
-    // This is handled by the cube animation callback in the screen
+    // Update context state so PhotoDetailScreen renders new friend's photos
+    openPhotoDetail({
+      mode: 'stories',
+      photos: nextFriend.topPhotos || [],
+      initialIndex: nextStartIndex,
+      currentUserId: user?.uid,
+      hasNextFriend: nextFriendIdx < sortedFriends.length - 1,
+      hasPreviousFriend: nextFriendIdx > 0,
+      isOwnStory: false,
+    });
+  };
+
+  /**
+   * Handle transitioning to previous friend's stories (reverse cube animation)
+   * Called when user swipes right or taps left at first photo
+   * Only marks photos up to current index as viewed (user is leaving mid-story)
+   */
+  const handleRequestPreviousFriend = () => {
+    const selectedFriend = selectedFriendRef.current;
+    const selectedFriendIndex = selectedFriendIndexRef.current;
+    if (!selectedFriend) return;
+
+    // Save pre-transition state for potential cancel
+    preTransitionRef.current = {
+      friend: selectedFriend,
+      friendIndex: selectedFriendIndex,
+      currentIndex: storiesCurrentIndexRef.current,
+    };
+
+    const sortedFriends = getSortedFriends();
+    const prevFriendIdx = selectedFriendIndex - 1;
+
+    if (prevFriendIdx < 0) {
+      logger.debug('FeedScreen: No previous friend, cannot go back');
+      return;
+    }
+
+    // Mark photos up to current index as viewed (user is leaving mid-story)
+    const currentPhotos = selectedFriend.topPhotos || [];
+    const viewedPhotoIds = currentPhotos
+      .slice(0, storiesCurrentIndexRef.current + 1)
+      .map(p => p.id);
+    if (viewedPhotoIds.length > 0) {
+      markPhotosAsViewed(viewedPhotoIds);
+    }
+    // Only mark friend as fully viewed if user saw all photos
+    if (storiesCurrentIndexRef.current >= currentPhotos.length - 1) {
+      markAsViewed(selectedFriend.userId);
+    }
+
+    // Get previous friend
+    const prevFriend = sortedFriends[prevFriendIdx];
+    // When going backward, start at the LAST photo (user expects to see the end of the previous story)
+    const prevPhotos = prevFriend.topPhotos || [];
+    const prevStartIndex = Math.max(0, prevPhotos.length - 1);
+
+    logger.info('FeedScreen: Transitioning to previous friend', {
+      fromFriend: selectedFriend.displayName,
+      toFriend: prevFriend.displayName,
+      prevFriendIndex: prevFriendIdx,
+      startIndex: prevStartIndex,
+    });
+
+    // Update refs for previous friend
+    selectedFriendRef.current = prevFriend;
+    selectedFriendIndexRef.current = prevFriendIdx;
+    storiesCurrentIndexRef.current = prevStartIndex;
+
+    // Update context state so PhotoDetailScreen renders previous friend's photos
+    openPhotoDetail({
+      mode: 'stories',
+      photos: prevFriend.topPhotos || [],
+      initialIndex: prevStartIndex,
+      currentUserId: user?.uid,
+      hasNextFriend: prevFriendIdx < sortedFriends.length - 1,
+      hasPreviousFriend: prevFriendIdx > 0,
+      isOwnStory: false,
+    });
   };
 
   /**
@@ -570,29 +712,63 @@ const FeedScreen = () => {
     // Mode flags are cleared in the onClose callback
   };
 
-  // Update close handler refs on each render (ensures callbacks get latest handlers)
+  /**
+   * Cancel a friend transition that was prepared but not committed (interactive swipe cancel).
+   * Restores refs from preTransitionRef without marking any photos as viewed.
+   */
+  const handleCancelFriendTransition = () => {
+    const saved = preTransitionRef.current;
+    if (!saved) return;
+
+    const sortedFriends = getSortedFriends();
+
+    // Restore refs to pre-transition state
+    selectedFriendRef.current = saved.friend;
+    selectedFriendIndexRef.current = saved.friendIndex;
+    storiesCurrentIndexRef.current = saved.currentIndex;
+
+    // Restore context state so PhotoDetailScreen renders original friend's photos
+    openPhotoDetail({
+      mode: 'stories',
+      photos: saved.friend.topPhotos || [],
+      initialIndex: saved.currentIndex,
+      currentUserId: user?.uid,
+      hasNextFriend: saved.friendIndex < sortedFriends.length - 1,
+      hasPreviousFriend: saved.friendIndex > 0,
+      isOwnStory: false,
+    });
+
+    preTransitionRef.current = null;
+  };
+
+  // Update handler refs on each render (ensures callbacks get latest handlers)
   handleCloseMyStoriesRef.current = handleCloseMyStories;
   handleCloseStoriesRef.current = handleCloseStories;
+  handleRequestNextFriendRef.current = handleRequestNextFriend;
+  handleRequestPreviousFriendRef.current = handleRequestPreviousFriend;
+  handleCancelFriendTransitionRef.current = handleCancelFriendTransition;
 
-  const handlePhotoPress = photo => {
+  const handlePhotoPress = (photo, sourceRect) => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
       mode: 'feed',
       photo,
       currentUserId: user?.uid,
       initialShowComments: false,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
 
   // Navigate to photo detail with comments panel visible
-  const handleCommentPress = photo => {
+  const handleCommentPress = (photo, sourceRect) => {
     currentFeedPhotoRef.current = photo;
     openPhotoDetail({
       mode: 'feed',
       photo,
       currentUserId: user?.uid,
       initialShowComments: true,
+      sourceRect: sourceRect || null,
     });
     navigation.navigate('PhotoDetail');
   };
@@ -655,6 +831,44 @@ const FeedScreen = () => {
       updateCurrentPhoto(photo);
     }
   };
+
+  /**
+   * Handle optimistic comment count update from PhotoDetailScreen
+   * Updates feed list, ref, and context photo immediately
+   */
+  const handleCommentCountChange = useCallback(
+    (photoId, delta) => {
+      const photo = currentFeedPhotoRef.current;
+      if (!photo || photo.id !== photoId) {
+        logger.warn('FeedScreen: Comment count change for different photo', {
+          currentPhotoId: photo?.id,
+          targetPhotoId: photoId,
+        });
+        return;
+      }
+
+      // Optimistically update comment count (follows reaction pattern)
+      const updatedPhoto = {
+        ...photo,
+        commentCount: (photo.commentCount || 0) + delta,
+      };
+
+      // Update all 3 locations (same as reactions)
+      currentFeedPhotoRef.current = updatedPhoto;
+      updatePhotoInState(photoId, updatedPhoto);
+      updateCurrentPhoto(updatedPhoto);
+
+      logger.debug('FeedScreen: Optimistically updated comment count', {
+        photoId,
+        delta,
+        newCount: updatedPhoto.commentCount,
+      });
+
+      // NOTE: No explicit revert needed - real-time Firebase subscription
+      // will auto-sync correct count within ~100-200ms
+    },
+    [updatePhotoInState, updateCurrentPhoto]
+  );
 
   /**
    * Handle reaction toggle for stories photos
@@ -735,14 +949,17 @@ const FeedScreen = () => {
     }
   };
 
-  const renderFeedItem = ({ item }) => (
-    <FeedPhotoCard
-      photo={item}
-      onPress={() => handlePhotoPress(item)}
-      onCommentPress={() => handleCommentPress(item)}
-      onAvatarPress={handleAvatarPress}
-      currentUserId={user?.uid}
-    />
+  const renderFeedItem = useCallback(
+    ({ item }) => (
+      <FeedPhotoCard
+        photo={item}
+        onPress={sourceRect => handlePhotoPress(item, sourceRect)}
+        onCommentPress={sourceRect => handleCommentPress(item, sourceRect)}
+        onAvatarPress={handleAvatarPress}
+        currentUserId={user?.uid}
+      />
+    ),
+    [handlePhotoPress, handleCommentPress, handleAvatarPress, user?.uid]
   );
 
   const renderFooter = () => {
@@ -750,7 +967,7 @@ const FeedScreen = () => {
 
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.text.primary} />
+        <PixelSpinner size="small" color={colors.text.primary} />
         <Text style={styles.footerText}>Loading more...</Text>
       </View>
     );
@@ -918,7 +1135,7 @@ const FeedScreen = () => {
             <FriendStoryCard
               key={friend.userId}
               friend={friend}
-              onPress={() => handleOpenStories(friend)}
+              onPress={sourceRect => handleOpenStories(friend, sourceRect)}
               onAvatarPress={handleAvatarPress}
               isFirst={false}
               isViewed={hasViewedAllPhotos(friend.topPhotos)}
@@ -963,6 +1180,7 @@ const FeedScreen = () => {
       >
         {/* Left-aligned friends button */}
         <TouchableOpacity
+          testID="friends-button"
           onPress={() => navigation.navigate('FriendsList')}
           style={styles.friendsButton}
         >
@@ -991,6 +1209,8 @@ const FeedScreen = () => {
       ) : (
         <Animated.View style={[styles.contentContainer, { opacity: contentOpacity }]}>
           <Animated.FlatList
+            testID="feed-list"
+            ref={flatListRef}
             data={photos.length > 0 ? photos : archivePhotos}
             renderItem={renderFeedItem}
             keyExtractor={item => item.id}
@@ -1004,15 +1224,22 @@ const FeedScreen = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={colors.text.primary}
+                tintColor={colors.brand.purple}
+                colors={[colors.brand.purple]}
+                progressBackgroundColor={colors.background.secondary}
                 progressViewOffset={40}
               />
             }
+            initialNumToRender={4}
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
             onEndReached={photos.length > 0 ? loadMorePhotos : null}
             onEndReachedThreshold={0.5}
             ListHeaderComponent={renderStoriesRow}
             ListFooterComponent={renderFooter}
-            ListEmptyComponent={archivePhotosLoading ? null : renderEmptyState}
+            ListEmptyComponent={archivePhotosLoading ? null : renderEmptyState()}
           />
         </Animated.View>
       )}
@@ -1045,8 +1272,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
@@ -1057,27 +1284,27 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   friendsButton: {
-    padding: 8,
+    padding: spacing.xs,
     position: 'absolute',
-    left: 24,
+    left: spacing.lg,
   },
   notificationButton: {
-    padding: 8,
+    padding: spacing.xs,
     position: 'absolute',
-    right: 24,
+    right: spacing.lg,
   },
   notificationDot: {
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: spacing.xs,
+    height: spacing.xs,
+    borderRadius: layout.borderRadius.md,
     backgroundColor: colors.status.danger,
   },
   feedList: {
     // paddingTop set dynamically with insets.top
-    paddingBottom: TAB_BAR_HEIGHT + 24,
+    paddingBottom: TAB_BAR_HEIGHT + spacing.lg,
   },
   footerLoader: {
     flexDirection: 'row',
@@ -1086,7 +1313,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   footerText: {
-    marginLeft: 12,
+    marginLeft: spacing.sm,
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
@@ -1095,18 +1322,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingTop: 40,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxl,
   },
   emptyIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   emptyTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   emptyText: {
     fontSize: typography.size.md,
@@ -1119,18 +1346,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 100,
   },
   errorIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   errorTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   errorText: {
     fontSize: typography.size.md,
@@ -1138,13 +1365,13 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   retryButton: {
     backgroundColor: colors.brand.purple,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 2,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
   },
   retryButtonText: {
     fontSize: typography.size.md,
@@ -1153,17 +1380,17 @@ const styles = StyleSheet.create({
   },
   // Stories row styles
   storiesContainer: {
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.md,
     backgroundColor: colors.background.primary,
   },
   storiesScrollContent: {
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm,
   },
   // Stories loading skeleton styles (match FriendStoryCard dimensions)
   storiesSkeletonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm,
   },
   storySkeletonItem: {
     width: 94 + 8, // STORY_PHOTO_WIDTH (88) + STORY_BORDER_WIDTH*2 (6) + padding (8)
@@ -1173,15 +1400,15 @@ const styles = StyleSheet.create({
   storySkeletonPhoto: {
     width: 94, // 88 + 6 border
     height: 136, // 130 + 6 border
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     backgroundColor: colors.background.tertiary,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     overflow: 'hidden', // Contain shimmer
   },
   storySkeletonName: {
     width: 50,
     height: 10,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     backgroundColor: colors.background.tertiary,
     overflow: 'hidden', // Contain shimmer
   },

@@ -14,7 +14,9 @@ import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -115,6 +117,16 @@ const HOLD_DURATION = 1600;
 const SPINNER_NORMAL_DURATION = 1200;
 const SPINNER_FAST_DURATION = 400; // 3x faster during hold
 
+// XP Power Charge Bar configuration
+const NUM_SEGMENTS = 10;
+const SEGMENT_GAP = 3;
+const CHARGE_COLORS = [
+  colors.retro.chargeCyan,
+  colors.retro.chargeGold,
+  colors.retro.chargeAmber,
+  colors.retro.chargeMagenta,
+];
+
 // Pixel block chase spinner configuration
 const NUM_BLOCKS = 8;
 const BLOCK_POSITIONS = [
@@ -186,7 +198,7 @@ const COLORS = {
 };
 
 // Spinner: retro pixel block chase around static play triangle
-const SpinnerIcon = ({ animationPhase, color = COLORS.textPrimary }) => {
+const SpinnerIcon = ({ animationPhase, color = COLORS.textPrimary, blockColor }) => {
   // Memoize interpolation objects so they are not recreated each render
   const blockOpacities = useRef(
     BLOCK_POSITIONS.map((_, index) => getBlockOpacity(animationPhase, index))
@@ -204,7 +216,11 @@ const SpinnerIcon = ({ animationPhase, color = COLORS.textPrimary }) => {
               top: pos.top,
               opacity: blockOpacities[index],
             },
-            Platform.OS === 'ios' && styles.pixelBlockGlow,
+            blockColor && { backgroundColor: blockColor },
+            Platform.OS === 'ios' && [
+              styles.pixelBlockGlow,
+              blockColor && { shadowColor: blockColor },
+            ],
           ]}
         />
       ))}
@@ -227,6 +243,19 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
   // Haptic interval tracking
   const hapticIntervalRef = useRef(null);
   const lastHapticTimeRef = useRef(0);
+
+  // Charge bar segment tracking
+  const segmentScales = useRef(
+    Array.from({ length: NUM_SEGMENTS }, () => new Animated.Value(0))
+  ).current;
+  const lastActiveCount = useRef(0);
+  const currentPhaseRef = useRef(0);
+  const [phaseColor, setPhaseColor] = useState(CHARGE_COLORS[0]);
+  const progressPollRef = useRef(null);
+
+  // Completion flash + ready text
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const readyScale = useRef(new Animated.Value(0)).current;
 
   const totalCount = (revealedCount || 0) + (developingCount || 0);
   const hasRevealedPhotos = revealedCount > 0;
@@ -298,6 +327,9 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
       if (hapticIntervalRef.current) {
         clearInterval(hapticIntervalRef.current);
       }
+      if (progressPollRef.current) {
+        clearInterval(progressPollRef.current);
+      }
     };
   }, [visible, revealedCount, developingCount, totalCount, hasRevealedPhotos, slideAnim]);
 
@@ -310,58 +342,88 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
         clearInterval(hapticIntervalRef.current);
         hapticIntervalRef.current = null;
       }
+      if (progressPollRef.current) {
+        clearInterval(progressPollRef.current);
+        progressPollRef.current = null;
+      }
+      // Reset charge bar
+      segmentScales.forEach(s => s.setValue(0));
+      lastActiveCount.current = 0;
+      currentPhaseRef.current = 0;
+      setPhaseColor(CHARGE_COLORS[0]);
+      flashOpacity.setValue(0);
+      readyScale.setValue(0);
     }
   }, [visible, progressValue]);
 
-  // Crescendo haptic feedback - runs during press
-  const startCrescendoHaptics = () => {
+  // Unified progress tracking — drives segment pops, phase colors, and crescendo haptics
+  const startProgressTracking = () => {
+    lastActiveCount.current = 0;
+    currentPhaseRef.current = 0;
     lastHapticTimeRef.current = Date.now();
+    setPhaseColor(CHARGE_COLORS[0]);
 
-    // Clear any existing interval
-    if (hapticIntervalRef.current) {
-      clearInterval(hapticIntervalRef.current);
+    if (progressPollRef.current) {
+      clearInterval(progressPollRef.current);
     }
 
-    // Use a fast interval to check progress and trigger haptics at dynamic rates
-    hapticIntervalRef.current = setInterval(() => {
+    progressPollRef.current = setInterval(() => {
       progressValue.addListener(({ value }) => {
         progressValue.removeAllListeners();
 
-        const now = Date.now();
-        let config;
+        // 1. Segment pop tracking
+        const activeCount = Math.min(
+          value >= 1 ? NUM_SEGMENTS : Math.floor(value * NUM_SEGMENTS),
+          NUM_SEGMENTS
+        );
 
-        // Determine which phase we're in
-        if (value < 0.25) {
-          config = HAPTIC_CONFIG.phase1;
-        } else if (value < 0.5) {
-          config = HAPTIC_CONFIG.phase2;
-        } else if (value < 0.75) {
-          config = HAPTIC_CONFIG.phase3;
-        } else {
-          config = HAPTIC_CONFIG.phase4;
+        if (activeCount > lastActiveCount.current) {
+          for (let i = lastActiveCount.current; i < activeCount; i++) {
+            Animated.spring(segmentScales[i], {
+              toValue: 1,
+              tension: 300,
+              friction: 10,
+              useNativeDriver: true,
+            }).start();
+          }
+          lastActiveCount.current = activeCount;
         }
 
-        // Check if enough time has passed for this phase's interval
+        // 2. Phase color (only update on change to limit re-renders)
+        let newPhaseIndex = 0;
+        if (value >= 0.75) newPhaseIndex = 3;
+        else if (value >= 0.5) newPhaseIndex = 2;
+        else if (value >= 0.25) newPhaseIndex = 1;
+
+        if (newPhaseIndex !== currentPhaseRef.current) {
+          currentPhaseRef.current = newPhaseIndex;
+          setPhaseColor(CHARGE_COLORS[newPhaseIndex]);
+        }
+
+        // 3. Crescendo haptics
+        const now = Date.now();
+        let config;
+        if (value < 0.25) config = HAPTIC_CONFIG.phase1;
+        else if (value < 0.5) config = HAPTIC_CONFIG.phase2;
+        else if (value < 0.75) config = HAPTIC_CONFIG.phase3;
+        else config = HAPTIC_CONFIG.phase4;
+
         if (now - lastHapticTimeRef.current >= config.interval) {
           try {
             Haptics.impactAsync(config.style);
             lastHapticTimeRef.current = now;
-            logger.debug('DarkroomBottomSheet: Crescendo haptic', {
-              progress: (value * 100).toFixed(0) + '%',
-              style: config.style,
-            });
           } catch (error) {
             logger.debug('DarkroomBottomSheet: Haptic failed', error);
           }
         }
       });
-    }, 50); // Check every 50ms for responsive haptics
+    }, 50);
   };
 
-  const stopCrescendoHaptics = () => {
-    if (hapticIntervalRef.current) {
-      clearInterval(hapticIntervalRef.current);
-      hapticIntervalRef.current = null;
+  const stopProgressTracking = () => {
+    if (progressPollRef.current) {
+      clearInterval(progressPollRef.current);
+      progressPollRef.current = null;
     }
     progressValue.removeAllListeners();
   };
@@ -382,8 +444,8 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
     // Speed up spinner during hold
     startSpinnerAnimation(true);
 
-    // Start crescendo haptics
-    startCrescendoHaptics();
+    // Start unified progress tracking (segments + haptics)
+    startProgressTracking();
 
     // Animate from 0 to 1 over 1.6 seconds
     progressAnimation.current = Animated.timing(progressValue, {
@@ -400,31 +462,61 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
           developingCount,
         });
 
-        // Stop crescendo haptics
-        stopCrescendoHaptics();
+        // Stop progress tracking
+        stopProgressTracking();
+
+        // Force-fill all segments (polling may miss the final one at value=1.0)
+        segmentScales.forEach(s => {
+          s.stopAnimation();
+          s.setValue(1);
+        });
+        lastActiveCount.current = NUM_SEGMENTS;
 
         // Final success haptic
         try {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          logger.info('DarkroomBottomSheet: Completion haptic triggered');
         } catch (error) {
           logger.debug('DarkroomBottomSheet: Completion haptic failed', error);
         }
 
-        // Small delay to let user see full fill
+        // Completion flash animation
+        Animated.sequence([
+          Animated.timing(flashOpacity, {
+            toValue: 1,
+            duration: 80,
+            useNativeDriver: true,
+          }),
+          Animated.timing(flashOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        // READY! text bounce
+        readyScale.setValue(0);
+        Animated.spring(readyScale, {
+          toValue: 1,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }).start();
+
+        // Delay to show completion, then reset
         setTimeout(() => {
-          // Reset state
           setIsPressing(false);
           progressValue.setValue(0);
-
-          // Reset spinner to normal speed
+          flashOpacity.setValue(0);
+          readyScale.setValue(0);
+          segmentScales.forEach(s => s.setValue(0));
+          lastActiveCount.current = 0;
+          currentPhaseRef.current = 0;
+          setPhaseColor(CHARGE_COLORS[0]);
           startSpinnerAnimation(false);
-
-          // Trigger completion callback
           if (onComplete) {
             onComplete();
           }
-        }, 200);
+        }, 500);
       }
     });
   };
@@ -434,21 +526,36 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
 
     logger.debug('DarkroomBottomSheet: Press released before completion');
 
-    // Stop crescendo haptics
-    stopCrescendoHaptics();
+    // Stop progress tracking
+    stopProgressTracking();
 
     // Stop current animation
     if (progressAnimation.current) {
       progressAnimation.current.stop();
     }
 
-    // Spring back to 0
+    // Spring back progress to 0
     Animated.spring(progressValue, {
       toValue: 0,
       tension: 50,
       friction: 7,
       useNativeDriver: false,
     }).start();
+
+    // Spring back segments
+    segmentScales.forEach((scale, index) => {
+      if (index < lastActiveCount.current) {
+        Animated.spring(scale, {
+          toValue: 0,
+          tension: 200,
+          friction: 15,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+    lastActiveCount.current = 0;
+    currentPhaseRef.current = 0;
+    setPhaseColor(CHARGE_COLORS[0]);
 
     setIsPressing(false);
 
@@ -462,12 +569,6 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
       onClose();
     }
   };
-
-  // Interpolate progress value to width percentage for fill animation
-  const progressWidth = progressValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
 
   // Render card stack (duplicated from CameraScreen's DarkroomCardButton)
   const renderCardStack = () => {
@@ -581,19 +682,52 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
                 borderRadius={4}
                 style={styles.holdButtonBase}
               >
-                {/* Fill overlay that darkens left-to-right, contained within stroke border */}
+                {/* XP Power Charge Bar — segmented RPG meter */}
                 <View style={styles.fillContainer}>
-                  <Animated.View
-                    style={[
-                      styles.fillOverlay,
-                      { width: progressWidth, backgroundColor: COLORS.overlayDark },
-                    ]}
-                  />
+                  <View style={styles.segmentRow}>
+                    {segmentScales.map((scale, index) => (
+                      <View key={index} style={styles.segmentSlot}>
+                        <View style={styles.segmentEmpty} />
+                        <Animated.View
+                          style={[
+                            styles.segmentFill,
+                            {
+                              backgroundColor: phaseColor,
+                              transform: [{ scale }],
+                            },
+                            Platform.OS === 'ios' && {
+                              shadowColor: phaseColor,
+                              shadowOffset: { width: 0, height: 0 },
+                              shadowOpacity: 0.8,
+                              shadowRadius: 3,
+                            },
+                          ]}
+                        />
+                      </View>
+                    ))}
+                  </View>
                 </View>
+
+                {/* Completion flash */}
+                <Animated.View
+                  style={[styles.completionFlash, { opacity: flashOpacity }]}
+                  pointerEvents="none"
+                />
+
+                {/* READY! text */}
+                <Animated.View
+                  style={[styles.readyContainer, { transform: [{ scale: readyScale }] }]}
+                  pointerEvents="none"
+                >
+                  <Text style={styles.readyText}>READY!</Text>
+                </Animated.View>
 
                 {/* Button content */}
                 <View style={styles.holdButtonContent}>
-                  <SpinnerIcon animationPhase={spinnerRotation} />
+                  <SpinnerIcon
+                    animationPhase={spinnerRotation}
+                    blockColor={isPressing ? phaseColor : undefined}
+                  />
                   <Text style={styles.holdButtonText}>
                     {isPressing ? 'Revealing...' : 'Hold to reveal photos'}
                   </Text>
@@ -621,18 +755,18 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: COLORS.sheetBackground,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: Platform.OS === 'ios' ? 48 : 32,
+    borderTopLeftRadius: layout.borderRadius.xl,
+    borderTopRightRadius: layout.borderRadius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xxxl : spacing.xl,
   },
   // Header row - flex row with title/status left, cards right
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   headerLeft: {
     flex: 1,
@@ -640,7 +774,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xxs,
   },
   titleText: {
     fontSize: typography.size.xxl,
@@ -669,7 +803,7 @@ const styles = StyleSheet.create({
   cardStackCardWrapper: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     // White glow effect emanating from card edges
     shadowColor: colors.text.primary,
     shadowOffset: { width: 0, height: 0 },
@@ -685,8 +819,8 @@ const styles = StyleSheet.create({
   // Hold button
   holdButtonContainer: {
     width: '100%',
-    marginTop: 16,
-    borderRadius: 4,
+    marginTop: spacing.md,
+    borderRadius: layout.borderRadius.md,
     overflow: 'hidden',
   },
   holdButtonBase: {
@@ -703,11 +837,60 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: 'hidden',
   },
-  fillOverlay: {
+  // Charge bar segments
+  segmentRow: {
+    flexDirection: 'row',
     position: 'absolute',
     top: 0,
     left: 0,
+    right: 0,
     bottom: 0,
+    gap: SEGMENT_GAP,
+  },
+  segmentSlot: {
+    flex: 1,
+  },
+  segmentEmpty: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: colors.retro.segmentBorder,
+    borderRadius: 1,
+  },
+  segmentFill: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 1,
+  },
+  // Completion flash overlay
+  completionFlash: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    right: 2,
+    bottom: 2,
+    backgroundColor: colors.retro.completionFlash,
+    borderRadius: 2,
+    zIndex: 10,
+  },
+  // READY! text overlay
+  readyContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 11,
+    backgroundColor: colors.retro.readyBackground,
+    borderRadius: layout.borderRadius.md,
+  },
+  readyText: {
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
+    color: colors.retro.readyText,
+    textShadowColor: colors.retro.readyText,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   holdButtonContent: {
     flexDirection: 'row',
@@ -719,7 +902,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.bodyBold,
     color: COLORS.textPrimary,
-    marginLeft: 12,
+    marginLeft: spacing.sm,
   },
   // Spinner - retro pixel block chase
   spinnerOuter: {
@@ -736,7 +919,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.interactive.primary, // '#00D4FF' electric cyan
   },
   pixelBlockGlow: {
-    shadowColor: '#00D4FF',
+    shadowColor: colors.interactive.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -757,7 +940,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
 });
 

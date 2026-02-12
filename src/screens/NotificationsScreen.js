@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  RefreshControl,
   Image,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PixelSpinner from '../components/PixelSpinner';
 import {
   getFirestore,
   collection,
@@ -24,7 +24,10 @@ import PixelIcon from '../components/PixelIcon';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import { useAuth } from '../context/AuthContext';
+import { useScreenTrace } from '../hooks/useScreenTrace';
 import { getTimeAgo } from '../utils/timeUtils';
 import logger from '../utils/logger';
 import {
@@ -46,6 +49,10 @@ const NotificationsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
+
+  // Screen load trace - measures time from mount to data-ready
+  const { markLoaded } = useScreenTrace('NotificationsScreen');
+  const screenTraceMarkedRef = useRef(false);
 
   // Check if push notifications are enabled (fcmToken exists)
   const hasPushToken = !!userProfile?.fcmToken;
@@ -123,6 +130,12 @@ const NotificationsScreen = () => {
 
       logger.info('NotificationsScreen: Loaded notifications', { count: notificationsList.length });
       setNotifications(notificationsList);
+
+      // Mark screen trace as loaded after first notification fetch (once only)
+      if (!screenTraceMarkedRef.current) {
+        screenTraceMarkedRef.current = true;
+        markLoaded({ notif_count: notificationsList.length });
+      }
     } catch (error) {
       logger.error('NotificationsScreen: Failed to fetch notifications', { error: error.message });
     } finally {
@@ -140,7 +153,7 @@ const NotificationsScreen = () => {
     setRefreshing(false);
   };
 
-  const renderNotificationItem = ({ item }) => {
+  const renderNotificationItem = useCallback(({ item }) => {
     // Format reactions display (e.g., "reacted 😂×2 ❤️×1")
     const formatReactionsText = reactions => {
       if (!reactions || typeof reactions !== 'object') return '';
@@ -182,7 +195,7 @@ const NotificationsScreen = () => {
         </Text>
       </View>
     );
-  };
+  }, []);
 
   const renderPushBanner = () => {
     if (hasPushToken) return null;
@@ -204,7 +217,7 @@ const NotificationsScreen = () => {
           disabled={enablingPush}
         >
           {enablingPush ? (
-            <ActivityIndicator size="small" color={colors.background.primary} />
+            <PixelSpinner size="small" color={colors.background.primary} />
           ) : (
             <Text style={styles.pushBannerButtonText}>Enable</Text>
           )}
@@ -241,7 +254,7 @@ const NotificationsScreen = () => {
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text.primary} />
+          <PixelSpinner size="large" color={colors.text.primary} />
         </View>
       </SafeAreaView>
     );
@@ -268,11 +281,17 @@ const NotificationsScreen = () => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={true}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={colors.text.primary}
+            tintColor={colors.brand.purple}
+            colors={[colors.brand.purple]}
+            progressBackgroundColor={colors.background.secondary}
           />
         }
         ListHeaderComponent={renderPushBanner}
@@ -291,14 +310,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   backButton: {
-    marginRight: 8,
+    marginRight: spacing.xs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -312,17 +331,17 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: spacing.md,
   },
   notificationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
   },
   profilePhotoContainer: {
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   profilePhoto: {
     width: 50,
@@ -339,7 +358,7 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   messageText: {
     fontSize: typography.size.md,
@@ -361,17 +380,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
   },
   emptyTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -381,12 +401,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.background.tertiary,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 4,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: layout.borderRadius.md,
     borderWidth: 1,
     borderColor: colors.brand.purple + '40',
   },
@@ -396,7 +416,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pushBannerText: {
-    marginLeft: 12,
+    marginLeft: spacing.sm,
     flex: 1,
   },
   pushBannerTitle: {
@@ -412,10 +432,10 @@ const styles = StyleSheet.create({
   },
   pushBannerButton: {
     backgroundColor: colors.brand.purple,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 2,
-    marginLeft: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: layout.borderRadius.sm,
+    marginLeft: spacing.sm,
     minWidth: 70,
     alignItems: 'center',
   },

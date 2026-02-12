@@ -21,9 +21,11 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Animated,
   Dimensions,
   Alert,
+  Easing,
 } from 'react-native';
 import { Image } from 'expo-image';
 import PixelIcon from '../components/PixelIcon';
@@ -34,8 +36,6 @@ import { usePhotoDetailModal } from '../hooks/usePhotoDetailModal';
 import { usePhotoDetail } from '../context/PhotoDetailContext';
 import { styles } from '../styles/PhotoDetailScreen.styles';
 import CommentsBottomSheet from '../components/comments/CommentsBottomSheet';
-import CommentPreview from '../components/comments/CommentPreview';
-import { getPreviewComments } from '../services/firebase/commentService';
 import {
   softDeletePhoto,
   archivePhoto,
@@ -45,6 +45,7 @@ import {
 import DropdownMenu from '../components/DropdownMenu';
 import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
+import logger from '../utils/logger';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
 const PROGRESS_BAR_HORIZONTAL_PADDING = 8;
@@ -71,23 +72,31 @@ const PhotoDetailScreen = () => {
     mode: contextMode,
     isOwnStory: contextIsOwnStory,
     hasNextFriend: contextHasNextFriend,
+    hasPreviousFriend: contextHasPreviousFriend,
     currentUserId: contextUserId,
+    sourceRect: contextSourceRect,
+    initialShowComments,
     showComments,
     setShowComments,
     handleReactionToggle,
     handlePhotoChange,
     handleRequestNextFriend,
+    handleRequestPreviousFriend,
+    handleCancelFriendTransition,
     handleAvatarPress: contextAvatarPress,
     handleClose: contextClose,
     handlePhotoStateChanged,
+    updateCurrentPhoto,
+    getCallbacks,
   } = usePhotoDetail();
 
-  // Cube transition animation for friend-to-friend
-  const cubeRotation = useRef(new Animated.Value(0)).current;
+  // Cube transition animation for friend-to-friend (two-view simultaneous rotation)
+  const cubeProgress = useRef(new Animated.Value(1)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Comments preview state (local since it's just for display)
-  const [previewComments, setPreviewComments] = useState([]);
+  const isTransitioningRef = useRef(false);
+  const [transitionDirection, setTransitionDirection] = useState('forward'); // 'forward' | 'backward'
+  const swipeDirectionRef = useRef('forward'); // Sync ref for cancel callback access
+  const snapshotRef = useRef({});
 
   // Progress bar scroll ref for auto-scrolling
   const progressScrollRef = useRef(null);
@@ -106,10 +115,19 @@ const PhotoDetailScreen = () => {
   const [tagModalVisible, setTagModalVisible] = useState(false);
   const [taggedPeopleModalVisible, setTaggedPeopleModalVisible] = useState(false);
 
-  // Reset cube rotation when screen mounts
+  // Reset cube state when screen mounts
   useEffect(() => {
-    cubeRotation.setValue(0);
+    cubeProgress.setValue(1);
+    isTransitioningRef.current = false;
     setIsTransitioning(false);
+  }, []);
+
+  // Apply initialShowComments after mount - delayed so opening animation renders photo first
+  useEffect(() => {
+    if (initialShowComments) {
+      const timer = setTimeout(() => setShowComments(true), 300);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const handleClose = useCallback(() => {
@@ -120,34 +138,143 @@ const PhotoDetailScreen = () => {
   }, [contextClose, navigation]);
 
   /**
-   * Handle friend-to-friend transition with cube animation
+   * Handle friend-to-friend transition with 3D cube animation
+   * Uses two simultaneous views: outgoing rotates away, incoming rotates in
+   * Both pivot on the shared right edge for a true cube effect
    */
   const handleFriendTransition = useCallback(() => {
-    if (!contextHasNextFriend || isTransitioning) return false;
+    if (isTransitioningRef.current) return false;
+    if (!contextHasNextFriend) {
+      return false; // Let hook handle animated close
+    }
 
+    // Mark transitioning synchronously so snapshotRef freezes on next render
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
 
-    // Animate cube rotation out (0 -> -90 degrees)
-    Animated.timing(cubeRotation, {
-      toValue: -90,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      // Trigger friend change callback
-      handleRequestNextFriend();
-      // Reset rotation for incoming friend (from 90 -> 0)
-      cubeRotation.setValue(90);
-      Animated.timing(cubeRotation, {
-        toValue: 0,
-        duration: 250,
+    // Outgoing face is always in the tree — set cubeProgress to 0 so native driver
+    // instantly reveals it (no waiting for React render)
+    cubeProgress.setValue(0);
+
+    // Swap to next friend's content (incoming face is hidden at cubeProgress=0)
+    handleRequestNextFriend();
+
+    // Defer animation to next frame so React renders new friend's data on the incoming
+    // face before it becomes visible (prevents flash of outgoing friend's photo)
+    requestAnimationFrame(() => {
+      Animated.timing(cubeProgress, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
       }).start(() => {
+        isTransitioningRef.current = false;
         setIsTransitioning(false);
       });
     });
 
     return true;
-  }, [contextHasNextFriend, handleRequestNextFriend, cubeRotation, isTransitioning]);
+  }, [contextHasNextFriend, handleRequestNextFriend, cubeProgress]);
+
+  /**
+   * Handle backward friend-to-friend transition with reverse 3D cube animation
+   * Incoming face enters from the left, outgoing exits to the right
+   */
+  const handlePreviousFriendTransition = useCallback(() => {
+    if (isTransitioningRef.current) return false;
+    if (!contextHasPreviousFriend) {
+      return false; // Let hook handle animated close
+    }
+
+    isTransitioningRef.current = true;
+    setTransitionDirection('backward');
+    setIsTransitioning(true);
+
+    cubeProgress.setValue(0);
+    handleRequestPreviousFriend();
+
+    // Defer animation to next frame so React renders new friend's data on the incoming
+    // face before it becomes visible (prevents flash of outgoing friend's photo)
+    requestAnimationFrame(() => {
+      Animated.timing(cubeProgress, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        isTransitioningRef.current = false;
+        setIsTransitioning(false);
+        setTransitionDirection('forward');
+      });
+    });
+
+    return true;
+  }, [contextHasPreviousFriend, handleRequestPreviousFriend, cubeProgress]);
+
+  /**
+   * Prepare for an interactive horizontal swipe transition.
+   * Called by the hook at the START of a horizontal drag.
+   * Freezes snapshot, sets transition direction, loads next/previous friend data.
+   */
+  const handlePrepareSwipeTransition = useCallback(
+    direction => {
+      if (isTransitioningRef.current) return false;
+      if (direction === 'forward' && !contextHasNextFriend) return false;
+      if (direction === 'backward' && !contextHasPreviousFriend) return false;
+
+      isTransitioningRef.current = true;
+      setIsTransitioning(true);
+      setTransitionDirection(direction);
+      swipeDirectionRef.current = direction;
+      cubeProgress.setValue(0);
+
+      if (direction === 'forward') {
+        handleRequestNextFriend();
+      } else {
+        handleRequestPreviousFriend();
+      }
+
+      return true;
+    },
+    [
+      contextHasNextFriend,
+      contextHasPreviousFriend,
+      handleRequestNextFriend,
+      handleRequestPreviousFriend,
+      cubeProgress,
+    ]
+  );
+
+  /**
+   * Complete an interactive swipe transition (user committed the swipe).
+   * Called by the hook after the completion animation finishes.
+   */
+  const handleCommitSwipeTransition = useCallback(() => {
+    isTransitioningRef.current = false;
+    setIsTransitioning(false);
+    setTransitionDirection('forward');
+    swipeDirectionRef.current = 'forward';
+  }, []);
+
+  /**
+   * Cancel an interactive swipe transition (user didn't swipe far enough).
+   * Called by the hook after the spring-back animation finishes.
+   * Restores original friend data via FeedScreen cancel callback.
+   */
+  const handleCancelSwipeTransition = useCallback(() => {
+    handleCancelFriendTransition();
+
+    // Wait for React to render the restored data before unfreezing snapshot
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        isTransitioningRef.current = false;
+        setIsTransitioning(false);
+        setTransitionDirection('forward');
+        swipeDirectionRef.current = 'forward';
+        cubeProgress.setValue(1);
+      });
+    });
+  }, [handleCancelFriendTransition, cubeProgress]);
 
   // Opens comments on swipe-up if not already visible
   const handleSwipeUpToOpenComments = useCallback(() => {
@@ -177,6 +304,13 @@ const PhotoDetailScreen = () => {
     opacity,
     panResponder,
 
+    // Expand/collapse animation
+    openProgress,
+    dismissScale,
+    suckTranslateX,
+    animatedBorderRadius,
+    sourceTransform,
+
     // Reactions
     groupedReactions,
     orderedEmojis,
@@ -190,6 +324,9 @@ const PhotoDetailScreen = () => {
     handleEmojiPickerSelect,
     newlyAddedEmoji,
 
+    // Close handler (animated - plays suck-back/slide-down before calling onClose)
+    handleClose: animatedClose,
+
     // Comments visibility (for disabling swipe-to-dismiss during comment scroll)
     updateCommentsVisible,
   } = usePhotoDetailModal({
@@ -202,9 +339,96 @@ const PhotoDetailScreen = () => {
     onClose: handleClose,
     onReactionToggle: handleReactionToggle,
     currentUserId: contextUserId,
-    onFriendTransition: contextHasNextFriend ? handleFriendTransition : null,
+    onFriendTransition: contextMode === 'stories' ? handleFriendTransition : null,
+    onPreviousFriendTransition: contextMode === 'stories' ? handlePreviousFriendTransition : null,
     onSwipeUp: handleSwipeUpToOpenComments,
+    sourceRect: contextSourceRect,
+    // Interactive swipe support
+    cubeProgress,
+    onPrepareSwipeTransition: handlePrepareSwipeTransition,
+    onCommitSwipeTransition: handleCommitSwipeTransition,
+    onCancelSwipeTransition: handleCancelSwipeTransition,
   });
+
+  // Calculate segment width based on total photos
+  // Must be computed BEFORE snapshot capture so outgoing cube face has correct widths
+  const { segmentWidth, needsScroll } = useMemo(() => {
+    if (totalPhotos <= 0) return { segmentWidth: MIN_SEGMENT_WIDTH, needsScroll: false };
+
+    const availableWidth = SCREEN_WIDTH - PROGRESS_BAR_HORIZONTAL_PADDING * 2;
+    const totalGapWidth = (totalPhotos - 1) * PROGRESS_BAR_GAP;
+    const widthForSegments = availableWidth - totalGapWidth;
+    const calculatedWidth = widthForSegments / totalPhotos;
+
+    // If segments would be smaller than min, use min width and enable scrolling
+    if (calculatedWidth < MIN_SEGMENT_WIDTH) {
+      return { segmentWidth: MIN_SEGMENT_WIDTH, needsScroll: true };
+    }
+
+    // If more than MAX_VISIBLE_SEGMENTS, cap width and scroll
+    if (totalPhotos > MAX_VISIBLE_SEGMENTS) {
+      const cappedWidth =
+        (availableWidth - (MAX_VISIBLE_SEGMENTS - 1) * PROGRESS_BAR_GAP) / MAX_VISIBLE_SEGMENTS;
+      return { segmentWidth: Math.max(cappedWidth, MIN_SEGMENT_WIDTH), needsScroll: true };
+    }
+
+    return { segmentWidth: calculatedWidth, needsScroll: false };
+  }, [totalPhotos]);
+
+  // Keep snapshot ref updated with current display data for cube transition
+  // Freeze during transitions so outgoing face keeps the old friend's data
+  if (!isTransitioningRef.current) {
+    snapshotRef.current = {
+      imageURL,
+      displayName,
+      profilePhotoURL,
+      capturedAt,
+      totalPhotos,
+      currentIndex,
+      showProgressBar,
+      segmentWidth,
+      commentCount: currentPhoto?.commentCount || 0,
+      orderedEmojis: orderedEmojis,
+      groupedReactions: groupedReactions,
+      photoId: currentPhoto?.id,
+      userId: currentPhoto?.userId,
+      isOwnPhoto: currentPhoto?.userId === contextUserId,
+      taggedUserIds: currentPhoto?.taggedUserIds,
+      hasMenuOptions: true,
+      contextMode: contextMode,
+    };
+  }
+
+  // Compute combined expand/collapse + dismiss transforms
+  const expandScale = useMemo(() => {
+    if (!sourceTransform) return dismissScale;
+    return Animated.multiply(
+      openProgress.interpolate({ inputRange: [0, 1], outputRange: [sourceTransform.scale, 1] }),
+      dismissScale
+    );
+  }, [sourceTransform, openProgress, dismissScale]);
+
+  const expandTranslateX = useMemo(() => {
+    if (!sourceTransform) return suckTranslateX;
+    return Animated.add(
+      openProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [sourceTransform.translateX, 0],
+      }),
+      suckTranslateX
+    );
+  }, [sourceTransform, openProgress, suckTranslateX]);
+
+  const expandTranslateY = useMemo(() => {
+    if (!sourceTransform) return translateY;
+    return Animated.add(
+      openProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [sourceTransform.translateY, 0],
+      }),
+      translateY
+    );
+  }, [sourceTransform, openProgress, translateY]);
 
   // Sync comments visibility with hook (so panResponder knows not to capture gestures)
   useEffect(() => {
@@ -235,6 +459,43 @@ const PhotoDetailScreen = () => {
       }
     },
     [contextAvatarPress]
+  );
+
+  /**
+   * Handle optimistic comment count update when user adds a comment
+   * Updates context state and propagates to feed if in feed mode
+   */
+  const handleCommentCountChange = useCallback(
+    delta => {
+      if (!currentPhoto) return;
+
+      const photoId = currentPhoto.id;
+
+      // Optimistically update photo count
+      const updatedPhoto = {
+        ...currentPhoto,
+        commentCount: (currentPhoto.commentCount || 0) + delta,
+      };
+
+      // Update context state (for this screen and modal)
+      updateCurrentPhoto(updatedPhoto);
+
+      // If in feed mode, also update feed state via callback
+      if (contextMode === 'feed') {
+        const callbacks = getCallbacks();
+        if (callbacks.onCommentCountChange) {
+          callbacks.onCommentCountChange(photoId, delta);
+        }
+      }
+
+      logger.debug('PhotoDetailScreen: Optimistically updated comment count', {
+        photoId,
+        delta,
+        newCount: updatedPhoto.commentCount,
+        mode: contextMode,
+      });
+    },
+    [currentPhoto, contextMode, updateCurrentPhoto, getCallbacks]
   );
 
   const handleArchive = useCallback(() => {
@@ -297,8 +558,27 @@ const PhotoDetailScreen = () => {
     );
   }, [currentPhoto?.id, contextUserId, handleClose, handlePhotoStateChanged]);
 
+  const handleReport = useCallback(() => {
+    setShowPhotoMenu(false);
+    navigation.navigate('ReportUser', {
+      userId: currentPhoto?.userId,
+      username: displayName,
+      displayName: displayName,
+      profilePhotoURL: profilePhotoURL,
+    });
+  }, [navigation, currentPhoto?.userId, displayName, profilePhotoURL]);
+
   const menuOptions = useMemo(() => {
-    if (!isOwnPhoto) return [];
+    if (!isOwnPhoto) {
+      return [
+        {
+          label: 'Report',
+          icon: 'flag-outline',
+          onPress: handleReport,
+          destructive: true,
+        },
+      ];
+    }
 
     const options = [];
 
@@ -324,55 +604,19 @@ const PhotoDetailScreen = () => {
     });
 
     return options;
-  }, [isOwnPhoto, currentPhoto?.photoState, handleArchive, handleRestore, handleDeleteConfirm]);
+  }, [
+    isOwnPhoto,
+    currentPhoto?.photoState,
+    handleArchive,
+    handleRestore,
+    handleDeleteConfirm,
+    handleReport,
+  ]);
 
   const handleMenuButtonLayout = useCallback(event => {
     const { x, y, width, height } = event.nativeEvent.layout;
     setMenuAnchor({ x, y, width, height });
   }, []);
-
-  // Fetch preview comments when photo changes
-  useEffect(() => {
-    const fetchPreviewComments = async () => {
-      if (!currentPhoto?.id) {
-        setPreviewComments([]);
-        return;
-      }
-
-      const result = await getPreviewComments(currentPhoto.id, currentPhoto.userId);
-      if (result.success) {
-        setPreviewComments(result.previewComments || []);
-      } else {
-        setPreviewComments([]);
-      }
-    };
-
-    fetchPreviewComments();
-  }, [currentPhoto?.id, currentPhoto?.userId, showComments]);
-
-  // Calculate segment width based on total photos
-  const { segmentWidth, needsScroll } = useMemo(() => {
-    if (totalPhotos <= 0) return { segmentWidth: MIN_SEGMENT_WIDTH, needsScroll: false };
-
-    const availableWidth = SCREEN_WIDTH - PROGRESS_BAR_HORIZONTAL_PADDING * 2;
-    const totalGapWidth = (totalPhotos - 1) * PROGRESS_BAR_GAP;
-    const widthForSegments = availableWidth - totalGapWidth;
-    const calculatedWidth = widthForSegments / totalPhotos;
-
-    // If segments would be smaller than min, use min width and enable scrolling
-    if (calculatedWidth < MIN_SEGMENT_WIDTH) {
-      return { segmentWidth: MIN_SEGMENT_WIDTH, needsScroll: true };
-    }
-
-    // If more than MAX_VISIBLE_SEGMENTS, cap width and scroll
-    if (totalPhotos > MAX_VISIBLE_SEGMENTS) {
-      const cappedWidth =
-        (availableWidth - (MAX_VISIBLE_SEGMENTS - 1) * PROGRESS_BAR_GAP) / MAX_VISIBLE_SEGMENTS;
-      return { segmentWidth: Math.max(cappedWidth, MIN_SEGMENT_WIDTH), needsScroll: true };
-    }
-
-    return { segmentWidth: calculatedWidth, needsScroll: false };
-  }, [totalPhotos]);
 
   // Auto-scroll emoji row to start and fade highlight when new emoji is added
   useEffect(() => {
@@ -418,233 +662,433 @@ const PhotoDetailScreen = () => {
   if (!currentPhoto) return null;
 
   return (
-    <Animated.View style={[styles.container, { opacity }]} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }} {...panResponder.panHandlers}>
       <StatusBar barStyle="light-content" />
 
-      {/* Animated content wrapper with cube transition */}
+      {/* Background overlay - fades independently from content */}
       <Animated.View
-        style={[
-          styles.contentWrapper,
-          {
-            transform: [
-              { translateY },
-              { perspective: 1000 },
-              {
-                rotateY: cubeRotation.interpolate({
-                  inputRange: [-90, 0, 90],
-                  outputRange: ['-90deg', '0deg', '90deg'],
-                }),
-              },
-            ],
-          },
-        ]}
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay.darker, opacity }]}
+      />
+
+      {/* Expand/collapse wrapper - scales + translates content from/to source card */}
+      <Animated.View
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          opacity,
+          transform: [
+            { translateX: expandTranslateX },
+            { translateY: expandTranslateY },
+            { scale: expandScale },
+          ],
+        }}
       >
-        {/* Header with close button */}
-        <View style={styles.header}>
-          <View style={styles.headerSpacer} />
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Photo - TouchableWithoutFeedback for swipe-to-close gesture support */}
-        <TouchableWithoutFeedback
-          onPress={contextMode === 'stories' ? handleTapNavigation : undefined}
-        >
-          <View style={styles.photoScrollView}>
-            <Image
-              source={{ uri: imageURL }}
-              style={styles.photo}
-              contentFit="cover"
-              transition={0}
-            />
-          </View>
-        </TouchableWithoutFeedback>
-
-        {/* Profile photo - overlapping top left of photo, tappable to navigate to profile */}
-        <TouchableOpacity
-          style={styles.profilePicContainer}
-          onPress={handleAvatarPress}
-          activeOpacity={isOwnPhoto ? 1 : 0.7}
-          disabled={isOwnPhoto}
-        >
-          {profilePhotoURL ? (
-            <Image source={{ uri: profilePhotoURL }} style={styles.profilePic} contentFit="cover" />
-          ) : (
-            <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
-              <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* User info - bottom left of photo */}
-        <View
+        {/* Main content wrapper - incoming face during cube transition */}
+        <Animated.View
           style={[
-            styles.userInfoOverlay,
+            styles.contentWrapper,
             {
-              bottom:
-                contextMode === 'stories'
-                  ? previewComments?.length > 0
-                    ? 130
-                    : 110
-                  : previewComments?.length > 0
-                    ? 120
-                    : 100,
+              backfaceVisibility: 'hidden',
+              transform: [
+                { perspective: 800 },
+                {
+                  translateX: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? [SCREEN_WIDTH, 0] : [-SCREEN_WIDTH, 0],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
+                },
+                {
+                  rotateY: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? ['90deg', '0deg'] : ['-90deg', '0deg'],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
+                },
+              ],
             },
           ]}
         >
-          <Text style={styles.displayName} numberOfLines={1}>
-            {displayName || 'Unknown User'}
-          </Text>
-          <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
-        </View>
+          {/* Header with close button */}
+          <View style={styles.header}>
+            <View style={styles.headerSpacer} />
+            <TouchableOpacity onPress={animatedClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Comment preview - below user info, above progress bar */}
-        {previewComments.length > 0 && (
+          {/* Photo - TouchableWithoutFeedback for swipe-to-close gesture support */}
+          <TouchableWithoutFeedback
+            onPress={contextMode === 'stories' ? handleTapNavigation : undefined}
+          >
+            <View style={styles.photoScrollView}>
+              <Image
+                source={{ uri: imageURL, cacheKey: `photo-${currentPhoto?.id}` }}
+                style={styles.photo}
+                contentFit="cover"
+                transition={0}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+
+          {/* Profile photo - overlapping top left of photo, tappable to navigate to profile */}
+          <TouchableOpacity
+            style={styles.profilePicContainer}
+            onPress={handleAvatarPress}
+            activeOpacity={isOwnPhoto ? 1 : 0.7}
+            disabled={isOwnPhoto}
+          >
+            {profilePhotoURL ? (
+              <Image
+                source={{ uri: profilePhotoURL, cacheKey: `profile-${currentPhoto?.userId}` }}
+                style={styles.profilePic}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={0}
+              />
+            ) : (
+              <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                <Text style={styles.profilePicText}>{displayName?.[0]?.toUpperCase() || '?'}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* User info - bottom left of photo */}
           <View
             style={[
-              styles.commentPreviewContainer,
-              { bottom: contextMode === 'stories' ? 100 : 90 },
+              styles.userInfoOverlay,
+              {
+                bottom: contextMode === 'stories' ? 110 : 100,
+              },
             ]}
           >
-            <CommentPreview
-              comments={previewComments}
-              totalCount={currentPhoto?.commentCount || 0}
-              onPress={() => setShowComments(true)}
-              showViewAll={false}
-            />
-          </View>
-        )}
-
-        {/* Tag button - visible for owner always, non-owner only when tags exist */}
-        {(isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
-          <TouchableOpacity
-            style={styles.tagButton}
-            onPress={() => {
-              if (isOwnPhoto) {
-                setTagModalVisible(true);
-              } else {
-                setTaggedPeopleModalVisible(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <PixelIcon name="add" size={18} color={colors.text.primary} />
-          </TouchableOpacity>
-        )}
-
-        {/* Photo menu button - only for own photos */}
-        {isOwnPhoto && menuOptions.length > 0 && (
-          <TouchableOpacity
-            style={styles.photoMenuButton}
-            onPress={() => setShowPhotoMenu(true)}
-            onLayout={handleMenuButtonLayout}
-            activeOpacity={0.7}
-          >
-            <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
-          </TouchableOpacity>
-        )}
-
-        {/* Progress bar - stories mode only */}
-        {showProgressBar && totalPhotos > 0 && (
-          <ScrollView
-            ref={progressScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            scrollEnabled={needsScroll}
-            style={styles.progressBarScrollView}
-            contentContainerStyle={styles.progressBarContainer}
-          >
-            {Array.from({ length: totalPhotos }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressSegment,
-                  { width: segmentWidth },
-                  index <= currentIndex
-                    ? styles.progressSegmentActive
-                    : styles.progressSegmentInactive,
-                ]}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Footer - Comment Input + Emoji Pills */}
-        <View style={styles.footer}>
-          {/* Comment input trigger - left side */}
-          <TouchableOpacity
-            style={styles.commentInputTrigger}
-            onPress={() => setShowComments(true)}
-            activeOpacity={0.8}
-          >
-            <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
-            <Text style={styles.commentInputTriggerText} numberOfLines={1}>
-              {currentPhoto?.commentCount > 0
-                ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
-                : 'Add a comment...'}
+            <Text style={styles.displayName} numberOfLines={1}>
+              {displayName || 'Unknown User'}
             </Text>
-          </TouchableOpacity>
+            <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
+          </View>
 
-          {/* Emoji pills - right side */}
-          <ScrollView
-            ref={emojiScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.emojiPickerContainer}
-            style={[styles.emojiPickerScrollView, contextIsOwnStory && styles.disabledEmojiRow]}
-          >
-            {orderedEmojis.map(emoji => {
-              const totalCount = groupedReactions[emoji] || 0;
-              const userCount = getUserReactionCount(emoji);
-              const isSelected = userCount > 0;
-              const isNewlyAdded = emoji === newlyAddedEmoji;
+          {/* Tag button - visible for owner always, non-owner only when tags exist */}
+          {(isOwnPhoto || currentPhoto?.taggedUserIds?.length > 0) && (
+            <TouchableOpacity
+              style={styles.tagButton}
+              onPress={() => {
+                if (isOwnPhoto) {
+                  setTagModalVisible(true);
+                } else {
+                  setTaggedPeopleModalVisible(true);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <PixelIcon
+                name={isOwnPhoto ? 'person-add-outline' : 'people-outline'}
+                size={18}
+                color={colors.text.primary}
+              />
+            </TouchableOpacity>
+          )}
 
-              // For own stories, render as non-interactive View
-              if (contextIsOwnStory) {
+          {/* Photo menu button */}
+          {menuOptions.length > 0 && (
+            <TouchableOpacity
+              style={styles.photoMenuButton}
+              onPress={() => setShowPhotoMenu(true)}
+              onLayout={handleMenuButtonLayout}
+              activeOpacity={0.7}
+            >
+              <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
+            </TouchableOpacity>
+          )}
+
+          {/* Progress bar - stories mode only */}
+          {showProgressBar && totalPhotos > 0 && (
+            <ScrollView
+              ref={progressScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={needsScroll}
+              style={styles.progressBarScrollView}
+              contentContainerStyle={styles.progressBarContainer}
+            >
+              {Array.from({ length: totalPhotos }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressSegment,
+                    { width: segmentWidth },
+                    index <= currentIndex
+                      ? styles.progressSegmentActive
+                      : styles.progressSegmentInactive,
+                  ]}
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Footer - Comment Input + Emoji Pills */}
+          <View style={styles.footer}>
+            {/* Comment input trigger - left side */}
+            <TouchableOpacity
+              style={styles.commentInputTrigger}
+              onPress={() => setShowComments(true)}
+              activeOpacity={0.8}
+            >
+              <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
+              <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                {currentPhoto?.commentCount > 0
+                  ? `${currentPhoto.commentCount} comment${currentPhoto.commentCount === 1 ? '' : 's'}`
+                  : 'Add a comment...'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Emoji pills - right side */}
+            <ScrollView
+              ref={emojiScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.emojiPickerContainer}
+              style={[styles.emojiPickerScrollView, contextIsOwnStory && styles.disabledEmojiRow]}
+            >
+              {orderedEmojis.map(emoji => {
+                const totalCount = groupedReactions[emoji] || 0;
+                const userCount = getUserReactionCount(emoji);
+                const isSelected = userCount > 0;
+                const isNewlyAdded = emoji === newlyAddedEmoji;
+
+                // For own stories, render as non-interactive View
+                if (contextIsOwnStory) {
+                  return (
+                    <View key={emoji} style={{ position: 'relative' }}>
+                      <View style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}>
+                        <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                        {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                      </View>
+                    </View>
+                  );
+                }
+
                 return (
                   <View key={emoji} style={{ position: 'relative' }}>
-                    <View style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}>
+                    <TouchableOpacity
+                      style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
+                      onPress={() => handleEmojiPress(emoji)}
+                      activeOpacity={0.7}
+                    >
                       <Text style={styles.emojiPillEmoji}>{emoji}</Text>
                       {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
-                    </View>
+                    </TouchableOpacity>
+                    {/* Purple highlight overlay that fades out */}
+                    {isNewlyAdded && (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[styles.emojiHighlightOverlay, { opacity: highlightOpacity }]}
+                      />
+                    )}
                   </View>
                 );
-              }
+              })}
 
-              return (
-                <View key={emoji} style={{ position: 'relative' }}>
-                  <TouchableOpacity
-                    style={[styles.emojiPill, isSelected && styles.emojiPillSelected]}
-                    onPress={() => handleEmojiPress(emoji)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.emojiPillEmoji}>{emoji}</Text>
-                    {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
-                  </TouchableOpacity>
-                  {/* Purple highlight overlay that fades out */}
-                  {isNewlyAdded && (
-                    <Animated.View
-                      pointerEvents="none"
-                      style={[styles.emojiHighlightOverlay, { opacity: highlightOpacity }]}
-                    />
-                  )}
+              {/* Add custom emoji button - hidden for own stories */}
+              {!contextIsOwnStory && (
+                <TouchableOpacity
+                  style={[styles.emojiPill, styles.addEmojiButton]}
+                  onPress={handleOpenEmojiPicker}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.addEmojiText}>+</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </Animated.View>
+
+        {/* Outgoing cube face - always rendered, naturally hidden at cubeProgress=1
+           (off-screen left + rotated -90deg). Native driver reveals it instantly
+           when cubeProgress goes to 0, eliminating the flash. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.contentWrapper,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backfaceVisibility: 'hidden',
+              transform: [
+                { perspective: 800 },
+                {
+                  translateX: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? [0, -SCREEN_WIDTH] : [0, SCREEN_WIDTH],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? SCREEN_WIDTH / 2 : -SCREEN_WIDTH / 2,
+                },
+                {
+                  rotateY: cubeProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange:
+                      transitionDirection === 'forward' ? ['0deg', '-90deg'] : ['0deg', '90deg'],
+                  }),
+                },
+                {
+                  translateX:
+                    transitionDirection === 'forward' ? -SCREEN_WIDTH / 2 : SCREEN_WIDTH / 2,
+                },
+              ],
+            },
+          ]}
+        >
+          {snapshotRef.current.imageURL && (
+            <>
+              {/* Header with close button */}
+              <View style={styles.header}>
+                <View style={styles.headerSpacer} />
+                <View style={styles.closeButton}>
+                  <Text style={styles.closeButtonText}>✕</Text>
                 </View>
-              );
-            })}
+              </View>
 
-            {/* Add custom emoji button - hidden for own stories */}
-            {!contextIsOwnStory && (
-              <TouchableOpacity
-                style={[styles.emojiPill, styles.addEmojiButton]}
-                onPress={handleOpenEmojiPicker}
-                activeOpacity={0.7}
+              {/* Photo */}
+              <View style={styles.photoScrollView}>
+                <Image
+                  source={{
+                    uri: snapshotRef.current.imageURL,
+                    cacheKey: snapshotRef.current.photoId
+                      ? `photo-${snapshotRef.current.photoId}`
+                      : undefined,
+                  }}
+                  style={styles.photo}
+                  contentFit="cover"
+                  transition={0}
+                />
+              </View>
+
+              {/* Profile photo */}
+              <View style={styles.profilePicContainer}>
+                {snapshotRef.current.profilePhotoURL ? (
+                  <Image
+                    source={{
+                      uri: snapshotRef.current.profilePhotoURL,
+                      cacheKey: snapshotRef.current.userId
+                        ? `profile-${snapshotRef.current.userId}`
+                        : undefined,
+                    }}
+                    style={styles.profilePic}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                  />
+                ) : (
+                  <View style={[styles.profilePic, styles.profilePicPlaceholder]}>
+                    <Text style={styles.profilePicText}>
+                      {snapshotRef.current.displayName?.[0]?.toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* User info - bottom offset matches incoming face calculation */}
+              <View
+                style={[
+                  styles.userInfoOverlay,
+                  {
+                    bottom: snapshotRef.current.contextMode === 'stories' ? 110 : 100,
+                  },
+                ]}
               >
-                <Text style={styles.addEmojiText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-        </View>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {snapshotRef.current.displayName || 'Unknown User'}
+                </Text>
+                <Text style={styles.timestamp}>{getTimeAgo(snapshotRef.current.capturedAt)}</Text>
+              </View>
+
+              {/* Tag button */}
+              {(snapshotRef.current.isOwnPhoto ||
+                snapshotRef.current.taggedUserIds?.length > 0) && (
+                <View style={styles.tagButton}>
+                  <PixelIcon
+                    name={snapshotRef.current.isOwnPhoto ? 'person-add-outline' : 'people-outline'}
+                    size={18}
+                    color={colors.text.primary}
+                  />
+                </View>
+              )}
+
+              {/* Menu button */}
+              {snapshotRef.current.hasMenuOptions && (
+                <View style={styles.photoMenuButton}>
+                  <PixelIcon name="ellipsis-vertical" size={28} color={colors.text.primary} />
+                </View>
+              )}
+
+              {/* Progress bar */}
+              {snapshotRef.current.showProgressBar && snapshotRef.current.totalPhotos > 0 && (
+                <View style={[styles.progressBarScrollView, { overflow: 'hidden' }]}>
+                  <View style={styles.progressBarContainer}>
+                    {Array.from({ length: snapshotRef.current.totalPhotos }).map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.progressSegment,
+                          { width: snapshotRef.current.segmentWidth },
+                          index <= snapshotRef.current.currentIndex
+                            ? styles.progressSegmentActive
+                            : styles.progressSegmentInactive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Footer */}
+              <View style={styles.footer}>
+                <View style={styles.commentInputTrigger}>
+                  <PixelIcon name="chatbubble-outline" size={16} color={colors.text.secondary} />
+                  <Text style={styles.commentInputTriggerText} numberOfLines={1}>
+                    {snapshotRef.current.commentCount > 0
+                      ? `${snapshotRef.current.commentCount} comment${snapshotRef.current.commentCount === 1 ? '' : 's'}`
+                      : 'Add a comment...'}
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.emojiPickerContainer}
+                  style={styles.emojiPickerScrollView}
+                >
+                  {(snapshotRef.current.orderedEmojis || []).map(emoji => {
+                    const totalCount = snapshotRef.current.groupedReactions?.[emoji] || 0;
+                    return (
+                      <View key={emoji} style={styles.emojiPill}>
+                        <Text style={styles.emojiPillEmoji}>{emoji}</Text>
+                        {totalCount > 0 && <Text style={styles.emojiPillCount}>{totalCount}</Text>}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </>
+          )}
+        </Animated.View>
+
+        {/* Close expand/collapse wrapper */}
       </Animated.View>
 
       {/* Comments Bottom Sheet */}
@@ -655,6 +1099,7 @@ const PhotoDetailScreen = () => {
         photoOwnerId={currentPhoto?.userId}
         currentUserId={contextUserId}
         onAvatarPress={handleCommentAvatarPress}
+        onCommentCountChange={handleCommentCountChange}
       />
 
       {/* Custom Emoji Picker */}
@@ -717,7 +1162,7 @@ const PhotoDetailScreen = () => {
           contextAvatarPress?.(userId, userName);
         }}
       />
-    </Animated.View>
+    </View>
   );
 };
 

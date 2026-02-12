@@ -1,0 +1,13 @@
+# Feed Browsing E2E Flow
+# Prerequisites: Logged-in user with friends who have photos
+appId: com.spoodsjs.rewind
+---
+- launchApp
+- assertVisible:
+    id: 'feed-list'
+    timeout: 10000
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    id: 'feed-photo-card'

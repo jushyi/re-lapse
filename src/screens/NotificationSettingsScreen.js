@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Linking, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
+import PixelToggle from '../components/PixelToggle';
 import { getFirestore, doc, updateDoc } from '@react-native-firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import { checkNotificationPermissions } from '../services/firebase/notificationService';
 import { colors } from '../constants/colors';
 import { styles } from '../styles/NotificationSettingsScreen.styles';
 import logger from '../utils/logger';
@@ -79,6 +81,27 @@ const NotificationSettingsScreen = () => {
   const navigation = useNavigation();
   const { user, userProfile } = useAuth();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [osPermissionDenied, setOsPermissionDenied] = useState(false);
+
+  // Check OS notification permission on mount and when app returns to foreground
+  useEffect(() => {
+    const checkOsPermission = async () => {
+      const result = await checkNotificationPermissions();
+      if (result.success) {
+        setOsPermissionDenied(!result.data.granted);
+      }
+    };
+
+    checkOsPermission();
+
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        checkOsPermission();
+      }
+    });
+
+    return () => subscription?.remove();
+  }, []);
 
   // Load preferences from userProfile on mount
   useEffect(() => {
@@ -138,7 +161,28 @@ const NotificationSettingsScreen = () => {
       </View>
 
       <ScrollView>
-        <View style={styles.menuContainer}>
+        {osPermissionDenied && (
+          <View style={styles.permissionBanner}>
+            <View style={styles.permissionBannerContent}>
+              <PixelIcon name="notifications-off-outline" size={22} color={colors.status.danger} />
+              <View style={styles.permissionBannerText}>
+                <Text style={styles.permissionBannerTitle}>Notifications are turned off</Text>
+                <Text style={styles.permissionBannerSubtitle}>
+                  Enable notifications in your device settings to receive alerts
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.permissionBannerButton}
+              onPress={() => Linking.openSettings()}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.permissionBannerButtonText}>Open Settings</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={[styles.menuContainer, osPermissionDenied && styles.toggleItemDisabled]}>
           {/* Master Toggle */}
           <View style={[styles.toggleItem, styles.masterToggleItem]}>
             <View style={styles.toggleItemLeft}>
@@ -148,12 +192,7 @@ const NotificationSettingsScreen = () => {
                 <Text style={styles.toggleItemSubtitle}>Turn off to stop all notifications</Text>
               </View>
             </View>
-            <Switch
-              value={preferences.enabled}
-              onValueChange={handleMasterToggle}
-              trackColor={{ false: colors.background.tertiary, true: colors.interactive.primary }}
-              thumbColor={colors.text.primary}
-            />
+            <PixelToggle value={preferences.enabled} onValueChange={handleMasterToggle} />
           </View>
 
           {/* Notification Types Section */}
@@ -173,12 +212,10 @@ const NotificationSettingsScreen = () => {
                   <Text style={styles.toggleItemSubtitle}>{type.subtitle}</Text>
                 </View>
               </View>
-              <Switch
+              <PixelToggle
                 value={preferences[type.id]}
                 onValueChange={value => handleTypeToggle(type.id, value)}
                 disabled={!preferences.enabled}
-                trackColor={{ false: colors.background.tertiary, true: colors.interactive.primary }}
-                thumbColor={colors.text.primary}
               />
             </View>
           ))}

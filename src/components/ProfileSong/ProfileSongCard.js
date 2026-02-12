@@ -9,7 +9,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
@@ -23,6 +24,8 @@ import Animated, {
 import PixelIcon from '../PixelIcon';
 import { colors } from '../../constants/colors';
 import { typography } from '../../constants/typography';
+import { spacing } from '../../constants/spacing';
+import { layout } from '../../constants/layout';
 import { playPreview, stopPreview, pausePreview, resumePreview } from '../../services/audioPlayer';
 import logger from '../../utils/logger';
 
@@ -171,7 +174,13 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
         delayLongPress={500}
       >
         {/* Album Art */}
-        <Image source={{ uri: song.albumArt }} style={styles.albumArt} resizeMode="cover" />
+        <Image
+          source={{ uri: song.albumArt }}
+          style={styles.albumArt}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="low"
+        />
 
         {/* Song Info */}
         <View style={styles.songInfo}>
@@ -209,15 +218,15 @@ const ProfileSongCard = ({ song, isOwnProfile, onPress, onLongPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     backgroundColor: colors.background.tertiary,
     overflow: 'hidden',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     minHeight: 60,
   },
   glowShadow: {
@@ -229,13 +238,13 @@ const styles = StyleSheet.create({
   albumArt: {
     width: 48,
     height: 48,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     backgroundColor: colors.background.secondary,
   },
   songInfo: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
+    marginLeft: spacing.sm,
+    marginRight: spacing.xs,
   },
   title: {
     fontSize: typography.size.md,
@@ -271,15 +280,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     minHeight: 60,
-    borderRadius: 4,
+    borderRadius: layout.borderRadius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border.subtle,
     backgroundColor: colors.background.tertiary,
-    gap: 8,
+    gap: spacing.xs,
   },
   emptyText: {
     fontSize: typography.size.md,

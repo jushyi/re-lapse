@@ -11,12 +11,20 @@
  * - PhotoDetailScreen reads state and calls callbacks from context
  * - Navigation handles actual screen presentation
  */
-import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useMemo } from 'react';
 
 const PhotoDetailContext = createContext({});
 
 /**
- * Hook to access photo detail context
+ * Separate context for stable action methods only.
+ * Components that only need to call actions (like FeedScreen) subscribe to this
+ * instead of the full state context, preventing re-renders when state changes.
+ */
+const PhotoDetailActionsContext = createContext({});
+
+/**
+ * Hook to access photo detail context (state + actions)
+ * Use this in components that need to READ state (e.g. PhotoDetailScreen)
  * Must be used within PhotoDetailProvider
  */
 export const usePhotoDetail = () => {
@@ -25,6 +33,15 @@ export const usePhotoDetail = () => {
     throw new Error('usePhotoDetail must be used within a PhotoDetailProvider');
   }
   return context;
+};
+
+/**
+ * Hook to access only stable action methods (no state)
+ * Use this in components that only CALL actions (e.g. FeedScreen)
+ * This prevents re-renders when photo detail state changes
+ */
+export const usePhotoDetailActions = () => {
+  return useContext(PhotoDetailActionsContext);
 };
 
 /**
@@ -41,6 +58,7 @@ export const PhotoDetailProvider = ({ children }) => {
   const [mode, setMode] = useState('feed'); // 'feed' | 'stories'
   const [isOwnStory, setIsOwnStory] = useState(false);
   const [hasNextFriend, setHasNextFriend] = useState(false);
+  const [hasPreviousFriend, setHasPreviousFriend] = useState(false);
   const [initialShowComments, setInitialShowComments] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
@@ -50,14 +68,20 @@ export const PhotoDetailProvider = ({ children }) => {
   // Comments visibility - stored in context to persist across navigation
   const [showComments, setShowComments] = useState(false);
 
+  // Source card position for expand/collapse animation
+  const [sourceRect, setSourceRect] = useState(null);
+
   // Callback refs - using refs to avoid re-renders when callbacks change
   const callbacksRef = useRef({
     onReactionToggle: null,
     onPhotoChange: null,
     onRequestNextFriend: null,
+    onRequestPreviousFriend: null,
+    onCancelFriendTransition: null, // Called to cancel an interactive swipe transition
     onClose: null,
     onAvatarPress: null,
     onPhotoStateChanged: null, // Called when photo is archived/deleted/restored
+    onCommentCountChange: null, // Called when comment count changes (optimistic update)
   });
 
   /**
@@ -90,6 +114,7 @@ export const PhotoDetailProvider = ({ children }) => {
    * @param {boolean} params.initialShowComments - Whether to show comments on open
    * @param {string} params.currentUserId - Current user's ID
    * @param {Object} params.callbacks - Callbacks to register
+   * @param {Object} params.sourceRect - Source card position {x, y, width, height, borderRadius}
    */
   const openPhotoDetail = useCallback(
     params => {
@@ -100,9 +125,11 @@ export const PhotoDetailProvider = ({ children }) => {
         mode: newMode = 'feed',
         isOwnStory: ownStory = false,
         hasNextFriend: nextFriend = false,
+        hasPreviousFriend: prevFriend = false,
         initialShowComments: showComments = false,
         currentUserId: userId = null,
         callbacks = {},
+        sourceRect: newSourceRect = null,
       } = params;
 
       // Set photo state
@@ -112,8 +139,10 @@ export const PhotoDetailProvider = ({ children }) => {
       setMode(newMode);
       setIsOwnStory(ownStory);
       setHasNextFriend(nextFriend);
+      setHasPreviousFriend(prevFriend);
       setInitialShowComments(showComments);
       setCurrentUserId(userId);
+      setSourceRect(newSourceRect);
 
       // Register callbacks if provided
       if (Object.keys(callbacks).length > 0) {
@@ -141,7 +170,9 @@ export const PhotoDetailProvider = ({ children }) => {
       setMode('feed');
       setIsOwnStory(false);
       setHasNextFriend(false);
+      setHasPreviousFriend(false);
       setInitialShowComments(false);
+      setSourceRect(null);
     }, 300);
   }, []);
 
@@ -173,6 +204,10 @@ export const PhotoDetailProvider = ({ children }) => {
    */
   const updateHasNextFriend = useCallback(hasNext => {
     setHasNextFriend(hasNext);
+  }, []);
+
+  const updateHasPreviousFriend = useCallback(hasPrev => {
+    setHasPreviousFriend(hasPrev);
   }, []);
 
   /**
@@ -210,6 +245,20 @@ export const PhotoDetailProvider = ({ children }) => {
     }
   }, []);
 
+  const handleRequestPreviousFriend = useCallback(() => {
+    const callbacks = callbacksRef.current;
+    if (callbacks.onRequestPreviousFriend) {
+      callbacks.onRequestPreviousFriend();
+    }
+  }, []);
+
+  const handleCancelFriendTransition = useCallback(() => {
+    const callbacks = callbacksRef.current;
+    if (callbacks.onCancelFriendTransition) {
+      callbacks.onCancelFriendTransition();
+    }
+  }, []);
+
   /**
    * Call onClose callback
    */
@@ -242,6 +291,21 @@ export const PhotoDetailProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Stable actions value - only changes if the useCallback functions change (they don't).
+   * FeedScreen subscribes to this via usePhotoDetailActions() and won't re-render
+   * when photo detail state changes.
+   */
+  const actionsValue = useMemo(
+    () => ({
+      openPhotoDetail,
+      setCallbacks,
+      updatePhotoAtIndex,
+      updateCurrentPhoto,
+    }),
+    [openPhotoDetail, setCallbacks, updatePhotoAtIndex, updateCurrentPhoto]
+  );
+
   const value = {
     // State
     currentPhoto,
@@ -250,10 +314,12 @@ export const PhotoDetailProvider = ({ children }) => {
     mode,
     isOwnStory,
     hasNextFriend,
+    hasPreviousFriend,
     initialShowComments,
     currentUserId,
     isActive,
     showComments,
+    sourceRect,
 
     // Methods
     openPhotoDetail,
@@ -263,18 +329,25 @@ export const PhotoDetailProvider = ({ children }) => {
     updateCurrentPhoto,
     updatePhotoAtIndex,
     updateHasNextFriend,
+    updateHasPreviousFriend,
     setShowComments,
 
     // Callback handlers (for PhotoDetailScreen to call)
     handleReactionToggle,
     handlePhotoChange,
     handleRequestNextFriend,
+    handleRequestPreviousFriend,
+    handleCancelFriendTransition,
     handleClose,
     handleAvatarPress,
     handlePhotoStateChanged,
   };
 
-  return <PhotoDetailContext.Provider value={value}>{children}</PhotoDetailContext.Provider>;
+  return (
+    <PhotoDetailActionsContext.Provider value={actionsValue}>
+      <PhotoDetailContext.Provider value={value}>{children}</PhotoDetailContext.Provider>
+    </PhotoDetailActionsContext.Provider>
+  );
 };
 
 export default PhotoDetailContext;

@@ -24,11 +24,13 @@ import {
   collection,
   query,
   where,
+  limit,
   getDocs,
   writeBatch,
 } from '@react-native-firebase/firestore';
 import logger from '../../utils/logger';
 import { secureStorage, STORAGE_KEYS } from '../secureStorageService';
+import { withTrace } from './performanceService';
 
 const db = getFirestore();
 
@@ -148,29 +150,31 @@ export const getNotificationToken = async () => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const storeNotificationToken = async (userId, token) => {
-  try {
-    // Use React Native Firebase Firestore directly (shares auth state with RN Firebase Auth)
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      fcmToken: token,
-      updatedAt: serverTimestamp(),
-    });
+  return withTrace('notif/register_token', async () => {
+    try {
+      // Use React Native Firebase Firestore directly (shares auth state with RN Firebase Auth)
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        fcmToken: token,
+        updatedAt: serverTimestamp(),
+      });
 
-    logger.info('Notification token stored in Firestore', { userId });
+      logger.info('Notification token stored in Firestore', { userId });
 
-    // Also store locally in SecureStore for offline access and logout cleanup
-    const localStored = await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, token);
-    if (localStored) {
-      logger.info('Notification token stored in SecureStore', { userId });
-    } else {
-      logger.warn('Failed to store notification token in SecureStore', { userId });
+      // Also store locally in SecureStore for offline access and logout cleanup
+      const localStored = await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, token);
+      if (localStored) {
+        logger.info('Notification token stored in SecureStore', { userId });
+      } else {
+        logger.warn('Failed to store notification token in SecureStore', { userId });
+      }
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Error storing notification token', { error: error.message });
+      return { success: false, error: error.message };
     }
-
-    return { success: true };
-  } catch (error) {
-    logger.error('Error storing notification token', { error: error.message });
-    return { success: false, error: error.message };
-  }
+  });
 };
 
 /**
@@ -245,7 +249,7 @@ export const handleNotificationReceived = notification => {
 export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
-    const { type, photoId, friendshipId, userId, taggerId } = data || {};
+    const { type, photoId, friendshipId, userId, taggerId, commentId } = data || {};
 
     logger.debug('Notification tapped', {
       type,
@@ -253,6 +257,7 @@ export const handleNotificationTapped = notification => {
       friendshipId,
       userId,
       taggerId,
+      commentId,
     });
 
     // Return navigation data based on notification type
@@ -281,11 +286,41 @@ export const handleNotificationTapped = notification => {
           },
         };
 
+      case 'friend_accepted':
+        return {
+          success: true,
+          data: {
+            type: 'friend_accepted',
+            screen: 'FriendRequests',
+            params: {},
+          },
+        };
+
       case 'reaction':
         return {
           success: true,
           data: {
             type: 'reaction',
+            screen: 'Feed',
+            params: { photoId },
+          },
+        };
+
+      case 'comment':
+        return {
+          success: true,
+          data: {
+            type: 'comment',
+            screen: 'Feed',
+            params: { photoId },
+          },
+        };
+
+      case 'mention':
+        return {
+          success: true,
+          data: {
+            type: 'mention',
             screen: 'Feed',
             params: { photoId },
           },
@@ -383,6 +418,36 @@ export const scheduleTestNotification = async (title, body, seconds = 5) => {
 };
 
 /**
+ * Mark notification permission onboarding step as completed
+ * @param {string} userId - User ID
+ * @param {boolean} completed - Whether step is completed (default: true)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const markNotificationPermissionCompleted = async (userId, completed = true) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'Invalid user ID' };
+    }
+
+    logger.debug('notificationService.markNotificationPermissionCompleted', {
+      userId,
+      completed,
+    });
+
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      notificationPermissionCompleted: completed,
+    });
+
+    logger.info('notificationService.markNotificationPermissionCompleted: Success');
+    return { success: true };
+  } catch (error) {
+    logger.error('notificationService.markNotificationPermissionCompleted: Error', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Mark all unread notifications as read for a user
  * @param {string} userId - User ID whose notifications to mark as read
  * @returns {Promise<{success: boolean, count?: number, error?: string}>}
@@ -393,35 +458,50 @@ export const markNotificationsAsRead = async userId => {
       return { success: false, error: 'Invalid user ID' };
     }
 
-    // Query all unread notifications for this user
-    const notificationsRef = collection(db, 'notifications');
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('read', '==', false)
-    );
+    // Query unread notifications in batches of 500 (Firestore writeBatch limit)
+    // Loop until no unread notifications remain
+    const BATCH_LIMIT = 500;
+    let totalMarked = 0;
 
-    const snapshot = await getDocs(q);
+    while (true) {
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(
+        notificationsRef,
+        where('recipientId', '==', userId),
+        where('read', '==', false),
+        limit(BATCH_LIMIT) // Process up to 500 per batch to stay within writeBatch limits
+      );
 
-    if (snapshot.empty) {
-      logger.debug('markNotificationsAsRead: No unread notifications', { userId });
-      return { success: true, count: 0 };
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        break;
+      }
+
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnap => {
+        batch.update(docSnap.ref, { read: true });
+      });
+
+      await batch.commit();
+      totalMarked += snapshot.docs.length;
+
+      // If fewer than BATCH_LIMIT returned, no more remain
+      if (snapshot.docs.length < BATCH_LIMIT) {
+        break;
+      }
     }
 
-    // Batch update all unread notifications
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(docSnap => {
-      batch.update(docSnap.ref, { read: true });
-    });
+    if (totalMarked === 0) {
+      logger.debug('markNotificationsAsRead: No unread notifications', { userId });
+    } else {
+      logger.info('markNotificationsAsRead: Marked notifications as read', {
+        userId,
+        count: totalMarked,
+      });
+    }
 
-    await batch.commit();
-
-    logger.info('markNotificationsAsRead: Marked notifications as read', {
-      userId,
-      count: snapshot.docs.length,
-    });
-
-    return { success: true, count: snapshot.docs.length };
+    return { success: true, count: totalMarked };
   } catch (error) {
     logger.error('markNotificationsAsRead: Failed to mark notifications as read', {
       error: error.message,

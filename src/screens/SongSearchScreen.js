@@ -19,15 +19,17 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
+import PixelSpinner from '../components/PixelSpinner';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import { searchSongs } from '../services/iTunesService';
 import { stopPreview, playPreview } from '../services/audioPlayer';
 import { SongSearchResult, ClipSelectionModal } from '../components/ProfileSong';
@@ -51,8 +53,8 @@ const SongSearchScreen = () => {
 
   const debounceRef = useRef(null);
 
-  // Get source screen name and editSong from route params
-  const { source, editSong } = route.params || {};
+  // Get source screen name, editSong, and optional callback from route params
+  const { source, editSong, onSongSelect } = route.params || {};
 
   // Handle editSong param - immediately open clip selection
   useEffect(() => {
@@ -145,14 +147,18 @@ const SongSearchScreen = () => {
         clipEnd: songWithClip.clipEnd,
       });
       setSelectedSongForClip(null);
-      // Navigate back to source screen with selected song as serializable params
-      if (source) {
+      // Navigate back to source screen with selected song
+      if (onSongSelect) {
+        // Callback pattern: preserves source screen's local state (e.g. form fields)
+        onSongSelect(songWithClip);
+        navigation.goBack();
+      } else if (source) {
         navigation.navigate(source, { selectedSong: songWithClip });
       } else {
         navigation.goBack();
       }
     },
-    [source, navigation]
+    [source, navigation, onSongSelect]
   );
 
   // Handle clip selection cancel - always stay on search to allow picking different song
@@ -175,7 +181,7 @@ const SongSearchScreen = () => {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={colors.text.secondary} />
+          <PixelSpinner size="large" color={colors.text.secondary} />
         </View>
       );
     }
@@ -269,6 +275,10 @@ const SongSearchScreen = () => {
           ListEmptyComponent={renderEmptyState}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       </KeyboardAvoidingView>
 
@@ -295,13 +305,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   closeButton: {
-    padding: 8,
+    padding: spacing.xs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -312,21 +322,21 @@ const styles = StyleSheet.create({
     width: 40,
   },
   searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.secondary,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm,
     height: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: spacing.xs,
   },
   searchInput: {
     flex: 1,
@@ -335,11 +345,11 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   clearButton: {
-    padding: 4,
+    padding: spacing.xxs,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
     flexGrow: 1,
   },
   emptyContainer: {
@@ -352,7 +362,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
 });
 

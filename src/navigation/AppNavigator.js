@@ -1,5 +1,7 @@
 import { useState, useEffect, createRef } from 'react';
-import { Text, ActivityIndicator, View, Platform, Image, Alert } from 'react-native';
+import { Text, View, Platform, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import PixelSpinner from '../components/PixelSpinner';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -18,6 +20,7 @@ import VerificationScreen from '../screens/VerificationScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import SelectsScreen from '../screens/SelectsScreen';
 import ContactsSyncScreen from '../screens/ContactsSyncScreen';
+import NotificationPermissionScreen from '../screens/NotificationPermissionScreen';
 
 // Import main app screens
 import FeedScreen from '../screens/FeedScreen';
@@ -50,6 +53,42 @@ export const navigationRef = createRef();
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const ProfileModalStack = createNativeStackNavigator();
+
+/**
+ * ProfileFromPhotoDetail Navigator
+ * Nested stack navigator used when navigating to a profile from PhotoDetail.
+ * Uses fullScreenModal presentation to render above PhotoDetail's transparentModal.
+ * Contains ProfileMain, AlbumGrid, and MonthlyAlbumGrid for child navigation.
+ */
+function ProfileFromPhotoDetailNavigator({ route }) {
+  const { userId, username } = route.params;
+  return (
+    <ProfileModalStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background.primary },
+      }}
+    >
+      <ProfileModalStack.Screen
+        name="ProfileMain"
+        component={ProfileScreen}
+        initialParams={{ userId, username }}
+        options={{ animation: 'none' }}
+      />
+      <ProfileModalStack.Screen
+        name="AlbumGrid"
+        component={AlbumGridScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <ProfileModalStack.Screen
+        name="MonthlyAlbumGrid"
+        component={MonthlyAlbumGridScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+    </ProfileModalStack.Navigator>
+  );
+}
 
 /**
  * Onboarding Stack Navigator (ProfileSetup -> Selects -> ContactsSync)
@@ -69,6 +108,7 @@ const OnboardingStackNavigator = ({ initialRouteName }) => {
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Selects" component={SelectsScreen} />
       <Stack.Screen name="ContactsSync" component={ContactsSyncScreen} />
+      <Stack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
       <Stack.Screen
         name="SongSearch"
         component={SongSearchScreen}
@@ -261,7 +301,7 @@ const ProfileTabIcon = ({ color, focused, photoURL }) => {
   if (photoURL) {
     return (
       <Image
-        source={{ uri: photoURL }}
+        source={{ uri: photoURL, cacheKey: 'profile-tab-icon' }}
         style={{
           width: 28,
           height: 28,
@@ -269,6 +309,8 @@ const ProfileTabIcon = ({ color, focused, photoURL }) => {
           borderWidth: focused ? 2 : 1,
           borderColor: focused ? color : 'transparent',
         }}
+        cachePolicy="memory-disk"
+        transition={0}
       />
     );
   }
@@ -344,7 +386,7 @@ const AppNavigator = () => {
           backgroundColor: colors.background.primary,
         }}
       >
-        <ActivityIndicator size="large" color={colors.text.primary} />
+        <PixelSpinner size="large" color={colors.text.primary} />
       </View>
     );
   }
@@ -363,7 +405,7 @@ const AppNavigator = () => {
           backgroundColor: colors.background.primary,
         }}
       >
-        <ActivityIndicator size="large" color={colors.text.primary} />
+        <PixelSpinner size="large" color={colors.text.primary} />
       </View>
     );
   }
@@ -390,12 +432,26 @@ const AppNavigator = () => {
     userProfile.selectsCompleted === true &&
     userProfile.contactsSyncCompleted === undefined;
 
-  // Determine if user needs onboarding (profile setup, selects, or contacts sync)
-  const needsOnboarding = needsProfileSetup || needsSelects || needsContactsSync;
+  // Show NotificationPermission if user completed contacts sync but hasn't been prompted for notifications
+  // Skip for existing users who already have a push token registered
+  const needsNotificationPermission =
+    isAuthenticated &&
+    userProfile &&
+    userProfile.profileSetupCompleted === true &&
+    userProfile.selectsCompleted === true &&
+    userProfile.contactsSyncCompleted !== undefined &&
+    userProfile.notificationPermissionCompleted !== true &&
+    !userProfile.fcmToken;
 
-  // Start at appropriate screen
+  // Determine if user needs onboarding (profile setup, selects, contacts sync, or notification permission)
+  const needsOnboarding =
+    needsProfileSetup || needsSelects || needsContactsSync || needsNotificationPermission;
+
+  // Start at appropriate screen (furthest progress first)
   let onboardingInitialRoute = 'ProfileSetup';
-  if (needsContactsSync) {
+  if (needsNotificationPermission) {
+    onboardingInitialRoute = 'NotificationPermission';
+  } else if (needsContactsSync) {
     onboardingInitialRoute = 'ContactsSync';
   } else if (needsSelects) {
     onboardingInitialRoute = 'Selects';
@@ -460,10 +516,21 @@ const AppNavigator = () => {
                   options={{
                     presentation: 'transparentModal',
                     headerShown: false,
-                    animation: 'fade',
+                    animation: 'none',
                     gestureEnabled: true,
                     gestureDirection: 'vertical',
                     contentStyle: { backgroundColor: 'transparent' },
+                  }}
+                />
+                <Stack.Screen
+                  name="ProfileFromPhotoDetail"
+                  component={ProfileFromPhotoDetailNavigator}
+                  options={{
+                    presentation: 'fullScreenModal',
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    gestureEnabled: true,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
@@ -509,7 +576,8 @@ const AppNavigator = () => {
                   name="OtherUserProfile"
                   component={ProfileScreen}
                   options={{
-                    presentation: 'fullScreenModal', // Modal overlay - keeps parent mounted
+                    presentation: 'card', // Card (not modal) so AlbumGrid/MonthlyAlbumGrid can push on top
+                    animation: 'slide_from_right',
                     headerShown: false,
                     gestureEnabled: true,
                     contentStyle: { backgroundColor: colors.background.primary },
