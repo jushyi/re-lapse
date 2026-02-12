@@ -1,6 +1,8 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
+import { layout } from '../constants/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = 3;
@@ -19,8 +21,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
@@ -59,10 +61,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xl,
   },
   emptyIcon: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   emptyText: {
     fontSize: typography.size.xl,
@@ -73,7 +75,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.tertiary,
-    marginTop: 8,
+    marginTop: spacing.xs,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -96,7 +98,7 @@ export const styles = StyleSheet.create({
     bottom: 4,
     left: 4,
     backgroundColor: colors.overlay.dark,
-    borderRadius: 2,
+    borderRadius: layout.borderRadius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
@@ -115,7 +117,7 @@ export const styles = StyleSheet.create({
   checkmark: {
     width: 24,
     height: 24,
-    borderRadius: 9999,
+    borderRadius: layout.borderRadius.round,
     backgroundColor: colors.system.blue,
     justifyContent: 'center',
     alignItems: 'center',
@@ -128,7 +130,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: spacing.md,
     backgroundColor: colors.background.secondary,
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
@@ -136,9 +138,9 @@ export const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 2,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: layout.borderRadius.sm,
   },
   restoreButton: {
     backgroundColor: colors.system.blue,
@@ -150,7 +152,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    marginLeft: 8,
+    marginLeft: spacing.xs,
   },
   // Full-screen viewer styles
   viewerContainer: {
@@ -166,8 +168,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.overlay.dark,
   },
   viewerCloseButton: {
@@ -182,9 +184,9 @@ export const styles = StyleSheet.create({
   },
   viewerDaysBadge: {
     backgroundColor: colors.overlay.light,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    borderRadius: layout.borderRadius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
   viewerDaysText: {
     fontSize: typography.size.md,
@@ -210,7 +212,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
-    marginTop: 4,
+    marginTop: spacing.xxs,
   },
   viewerFooter: {
     position: 'absolute',
@@ -220,15 +222,15 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     backgroundColor: colors.overlay.dark,
   },
   viewerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 2,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    borderRadius: layout.borderRadius.sm,
   },
   viewerRestoreButton: {
     backgroundColor: colors.system.blue,
@@ -240,7 +242,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    marginLeft: 8,
+    marginLeft: spacing.xs,
   },
 });
 

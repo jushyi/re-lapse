@@ -24,6 +24,7 @@ import ReanimatedModule, {
 import PixelIcon from '../components/PixelIcon';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import {
   getDeletedPhotos,
   restoreDeletedPhoto,
@@ -474,7 +475,7 @@ const RecentlyDeletedScreen = () => {
               </View>
 
               {/* Footer actions */}
-              <View style={[styles.viewerFooter, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={[styles.viewerFooter, { paddingBottom: insets.bottom + spacing.md }]}>
                 <TouchableOpacity
                   style={[styles.viewerButton, styles.viewerRestoreButton]}
                   onPress={handleSingleRestore}
@@ -597,7 +598,7 @@ const RecentlyDeletedScreen = () => {
 
       {/* Bottom action bar (multi-select mode) */}
       {multiSelectMode && selectedIds.length > 0 && (
-        <View style={[styles.bottomActionBar, { bottom: tabBarHeight, paddingBottom: 16 }]}>
+        <View style={[styles.bottomActionBar, { bottom: tabBarHeight, paddingBottom: spacing.md }]}>
           <TouchableOpacity
             style={[styles.actionButton, styles.restoreButton]}
             onPress={handleBatchRestore}
