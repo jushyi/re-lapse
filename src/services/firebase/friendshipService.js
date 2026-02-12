@@ -456,11 +456,19 @@ export const subscribeFriendships = (userId, callback) => {
           ...docSnap.data(),
         });
       });
-      callback(friendships);
+
+      // Extract incremental changes for efficient updates
+      const changes = snapshot.docChanges().map(change => ({
+        type: change.type, // 'added' | 'modified' | 'removed'
+        id: change.doc.id,
+        data: change.doc.data(),
+      }));
+
+      callback(friendships, changes);
     },
     error => {
       logger.error('Error in friendship subscription', error);
-      callback([]);
+      callback([], []);
     }
   );
 

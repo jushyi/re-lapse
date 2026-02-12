@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PixelSpinner from '../components/PixelSpinner';
@@ -71,6 +72,7 @@ const FriendsScreen = ({ navigation }) => {
   // Screen load trace - measures time from mount to data-ready
   const { markLoaded } = useScreenTrace('FriendsScreen');
   const screenTraceMarkedRef = useRef(false);
+  const initialLoadCompleteRef = useRef(false);
 
   const [activeTab, setActiveTab] = useState('requests');
 
@@ -284,7 +286,32 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  const loadData = async () => {
+  // Load critical data first (friends + requests), then defer non-critical data
+  const loadCriticalData = async () => {
+    setError(null);
+    try {
+      await Promise.all([fetchFriends(), fetchRequests()]);
+    } catch (err) {
+      logger.error('Error loading critical data', err);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Lazy-load non-critical sections after critical path renders
+  const loadDeferredData = useCallback(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      Promise.all([fetchSuggestions(), fetchBlockedUsers(), fetchMutualSuggestions()]).catch(err =>
+        logger.error('Error loading deferred data', err)
+      );
+    });
+    return task;
+  }, [user.uid]);
+
+  // Full reload for pull-to-refresh
+  const loadAllData = async () => {
     setError(null);
     try {
       await Promise.all([
@@ -303,15 +330,151 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    loadData();
+  // Process incremental subscription changes instead of full reload
+  const handleSubscriptionChanges = useCallback(
+    async (allFriendships, changes) => {
+      // Skip if no changes (initial snapshot is handled by loadCriticalData)
+      if (!initialLoadCompleteRef.current) return;
 
-    const unsubscribe = subscribeFriendships(user.uid, () => {
-      // Re-fetch all data when friendships change
-      loadData();
+      // If changes array is empty or too large, fall back to full reload
+      if (!changes || changes.length === 0) return;
+      if (changes.length > 10) {
+        // Too many changes at once — full reload is simpler
+        await Promise.all([fetchFriends(), fetchRequests()]);
+        return;
+      }
+
+      // Collect userIds that need user data for added/modified docs
+      const userIdsToFetch = [];
+      changes.forEach(change => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const otherUserId =
+            change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+          userIdsToFetch.push(otherUserId);
+        }
+      });
+
+      // Batch fetch user data for new/modified items
+      const userMap = userIdsToFetch.length > 0 ? await batchGetUsers(userIdsToFetch) : new Map();
+
+      // Apply incremental updates to friends state
+      setFriends(prevFriends => {
+        let updated = [...prevFriends];
+
+        changes.forEach(change => {
+          const friendshipId = change.id;
+          const otherUserId =
+            change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+
+          if (change.type === 'removed') {
+            updated = updated.filter(f => f.friendshipId !== friendshipId);
+          } else if (change.data.status === 'accepted') {
+            const userData = userMap.get(otherUserId);
+            if (!userData) return;
+
+            const friendObj = {
+              friendshipId,
+              userId: otherUserId,
+              acceptedAt: change.data.acceptedAt,
+              displayName: userData.displayName,
+              username: userData.username,
+              profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+            };
+
+            const existingIdx = updated.findIndex(f => f.friendshipId === friendshipId);
+            if (existingIdx >= 0) {
+              updated[existingIdx] = friendObj;
+            } else if (change.type === 'added' || change.type === 'modified') {
+              updated.push(friendObj);
+            }
+          } else if (change.data.status === 'pending') {
+            // If a friendship changed from accepted to pending (unlikely) or was never accepted,
+            // remove it from friends list
+            updated = updated.filter(f => f.friendshipId !== friendshipId);
+          }
+        });
+
+        // Re-sort alphabetically
+        updated.sort((a, b) => {
+          const nameA = (a.displayName || a.username || '').toLowerCase();
+          const nameB = (b.displayName || b.username || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        return updated;
+      });
+
+      // Apply incremental updates to requests state
+      changes.forEach(change => {
+        const friendshipId = change.id;
+        const otherUserId =
+          change.data.user1Id === user.uid ? change.data.user2Id : change.data.user1Id;
+
+        if (change.type === 'removed') {
+          setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+        } else if (change.data.status === 'pending') {
+          const userData = userMap.get(otherUserId);
+          if (!userData) return;
+
+          const requestObj = {
+            id: friendshipId,
+            ...change.data,
+            userId: otherUserId,
+            displayName: userData.displayName,
+            username: userData.username,
+            profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+          };
+
+          if (change.data.requestedBy === user.uid) {
+            // Sent request
+            setSentRequests(prev => {
+              const exists = prev.some(r => r.id === friendshipId);
+              if (exists) {
+                return prev.map(r => (r.id === friendshipId ? requestObj : r));
+              }
+              return [...prev, requestObj];
+            });
+            // Ensure not in incoming
+            setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          } else {
+            // Incoming request
+            setIncomingRequests(prev => {
+              const exists = prev.some(r => r.id === friendshipId);
+              if (exists) {
+                return prev.map(r => (r.id === friendshipId ? requestObj : r));
+              }
+              return [...prev, requestObj];
+            });
+            // Ensure not in sent
+            setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+          }
+        } else if (change.data.status === 'accepted') {
+          // Accepted — remove from both request lists (already added to friends above)
+          setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+          setSentRequests(prev => prev.filter(r => r.id !== friendshipId));
+        }
+      });
+    },
+    [user.uid]
+  );
+
+  useEffect(() => {
+    // Load critical data (friends + requests) first
+    loadCriticalData().then(() => {
+      initialLoadCompleteRef.current = true;
     });
 
-    return () => unsubscribe();
+    // Lazy-load non-critical data after interactions settle
+    const deferredTask = loadDeferredData();
+
+    // Subscribe to real-time changes with incremental updates
+    const unsubscribe = subscribeFriendships(user.uid, handleSubscriptionChanges);
+
+    return () => {
+      unsubscribe();
+      deferredTask.cancel();
+    };
   }, [user.uid]);
 
   // Mark screen trace as loaded after initial data load (once only)
@@ -407,7 +570,7 @@ const FriendsScreen = ({ navigation }) => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadData();
+    loadAllData();
   };
 
   const handleAddFriend = async userId => {
