@@ -234,15 +234,23 @@ Plans:
 
 #### Phase 51: iOS Release Preparation
 
-**Goal**: Finish distribution certificate + App Store provisioning profile, configure App Store Connect (bundle ID, metadata, screenshots), link existing privacy policy/ToS
+**Goal**: Rebrand to Flick, set up production Firebase environment, build contributions page with IAP name color perk, configure domain/support infrastructure, route reports to email, switch Giphy to production, configure App Store Connect, build and submit to App Store
 **Depends on**: Phase 50
-**Research**: Likely (Apple Developer portal, certificates, provisioning profiles, App Store Connect)
-**Research topics**: Distribution certificate creation, App Store provisioning, EAS credentials setup, App Store Connect metadata
-**Plans**: TBD
+**Research**: Complete (51-RESEARCH.md — EAS managed credentials, privacy manifests, App Store Connect workflow)
+**Plans**: 10
 
 Plans:
 
-- [ ] 51-01: TBD
+- [ ] 51-01: Rebrand to Flick (replace all Rewind references, new icon, updated splash)
+- [ ] 51-02: Production Firebase Environment Setup (separate project, EAS profile switching)
+- [ ] 51-03: app.json & eas.json Production Configuration (privacy manifests, APS, supportsTablet)
+- [ ] 51-04: Domain & Support Infrastructure (domain registration, email, in-app links)
+- [ ] 51-05: Report Email Routing (Cloud Function to email reports)
+- [ ] 51-06: Giphy Production Key & Attribution
+- [ ] 51-07: Contributions Page UI & IAP Integration (pitch, tiers, color picker)
+- [ ] 51-08: Name Color Perk — Storage & Display (contributor colors app-wide)
+- [ ] 51-09: App Store Connect Setup & Screenshots (listing, metadata, privacy, IAP products)
+- [ ] 51-10: EAS Build, Submit & Final Verification
 
 #### Phase 52: Systematic UAT
 
@@ -284,7 +292,7 @@ Plans:
 | 48.1 PhotoDetail Profile Nav   | v1.0.0    | 1/1   | Complete    | 2026-02-12 |
 | 49. Automated Test Suite       | v1.0.0    | 7/8   | In progress | -          |
 | 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
-| 51. iOS Release Preparation    | v1.0.0    | 0/?   | Not started | -          |
+| 51. iOS Release Preparation    | v1.0.0    | 0/10  | Not started | -          |
 | 52. Systematic UAT             | v1.0.0    | 0/?   | Not started | -          |
 | 53. Unlisted App Store Release | v1.0.0    | 0/?   | Not started | -          |
 
