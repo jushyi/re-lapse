@@ -225,6 +225,9 @@ const CommentsBottomSheet = ({
   // Track which reply sections to auto-expand for @mention navigation
   const [expandedReplyParents, setExpandedReplyParents] = useState({});
 
+  // Track pending scroll target after comment submission
+  const [pendingScrollTarget, setPendingScrollTarget] = useState(null);
+
   logger.debug('CommentsBottomSheet: Render', {
     visible,
     photoId,
@@ -263,8 +266,52 @@ const CommentsBottomSheet = ({
       swipeY.setValue(0); // Reset swipe position here, not in animation callback
       backdropOpacity.setValue(0);
       isExpandedRef.current = false;
+      setPendingScrollTarget(null); // Clear pending scroll
     }
   }, [visible, translateY, photoId, sheetHeight, backdropOpacity]);
+
+  /**
+   * Handle pending scroll after comment added
+   * Waits for comment to appear in threadedComments before scrolling
+   * Scrolls FIRST, then animation plays after scroll completes
+   */
+  useEffect(() => {
+    if (!pendingScrollTarget || !flatListRef.current || threadedComments.length === 0) {
+      return;
+    }
+
+    const { type, commentId, parentId } = pendingScrollTarget;
+
+    // Small delay to ensure layout is ready, then scroll immediately
+    setTimeout(() => {
+      if (!flatListRef.current) return;
+
+      if (type === 'top-level') {
+        // Scroll to last item (newest top-level comment)
+        const lastIndex = threadedComments.length - 1;
+        flatListRef.current.scrollToIndex({
+          index: lastIndex,
+          animated: true,
+          viewPosition: 0.5, // Center in view
+        });
+        logger.debug('CommentsBottomSheet: Scrolled to new top-level comment', { lastIndex });
+      } else if (type === 'reply' && parentId) {
+        // Find parent comment index and scroll to it
+        const parentIndex = threadedComments.findIndex(c => c.id === parentId);
+        if (parentIndex >= 0) {
+          flatListRef.current.scrollToIndex({
+            index: parentIndex,
+            animated: true,
+            viewPosition: 0.3, // Upper third of view
+          });
+          logger.debug('CommentsBottomSheet: Scrolled to reply parent', { parentIndex, parentId });
+        }
+      }
+
+      // Clear pending scroll
+      setPendingScrollTarget(null);
+    }, 50); // Minimal delay just for layout
+  }, [threadedComments, pendingScrollTarget]);
 
   const animateClose = useCallback(() => {
     Animated.parallel([
@@ -335,32 +382,19 @@ const CommentsBottomSheet = ({
           onCommentAdded();
         }
 
-        // Scroll to the newly added comment after layout settles
-        // For top-level: scroll to the last item (newest comment at bottom)
-        // For replies: scroll to the parent comment (thread will be expanded)
-        setTimeout(() => {
-          if (flatListRef.current && threadedComments.length > 0) {
-            if (isTopLevel) {
-              // Scroll to last item (newest top-level comment)
-              const lastIndex = threadedComments.length - 1;
-              flatListRef.current.scrollToIndex({
-                index: lastIndex,
-                animated: true,
-                viewPosition: 0.5, // Center in view
-              });
-            } else if (parentCommentId) {
-              // Find parent comment index and scroll to it
-              const parentIndex = threadedComments.findIndex(c => c.id === parentCommentId);
-              if (parentIndex >= 0) {
-                flatListRef.current.scrollToIndex({
-                  index: parentIndex,
-                  animated: true,
-                  viewPosition: 0.3, // Upper third of view
-                });
-              }
-            }
-          }
-        }, 400); // Wait for animation to complete and layout to settle
+        // Set pending scroll target - useEffect will scroll when comment appears in list
+        if (isTopLevel) {
+          setPendingScrollTarget({
+            type: 'top-level',
+            commentId: result.commentId,
+          });
+        } else if (parentCommentId) {
+          setPendingScrollTarget({
+            type: 'reply',
+            commentId: result.commentId,
+            parentId: parentCommentId,
+          });
+        }
 
         // Refocus input to allow adding more comments
         setTimeout(() => {
@@ -374,15 +408,7 @@ const CommentsBottomSheet = ({
         // will sync correct count automatically within ~100-200ms
       }
     },
-    [
-      photoId,
-      replyingTo,
-      addComment,
-      onCommentAdded,
-      onCommentCountChange,
-      mentionSuggestions,
-      threadedComments,
-    ]
+    [photoId, replyingTo, addComment, onCommentAdded, onCommentCountChange, mentionSuggestions]
   );
 
   const handleReply = useCallback(

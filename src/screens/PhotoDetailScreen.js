@@ -159,14 +159,18 @@ const PhotoDetailScreen = () => {
     // Swap to next friend's content (incoming face is hidden at cubeProgress=0)
     handleRequestNextFriend();
 
-    Animated.timing(cubeProgress, {
-      toValue: 1,
-      duration: 350,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }).start(() => {
-      isTransitioningRef.current = false;
-      setIsTransitioning(false);
+    // Defer animation to next frame so React renders new friend's data on the incoming
+    // face before it becomes visible (prevents flash of outgoing friend's photo)
+    requestAnimationFrame(() => {
+      Animated.timing(cubeProgress, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        isTransitioningRef.current = false;
+        setIsTransitioning(false);
+      });
     });
 
     return true;
@@ -189,15 +193,19 @@ const PhotoDetailScreen = () => {
     cubeProgress.setValue(0);
     handleRequestPreviousFriend();
 
-    Animated.timing(cubeProgress, {
-      toValue: 1,
-      duration: 350,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }).start(() => {
-      isTransitioningRef.current = false;
-      setIsTransitioning(false);
-      setTransitionDirection('forward');
+    // Defer animation to next frame so React renders new friend's data on the incoming
+    // face before it becomes visible (prevents flash of outgoing friend's photo)
+    requestAnimationFrame(() => {
+      Animated.timing(cubeProgress, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        isTransitioningRef.current = false;
+        setIsTransitioning(false);
+        setTransitionDirection('forward');
+      });
     });
 
     return true;

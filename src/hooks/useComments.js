@@ -145,14 +145,14 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
         // Mark this comment as new for entrance animation
         if (result.commentId) {
           setNewCommentIds(prev => new Set(prev).add(result.commentId));
-          // Clear after animation completes (150ms + 150ms buffer)
+          // Clear after animation completes (350ms delay + 150ms duration + buffer)
           setTimeout(() => {
             setNewCommentIds(prev => {
               const next = new Set(prev);
               next.delete(result.commentId);
               return next;
             });
-          }, 300);
+          }, 600);
         }
 
         // Track which parent received reply for auto-expand

@@ -57,6 +57,7 @@ const CommentRow = ({
 }) => {
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const entranceAnim = useRef(new Animated.Value(0)).current;
+  const hasAnimatedRef = useRef(false); // Track if entrance animation has played
 
   // Trigger highlight animation when isHighlighted changes
   useEffect(() => {
@@ -77,26 +78,29 @@ const CommentRow = ({
     }
   }, [isHighlighted, highlightAnim]);
 
-  // Trigger entrance animation on mount if new comment
+  // Trigger entrance animation on mount if new comment (only once)
+  // Delayed to start AFTER scroll animation completes (~300ms)
   useEffect(() => {
-    if (isNewComment) {
+    if (isNewComment && !hasAnimatedRef.current) {
+      // Mark as animated to prevent re-runs
+      hasAnimatedRef.current = true;
+
       // Start from hidden position
       entranceAnim.setValue(0);
 
-      // Use requestAnimationFrame to wait for layout to complete before animating
-      // This prevents jittery animation caused by simultaneous layout changes
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          // Animate in: slide down + fade (retro timing: 150ms)
-          Animated.timing(entranceAnim, {
-            toValue: 1,
-            duration: 150, // animations.normal - matches PixelSpinner frame rate
-            useNativeDriver: true,
-          }).start();
-        });
-      });
-    } else {
+      // Wait for scroll to complete before animating
+      // Scroll takes ~300ms, so delay animation by 350ms
+      setTimeout(() => {
+        // Animate in: slide down + fade (retro timing: 150ms)
+        Animated.timing(entranceAnim, {
+          toValue: 1,
+          duration: 150, // animations.normal - matches PixelSpinner frame rate
+          useNativeDriver: true,
+        }).start();
+      }, 350);
+    } else if (!isNewComment && !hasAnimatedRef.current) {
       // Existing comments start visible (no animation)
+      // Only set if we haven't animated (to avoid interfering with ongoing animation)
       entranceAnim.setValue(1);
     }
   }, [isNewComment, entranceAnim]);
