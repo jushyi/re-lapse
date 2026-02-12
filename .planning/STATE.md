@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 49 of 53 (Automated Test Suite)
-Plan: 3 of 8 in current phase
+Plan: 4 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-12 — Completed 49-03-PLAN.md
+Last activity: 2026-02-12 — Completed 49-04-PLAN.md
 
 Progress: ██████░░░░░ 6/11 (v1.0.0 phases)
 
@@ -81,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 48-05-PLAN.md (Albums, Photos & Selects audit)
+Stopped at: Completed 49-04-PLAN.md (Hook Tests — mentions, comments, feed, darkroom)
 Resume file: None
