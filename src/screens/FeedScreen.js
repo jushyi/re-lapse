@@ -348,7 +348,7 @@ const FeedScreen = () => {
         if (isOwnStoriesRef.current && userId === user?.uid) {
           navigation.navigate('Profile');
         } else {
-          handleAvatarPress(userId, username);
+          navigation.navigate('ProfileFromPhotoDetail', { userId, username });
         }
       },
       onPhotoStateChanged: () => {
