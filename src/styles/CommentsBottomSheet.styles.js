@@ -15,7 +15,7 @@ import { typography } from '../constants/typography';
 
 export const SCREEN_HEIGHT = Dimensions.get('window').height;
 export const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6;
-export const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.85; // Expanded height (leaves room for notch)
+export const EXPANDED_HEIGHT = SCREEN_HEIGHT; // Computed in component with safe area: SCREEN_HEIGHT - insets.top
 // Minimum height for empty state - ~50% screen
 export const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
 

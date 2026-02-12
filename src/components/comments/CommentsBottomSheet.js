@@ -13,7 +13,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   FlatList,
   Platform,
   Animated,
@@ -31,12 +30,7 @@ import useComments from '../../hooks/useComments';
 import useMentionSuggestions from '../../hooks/useMentionSuggestions';
 import { colors } from '../../constants/colors';
 import logger from '../../utils/logger';
-import {
-  styles,
-  SHEET_HEIGHT,
-  EXPANDED_HEIGHT,
-  SCREEN_HEIGHT,
-} from '../../styles/CommentsBottomSheet.styles';
+import { styles, SHEET_HEIGHT, SCREEN_HEIGHT } from '../../styles/CommentsBottomSheet.styles';
 
 /**
  * CommentsBottomSheet Component
@@ -61,7 +55,6 @@ const CommentsBottomSheet = ({
   onAvatarPress,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const sheetTranslateY = useRef(new Animated.Value(0)).current; // Sheet position offset for keyboard
   const swipeY = useRef(new Animated.Value(0)).current; // Swipe gesture tracking
   const sheetHeight = useRef(new Animated.Value(SHEET_HEIGHT)).current; // Animated height for expand/collapse
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -69,8 +62,14 @@ const CommentsBottomSheet = ({
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isExpandedRef = useRef(false); // Ref (not state) so PanResponder closure reads current value
+  const keyboardHeightRef = useRef(0); // For PanResponder closure access
   const isAtTopRef = useRef(true); // Track if FlatList is scrolled to top
+  const expandedHeight = SCREEN_HEIGHT - Math.max(insets.top - 10, 0); // Full screen, pushed slightly above profile photo
+  const expandedHeightRef = useRef(expandedHeight); // For PanResponder closure access
+  expandedHeightRef.current = expandedHeight; // Keep in sync with insets
 
   /**
    * PanResponder for bidirectional expand/collapse on handle bar
@@ -102,8 +101,9 @@ const CommentsBottomSheet = ({
           if (!expanded && (fastSwipe || dy < -50)) {
             // Expand to fullscreen
             isExpandedRef.current = true; // Update ref immediately for next gesture
+            setIsExpanded(true);
             Animated.spring(sheetHeight, {
-              toValue: EXPANDED_HEIGHT,
+              toValue: expandedHeightRef.current,
               useNativeDriver: false, // Height animation requires JS driver
               damping: 20,
               stiffness: 100,
@@ -118,6 +118,8 @@ const CommentsBottomSheet = ({
           if (expanded && (fastSwipe || dy > 50)) {
             // Collapse from fullscreen to normal
             isExpandedRef.current = false; // Update ref immediately for next gesture
+            setIsExpanded(false);
+            Keyboard.dismiss(); // Dismiss keyboard when collapsing
             Animated.spring(sheetHeight, {
               toValue: SHEET_HEIGHT,
               useNativeDriver: false,
@@ -155,7 +157,8 @@ const CommentsBottomSheet = ({
           return;
         }
 
-        // No significant gesture - spring back
+        // No significant gesture - spring back and dismiss keyboard if visible
+        Keyboard.dismiss();
         Animated.spring(swipeY, {
           toValue: 0,
           useNativeDriver: true,
@@ -164,37 +167,93 @@ const CommentsBottomSheet = ({
     })
   ).current;
 
-  // Track keyboard visibility and animate sheet up to clear suggestions bar
+  /**
+   * Backdrop PanResponder for swipe-up expand + tap-to-close
+   * Allows swiping up on the backdrop area above the sheet to expand
+   */
+  const backdropPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+      onPanResponderRelease: (_, gestureState) => {
+        const { dy, vy } = gestureState;
+        const fastSwipe = Math.abs(vy) > 0.5;
+
+        // Swipe UP on backdrop: expand sheet to fullscreen
+        if (dy < -10 && !isExpandedRef.current && (fastSwipe || dy < -50)) {
+          isExpandedRef.current = true;
+          setIsExpanded(true);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Animated.spring(sheetHeight, {
+            toValue: expandedHeightRef.current,
+            useNativeDriver: false,
+            damping: 20,
+            stiffness: 100,
+          }).start();
+          logger.debug('CommentsBottomSheet: Expanding via backdrop swipe');
+          return;
+        }
+
+        // Tap or swipe down on backdrop: close sheet
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Animated.parallel([
+          Animated.timing(backdropOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: SHEET_HEIGHT,
+            duration: 250,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          if (onClose) {
+            onClose();
+          }
+        });
+      },
+    })
+  ).current;
+
+  // Track keyboard visibility and auto-expand sheet to fullscreen
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard.addListener(showEvent, event => {
-      const keyboardHeight = event.endCoordinates.height;
+      const kbHeight = event.endCoordinates.height;
       setKeyboardVisible(true);
-      // Move up 88.5% of keyboard height to clear autocomplete suggestions bar
-      Animated.timing(sheetTranslateY, {
-        toValue: -(keyboardHeight * 0.885),
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+      setKeyboardHeight(kbHeight);
+      keyboardHeightRef.current = kbHeight;
+
+      // Auto-expand to fullscreen when keyboard opens (if not already expanded)
+      if (!isExpandedRef.current) {
+        isExpandedRef.current = true;
+        setIsExpanded(true);
+        Animated.spring(sheetHeight, {
+          toValue: expandedHeight,
+          useNativeDriver: false,
+          damping: 20,
+          stiffness: 100,
+        }).start();
+      }
+      // No sheet translation — bottom padding handles keyboard avoidance
     });
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setKeyboardVisible(false);
-      // Animate sheet back to original position
-      Animated.timing(sheetTranslateY, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      setKeyboardHeight(0);
+      keyboardHeightRef.current = 0;
+      // Stay expanded — don't collapse sheet on keyboard hide
     });
 
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [sheetTranslateY]);
+  }, [sheetHeight, expandedHeight]);
 
   // Use comments hook for state management
   const {
@@ -266,6 +325,9 @@ const CommentsBottomSheet = ({
       swipeY.setValue(0); // Reset swipe position here, not in animation callback
       backdropOpacity.setValue(0);
       isExpandedRef.current = false;
+      setIsExpanded(false);
+      setKeyboardHeight(0);
+      keyboardHeightRef.current = 0;
       setPendingScrollTarget(null); // Clear pending scroll
     }
   }, [visible, translateY, photoId, sheetHeight, backdropOpacity]);
@@ -296,15 +358,41 @@ const CommentsBottomSheet = ({
         });
         logger.debug('CommentsBottomSheet: Scrolled to new top-level comment', { lastIndex });
       } else if (type === 'reply' && parentId) {
-        // Find parent comment index and scroll to it
+        // Find parent comment and calculate scroll position to show the new reply
         const parentIndex = threadedComments.findIndex(c => c.id === parentId);
         if (parentIndex >= 0) {
+          const parent = threadedComments[parentIndex];
+          const replyCount = parent.replies?.length || 0;
+
+          // Two-stage scroll: first to parent, then adjust to show new reply
+          // Stage 1: Scroll to parent
           flatListRef.current.scrollToIndex({
             index: parentIndex,
             animated: true,
-            viewPosition: 0.3, // Upper third of view
+            viewPosition: 0, // Top of view
           });
-          logger.debug('CommentsBottomSheet: Scrolled to reply parent', { parentIndex, parentId });
+
+          // Stage 2: After expansion settles, scroll down to show the new reply
+          // Each reply is ~80-100px, so scroll down to show more of the thread
+          setTimeout(() => {
+            if (flatListRef.current && replyCount > 2) {
+              // For longer threads, scroll down additional pixels to show new reply
+              // Approximate: 100px for parent + 90px per reply (showing last few replies)
+              const additionalScroll = Math.min(replyCount * 90, 400); // Cap at 400px
+
+              // Get current scroll position and add offset
+              flatListRef.current.scrollToOffset({
+                offset: parentIndex * 120 + additionalScroll, // Approximate position
+                animated: true,
+              });
+              logger.debug('CommentsBottomSheet: Scrolled to show new reply', {
+                parentIndex,
+                parentId,
+                replyCount,
+                additionalScroll,
+              });
+            }
+          }, 300); // Wait for expansion animation
         }
       }
 
@@ -332,12 +420,6 @@ const CommentsBottomSheet = ({
       }
     });
   }, [backdropOpacity, translateY, onClose]);
-
-  const handleBackdropPress = useCallback(() => {
-    logger.debug('CommentsBottomSheet: Backdrop pressed, closing');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    animateClose();
-  }, [animateClose]);
 
   const handleClose = useCallback(() => {
     logger.debug('CommentsBottomSheet: Close button pressed');
@@ -785,6 +867,8 @@ const CommentsBottomSheet = ({
         if (isExpandedRef.current) {
           // Collapse from fullscreen to normal
           isExpandedRef.current = false;
+          setIsExpanded(false);
+          Keyboard.dismiss(); // Dismiss keyboard when collapsing
           Animated.spring(sheetHeight, {
             toValue: SHEET_HEIGHT,
             useNativeDriver: false,
@@ -831,12 +915,10 @@ const CommentsBottomSheet = ({
       style={[styles.overlay, styles.animatedOverlay, { opacity: backdropOpacity }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      {/* Backdrop - tap to close */}
-      <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={styles.backdrop} />
-      </TouchableWithoutFeedback>
+      {/* Backdrop - tap to close, swipe up to expand */}
+      <View style={styles.backdrop} {...backdropPanResponder.panHandlers} />
 
-      {/* Sheet container - uses translateY instead of KeyboardAvoidingView */}
+      {/* Sheet container - bottom padding handles keyboard avoidance */}
       <View style={styles.keyboardAvoidContainer} pointerEvents="box-none">
         {/* Outer: Height animation (JS driver) for expand/collapse */}
         <Animated.View style={{ height: sheetHeight }}>
@@ -847,30 +929,28 @@ const CommentsBottomSheet = ({
               {
                 flex: 1, // Fill the height-animated container
                 maxHeight: undefined, // Override fixed maxHeight for expansion
-                transform: [
-                  { translateY },
-                  { translateY: sheetTranslateY },
-                  { translateY: swipeY },
-                ],
+                transform: [{ translateY }, { translateY: swipeY }],
               },
             ]}
           >
-            {/* Handle bar - swipe gestures for expand/collapse/close */}
-            <View style={styles.handleBarContainer} {...panResponder.panHandlers}>
-              <View style={styles.handleBar} />
-            </View>
-
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.headerTitle}>Comments</Text>
-                {totalCommentCount > 0 && (
-                  <Text style={styles.headerCount}>({totalCommentCount})</Text>
-                )}
+            {/* Handle bar + Header - swipe gestures for expand/collapse/close */}
+            <View {...panResponder.panHandlers}>
+              <View style={styles.handleBarContainer}>
+                <View style={styles.handleBar} />
               </View>
-              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                <PixelIcon name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
+
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.headerTitle}>Comments</Text>
+                  {totalCommentCount > 0 && (
+                    <Text style={styles.headerCount}>({totalCommentCount})</Text>
+                  )}
+                </View>
+                <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                  <PixelIcon name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Comments List */}
@@ -901,8 +981,12 @@ const CommentsBottomSheet = ({
               />
             )}
 
-            {/* Comment Input */}
-            <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+            {/* Comment Input - paddingBottom accounts for keyboard or safe area */}
+            <View
+              style={{
+                paddingBottom: keyboardVisible ? keyboardHeight : Math.max(insets.bottom, 8),
+              }}
+            >
               <CommentInput
                 ref={inputRef}
                 onSubmit={handleSubmitComment}
