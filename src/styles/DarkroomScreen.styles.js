@@ -54,6 +54,14 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  statusBarCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.background.primary,
+    zIndex: layout.zIndex.overlay,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

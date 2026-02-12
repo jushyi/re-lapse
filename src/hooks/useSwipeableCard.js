@@ -37,11 +37,13 @@ const VERTICAL_THRESHOLD = 200;
 const VELOCITY_THRESHOLD = 500;
 // Threshold for locking swipe direction (prevents accidental opposite-action)
 const DIRECTION_LOCK_THRESHOLD = 30;
+// Distance (px) to observe before committing to fast vs slow swipe mode
+const SWIPE_DETECTION_DISTANCE = 12;
 // Delete overlay threshold (used for button-triggered animation overlay only)
 const DELETE_OVERLAY_THRESHOLD = 150;
 
 // Delay for front card transition gives exiting card time to clear
-const CASCADE_DELAY_MS = 0;
+const CASCADE_DELAY_MS = 120;
 
 // Fade-in duration for new cards entering the visible stack
 const STACK_ENTRY_FADE_DURATION = 300;
@@ -128,6 +130,11 @@ const useSwipeableCard = ({
   // Direction lock for gesture (0=none, 1=up, -1=down)
   const lockedDirection = useSharedValue(0);
 
+  // Swipe mode: 0=detecting, 1=slow (progressive effects), 2=fast (suppress visuals)
+  const swipeMode = useSharedValue(0);
+  // Records translationY at the moment detection commits to slow mode
+  const gestureVisualOffset = useSharedValue(0);
+
   // Track if this card has completed its entry animation
   // Used to detect when a card is newly entering the visible stack
   const hasAnimatedEntry = useSharedValue(false);
@@ -153,6 +160,10 @@ const useSwipeableCard = ({
 
   // Track if action is in progress to prevent multiple triggers
   const actionInProgress = useSharedValue(false);
+
+  // Track if a gesture is actively in progress (set on UI thread in onStart worklet)
+  // Used in cardStyle to avoid JS closure race — only shared values in the condition
+  const gestureActive = useSharedValue(0);
 
   // Track when delete is button-triggered (vs gesture swipe)
   // Delete overlay should only show during button-triggered delete animation
@@ -571,6 +582,7 @@ const useSwipeableCard = ({
     .activeOffsetY([-5, 5])
     .onStart(() => {
       'worklet';
+      gestureActive.value = 1;
       startY.value = translateY.value;
       lockedDirection.value = 0;
       cardScale.value = 1;
@@ -580,13 +592,15 @@ const useSwipeableCard = ({
       boxClipProgress.value = 0;
       dissolveProgress.value = 0;
       cardOpacity.value = 1;
+      swipeMode.value = 0;
+      gestureVisualOffset.value = 0;
       runOnJS(resetThreshold)();
     })
     .onUpdate(event => {
       'worklet';
       const rawY = event.translationY;
 
-      // Lock direction on first significant movement
+      // Lock direction on first significant movement (always runs — logical, not visual)
       if (lockedDirection.value === 0) {
         if (rawY < -DIRECTION_LOCK_THRESHOLD) {
           lockedDirection.value = 1; // up
@@ -595,10 +609,34 @@ const useSwipeableCard = ({
         }
       }
 
+      // --- Detection phase: buffer initial movement to distinguish fast vs slow ---
+      // Uses a much higher velocity bar than the action threshold because
+      // initial gesture velocity is noisy — even slow drags can spike above
+      // VELOCITY_THRESHOLD in the first few frames of finger acceleration.
+      if (swipeMode.value === 0) {
+        if (Math.abs(rawY) >= SWIPE_DETECTION_DISTANCE) {
+          if (Math.abs(event.velocityY) >= VELOCITY_THRESHOLD * 3) {
+            swipeMode.value = 2; // fast — suppress all visuals
+          } else {
+            swipeMode.value = 1; // slow — start progressive effects
+            gestureVisualOffset.value = rawY;
+          }
+        }
+        return; // No visual updates during detection
+      }
+
+      // Fast mode: suppress all visual updates (onEnd fires cinematic from pristine state)
+      if (swipeMode.value === 2) {
+        return;
+      }
+
+      // --- Slow mode: progressive visual effects with offset compensation ---
+      const adjustedY = rawY - gestureVisualOffset.value;
+
       // Archive: card stays centered, drag distance drives crush only
-      if (lockedDirection.value === -1 && rawY > 0) {
+      if (lockedDirection.value === -1 && adjustedY > 0) {
         // Don't update translateY — card stays in place while crushing
-        const dragDist = rawY;
+        const dragDist = adjustedY;
 
         if (dragDist > VERTICAL_THRESHOLD) {
           runOnJS(markThresholdTriggered)();
@@ -619,8 +657,8 @@ const useSwipeableCard = ({
           archiveFlashOpacity.value = postProgress * 0.7; // stamp fades in
         }
       } else {
-        // Journal and neutral: card moves with finger
-        translateY.value = startY.value + rawY;
+        // Journal and neutral: card moves with finger (offset-compensated)
+        translateY.value = startY.value + adjustedY;
 
         const absY = Math.abs(translateY.value);
 
@@ -763,7 +801,12 @@ const useSwipeableCard = ({
         const snapConfig = { duration: 200, easing: Easing.out(Easing.cubic) };
         translateY.value = withTiming(0, snapConfig);
         translateX.value = withTiming(0, snapConfig);
-        cardScale.value = withTiming(1, snapConfig);
+        cardScale.value = withTiming(1, snapConfig, finished => {
+          'worklet';
+          if (finished) {
+            gestureActive.value = 0;
+          }
+        });
         cardScaleX.value = withTiming(1, snapConfig);
         journalGlowOpacity.value = withTiming(0, { duration: 150 });
         archiveFlashOpacity.value = withTiming(0, { duration: 150 });
@@ -774,10 +817,10 @@ const useSwipeableCard = ({
     });
 
   // Animated card style with vertical movement and stack transforms
+  // IMPORTANT: condition uses ONLY shared values (no JS closure like isActive)
+  // to avoid JS→UI thread race that caused intermittent 1-frame flash on card transition
   const cardStyle = useAnimatedStyle(() => {
-    const actionActive = actionInProgress.value;
-
-    const useStackAnimation = !actionActive && (isTransitioningToFront.value === 1 || !isActive);
+    const useStackAnimation = !actionInProgress.value && !gestureActive.value;
 
     if (useStackAnimation) {
       return {
