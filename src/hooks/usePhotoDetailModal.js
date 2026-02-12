@@ -772,11 +772,17 @@ export const usePhotoDetailModal = ({
             direction === 'forward'
               ? onFriendTransitionRef.current
               : onPreviousFriendTransitionRef.current;
-          if (!hasCallback || !onPrepareSwipeTransitionRef.current) return;
+          if (!hasCallback || !onPrepareSwipeTransitionRef.current) {
+            gestureLockRef.current = null; // Reset lock - allow re-evaluation on next move
+            return;
+          }
 
           // Prepare transition (freezes snapshot, loads next friend data)
           const prepared = onPrepareSwipeTransitionRef.current(direction);
-          if (!prepared) return;
+          if (!prepared) {
+            gestureLockRef.current = null; // Reset lock - allow re-evaluation on next move
+            return;
+          }
 
           isHorizontalSwipeActiveRef.current = true;
           swipeDirectionRef.current = direction;

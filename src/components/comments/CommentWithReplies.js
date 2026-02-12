@@ -28,6 +28,7 @@ import { styles } from '../../styles/CommentsBottomSheet.styles';
  * @param {function} onMentionPress - Callback when @mention is tapped
  * @param {string|null} highlightedCommentId - ID of comment to highlight
  * @param {boolean} forceExpanded - Force replies section to expand (for @mention navigation)
+ * @param {function} isNewComment - Function to check if comment should show entrance animation
  */
 const CommentWithReplies = ({
   comment,
@@ -42,6 +43,7 @@ const CommentWithReplies = ({
   onMentionPress,
   highlightedCommentId,
   forceExpanded = false,
+  isNewComment,
 }) => {
   const [showReplies, setShowReplies] = useState(false);
 
@@ -86,6 +88,7 @@ const CommentWithReplies = ({
         isTopLevel={true}
         onMentionPress={onMentionPress}
         isHighlighted={highlightedCommentId === comment.id}
+        isNewComment={isNewComment(comment.id)}
       />
 
       {/* Replies section */}
@@ -123,6 +126,7 @@ const CommentWithReplies = ({
                   isTopLevel={false}
                   onMentionPress={onMentionPress}
                   isHighlighted={highlightedCommentId === reply.id}
+                  isNewComment={isNewComment(reply.id)}
                 />
               </View>
             ))}

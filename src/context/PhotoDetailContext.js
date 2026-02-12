@@ -81,6 +81,7 @@ export const PhotoDetailProvider = ({ children }) => {
     onClose: null,
     onAvatarPress: null,
     onPhotoStateChanged: null, // Called when photo is archived/deleted/restored
+    onCommentCountChange: null, // Called when comment count changes (optimistic update)
   });
 
   /**

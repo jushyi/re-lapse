@@ -357,8 +357,9 @@ const FeedScreen = () => {
         loadFriendStories();
         loadMyStories();
       },
+      onCommentCountChange: handleCommentCountChange,
     });
-  }, [setCallbacks, user?.uid]);
+  }, [setCallbacks, user?.uid, handleCommentCountChange]);
 
   const handleRefresh = async () => {
     logger.debug('FeedScreen: Pull-to-refresh triggered');
@@ -634,7 +635,9 @@ const FeedScreen = () => {
 
     // Get previous friend
     const prevFriend = sortedFriends[prevFriendIdx];
-    const prevStartIndex = getFirstUnviewedIndex(prevFriend.topPhotos || []);
+    // When going backward, start at the LAST photo (user expects to see the end of the previous story)
+    const prevPhotos = prevFriend.topPhotos || [];
+    const prevStartIndex = Math.max(0, prevPhotos.length - 1);
 
     logger.info('FeedScreen: Transitioning to previous friend', {
       fromFriend: selectedFriend.displayName,
@@ -826,6 +829,44 @@ const FeedScreen = () => {
       updateCurrentPhoto(photo);
     }
   };
+
+  /**
+   * Handle optimistic comment count update from PhotoDetailScreen
+   * Updates feed list, ref, and context photo immediately
+   */
+  const handleCommentCountChange = useCallback(
+    (photoId, delta) => {
+      const photo = currentFeedPhotoRef.current;
+      if (!photo || photo.id !== photoId) {
+        logger.warn('FeedScreen: Comment count change for different photo', {
+          currentPhotoId: photo?.id,
+          targetPhotoId: photoId,
+        });
+        return;
+      }
+
+      // Optimistically update comment count (follows reaction pattern)
+      const updatedPhoto = {
+        ...photo,
+        commentCount: (photo.commentCount || 0) + delta,
+      };
+
+      // Update all 3 locations (same as reactions)
+      currentFeedPhotoRef.current = updatedPhoto;
+      updatePhotoInState(photoId, updatedPhoto);
+      updateCurrentPhoto(updatedPhoto);
+
+      logger.debug('FeedScreen: Optimistically updated comment count', {
+        photoId,
+        delta,
+        newCount: updatedPhoto.commentCount,
+      });
+
+      // NOTE: No explicit revert needed - real-time Firebase subscription
+      // will auto-sync correct count within ~100-200ms
+    },
+    [updatePhotoInState, updateCurrentPhoto]
+  );
 
   /**
    * Handle reaction toggle for stories photos

@@ -45,6 +45,7 @@ import {
 import DropdownMenu from '../components/DropdownMenu';
 import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
+import logger from '../utils/logger';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
 const PROGRESS_BAR_HORIZONTAL_PADDING = 8;
@@ -85,6 +86,8 @@ const PhotoDetailScreen = () => {
     handleAvatarPress: contextAvatarPress,
     handleClose: contextClose,
     handlePhotoStateChanged,
+    updateCurrentPhoto,
+    getCallbacks,
   } = usePhotoDetail();
 
   // Cube transition animation for friend-to-friend (two-view simultaneous rotation)
@@ -420,6 +423,43 @@ const PhotoDetailScreen = () => {
       }
     },
     [contextAvatarPress]
+  );
+
+  /**
+   * Handle optimistic comment count update when user adds a comment
+   * Updates context state and propagates to feed if in feed mode
+   */
+  const handleCommentCountChange = useCallback(
+    delta => {
+      if (!currentPhoto) return;
+
+      const photoId = currentPhoto.id;
+
+      // Optimistically update photo count
+      const updatedPhoto = {
+        ...currentPhoto,
+        commentCount: (currentPhoto.commentCount || 0) + delta,
+      };
+
+      // Update context state (for this screen and modal)
+      updateCurrentPhoto(updatedPhoto);
+
+      // If in feed mode, also update feed state via callback
+      if (contextMode === 'feed') {
+        const callbacks = getCallbacks();
+        if (callbacks.onCommentCountChange) {
+          callbacks.onCommentCountChange(photoId, delta);
+        }
+      }
+
+      logger.debug('PhotoDetailScreen: Optimistically updated comment count', {
+        photoId,
+        delta,
+        newCount: updatedPhoto.commentCount,
+        mode: contextMode,
+      });
+    },
+    [currentPhoto, contextMode, updateCurrentPhoto, getCallbacks]
   );
 
   const handleArchive = useCallback(() => {
@@ -1047,6 +1087,7 @@ const PhotoDetailScreen = () => {
         photoOwnerId={currentPhoto?.userId}
         currentUserId={contextUserId}
         onAvatarPress={handleCommentAvatarPress}
+        onCommentCountChange={handleCommentCountChange}
       />
 
       {/* Custom Emoji Picker */}

@@ -47,6 +47,7 @@ import {
  * @param {string} photoOwnerId - Photo owner's user ID (for delete permissions)
  * @param {string} currentUserId - Current user's ID
  * @param {function} onCommentAdded - Callback after comment successfully added
+ * @param {function} onCommentCountChange - Callback for optimistic count updates (delta)
  * @param {function} onAvatarPress - Callback when avatar pressed (userId, displayName) -> navigate to profile
  */
 const CommentsBottomSheet = ({
@@ -56,6 +57,7 @@ const CommentsBottomSheet = ({
   photoOwnerId,
   currentUserId,
   onCommentAdded,
+  onCommentCountChange,
   onAvatarPress,
 }) => {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
@@ -202,6 +204,7 @@ const CommentsBottomSheet = ({
     replyingTo,
     initialMention,
     highlightedCommentId,
+    justAddedReplyTo,
     addComment,
     deleteComment,
     toggleLike,
@@ -211,6 +214,7 @@ const CommentsBottomSheet = ({
     canDeleteComment,
     isOwnerComment,
     isLikedByUser,
+    isNewComment,
   } = useComments(photoId, currentUserId, photoOwnerId);
 
   // @-mention autocomplete state
@@ -306,6 +310,11 @@ const CommentsBottomSheet = ({
         isReply: !!replyingTo,
       });
 
+      // Calculate if top-level BEFORE adding (for optimistic update)
+      const isTopLevel = !replyingTo;
+      // Track parent for scrolling
+      const parentCommentId = replyingTo?.parentId || replyingTo?.id;
+
       // Dismiss mention suggestions on submit
       mentionSuggestions.dismissSuggestions();
 
@@ -316,10 +325,42 @@ const CommentsBottomSheet = ({
           commentId: result.commentId,
         });
 
+        // Optimistically update count if top-level comment
+        if (isTopLevel && onCommentCountChange) {
+          onCommentCountChange(1); // Increment by 1
+        }
+
         // Trigger callback (but don't close sheet)
         if (onCommentAdded) {
           onCommentAdded();
         }
+
+        // Scroll to the newly added comment after layout settles
+        // For top-level: scroll to the last item (newest comment at bottom)
+        // For replies: scroll to the parent comment (thread will be expanded)
+        setTimeout(() => {
+          if (flatListRef.current && threadedComments.length > 0) {
+            if (isTopLevel) {
+              // Scroll to last item (newest top-level comment)
+              const lastIndex = threadedComments.length - 1;
+              flatListRef.current.scrollToIndex({
+                index: lastIndex,
+                animated: true,
+                viewPosition: 0.5, // Center in view
+              });
+            } else if (parentCommentId) {
+              // Find parent comment index and scroll to it
+              const parentIndex = threadedComments.findIndex(c => c.id === parentCommentId);
+              if (parentIndex >= 0) {
+                flatListRef.current.scrollToIndex({
+                  index: parentIndex,
+                  animated: true,
+                  viewPosition: 0.3, // Upper third of view
+                });
+              }
+            }
+          }
+        }, 400); // Wait for animation to complete and layout to settle
 
         // Refocus input to allow adding more comments
         setTimeout(() => {
@@ -329,9 +370,19 @@ const CommentsBottomSheet = ({
         logger.error('CommentsBottomSheet: Failed to add comment', {
           error: result.error,
         });
+        // NOTE: Don't need explicit revert - real-time Firebase subscription
+        // will sync correct count automatically within ~100-200ms
       }
     },
-    [photoId, replyingTo, addComment, onCommentAdded, mentionSuggestions]
+    [
+      photoId,
+      replyingTo,
+      addComment,
+      onCommentAdded,
+      onCommentCountChange,
+      mentionSuggestions,
+      threadedComments,
+    ]
   );
 
   const handleReply = useCallback(
@@ -620,6 +671,9 @@ const CommentsBottomSheet = ({
 
   const renderCommentItem = useCallback(
     ({ item: comment }) => {
+      // Combine @mention expansion with just-added-reply expansion
+      const shouldForceExpand = expandedReplyParents[comment.id] || justAddedReplyTo === comment.id;
+
       return (
         <CommentWithReplies
           comment={comment}
@@ -633,7 +687,8 @@ const CommentsBottomSheet = ({
           isLikedByUser={isLikedByUser}
           onMentionPress={handleMentionPress}
           highlightedCommentId={highlightedCommentId}
-          forceExpanded={expandedReplyParents[comment.id]}
+          forceExpanded={shouldForceExpand}
+          isNewComment={isNewComment}
         />
       );
     },
@@ -649,6 +704,8 @@ const CommentsBottomSheet = ({
       handleMentionPress,
       highlightedCommentId,
       expandedReplyParents,
+      justAddedReplyTo,
+      isNewComment,
     ]
   );
 

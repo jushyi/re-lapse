@@ -34,6 +34,8 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   const [initialMention, setInitialMention] = useState(null); // @username to pre-fill in input
   const [userLikes, setUserLikes] = useState({}); // { [commentId]: boolean }
   const [highlightedCommentId, setHighlightedCommentId] = useState(null); // Comment ID to highlight
+  const [justAddedReplyTo, setJustAddedReplyTo] = useState(null); // Parent comment ID that just received a reply (for auto-expand)
+  const [newCommentIds, setNewCommentIds] = useState(new Set()); // Track newly added comment IDs for entrance animation
   const unsubscribeRef = useRef(null);
   const highlightTimeoutRef = useRef(null); // Timeout ref for auto-clear
 
@@ -114,6 +116,9 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
       // mentionedCommentId is the same as parentId for replies (tracks which comment was replied to)
       const mentionedCommentId = parentId;
 
+      // Track if this is a top-level comment (affects count)
+      const isTopLevel = !parentId;
+
       logger.info('useComments.addComment: Adding comment', {
         photoId,
         textLength: text?.length,
@@ -136,6 +141,29 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
         logger.info('useComments.addComment: Success', {
           commentId: result.commentId,
         });
+
+        // Mark this comment as new for entrance animation
+        if (result.commentId) {
+          setNewCommentIds(prev => new Set(prev).add(result.commentId));
+          // Clear after animation completes (150ms + 150ms buffer)
+          setTimeout(() => {
+            setNewCommentIds(prev => {
+              const next = new Set(prev);
+              next.delete(result.commentId);
+              return next;
+            });
+          }, 300);
+        }
+
+        // Track which parent received reply for auto-expand
+        // For nested replies, use the ultimate parent (flat thread structure)
+        const parentCommentId = replyingTo?.parentId || replyingTo?.id;
+        if (parentCommentId) {
+          setJustAddedReplyTo(parentCommentId);
+          // Auto-clear after 500ms (enough time for React to render with expanded state)
+          setTimeout(() => setJustAddedReplyTo(null), 500);
+        }
+
         // Clear reply state and initial mention after successful comment
         setReplyingTo(null);
         setInitialMention(null);
@@ -145,7 +173,11 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
         });
       }
 
-      return result;
+      // Return result + metadata for optimistic update
+      return {
+        ...result,
+        isTopLevel, // Caller uses this to decide if count increments
+      };
     },
     [photoId, currentUserId, replyingTo]
   );
@@ -371,6 +403,14 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
   );
 
   /**
+   * Check if a comment is newly added (should show entrance animation)
+   *
+   * @param {string} commentId - Comment ID to check
+   * @returns {boolean}
+   */
+  const isNewComment = useCallback(commentId => newCommentIds.has(commentId), [newCommentIds]);
+
+  /**
    * Organize comments into threads (top-level + replies)
    * Returns top-level comments with nested replies
    */
@@ -411,6 +451,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     initialMention,
     userLikes,
     highlightedCommentId, // Currently highlighted comment
+    justAddedReplyTo, // Parent comment ID that just received a reply
     // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
@@ -422,6 +463,7 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
     canDeleteComment,
     isOwnerComment,
     isLikedByUser,
+    isNewComment, // Check if comment should show entrance animation
   };
 };
 
