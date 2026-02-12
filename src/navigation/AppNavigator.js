@@ -53,6 +53,42 @@ export const navigationRef = createRef();
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const ProfileModalStack = createNativeStackNavigator();
+
+/**
+ * ProfileFromPhotoDetail Navigator
+ * Nested stack navigator used when navigating to a profile from PhotoDetail.
+ * Uses fullScreenModal presentation to render above PhotoDetail's transparentModal.
+ * Contains ProfileMain, AlbumGrid, and MonthlyAlbumGrid for child navigation.
+ */
+function ProfileFromPhotoDetailNavigator({ route }) {
+  const { userId, username } = route.params;
+  return (
+    <ProfileModalStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background.primary },
+      }}
+    >
+      <ProfileModalStack.Screen
+        name="ProfileMain"
+        component={ProfileScreen}
+        initialParams={{ userId, username }}
+        options={{ animation: 'none' }}
+      />
+      <ProfileModalStack.Screen
+        name="AlbumGrid"
+        component={AlbumGridScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <ProfileModalStack.Screen
+        name="MonthlyAlbumGrid"
+        component={MonthlyAlbumGridScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+    </ProfileModalStack.Navigator>
+  );
+}
 
 /**
  * Onboarding Stack Navigator (ProfileSetup -> Selects -> ContactsSync)
@@ -484,6 +520,17 @@ const AppNavigator = () => {
                     gestureEnabled: true,
                     gestureDirection: 'vertical',
                     contentStyle: { backgroundColor: 'transparent' },
+                  }}
+                />
+                <Stack.Screen
+                  name="ProfileFromPhotoDetail"
+                  component={ProfileFromPhotoDetailNavigator}
+                  options={{
+                    presentation: 'fullScreenModal',
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    gestureEnabled: true,
+                    contentStyle: { backgroundColor: colors.background.primary },
                   }}
                 />
                 <Stack.Screen
