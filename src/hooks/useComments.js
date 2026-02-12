@@ -15,6 +15,7 @@ import {
   deleteComment,
   toggleCommentLike,
   getUserLikesForComments,
+  generateCommentId,
 } from '../services/firebase/commentService';
 import logger from '../utils/logger';
 
@@ -119,8 +120,14 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
       // Track if this is a top-level comment (affects count)
       const isTopLevel = !parentId;
 
+      // Generate comment ID BEFORE write and mark as new IMMEDIATELY
+      // This prevents flash when real-time subscription fires
+      const commentId = generateCommentId(photoId);
+      setNewCommentIds(prev => new Set(prev).add(commentId));
+
       logger.info('useComments.addComment: Adding comment', {
         photoId,
+        commentId,
         textLength: text?.length,
         hasMedia: !!mediaUrl,
         isReply: !!parentId,
@@ -134,7 +141,8 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
         mediaUrl,
         mediaType,
         parentId,
-        mentionedCommentId
+        mentionedCommentId,
+        commentId // Pass pre-generated ID
       );
 
       if (result.success) {
@@ -142,18 +150,19 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
           commentId: result.commentId,
         });
 
-        // Mark this comment as new for entrance animation
-        if (result.commentId) {
-          setNewCommentIds(prev => new Set(prev).add(result.commentId));
-          // Clear after animation completes (350ms delay + 150ms duration + buffer)
-          setTimeout(() => {
-            setNewCommentIds(prev => {
-              const next = new Set(prev);
-              next.delete(result.commentId);
-              return next;
-            });
-          }, 600);
-        }
+        // Clear "new" flag after animation completes (350ms delay + 150ms duration + buffer)
+        setTimeout(() => {
+          setNewCommentIds(prev => {
+            const next = new Set(prev);
+            next.delete(result.commentId);
+            return next;
+          });
+        }, 600);
+
+        // Trigger highlight after entrance animation completes to show which comment was just posted
+        setTimeout(() => {
+          highlightComment(result.commentId);
+        }, 500); // Start highlight when entrance animation finishes
 
         // Track which parent received reply for auto-expand
         // For nested replies, use the ultimate parent (flat thread structure)
@@ -404,11 +413,30 @@ const useComments = (photoId, currentUserId, photoOwnerId) => {
 
   /**
    * Check if a comment is newly added (should show entrance animation)
+   * Checks both newCommentIds set AND if created within last 500ms
    *
    * @param {string} commentId - Comment ID to check
    * @returns {boolean}
    */
-  const isNewComment = useCallback(commentId => newCommentIds.has(commentId), [newCommentIds]);
+  const isNewComment = useCallback(
+    commentId => {
+      // Check if in newCommentIds set (marked when added)
+      if (newCommentIds.has(commentId)) return true;
+
+      // Also check if created very recently (within last 500ms)
+      // This handles the case where real-time subscription fires before setNewCommentIds
+      const comment = comments.find(c => c.id === commentId);
+      if (comment?.createdAt) {
+        const now = Date.now();
+        const createdAt = comment.createdAt.toDate?.() || new Date(comment.createdAt);
+        const age = now - createdAt.getTime();
+        return age < 500; // Treat as new if less than 500ms old
+      }
+
+      return false;
+    },
+    [newCommentIds, comments]
+  );
 
   /**
    * Organize comments into threads (top-level + replies)

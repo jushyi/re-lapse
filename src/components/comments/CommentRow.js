@@ -9,7 +9,7 @@
  * - Author badge for photo owner's comments
  * - Swipe left to delete when canDelete
  */
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
@@ -56,7 +56,7 @@ const CommentRow = ({
   isNewComment = false,
 }) => {
   const highlightAnim = useRef(new Animated.Value(0)).current;
-  const entranceAnim = useRef(new Animated.Value(0)).current;
+  const entranceAnim = useRef(new Animated.Value(1)).current; // Start visible by default
   const hasAnimatedRef = useRef(false); // Track if entrance animation has played
 
   // Trigger highlight animation when isHighlighted changes
@@ -80,12 +80,13 @@ const CommentRow = ({
 
   // Trigger entrance animation on mount if new comment (only once)
   // Delayed to start AFTER scroll animation completes (~300ms)
-  useEffect(() => {
+  // useLayoutEffect runs synchronously before paint to prevent flash
+  useLayoutEffect(() => {
     if (isNewComment && !hasAnimatedRef.current) {
       // Mark as animated to prevent re-runs
       hasAnimatedRef.current = true;
 
-      // Start from hidden position
+      // Immediately hide (runs before paint, no flash)
       entranceAnim.setValue(0);
 
       // Wait for scroll to complete before animating
@@ -98,17 +99,14 @@ const CommentRow = ({
           useNativeDriver: true,
         }).start();
       }, 350);
-    } else if (!isNewComment && !hasAnimatedRef.current) {
-      // Existing comments start visible (no animation)
-      // Only set if we haven't animated (to avoid interfering with ongoing animation)
-      entranceAnim.setValue(1);
     }
+    // No else branch - existing comments stay visible (entranceAnim = 1 by default)
   }, [isNewComment, entranceAnim]);
 
   // Interpolate background color for highlight flash
   const highlightBackgroundColor = highlightAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['transparent', 'rgba(139, 92, 246, 0.2)'], // colors.brand.purple with 20% opacity
+    outputRange: ['transparent', colors.overlay.purpleTint], // Cyan highlight tint (15% opacity)
   });
 
   // Interpolate for entrance animation
@@ -240,99 +238,104 @@ const CommentRow = ({
       style={{
         backgroundColor: highlightBackgroundColor,
         borderRadius: 8,
-        opacity: entranceOpacity,
-        transform: [{ translateY: entranceTranslateY }],
       }}
     >
-      <Swipeable
-        ref={swipeableRef}
-        renderRightActions={renderRightActions}
-        overshootRight={false}
-        friction={2}
-        rightThreshold={40}
+      <Animated.View
+        style={{
+          opacity: entranceOpacity,
+          transform: [{ translateY: entranceTranslateY }],
+        }}
       >
-        <View style={styles.container}>
-          {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments and deleted users) */}
-          <TouchableOpacity
-            style={styles.profilePhotoContainer}
-            onPress={handleAvatarPress}
-            activeOpacity={isOwnComment || isDeletedUser ? 1 : 0.7}
-            disabled={isOwnComment || isDeletedUser}
-          >
-            {profilePhotoURL ? (
-              <Image
-                source={{ uri: profilePhotoURL, cacheKey: `avatar-${comment.userId}` }}
-                style={styles.profilePhoto}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-              />
-            ) : (
-              <View style={styles.profilePhotoPlaceholder}>
-                <Text style={styles.profilePhotoInitial}>{initials}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Content - Name, Text, Reply */}
-          <View style={styles.contentContainer}>
-            {/* Name Row with optional Author badge */}
-            <View style={styles.nameRow}>
-              <Text style={styles.displayName} numberOfLines={1}>
-                {displayName || 'Unknown User'}
-              </Text>
-              {isOwnerComment && (
-                <View style={styles.authorBadge}>
-                  <Text style={styles.authorBadgeText}>Author</Text>
+        <Swipeable
+          ref={swipeableRef}
+          renderRightActions={renderRightActions}
+          overshootRight={false}
+          friction={2}
+          rightThreshold={40}
+        >
+          <View style={styles.container}>
+            {/* Profile Photo - tappable to navigate to user's profile (disabled for own comments and deleted users) */}
+            <TouchableOpacity
+              style={styles.profilePhotoContainer}
+              onPress={handleAvatarPress}
+              activeOpacity={isOwnComment || isDeletedUser ? 1 : 0.7}
+              disabled={isOwnComment || isDeletedUser}
+            >
+              {profilePhotoURL ? (
+                <Image
+                  source={{ uri: profilePhotoURL, cacheKey: `avatar-${comment.userId}` }}
+                  style={styles.profilePhoto}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
+              ) : (
+                <View style={styles.profilePhotoPlaceholder}>
+                  <Text style={styles.profilePhotoInitial}>{initials}</Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
 
-            {/* Comment Text - uses MentionText for @mention parsing */}
-            {text ? (
-              <MentionText
-                text={text}
-                onMentionPress={onMentionPress}
-                mentionedCommentId={comment.mentionedCommentId}
-                style={styles.commentText}
-              />
-            ) : null}
+            {/* Content - Name, Text, Reply */}
+            <View style={styles.contentContainer}>
+              {/* Name Row with optional Author badge */}
+              <View style={styles.nameRow}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {displayName || 'Unknown User'}
+                </Text>
+                {isOwnerComment && (
+                  <View style={styles.authorBadge}>
+                    <Text style={styles.authorBadgeText}>Author</Text>
+                  </View>
+                )}
+              </View>
 
-            {/* Media Thumbnail (if exists) */}
-            {mediaUrl && (
-              <Image
-                source={{ uri: mediaUrl, cacheKey: `comment-media-${comment.id}` }}
-                style={styles.mediaThumbnail}
-                contentFit="cover"
-                transition={200}
-              />
-            )}
+              {/* Comment Text - uses MentionText for @mention parsing */}
+              {text ? (
+                <MentionText
+                  text={text}
+                  onMentionPress={onMentionPress}
+                  mentionedCommentId={comment.mentionedCommentId}
+                  style={styles.commentText}
+                />
+              ) : null}
 
-            {/* Footer Row - Reply and Timestamp */}
-            <View style={styles.footerRow}>
-              {onReply && (
-                <>
-                  <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
-                    <Text style={styles.replyButtonText}>Reply</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.dot}>·</Text>
-                </>
+              {/* Media Thumbnail (if exists) */}
+              {mediaUrl && (
+                <Image
+                  source={{ uri: mediaUrl, cacheKey: `comment-media-${comment.id}` }}
+                  style={styles.mediaThumbnail}
+                  contentFit="cover"
+                  transition={200}
+                />
               )}
-              <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
-            </View>
-          </View>
 
-          {/* Heart Icon */}
-          <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
-            <PixelIcon
-              name={isLiked ? 'heart' : 'heart-outline'}
-              size={18}
-              color={isLiked ? colors.status.danger : colors.text.secondary}
-            />
-            {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
-          </TouchableOpacity>
-        </View>
-      </Swipeable>
+              {/* Footer Row - Reply and Timestamp */}
+              <View style={styles.footerRow}>
+                {onReply && (
+                  <>
+                    <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
+                      <Text style={styles.replyButtonText}>Reply</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dot}>·</Text>
+                  </>
+                )}
+                <Text style={styles.timestamp}>{getTimeAgo(createdAt)}</Text>
+              </View>
+            </View>
+
+            {/* Heart Icon */}
+            <TouchableOpacity style={styles.heartContainer} onPress={handleLikePress}>
+              <PixelIcon
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={18}
+                color={isLiked ? colors.status.danger : colors.text.secondary}
+              />
+              {likeCount > 0 && <Text style={styles.likeCount}>{likeCount}</Text>}
+            </TouchableOpacity>
+          </View>
+        </Swipeable>
+      </Animated.View>
     </Animated.View>
   );
 };
