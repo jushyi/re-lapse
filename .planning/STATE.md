@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 48 of 53 (UI/UX Consistency Audit)
-Plan: 2 of 7 in current phase
+Phase: 49 of 53 (Automated Test Suite)
+Plan: 1 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-12 — Completed 48-02-PLAN.md
+Last activity: 2026-02-12 — Completed 49-01-PLAN.md
 
 Progress: █████░░░░░░ 5/11 (v1.0.0 phases)
 
@@ -42,17 +42,18 @@ Progress: █████░░░░░░ 5/11 (v1.0.0 phases)
 
 See PROJECT.md Key Decisions table for full history.
 
-| Phase | Decision                                                  | Rationale                                                        |
-| ----- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| 46.1  | OtherUserProfile card instead of fullScreenModal          | fullScreenModal prevents child card screens from pushing on iOS  |
-| 47    | Custom code traces, not startScreenTrace()                | startScreenTrace() crashes on iOS                                |
-| 47    | **DEV** guard skips trace creation entirely               | Prevent polluting production metrics with dev data               |
-| 47.1  | Direct set intersection for mutual friend tagging         | Simpler/cheaper than friends-of-friends graph traversal          |
-| 47.1  | Inline overlay (not Modal/Portal) for mention suggestions | CommentsBottomSheet uses Animated.View — Modal breaks layering   |
-| 48    | Callback pattern for SongSearch navigation                | Preserves source screen local state; matches ProfilePhotoCrop    |
-| 48    | Edge masks for directional overflow clipping              | RN lacks overflow-x/y; opaque masks clip H while allowing V      |
-| 47.1  | requestAnimationFrame for Text.onPress navigation         | Text.onPress vs TouchableOpacity.onPress differ in Animated.View |
-| 48    | Modal screens skip paddingTop: insets.top                 | presentation: 'modal' already offsets from status bar on iOS     |
+| Phase | Decision                                                  | Rationale                                                          |
+| ----- | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| 46.1  | OtherUserProfile card instead of fullScreenModal          | fullScreenModal prevents child card screens from pushing on iOS    |
+| 47    | Custom code traces, not startScreenTrace()                | startScreenTrace() crashes on iOS                                  |
+| 47    | **DEV** guard skips trace creation entirely               | Prevent polluting production metrics with dev data                 |
+| 47.1  | Direct set intersection for mutual friend tagging         | Simpler/cheaper than friends-of-friends graph traversal            |
+| 47.1  | Inline overlay (not Modal/Portal) for mention suggestions | CommentsBottomSheet uses Animated.View — Modal breaks layering     |
+| 48    | Callback pattern for SongSearch navigation                | Preserves source screen local state; matches ProfilePhotoCrop      |
+| 48    | Edge masks for directional overflow clipping              | RN lacks overflow-x/y; opaque masks clip H while allowing V        |
+| 47.1  | requestAnimationFrame for Text.onPress navigation         | Text.onPress vs TouchableOpacity.onPress differ in Animated.View   |
+| 48    | Modal screens skip paddingTop: insets.top                 | presentation: 'modal' already offsets from status bar on iOS       |
+| 49    | --legacy-peer-deps for RNTL v13 install                   | react-test-renderer deprecated in React 19, RNTL makes it optional |
 
 ### Deferred Issues
 
@@ -78,5 +79,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 48-02-PLAN.md (Settings & Account Screens Audit)
+Stopped at: Completed 49-01-PLAN.md (Test Infrastructure & Utility Tests)
 Resume file: None
