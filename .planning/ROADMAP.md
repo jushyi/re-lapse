@@ -200,7 +200,7 @@ Plans:
 
 Plans:
 
-- [ ] 48.1-01: Fix profile navigation z-order from PhotoDetail/comments views
+- [x] 48.1-01: Fix profile navigation z-order from PhotoDetail/comments views
 
 #### Phase 49: Automated Test Suite
 
@@ -281,7 +281,7 @@ Plans:
 | 47. Firebase Perf Monitoring   | v1.0.0    | 3/3   | Complete    | 2026-02-11 |
 | 47.1 Comment @-Tagging         | v1.0.0    | 2/2   | Complete    | 2026-02-11 |
 | 48. UI/UX Consistency Audit    | v1.0.0    | 3/7   | In progress | -          |
-| 48.1 PhotoDetail Profile Nav   | v1.0.0    | 0/1   | Not started | -          |
+| 48.1 PhotoDetail Profile Nav   | v1.0.0    | 1/1   | Complete    | 2026-02-12 |
 | 49. Automated Test Suite       | v1.0.0    | 2/8   | In progress | -          |
 | 50. CI/CD Pipeline             | v1.0.0    | 0/?   | Not started | -          |
 | 51. iOS Release Preparation    | v1.0.0    | 0/?   | Not started | -          |
