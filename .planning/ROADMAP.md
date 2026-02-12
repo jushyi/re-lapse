@@ -239,11 +239,12 @@ Plans:
 **Goal**: Fix 76 failing tests across 10 test suites — 3 service tests (feedService, friendshipService, photoService), 2 integration tests (friendshipFlow, photoLifecycle), and 5 cloud functions tests (callable, notifications/sender, scheduled, smoke, triggers/notifications). All failures are mock setup issues, not real bugs. Must pass before release so PR checks are green.
 **Depends on**: Phase 50
 **Research**: Unlikely (investigating existing mock setup issues)
-**Plans**: TBD
+**Plans**: 2
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 50.1 to break down)
+- [ ] 50.1-01: Test Infrastructure & Mock Fixes (jest.config.js cloud function isolation, Firestore mock exports, service mocks)
+- [ ] 50.1-02: Fix Diverged Test Expectations (feedService, photoService, integration tests)
 
 #### Phase 51: iOS Release Preparation
 
@@ -305,7 +306,7 @@ Plans:
 | 48.1 PhotoDetail Profile Nav   | v1.0.0    | 1/1   | Complete    | 2026-02-12 |
 | 49. Automated Test Suite       | v1.0.0    | 8/8   | Complete    | 2026-02-12 |
 | 50. CI/CD Pipeline             | v1.0.0    | 3/3   | Complete    | 2026-02-12 |
-| 50.1 Fix Failing Test Suites   | v1.0.0    | 0/?   | Not started | -          |
+| 50.1 Fix Failing Test Suites   | v1.0.0    | 0/2   | Not started | -          |
 | 51. iOS Release Preparation    | v1.0.0    | 0/10  | Not started | -          |
 | 52. Systematic UAT             | v1.0.0    | 0/?   | Not started | -          |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |
