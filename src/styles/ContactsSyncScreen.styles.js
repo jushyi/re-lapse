@@ -1,6 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 
 export const styles = StyleSheet.create({
   container: {
@@ -10,11 +12,11 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   backButton: {
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -28,17 +30,17 @@ export const styles = StyleSheet.create({
   // Privacy messaging section
   privacySection: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: spacing.xl,
   },
   privacyIcon: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   privacyTitle: {
     fontSize: typography.size.xxl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   privacyText: {
     fontSize: typography.size.lg,
@@ -50,10 +52,10 @@ export const styles = StyleSheet.create({
   },
   // Sync button
   syncButton: {
-    backgroundColor: colors.brand.purple,
-    paddingVertical: 16,
-    borderRadius: 4,
-    marginTop: 24,
+    backgroundColor: colors.interactive.primary,
+    paddingVertical: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    marginTop: spacing.lg,
     width: '100%',
   },
   syncButtonText: {
@@ -63,8 +65,8 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   skipButton: {
-    paddingVertical: 16,
-    marginTop: 12,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
   },
   skipButtonText: {
     color: colors.text.secondary,
@@ -74,13 +76,13 @@ export const styles = StyleSheet.create({
   },
   // Results section
   resultsHeader: {
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
   },
   resultsTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
-    marginBottom: 4,
+    marginBottom: spacing.xxs,
   },
   resultsSubtitle: {
     fontSize: typography.size.md,
@@ -95,17 +97,17 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
   },
   emptyIcon: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   emptyTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   emptyText: {
     fontSize: typography.size.lg,
@@ -121,7 +123,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: spacing.md,
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
@@ -134,13 +136,13 @@ export const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    paddingBottom: 40,
+    paddingBottom: spacing.xxl,
     backgroundColor: colors.background.primary,
   },
   continueButton: {
-    backgroundColor: colors.brand.purple,
-    paddingVertical: 16,
-    borderRadius: 4,
+    backgroundColor: colors.interactive.primary,
+    paddingVertical: spacing.md,
+    borderRadius: layout.borderRadius.md,
   },
   continueButtonText: {
     color: colors.text.primary,

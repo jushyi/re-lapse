@@ -110,7 +110,7 @@ const ContactsSyncScreen = ({ navigation }) => {
         <PixelIcon
           name="people-outline"
           size={64}
-          color={colors.brand.purple}
+          color={colors.interactive.primary}
           style={styles.privacyIcon}
         />
         <Text style={styles.privacyTitle}>Find Your Friends</Text>
@@ -134,7 +134,7 @@ const ContactsSyncScreen = ({ navigation }) => {
 
   const renderSyncingState = () => (
     <View style={styles.loadingContainer}>
-      <PixelSpinner size="large" color={colors.brand.purple} />
+      <PixelSpinner size="large" color={colors.interactive.primary} />
       <Text style={styles.loadingText}>Finding your friends...</Text>
     </View>
   );

@@ -755,7 +755,7 @@ const FriendsScreen = ({ navigation }) => {
       <PixelIcon
         name="people-outline"
         size={40}
-        color={colors.brand.purple}
+        color={colors.interactive.primary}
         style={styles.syncPromptIcon}
       />
       <Text style={styles.syncPromptTitle}>Find Friends from Contacts</Text>
@@ -847,8 +847,8 @@ const FriendsScreen = ({ navigation }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.brand.purple}
-              colors={[colors.brand.purple]}
+              tintColor={colors.interactive.primary}
+              colors={[colors.interactive.primary]}
               progressBackgroundColor={colors.background.secondary}
             />
           }
@@ -1097,8 +1097,8 @@ const FriendsScreen = ({ navigation }) => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={colors.brand.purple}
-                colors={[colors.brand.purple]}
+                tintColor={colors.interactive.primary}
+                colors={[colors.interactive.primary]}
                 progressBackgroundColor={colors.background.secondary}
               />
             }

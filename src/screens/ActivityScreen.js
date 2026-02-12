@@ -25,6 +25,8 @@ import {
   limit,
 } from '@react-native-firebase/firestore';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
+import { layout } from '../constants/layout';
 import { useAuth } from '../context/AuthContext';
 import {
   getPendingRequests,
@@ -456,8 +458,8 @@ const ActivityScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={colors.brand.purple}
-            colors={[colors.brand.purple]}
+            tintColor={colors.interactive.primary}
+            colors={[colors.interactive.primary]}
             progressBackgroundColor={colors.background.secondary}
           />
         }
@@ -510,12 +512,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.primary,
   },
   backButton: {
-    padding: 4,
+    padding: spacing.xxs,
   },
   headerTitle: {
     fontSize: typography.size.xl,
@@ -534,13 +536,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   section: {
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
   },
   sectionTitle: {
@@ -551,16 +553,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   timeSectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingTop: 20,
-    paddingBottom: 8,
+    paddingBottom: spacing.xs,
   },
   sectionBadge: {
     backgroundColor: colors.brand.pink,
-    borderRadius: 2,
-    paddingHorizontal: 8,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    marginLeft: 8,
+    marginLeft: spacing.xs,
     marginRight: 'auto',
   },
   sectionBadgeText: {
@@ -571,17 +573,17 @@ const styles = StyleSheet.create({
   requestItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   requestPhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
+    width: layout.dimensions.avatarMedium + 4,
+    height: layout.dimensions.avatarMedium + 4,
+    borderRadius: layout.borderRadius.round,
+    marginRight: spacing.sm,
   },
   requestPhotoPlaceholder: {
     backgroundColor: colors.background.tertiary,
@@ -595,7 +597,7 @@ const styles = StyleSheet.create({
   },
   requestInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   requestName: {
     fontSize: typography.size.md,
@@ -610,13 +612,13 @@ const styles = StyleSheet.create({
   },
   requestActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
   },
   acceptButton: {
-    backgroundColor: colors.brand.purple,
+    backgroundColor: colors.interactive.primary,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: layout.borderRadius.round,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -624,24 +626,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: layout.borderRadius.round,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
   notifPhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
+    width: layout.dimensions.avatarMedium + 4,
+    height: layout.dimensions.avatarMedium + 4,
+    borderRadius: layout.borderRadius.round,
+    marginRight: spacing.sm,
   },
   notifPhotoPlaceholder: {
     backgroundColor: colors.background.tertiary,
@@ -650,7 +652,7 @@ const styles = StyleSheet.create({
   },
   notifContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   notifMessage: {
     fontSize: typography.size.md,
@@ -659,14 +661,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   notifSenderName: {
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
   },
   unreadDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.brand.purple,
+    backgroundColor: colors.interactive.primary,
     marginRight: 6,
   },
   readSpacer: {
@@ -684,20 +686,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 80,
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
   },
   emptyTitle: {
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   emptyText: {
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.xs,
     lineHeight: 20,
   },
 });
