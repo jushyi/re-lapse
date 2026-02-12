@@ -217,6 +217,7 @@ export const getUserProfile = async userId => {
         selects: userData.selects || [],
         profileSong: userData.profileSong || null,
         lastUsernameChange: userData.lastUsernameChange || null,
+        friendCount: userData.friendCount || 0,
       };
 
       logger.info('UserService.getUserProfile: Fetched profile', {

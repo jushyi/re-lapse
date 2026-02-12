@@ -148,7 +148,7 @@ export const acceptFriendRequest = async (friendshipId, userId) => {
         return { success: false, error: 'Friend request already processed' };
       }
 
-      // Update to accepted
+      // Update to accepted (Cloud Function trigger handles friendCount increment)
       await updateDoc(friendshipRef, {
         status: 'accepted',
         acceptedAt: serverTimestamp(),
@@ -222,7 +222,7 @@ export const removeFriend = async (userId1, userId2) => {
       return { success: false, error: 'Friendship not found' };
     }
 
-    // Delete friendship document
+    // Delete friendship document (Cloud Function trigger handles friendCount decrement)
     await deleteDoc(friendshipRef);
 
     return { success: true };

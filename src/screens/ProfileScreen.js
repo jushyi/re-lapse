@@ -162,21 +162,19 @@ const ProfileScreen = () => {
     }
   }, [isOwnProfile, userId, user?.uid]);
 
-  // Fetch friend count — own profile queries friendships directly; other profiles use denormalized field
+  // Fetch friend count for own profile (queries friendships directly for accuracy)
   const fetchFriendCount = useCallback(async () => {
-    if (isOwnProfile && user?.uid) {
-      try {
-        const result = await getFriendships(user.uid);
-        if (result.success) {
-          setFriendCount(result.friendships.length);
-        }
-      } catch (error) {
-        logger.error('ProfileScreen: Error fetching friend count', { error: error.message });
+    if (!isOwnProfile || !user?.uid) return;
+
+    try {
+      const result = await getFriendships(user.uid);
+      if (result.success) {
+        setFriendCount(result.friendships.length);
       }
-    } else if (!isOwnProfile && profileData?.friendCount != null) {
-      setFriendCount(profileData.friendCount);
+    } catch (error) {
+      logger.error('ProfileScreen: Error fetching friend count', { error: error.message });
     }
-  }, [isOwnProfile, user?.uid, profileData?.friendCount]);
+  }, [isOwnProfile, user?.uid]);
 
   // Reset fetch refs when userId changes
   useEffect(() => {
@@ -337,6 +335,9 @@ const ProfileScreen = () => {
 
   // Resolve profile data based on own vs other user
   const profileData = isOwnProfile ? userProfile : otherUserProfile;
+
+  // Friend count: own profile uses live query, other profiles use denormalized field
+  const displayFriendCount = isOwnProfile ? friendCount : profileData?.friendCount || 0;
   const isFriend = friendshipStatus === 'friends';
 
   // Mark screen trace as loaded after profile data is ready (once only)
@@ -898,16 +899,12 @@ const ProfileScreen = () => {
             </Text>
 
             {/* Friend Count Scoreboard */}
-            <TouchableOpacity
-              style={styles.friendCounter}
-              onPress={() => navigation.navigate('FriendsList')}
-              activeOpacity={0.7}
-            >
+            <View style={styles.friendCounter}>
               <Text style={styles.friendCounterLabel}>FRIENDS</Text>
               <Text style={styles.friendCounterValue}>
-                {String(Math.min(friendCount, 999)).padStart(3, '0')}
+                {String(Math.min(displayFriendCount, 999)).padStart(3, '0')}
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
         </View>
 

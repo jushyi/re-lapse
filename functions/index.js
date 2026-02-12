@@ -2648,3 +2648,118 @@ exports.processScheduledPhotoDeletions = functions
       return null;
     }
   });
+
+/**
+ * Increment friendCount on both users when a friendship is accepted
+ * Triggers on friendship document update (pending → accepted)
+ */
+exports.incrementFriendCountOnAccept = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('friendships/{friendshipId}')
+  .onUpdate(async change => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+
+      if (!before || !after) return null;
+      if (before.status === 'accepted' || after.status !== 'accepted') return null;
+
+      const { user1Id, user2Id } = after;
+      if (!user1Id || !user2Id) return null;
+
+      const increment = admin.firestore.FieldValue.increment(1);
+      await Promise.all([
+        db.collection('users').doc(user1Id).update({ friendCount: increment }),
+        db.collection('users').doc(user2Id).update({ friendCount: increment }),
+      ]);
+
+      logger.info('incrementFriendCountOnAccept: Updated counts', { user1Id, user2Id });
+      return null;
+    } catch (error) {
+      logger.error('incrementFriendCountOnAccept: Error', { error: error.message });
+      return null;
+    }
+  });
+
+/**
+ * Decrement friendCount on both users when an accepted friendship is deleted
+ * Triggers on friendship document deletion
+ */
+exports.decrementFriendCountOnRemove = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .firestore.document('friendships/{friendshipId}')
+  .onDelete(async snapshot => {
+    try {
+      const data = snapshot.data();
+      if (!data) return null;
+
+      // Only decrement if the deleted friendship was accepted
+      if (data.status !== 'accepted') return null;
+
+      const { user1Id, user2Id } = data;
+      if (!user1Id || !user2Id) return null;
+
+      const decrement = admin.firestore.FieldValue.increment(-1);
+      await Promise.all([
+        db.collection('users').doc(user1Id).update({ friendCount: decrement }),
+        db.collection('users').doc(user2Id).update({ friendCount: decrement }),
+      ]);
+
+      logger.info('decrementFriendCountOnRemove: Updated counts', { user1Id, user2Id });
+      return null;
+    } catch (error) {
+      logger.error('decrementFriendCountOnRemove: Error', { error: error.message });
+      return null;
+    }
+  });
+
+/**
+ * One-time migration: backfill friendCount on all user documents
+ * Counts accepted friendships for each user and writes the count
+ * Call via: firebase functions:call backfillFriendCounts
+ */
+exports.backfillFriendCounts = onCall({ memory: '512MiB', timeoutSeconds: 300 }, async request => {
+  try {
+    // Count accepted friendships per user
+    const friendshipsSnapshot = await db
+      .collection('friendships')
+      .where('status', '==', 'accepted')
+      .get();
+
+    const counts = {};
+    friendshipsSnapshot.forEach(doc => {
+      const data = doc.data();
+      counts[data.user1Id] = (counts[data.user1Id] || 0) + 1;
+      counts[data.user2Id] = (counts[data.user2Id] || 0) + 1;
+    });
+
+    // Batch update user documents
+    const userIds = Object.keys(counts);
+    const batchSize = 500;
+    let updated = 0;
+
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = db.batch();
+      const chunk = userIds.slice(i, i + batchSize);
+
+      chunk.forEach(userId => {
+        batch.update(db.collection('users').doc(userId), {
+          friendCount: counts[userId],
+        });
+      });
+
+      await batch.commit();
+      updated += chunk.length;
+    }
+
+    logger.info('backfillFriendCounts: Complete', {
+      friendships: friendshipsSnapshot.size,
+      usersUpdated: updated,
+    });
+
+    return { success: true, usersUpdated: updated };
+  } catch (error) {
+    logger.error('backfillFriendCounts: Error', { error: error.message });
+    throw new HttpsError('internal', error.message);
+  }
+});
