@@ -101,6 +101,7 @@ export const styles = StyleSheet.create({
   userInfoOverlay: {
     position: 'absolute',
     left: 22,
+    right: 56,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -109,6 +110,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
+    flexShrink: 1,
     textShadowColor: colors.overlay.darker,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
@@ -117,6 +119,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
+    flexShrink: 0,
     textShadowColor: colors.overlay.darker,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
