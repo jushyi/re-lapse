@@ -25,6 +25,7 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   generateFriendshipId,
+  getFriendships,
   removeFriend,
   blockUser,
   unblockUser,
@@ -76,6 +77,9 @@ const ProfileScreen = () => {
   const [friendshipId, setFriendshipId] = useState(null);
   const [friendshipLoading, setFriendshipLoading] = useState(false);
   const [friendshipStatusLoaded, setFriendshipStatusLoaded] = useState(false);
+
+  // Friend count state
+  const [friendCount, setFriendCount] = useState(0);
 
   // Block status state
   const [isBlockedByMe, setIsBlockedByMe] = useState(false);
@@ -156,6 +160,21 @@ const ProfileScreen = () => {
     }
   }, [isOwnProfile, userId, user?.uid]);
 
+  // Fetch friend count for the displayed profile
+  const fetchFriendCount = useCallback(async () => {
+    const targetUserId = isOwnProfile ? user?.uid : userId;
+    if (!targetUserId) return;
+
+    try {
+      const result = await getFriendships(targetUserId);
+      if (result.success) {
+        setFriendCount(result.friendships.length);
+      }
+    } catch (error) {
+      logger.error('ProfileScreen: Error fetching friend count', { error: error.message });
+    }
+  }, [isOwnProfile, userId, user?.uid]);
+
   // Reset fetch refs when userId changes
   useEffect(() => {
     initialFetchDoneRef.current = false;
@@ -172,6 +191,13 @@ const ProfileScreen = () => {
         fetchFriendshipStatus();
       }
     }, [isOwnProfile, fetchOtherUserProfile, fetchFriendshipStatus])
+  );
+
+  // Refresh friend count on every focus (reflects add/remove friend changes)
+  useFocusEffect(
+    useCallback(() => {
+      fetchFriendCount();
+    }, [fetchFriendCount])
   );
 
   // Fetch albums function (reusable for refresh after operations)
@@ -860,13 +886,25 @@ const ProfileScreen = () => {
             )}
           </View>
 
-          {/* Profile Info Card - left half, best friends will go on right */}
+          {/* Profile Info Card */}
           <View style={styles.profileInfoCard}>
             <Text style={styles.displayName}>{profileData?.displayName || 'New User'}</Text>
             <Text style={styles.username}>@{profileData?.username || 'username'}</Text>
             <Text style={[styles.bio, !profileData?.bio && styles.bioPlaceholder]}>
               {profileData?.bio || 'No bio yet'}
             </Text>
+
+            {/* Friend Count Scoreboard - centered between photo right edge and card right edge */}
+            <TouchableOpacity
+              style={styles.friendCounter}
+              onPress={() => navigation.navigate('FriendsList')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.friendCounterLabel}>FRIENDS</Text>
+              <Text style={styles.friendCounterValue}>
+                {String(Math.min(friendCount, 999)).padStart(3, '0')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -1072,6 +1110,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xxl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
+    paddingRight: '35%', // Stop text before friend counter
   },
   username: {
     fontSize: typography.size.lg,
@@ -1087,6 +1126,27 @@ const styles = StyleSheet.create({
   },
   bioPlaceholder: {
     fontStyle: 'italic',
+  },
+  // Friend Counter Scoreboard - absolutely positioned in right portion of card
+  friendCounter: {
+    position: 'absolute',
+    top: 52,
+    right: '10%',
+    alignItems: 'center',
+  },
+  friendCounterLabel: {
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  friendCounterValue: {
+    fontSize: typography.size.xxl,
+    fontFamily: typography.fontFamily.display,
+    color: colors.brand.purple,
+    textAlign: 'center',
+    letterSpacing: 3,
   },
   // Profile Song
   songContainer: {

@@ -60,6 +60,7 @@ export {
   acceptFriendRequest,
   declineFriendRequest,
   generateFriendshipId,
+  getFriendships,
 } from './friendshipService';
 
 export {
