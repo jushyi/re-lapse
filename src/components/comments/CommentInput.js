@@ -295,6 +295,7 @@ const CommentInput = forwardRef(
           {/* Input Wrapper with rounded background */}
           <View style={styles.inputWrapper}>
             <TextInput
+              testID="comment-input"
               ref={inputRef}
               style={styles.textInput}
               placeholder={placeholder}
@@ -342,6 +343,7 @@ const CommentInput = forwardRef(
 
           {/* Send Button */}
           <TouchableOpacity
+            testID="comment-send-button"
             style={[styles.sendButton, isDisabled && styles.sendButtonDisabled]}
             onPress={handleSend}
             disabled={isDisabled}

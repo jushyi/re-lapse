@@ -887,9 +887,10 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  const renderSearchBar = (value, setValue, placeholder) => (
+  const renderSearchBar = (value, setValue, placeholder, testID) => (
     <View style={styles.searchContainer}>
       <TextInput
+        testID={testID}
         style={styles.searchInput}
         placeholder={placeholder}
         placeholderTextColor={colors.text.tertiary}
@@ -982,8 +983,14 @@ const FriendsScreen = ({ navigation }) => {
 
     return (
       <>
-        {renderSearchBar(friendsSearchQuery, setFriendsSearchQuery, 'Search friends...')}
+        {renderSearchBar(
+          friendsSearchQuery,
+          setFriendsSearchQuery,
+          'Search friends...',
+          'friends-search-input'
+        )}
         <FlatList
+          testID="friends-list"
           data={filteredFriends}
           renderItem={({ item }) => (
             <TouchableOpacity onLongPress={() => handleRemoveFriend(item)}>

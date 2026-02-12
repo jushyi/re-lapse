@@ -958,6 +958,7 @@ const CommentsBottomSheet = ({
               renderError()
             ) : (
               <FlatList
+                testID="comments-list"
                 ref={flatListRef}
                 style={styles.commentsList}
                 contentContainerStyle={styles.commentsListContent}
@@ -981,6 +982,7 @@ const CommentsBottomSheet = ({
 
             {/* Comment Input - paddingBottom accounts for keyboard or safe area */}
             <View
+              testID="comment-input-area"
               style={{
                 paddingBottom: keyboardVisible ? keyboardHeight : Math.max(insets.bottom, 8),
               }}
