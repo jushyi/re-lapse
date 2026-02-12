@@ -188,8 +188,8 @@ const useDarkroom = () => {
         return;
       }
 
-      // Determine exit direction based on action
-      const exitDirection = action === 'archive' ? 'left' : action === 'journal' ? 'right' : 'down';
+      // Determine exit direction based on action (vertical: archive=down, journal=up)
+      const exitDirection = action === 'archive' ? 'down' : action === 'journal' ? 'up' : 'delete';
 
       // Capture current tags for this photo (for undo restoration)
       const currentTags = photoTags[photoId] || [];

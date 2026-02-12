@@ -62,6 +62,8 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.overlay.light,
+    zIndex: layout.zIndex.dropdown,
+    backgroundColor: colors.background.primary,
   },
   backButton: {
     width: spacing.xxl,
@@ -134,8 +136,8 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginTop: spacing.md,
+    paddingTop: spacing.md + spacing.md,
+    paddingBottom: spacing.md,
     marginBottom: spacing.md,
     backgroundColor: colors.background.primary,
     zIndex: 1,
@@ -170,7 +172,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     height: spacing.huge,
     borderRadius: layout.borderRadius.xl,
-    backgroundColor: colors.status.ready, // Green for journal/share
+    backgroundColor: colors.interactive.primary, // Cyan for journal
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',

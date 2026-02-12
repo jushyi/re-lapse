@@ -19,10 +19,14 @@ export const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.92,
     alignSelf: 'center',
     borderRadius: layout.borderRadius.sm,
-    // Black background matches screen, prevents flash during cascade animation
-    backgroundColor: colors.background.primary,
+    // Transparent so dissolve animation shows pixels against screen bg
+    backgroundColor: 'transparent',
     overflow: 'hidden',
     elevation: 0,
+  },
+  // Clip container for archive "boxing up" animation (scaleY compression)
+  photoClipContainer: {
+    overflow: 'hidden',
   },
   photoImage: {
     width: '100%',
@@ -40,10 +44,15 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.systemColors.gray,
   },
   journalOverlay: {
-    backgroundColor: colors.systemColors.green,
+    backgroundColor: colors.interactive.primary,
   },
   deleteOverlay: {
     backgroundColor: colors.status.danger,
+  },
+  // Cyan glow flash for journal "item pickup" animation
+  journalGlowOverlay: {
+    backgroundColor: colors.interactive.primary,
+    opacity: 0.4,
   },
   iconContainer: {
     width: 60,
@@ -123,6 +132,30 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
+  },
+  // Archive box stamp - cardboard box overlay on the crushed card
+  // The crushed card IS the box, so border goes on the overlay edge
+  archiveBoxStamp: {
+    backgroundColor: '#A0784C',
+    borderWidth: 3,
+    borderColor: '#3D2B1A',
+  },
+  // Down arrow on the box stamp — oversized to compensate for 0.2x crush scale
+  archiveBoxArrowShaft: {
+    width: 120,
+    height: 160,
+    backgroundColor: '#3D2B1A',
+  },
+  archiveBoxArrowHead: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 160,
+    borderRightWidth: 160,
+    borderTopWidth: 140,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#3D2B1A',
+    marginTop: -8,
   },
   tagOverlayBadge: {
     position: 'absolute',
