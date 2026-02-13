@@ -1187,7 +1187,7 @@ const FeedScreen = () => {
           <PixelIcon name="people-outline" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         {/* Centered title */}
-        <Text style={styles.headerTitle}>Rewind</Text>
+        <Text style={styles.headerTitle}>Flick</Text>
         {/* Right-aligned notification button */}
         <TouchableOpacity
           onPress={() => navigation.navigate('Activity')}

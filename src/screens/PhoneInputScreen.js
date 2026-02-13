@@ -183,7 +183,7 @@ const PhoneInputScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.logo}>REWIND</Text>
+            <Text style={styles.logo}>FLICK</Text>
             <Text style={styles.subtitle}>Enter your phone number</Text>
             <Text style={styles.description}>
               We&apos;ll send you a verification code to confirm your number.

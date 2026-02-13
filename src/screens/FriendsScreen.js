@@ -694,7 +694,7 @@ const FriendsScreen = ({ navigation }) => {
       if (filteredSuggestions.length === 0) {
         Alert.alert(
           'No Friends Found',
-          'None of your contacts are on REWIND yet. Invite them to join!'
+          'None of your contacts are on FLICK yet. Invite them to join!'
         );
       }
     } catch (err) {
@@ -930,7 +930,7 @@ const FriendsScreen = ({ navigation }) => {
         style={styles.syncPromptIcon}
       />
       <Text style={styles.syncPromptTitle}>Find Friends from Contacts</Text>
-      <Text style={styles.syncPromptText}>See which of your contacts are on REWIND</Text>
+      <Text style={styles.syncPromptText}>See which of your contacts are on FLICK</Text>
       <TouchableOpacity
         style={styles.syncPromptButton}
         onPress={handleSyncContacts}

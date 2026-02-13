@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Rewind",
-    "slug": "Rewind",
+    "name": "Flick",
+    "slug": "Flick",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -51,7 +51,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Rewind to access your camera to capture moments.",
+          "cameraPermission": "Allow Flick to access your camera to capture moments.",
           "microphonePermission": false
         }
       ],

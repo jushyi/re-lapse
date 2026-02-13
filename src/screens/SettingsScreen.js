@@ -51,7 +51,7 @@ const SettingsScreen = () => {
 
   const handleHelpSupport = () => {
     logger.debug('SettingsScreen: Help & Support pressed');
-    Linking.openURL('mailto:support@rewind.app?subject=Rewind%20Support%20Request');
+    Linking.openURL('mailto:support@flickapp.com?subject=Flick%20Support%20Request');
   };
 
   const sections = [
