@@ -263,7 +263,7 @@ Plans:
 - [x] 51-06: Giphy Production Key & Attribution (attribution complete, prod key pending approval)
 - [x] 51-07: Contributions Page UI & IAP Integration (pitch, tiers, color picker)
 - [x] 51-08: Name Color Perk — Storage & Display (contributor colors app-wide)
-- [ ] 51-09: App Store Connect Setup & Screenshots (listing, metadata, privacy, IAP products)
+- [x] 51-09: App Store Connect Setup & Screenshots (listing, metadata, privacy, IAP products)
 - [ ] 51-10: EAS Build, Submit & Final Verification
 
 #### Phase 52: Systematic UAT

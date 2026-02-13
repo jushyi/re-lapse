@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 51 of 53 (iOS Release Preparation)
-Plan: 8 of 10 in current phase
+Plan: 9 of 10 in current phase
 Status: In progress
-Last activity: 2026-02-13 — Completed 51-08 (Name Color Display)
+Last activity: 2026-02-13 — Completed 51-09 (App Store Connect Setup)
 
 Progress: ████████████ 12/13 (v1.0.0 phases)
 
@@ -71,6 +71,10 @@ See PROJECT.md Key Decisions table for full history.
 | 51-04 | New iOS OAuth 2.0 Client ID for production                | Phone auth reCAPTCHA needs production project OAuth credentials     |
 | 51-05 | Fire-and-forget email for reports                         | Email failure logged but doesn't prevent report submission          |
 | 51-05 | Gmail SMTP for Cloud Functions email                      | Simplest approach for single-developer app, uses App Password       |
+| 51-09 | App name: Flick - Photo Journal                           | Base name "Flick" taken on App Store, hyphenated version available  |
+| 51-09 | EU trader status: Non-Trader                              | Individual developer, not registered business                       |
+| 51-09 | Age rating: 12+                                           | User-generated content with infrequent/mild profanity               |
+| 51-09 | Defer screenshot capture until pre-submission             | Allows UI polish before captures; infrastructure ready now          |
 
 ### Deferred Issues
 
@@ -97,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 51-08 (Name Color Display Implementation)
+Stopped at: Completed 51-09 (App Store Connect Setup)
 Resume file: None
