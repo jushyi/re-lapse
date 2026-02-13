@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "backgroundColor": "#0A0A1A",
-      "bundleIdentifier": "com.spoodsjs.rewind",
+      "bundleIdentifier": "com.spoodsjs.flick",
       "entitlements": {
         "aps-environment": "development"
       },
@@ -40,7 +40,7 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
-      "package": "com.spoodsjs.rewind"
+      "package": "com.spoodsjs.flick"
     },
     "web": {
       "favicon": "./assets/favicon.png"
