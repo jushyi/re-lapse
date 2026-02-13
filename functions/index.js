@@ -2783,3 +2783,54 @@ exports.backfillFriendCounts = onCall({ memory: '512MiB', timeoutSeconds: 300 },
     throw new HttpsError('internal', error.message);
   }
 });
+
+/**
+ * Email user reports to support address
+ * Triggered when new report document is created in reports/ collection
+ * Sends formatted email with report details to configured support address
+ * Email failure is logged but doesn't prevent report submission (already in Firestore)
+ */
+exports.onReportCreated = functions.firestore
+  .document('reports/{reportId}')
+  .onCreate(async (snapshot, context) => {
+    const report = snapshot.data();
+    const reportId = context.params.reportId;
+
+    const subject = `[REPORT] ${report.reason} — ${report.profileSnapshot?.username || 'Unknown user'}`;
+
+    const body = `
+New Report Submitted
+====================
+
+Report ID: ${reportId}
+Date: ${new Date().toISOString()}
+
+Reporter: ${report.reporterId}
+Reported User: ${report.reportedUserId}
+  Username: ${report.profileSnapshot?.username || 'N/A'}
+  Display Name: ${report.profileSnapshot?.displayName || 'N/A'}
+
+Reason: ${report.reason}
+Details: ${report.details || 'No additional details provided'}
+
+---
+View in Firebase Console:
+https://console.firebase.google.com/project/${process.env.GCLOUD_PROJECT}/firestore/data/reports/${reportId}
+    `.trim();
+
+    try {
+      const transporter = getTransporter();
+      const config = functions.config();
+      await transporter.sendMail({
+        from: `"Flick Reports" <${config.smtp.email}>`,
+        to: config.support.email,
+        subject,
+        text: body,
+      });
+      logger.info('Report email sent', { reportId, reason: report.reason });
+    } catch (error) {
+      logger.error('Failed to send report email', { reportId, error: error.message });
+      // Don't throw — the report is already saved in Firestore.
+      // Email failure shouldn't prevent report submission.
+    }
+  });

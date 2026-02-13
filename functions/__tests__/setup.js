@@ -6,6 +6,24 @@
  */
 
 // Mock firebase-functions (needed by logger.js)
+const mockFirestoreHandlers = {
+  onCreate: jest.fn(handler => handler),
+  onUpdate: jest.fn(handler => handler),
+  onWrite: jest.fn(handler => handler),
+  onDelete: jest.fn(handler => handler),
+};
+const mockFirestore = {
+  document: jest.fn(() => mockFirestoreHandlers),
+};
+const mockPubsub = {
+  schedule: jest.fn(() => ({
+    timeZone: jest.fn(() => ({
+      onRun: jest.fn(handler => handler),
+    })),
+    onRun: jest.fn(handler => handler),
+  })),
+};
+
 jest.mock('firebase-functions', () => ({
   logger: {
     debug: jest.fn(),
@@ -13,23 +31,20 @@ jest.mock('firebase-functions', () => ({
     warn: jest.fn(),
     error: jest.fn(),
   },
+  config: jest.fn(() => ({
+    smtp: {
+      email: 'test@gmail.com',
+      password: 'test-password',
+    },
+    support: {
+      email: 'support@test.com',
+    },
+  })),
+  firestore: mockFirestore,
+  pubsub: mockPubsub,
   runWith: jest.fn(() => ({
-    firestore: {
-      document: jest.fn(() => ({
-        onCreate: jest.fn(handler => handler),
-        onUpdate: jest.fn(handler => handler),
-        onWrite: jest.fn(handler => handler),
-        onDelete: jest.fn(handler => handler),
-      })),
-    },
-    pubsub: {
-      schedule: jest.fn(() => ({
-        timeZone: jest.fn(() => ({
-          onRun: jest.fn(handler => handler),
-        })),
-        onRun: jest.fn(handler => handler),
-      })),
-    },
+    firestore: mockFirestore,
+    pubsub: mockPubsub,
   })),
 }));
 
@@ -163,6 +178,13 @@ jest.mock('expo-server-sdk', () => {
   );
   return { Expo: MockExpo };
 });
+
+// Mock nodemailer
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(() => ({
+    sendMail: jest.fn().mockResolvedValue({ messageId: 'mock-message-id' }),
+  })),
+}));
 
 // Mock zod (used by validation.js)
 jest.mock('zod', () => {
