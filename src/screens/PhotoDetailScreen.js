@@ -293,6 +293,7 @@ const PhotoDetailScreen = () => {
     capturedAt,
     displayName,
     profilePhotoURL,
+    nameColor,
 
     // Stories navigation
     currentIndex,
@@ -382,6 +383,7 @@ const PhotoDetailScreen = () => {
       imageURL,
       displayName,
       profilePhotoURL,
+      nameColor,
       capturedAt,
       totalPhotos,
       currentIndex,
@@ -771,7 +773,13 @@ const PhotoDetailScreen = () => {
               },
             ]}
           >
-            <Text style={styles.displayName} numberOfLines={1}>
+            <Text
+              style={[
+                styles.displayName,
+                currentPhoto?.user?.nameColor && { color: currentPhoto.user.nameColor },
+              ]}
+              numberOfLines={1}
+            >
               {displayName || 'Unknown User'}
             </Text>
             <Text style={styles.timestamp}>{getTimeAgo(capturedAt)}</Text>
@@ -1012,7 +1020,13 @@ const PhotoDetailScreen = () => {
                   },
                 ]}
               >
-                <Text style={styles.displayName} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.displayName,
+                    snapshotRef.current.nameColor && { color: snapshotRef.current.nameColor },
+                  ]}
+                  numberOfLines={1}
+                >
                   {snapshotRef.current.displayName || 'Unknown User'}
                 </Text>
                 <Text style={styles.timestamp}>{getTimeAgo(snapshotRef.current.capturedAt)}</Text>
