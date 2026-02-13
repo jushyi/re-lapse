@@ -271,11 +271,20 @@ Plans:
 **Goal**: Manual testing checklists across all 8 feature areas (Auth, Profile, Camera/Photos, Feed, Stories, Social, Notifications, Settings) with pass/fail criteria and edge case identification
 **Depends on**: Phase 51
 **Research**: Unlikely (internal testing — reviewing own app features)
-**Plans**: TBD
+**Plans**: 10
 
 Plans:
 
-- [ ] 52-01: TBD
+- [x] 52-01: Fresh Install & New User Journey
+- [ ] 52-02: Multi-Device Tests
+- [ ] 52-03: Camera & Photo Lifecycle
+- [ ] 52-04: Feed & Stories
+- [ ] 52-05: Social Features
+- [ ] 52-06: Notifications
+- [ ] 52-07: Profile & Albums
+- [ ] 52-08: Settings & Account
+- [ ] 52-09: Edge Cases & Error States
+- [ ] 52-10: Production Build & Submit
 
 #### Phase 53: App Store Release
 
@@ -307,8 +316,8 @@ Plans:
 | 49. Automated Test Suite       | v1.0.0    | 8/8   | Complete    | 2026-02-12 |
 | 50. CI/CD Pipeline             | v1.0.0    | 3/3   | Complete    | 2026-02-12 |
 | 50.1 Fix Failing Test Suites   | v1.0.0    | 2/2   | Complete    | 2026-02-13 |
-| 51. iOS Release Preparation    | v1.0.0    | 7/10  | In progress | -          |
-| 52. Systematic UAT             | v1.0.0    | 0/?   | Not started | -          |
+| 51. iOS Release Preparation    | v1.0.0    | 10/10 | Complete    | 2026-02-13 |
+| 52. Systematic UAT             | v1.0.0    | 1/10  | In progress | -          |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |
 
 See [MILESTONES.md](MILESTONES.md) for milestone history.
