@@ -32,6 +32,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "PLACEHOLDER_SET_AFTER_ASC_SETUP"
+      }
+    }
   }
 }
