@@ -291,8 +291,8 @@ export const handleNotificationTapped = notification => {
           success: true,
           data: {
             type: 'friend_accepted',
-            screen: 'FriendsList',
-            params: {},
+            screen: 'OtherUserProfile',
+            params: { userId },
           },
         };
 

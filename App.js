@@ -111,6 +111,9 @@ export default function App() {
     } else if (screen === 'FriendsList') {
       // Navigate to FriendsList screen (opens on requests tab by default)
       navigationRef.current.navigate('FriendsList', params);
+    } else if (screen === 'OtherUserProfile') {
+      // Navigate to another user's profile (e.g., friend accepted notification)
+      navigationRef.current.navigate('OtherUserProfile', params);
     }
   };
 
