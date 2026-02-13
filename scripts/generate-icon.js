@@ -9,13 +9,13 @@ const FRAME_COLOR = 0x1e1e35ff; // Dark indigo
 const ACCENT_COLOR = 0x00d4ffff; // Electric cyan
 const SECONDARY_COLOR = 0xff2d78ff; // Hot magenta
 
-// Film strip constants - EXTRA THICK
-const PERF_WIDTH = 250; // Extra thick film strip (250px)
-const PERF_HOLE_SIZE = 100; // Larger perforation holes (scaled proportionally)
-const PERF_SPACING = 150; // Space between perforations (scaled proportionally)
+// Film strip constants - THICK
+const PERF_WIDTH = 175; // Thick film strip (175px)
+const PERF_HOLE_SIZE = 90; // Larger perforation holes
+const PERF_SPACING = 105; // Space between perforations
 
-// Pixel size for blocky F
-const PIXEL_SIZE = 80; // Size of each "pixel" box in the F (4x larger blocks)
+// Pixel size for solid chunky F
+const PIXEL_SIZE = 100; // Size of each solid block in the F (chunky)
 
 async function generateIcon() {
   console.log('Creating icon canvas...');
@@ -72,8 +72,8 @@ async function generateIcon() {
     }
   }
 
-  console.log('Drawing pixelated retro F letter...');
-  // Draw pixelated "F" - made of larger boxes (consolidated 4x4 blocks)
+  console.log('Drawing solid chunky F letter...');
+  // Draw solid "F" - chunky retro letter
   // F pattern: 5 blocks wide x 8 blocks tall
   const fPattern = [
     [1, 1, 1, 1, 1], // Top bar (full width)
@@ -92,13 +92,20 @@ async function generateIcon() {
   const fStartY = Math.floor((SIZE - patternHeight * PIXEL_SIZE) / 2);
   const fStartX = Math.floor((SIZE - patternWidth * PIXEL_SIZE) / 2);
 
-  // Draw each pixel as a box
+  // Draw each block as solid filled rectangle
   for (let row = 0; row < patternHeight; row++) {
     for (let col = 0; col < patternWidth; col++) {
       if (fPattern[row][col] === 1) {
         const pixelY = fStartY + row * PIXEL_SIZE;
         const pixelX = fStartX + col * PIXEL_SIZE;
-        drawPixelBox(image, pixelX, pixelY, PIXEL_SIZE, ACCENT_COLOR, FRAME_COLOR);
+        // Fill solid rectangle
+        for (let y = pixelY; y < pixelY + PIXEL_SIZE; y++) {
+          for (let x = pixelX; x < pixelX + PIXEL_SIZE; x++) {
+            if (y >= 0 && y < SIZE && x >= 0 && x < SIZE) {
+              image.setPixelColor(ACCENT_COLOR, x, y);
+            }
+          }
+        }
       }
     }
   }
@@ -123,7 +130,7 @@ async function generateIcon() {
   console.log('✓ Generated assets/splash.png (1024x1024)');
 
   console.log('\n✓ Icon generation complete!');
-  console.log('Pixelated film strip with blocky retro F design created.');
+  console.log('Film strip with solid chunky retro F design created.');
 }
 
 // Draw a single pixel box with border
