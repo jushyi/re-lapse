@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const { initializeApp, getApps, getApp } = require('firebase-admin/app');
 const { initializeFirestore } = require('firebase-admin/firestore');
 const logger = require('./logger');
+const nodemailer = require('nodemailer');
 const {
   validateOrNull,
   DarkroomDocSchema,
@@ -88,6 +89,25 @@ function formatReactionSummary(reactions) {
     .filter(([emoji, count]) => count > 0)
     .map(([emoji, count]) => `${emoji}×${count}`)
     .join(' ');
+}
+
+/**
+ * Get configured email transporter for sending emails via Gmail SMTP
+ * Credentials and support email are stored in Firebase Functions config:
+ * - smtp.email: Gmail address for SMTP auth
+ * - smtp.password: Gmail app password
+ * - support.email: Destination email for reports
+ * @returns {nodemailer.Transporter} - Configured nodemailer transporter
+ */
+function getTransporter() {
+  const config = functions.config();
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: config.smtp.email,
+      pass: config.smtp.password,
+    },
+  });
 }
 
 /**
