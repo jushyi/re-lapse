@@ -105,33 +105,41 @@ export default function App() {
 
       logger.info('Navigation ready, executing navigation', { screen, attempts });
 
-      if (screen === 'Camera') {
-        // Navigate to Camera tab with all params (openDarkroom, etc.)
-        // First navigate to ensure we're on the right tab
-        navigationRef.current.navigate('MainTabs', { screen: 'Camera' });
-        // Then set params after a small delay to ensure the screen is focused
-        // This works around React Navigation's nested navigator param propagation issue
-        setTimeout(() => {
+      // Extra delay on cold start to ensure MainTabs is mounted
+      const executeNavigation = () => {
+        logger.info('App: Executing navigation to', { screen, params });
+
+        if (screen === 'Camera') {
+          // Navigate to Camera tab with all params (openDarkroom, etc.)
+          // First navigate to ensure we're on the right tab
+          navigationRef.current.navigate('MainTabs', { screen: 'Camera' });
+          // Then set params after a small delay to ensure the screen is focused
+          // This works around React Navigation's nested navigator param propagation issue
+          setTimeout(() => {
+            navigationRef.current.navigate('MainTabs', {
+              screen: 'Camera',
+              params: params,
+            });
+          }, 100);
+        } else if (screen === 'Feed') {
+          // Navigate to Feed tab with params (e.g., highlightUserId for story notifications)
           navigationRef.current.navigate('MainTabs', {
-            screen: 'Camera',
+            screen: 'Feed',
             params: params,
           });
-        }, 100);
-      } else if (screen === 'Feed') {
-        // Navigate to Feed tab with params (e.g., highlightUserId for story notifications)
-        navigationRef.current.navigate('MainTabs', {
-          screen: 'Feed',
-          params: params,
-        });
-      } else if (screen === 'Profile') {
-        navigationRef.current.navigate('MainTabs', { screen });
-      } else if (screen === 'FriendsList') {
-        // Navigate to FriendsList screen (opens on requests tab by default)
-        navigationRef.current.navigate('FriendsList', params);
-      } else if (screen === 'OtherUserProfile') {
-        // Navigate to another user's profile (e.g., friend accepted notification)
-        navigationRef.current.navigate('OtherUserProfile', params);
-      }
+        } else if (screen === 'Profile') {
+          navigationRef.current.navigate('MainTabs', { screen });
+        } else if (screen === 'FriendsList') {
+          // Navigate to FriendsList screen (opens on requests tab by default)
+          navigationRef.current.navigate('FriendsList', params);
+        } else if (screen === 'OtherUserProfile') {
+          // Navigate to another user's profile (e.g., friend accepted notification)
+          navigationRef.current.navigate('OtherUserProfile', params);
+        }
+      };
+
+      // Add small delay to ensure app is fully initialized (especially on cold start)
+      setTimeout(executeNavigation, attempts > 10 ? 500 : 0);
     };
 
     // Start attempting navigation
@@ -203,7 +211,11 @@ export default function App() {
 
     // Listener for when user taps a notification (background/killed-app)
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      logger.info('App: Notification response received', {
+        data: response.notification.request.content.data,
+      });
       const navigationData = handleNotificationTapped(response.notification);
+      logger.info('App: Navigation data from handler', { navigationData });
       navigateToNotification(navigationData);
     });
 
