@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 51 of 53 (iOS Release Preparation)
-Plan: 9 of 10 in current phase
+Plan: 10 of 10 in current phase (partial - Tasks 2-4 deferred to UAT)
 Status: In progress
-Last activity: 2026-02-13 — Completed 51-09 (App Store Connect Setup)
+Last activity: 2026-02-13 — Completed 51-10 (partial - Cloud Functions only)
 
 Progress: ████████████ 12/13 (v1.0.0 phases)
 
@@ -75,6 +75,7 @@ See PROJECT.md Key Decisions table for full history.
 | 51-09 | EU trader status: Non-Trader                              | Individual developer, not registered business                       |
 | 51-09 | Age rating: 12+                                           | User-generated content with infrequent/mild profanity               |
 | 51-09 | Defer screenshot capture until pre-submission             | Allows UI polish before captures; infrastructure ready now          |
+| 51-10 | Defer production build/submit to UAT                      | Systematic testing on TestFlight before App Review submission       |
 
 ### Deferred Issues
 
@@ -101,5 +102,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 51-09 (App Store Connect Setup)
+Stopped at: Completed 51-10 (partial - Cloud Functions only; build/submit deferred to UAT)
 Resume file: None
