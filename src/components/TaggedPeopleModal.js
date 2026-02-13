@@ -124,7 +124,10 @@ const TaggedPeopleModal = ({ visible, onClose, taggedUserIds = [], onPersonPress
 
           {/* Name and username */}
           <View style={styles.textContainer}>
-            <Text style={styles.displayName} numberOfLines={1}>
+            <Text
+              style={[styles.displayName, item?.nameColor && { color: item.nameColor }]}
+              numberOfLines={1}
+            >
               {item.displayName || 'Unknown'}
             </Text>
             {item.username && (

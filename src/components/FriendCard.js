@@ -276,7 +276,10 @@ const FriendCard = ({
 
       {/* User info */}
       <View style={styles.userInfo}>
-        <Text style={styles.displayName} numberOfLines={1}>
+        <Text
+          style={[styles.displayName, user?.nameColor && { color: user.nameColor }]}
+          numberOfLines={1}
+        >
           {displayName || 'Unknown User'}
         </Text>
         <Text style={styles.username} numberOfLines={1}>

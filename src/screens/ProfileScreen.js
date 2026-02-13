@@ -892,7 +892,14 @@ const ProfileScreen = () => {
 
           {/* Profile Info Card */}
           <View style={styles.profileInfoCard}>
-            <Text style={styles.displayName}>{profileData?.displayName || 'New User'}</Text>
+            <Text
+              style={[
+                styles.displayName,
+                profileData?.nameColor && { color: profileData.nameColor },
+              ]}
+            >
+              {profileData?.displayName || 'New User'}
+            </Text>
             <Text style={styles.username}>@{profileData?.username || 'username'}</Text>
             <Text style={[styles.bio, !profileData?.bio && styles.bioPlaceholder]}>
               {profileData?.bio || 'No bio yet'}

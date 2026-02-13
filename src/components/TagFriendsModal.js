@@ -147,7 +147,10 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
 
           {/* Name and username */}
           <View style={styles.friendInfo}>
-            <Text style={styles.friendName} numberOfLines={1}>
+            <Text
+              style={[styles.friendName, item?.nameColor && { color: item.nameColor }]}
+              numberOfLines={1}
+            >
               {item.displayName || 'Unknown'}
             </Text>
             {item.username && (

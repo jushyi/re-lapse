@@ -281,7 +281,10 @@ const CommentRow = ({
             <View style={styles.contentContainer}>
               {/* Name Row with optional Author badge */}
               <View style={styles.nameRow}>
-                <Text style={styles.displayName} numberOfLines={1}>
+                <Text
+                  style={[styles.displayName, user?.nameColor && { color: user.nameColor }]}
+                  numberOfLines={1}
+                >
                   {displayName || 'Unknown User'}
                 </Text>
                 {isOwnerComment && (

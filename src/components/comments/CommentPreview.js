@@ -103,7 +103,14 @@ const CommentPreview = ({
       <Animated.View style={{ opacity: fadeAnim }}>
         <View style={styles.commentRow}>
           <Text style={styles.commentText} numberOfLines={compact ? 1 : 2}>
-            <Text style={styles.username}>{currentComment?.user?.displayName || 'User'}</Text>
+            <Text
+              style={[
+                styles.username,
+                currentComment?.user?.nameColor && { color: currentComment.user.nameColor },
+              ]}
+            >
+              {currentComment?.user?.displayName || 'User'}
+            </Text>
             <Text style={[styles.commentContent, isMediaOnly && styles.mediaIndicator]}>
               {' '}
               {displayText}
