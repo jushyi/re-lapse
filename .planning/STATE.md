@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 51 of 53 (iOS Release Preparation)
-Plan: 1 of 10 in current phase
+Plan: 2 of 10 in current phase
 Status: In progress
-Last activity: 2026-02-13 — Completed 51-01-PLAN.md
+Last activity: 2026-02-13 — Completed 51-02-PLAN.md
 
 Progress: ████████████ 12/13 (v1.0.0 phases)
 
@@ -62,6 +62,9 @@ See PROJECT.md Key Decisions table for full history.
 | 50.1  | Sequential test runner (&&) not Jest projects             | Two suites have incompatible presets (jest-expo vs node)            |
 | 50.1  | Local service mocks, not global for block/album           | Global mocks break those services' own test suites                  |
 | 50.1  | Prioritize service tests over integration tests           | Service tests verify core logic; integration test failures deferred |
+| 51    | Bundle ID rebrand: com.spoodsjs.rewind → flick            | Production Firebase setup + App Store release preparation           |
+| 51    | EAS env vars for Firebase project switching               | Build profiles set GOOGLE_SERVICES_PLIST path deterministically     |
+| 51    | Firebase region us-central1 for production                | Default region, best availability, lowest cost (cannot change)      |
 
 ### Deferred Issues
 
@@ -88,5 +91,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 50.1-02-PLAN.md
+Stopped at: Completed 51-02-PLAN.md
 Resume file: None
