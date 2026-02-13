@@ -259,7 +259,7 @@ Plans:
 - [x] 51-02: Production Firebase Environment Setup (separate project, EAS profile switching)
 - [x] 51-03: app.json & eas.json Production Configuration (privacy manifests, APS, supportsTablet)
 - [x] 51-04: Domain & Support Infrastructure (domain registration, email, in-app links)
-- [ ] 51-05: Report Email Routing (Cloud Function to email reports)
+- [x] 51-05: Report Email Routing (Cloud Function to email reports)
 - [ ] 51-06: Giphy Production Key & Attribution
 - [ ] 51-07: Contributions Page UI & IAP Integration (pitch, tiers, color picker)
 - [ ] 51-08: Name Color Perk — Storage & Display (contributor colors app-wide)
@@ -307,7 +307,7 @@ Plans:
 | 49. Automated Test Suite       | v1.0.0    | 8/8   | Complete    | 2026-02-12 |
 | 50. CI/CD Pipeline             | v1.0.0    | 3/3   | Complete    | 2026-02-12 |
 | 50.1 Fix Failing Test Suites   | v1.0.0    | 2/2   | Complete    | 2026-02-13 |
-| 51. iOS Release Preparation    | v1.0.0    | 1/10  | In progress | -          |
+| 51. iOS Release Preparation    | v1.0.0    | 5/10  | In progress | -          |
 | 52. Systematic UAT             | v1.0.0    | 0/?   | Not started | -          |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |
 
