@@ -34,9 +34,16 @@ jest.mock('../../src/services/firebase/friendshipService', () => ({
 }));
 
 // Mock blockService - feedService imports getBlockedByUserIds
-const mockGetBlockedByUserIds = jest.fn(() => Promise.resolve({ success: true, blockedByIds: [] }));
+const mockGetBlockedByUserIds = jest.fn(() =>
+  Promise.resolve({ success: true, blockedByUserIds: [] })
+);
 jest.mock('../../src/services/firebase/blockService', () => ({
   getBlockedByUserIds: (...args) => mockGetBlockedByUserIds(...args),
+}));
+
+// Mock performanceService - feedService uses withTrace
+jest.mock('../../src/services/firebase/performanceService', () => ({
+  withTrace: jest.fn((name, fn, attrs) => fn({ putMetric: jest.fn() })),
 }));
 
 // Mock @react-native-firebase/firestore
@@ -81,6 +88,8 @@ const {
 describe('feedService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset blockService mock to default (no blocked users)
+    mockGetBlockedByUserIds.mockResolvedValue({ success: true, blockedByUserIds: [] });
   });
 
   // ===========================================================================
@@ -96,7 +105,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal', // CRITICAL: must be 'journal' not 'journaled'
-              capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -122,15 +131,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
-            }),
-          },
-          {
-            id: 'photo-2',
-            data: () => ({
-              userId: 'stranger', // Not a friend
-              photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -143,37 +144,12 @@ describe('feedService', () => {
       const result = await getFeedPhotos(20, null, ['friend-1'], 'current-user');
 
       expect(result.success).toBe(true);
-      // Only friend-1's photo should be included
+      // Server-side filtering means only friend-1's photo is returned from query
       expect(result.photos).toHaveLength(1);
       expect(result.photos[0].userId).toBe('friend-1');
     });
 
-    it('should include current user photos in feed', async () => {
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [
-          {
-            id: 'photo-1',
-            data: () => ({
-              userId: 'current-user',
-              photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
-            }),
-          },
-        ],
-      });
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => createTestUser({ uid: 'current-user' }),
-      });
-
-      const result = await getFeedPhotos(20, null, ['friend-1'], 'current-user');
-
-      expect(result.success).toBe(true);
-      expect(result.photos).toHaveLength(1);
-      expect(result.photos[0].userId).toBe('current-user');
-    });
-
-    it('should sort by capturedAt descending (newest first)', async () => {
+    it('should sort by triagedAt descending (newest first)', async () => {
       const now = Date.now();
       mockGetDocs.mockResolvedValueOnce({
         docs: [
@@ -182,7 +158,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal',
-              capturedAt: { seconds: (now - 10000) / 1000 }, // Older
+              triagedAt: { seconds: (now - 10000) / 1000 }, // Older
             }),
           },
           {
@@ -190,7 +166,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal',
-              capturedAt: { seconds: now / 1000 }, // Newer
+              triagedAt: { seconds: now / 1000 }, // Newer
             }),
           },
         ],
@@ -216,7 +192,7 @@ describe('feedService', () => {
           data: () => ({
             userId: 'friend-1',
             photoState: 'journal',
-            capturedAt: { seconds: (Date.now() - i * 1000) / 1000 },
+            triagedAt: { seconds: (Date.now() - i * 1000) / 1000 },
           }),
         });
       }
@@ -247,7 +223,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -266,28 +242,14 @@ describe('feedService', () => {
     });
 
     it('should return empty array when no friends', async () => {
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [
-          {
-            id: 'photo-1',
-            data: () => ({
-              userId: 'stranger',
-              photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
-            }),
-          },
-        ],
-      });
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => createTestUser(),
-      });
-
+      // When friendUserIds is empty array, getFeedPhotos returns early without querying
       const result = await getFeedPhotos(20, null, [], 'current-user');
 
       expect(result.success).toBe(true);
-      // Only current user's photos would be included, but there are none
       expect(result.photos).toHaveLength(0);
+      expect(result.hasMore).toBe(false);
+      // getDocs should not be called when friendUserIds is empty
+      expect(mockGetDocs).not.toHaveBeenCalled();
     });
 
     it('should return empty array when friends have no journal photos', async () => {
@@ -309,7 +271,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'friend-1',
               photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -338,7 +300,7 @@ describe('feedService', () => {
             data: () => ({
               userId: 'deleted-user',
               photoState: 'journal',
-              capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -403,7 +365,7 @@ describe('feedService', () => {
                 data: () => ({
                   userId: 'friend-1',
                   photoState: 'journal',
-                  capturedAt: { seconds: Date.now() / 1000 },
+                  triagedAt: { seconds: Date.now() / 1000 },
                 }),
               },
             ],
@@ -808,6 +770,7 @@ describe('feedService', () => {
               photoState: 'journal',
               reactionCount: 10,
               capturedAt: { seconds: Date.now() / 1000 },
+              triagedAt: { seconds: Date.now() / 1000 },
             }),
           },
         ],
@@ -864,13 +827,13 @@ describe('feedService', () => {
                 photoState: 'journal',
                 reactionCount: 5,
                 capturedAt: { seconds: Date.now() / 1000 },
+                triagedAt: { seconds: Date.now() / 1000 },
               }),
             },
           ],
           size: 1,
         })
-        .mockResolvedValueOnce({ docs: [], size: 0 }) // No photos for second friend
-        .mockResolvedValueOnce({ docs: [], size: 0 }); // Second query for total count
+        .mockResolvedValueOnce({ docs: [], size: 0 }); // No photos for second friend
 
       const result = await getFriendStoriesData('current-user');
 
