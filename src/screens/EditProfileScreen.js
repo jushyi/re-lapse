@@ -15,6 +15,7 @@ import PixelIcon from '../components/PixelIcon';
 import PixelSpinner from '../components/PixelSpinner';
 import * as ImagePicker from 'expo-image-picker';
 import { Input } from '../components';
+import ColorPickerGrid from '../components/ColorPickerGrid';
 import { useAuth } from '../context/AuthContext';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../services/firebase/storageService';
 import {
@@ -54,6 +55,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [photoUri, setPhotoUri] = useState(null); // New photo selected
   const [photoRemoved, setPhotoRemoved] = useState(false); // Photo explicitly removed
+  const [nameColor, setNameColor] = useState(userProfile?.nameColor || null); // Name color for contributors
   const [saving, setSaving] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(true);
@@ -79,9 +81,10 @@ const EditProfileScreen = ({ navigation }) => {
       username.toLowerCase().trim() !== (userProfile?.username || '').toLowerCase();
     const bioChanged = bio.trim() !== (userProfile?.bio || '');
     const photoChanged = photoUri !== null || photoRemoved;
+    const nameColorChanged = nameColor !== (userProfile?.nameColor || null);
 
-    return displayNameChanged || usernameChanged || bioChanged || photoChanged;
-  }, [displayName, username, bio, photoUri, photoRemoved, userProfile]);
+    return displayNameChanged || usernameChanged || bioChanged || photoChanged || nameColorChanged;
+  }, [displayName, username, bio, photoUri, photoRemoved, nameColor, userProfile]);
 
   // Check if form is valid
   const isFormValid = useCallback(() => {
@@ -345,6 +348,11 @@ const EditProfileScreen = ({ navigation }) => {
         updates.username = username.toLowerCase().trim();
       }
 
+      // Include name color if user is a contributor and it changed
+      if (userProfile?.isContributor && nameColor !== (userProfile?.nameColor || null)) {
+        updates.nameColor = nameColor;
+      }
+
       // Update profile in Firestore
       const updateResult = await updateUserProfileService(user.uid, updates, userProfile?.username);
 
@@ -502,6 +510,24 @@ const EditProfileScreen = ({ navigation }) => {
               maxLength={240}
               showCharacterCount={true}
             />
+
+            {/* Name Color Section (Contributors Only) */}
+            {userProfile?.isContributor && (
+              <View style={styles.nameColorSection}>
+                <View style={styles.nameColorHeader}>
+                  <Text style={styles.nameColorLabel}>Name Color</Text>
+                  {nameColor && (
+                    <View style={styles.colorPreview}>
+                      <View style={[styles.colorCircle, { backgroundColor: nameColor }]} />
+                    </View>
+                  )}
+                </View>
+                <ColorPickerGrid
+                  selectedColor={nameColor}
+                  onColorSelect={color => setNameColor(color)}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -607,6 +633,34 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     paddingTop: spacing.sm,
+  },
+  nameColorSection: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+  },
+  nameColorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  nameColorLabel: {
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
+  },
+  colorPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  colorCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.border.default,
   },
 });
 
