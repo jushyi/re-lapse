@@ -9,25 +9,25 @@ const FRAME_COLOR = 0x1e1e35ff; // Dark indigo
 const ACCENT_COLOR = 0x00d4ffff; // Electric cyan
 const SECONDARY_COLOR = 0xff2d78ff; // Hot magenta
 
-// Film strip constants
-const PERF_WIDTH = 60; // Width of perforation strip on each side
-const PERF_HOLE_SIZE = 32;
-const PERF_SPACING = 52; // Space between perforations
+// Film strip constants - THICKER
+const PERF_WIDTH = 100; // Increased from 60 - thicker film strip
+const PERF_HOLE_SIZE = 40; // Larger perforation holes
+const PERF_SPACING = 60; // Space between perforations
+
+// Pixel size for blocky F
+const PIXEL_SIZE = 20; // Size of each "pixel" box in the F
 
 async function generateIcon() {
   console.log('Creating icon canvas...');
-  // Create base image with dark background
   const image = new Jimp({ width: SIZE, height: SIZE, color: BG_COLOR });
 
-  console.log('Drawing film strip perforations...');
+  console.log('Drawing thicker film strip perforations...');
   // Draw film strip perforations on left and right
-  // Left strip
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < PERF_WIDTH; x++) {
       image.setPixelColor(FRAME_COLOR, x, y);
     }
   }
-  // Right strip
   for (let y = 0; y < SIZE; y++) {
     for (let x = SIZE - PERF_WIDTH; x < SIZE; x++) {
       image.setPixelColor(FRAME_COLOR, x, y);
@@ -66,74 +66,126 @@ async function generateIcon() {
   const centerEnd = SIZE - PERF_WIDTH;
   for (let y = 0; y < SIZE; y++) {
     for (let x = centerStart; x < centerEnd; x++) {
-      // Simple vertical gradient from cyan to magenta
       const t = y / SIZE;
       const color = blendColors(ACCENT_COLOR, SECONDARY_COLOR, Math.sin(t * Math.PI) * 0.3);
       image.setPixelColor(color, x, y);
     }
   }
 
-  console.log('Drawing retro F letter...');
-  // Draw retro "F" letter
-  const fWidth = 380;
-  const fHeight = 600;
-  const strokeWidth = 100;
-  const crossbarWidth = 300;
-  const crossbarHeight = 80;
+  console.log('Drawing pixelated retro F letter...');
+  // Draw pixelated "F" - made of boxes
+  // F pattern: 30 pixels wide x 50 pixels tall
+  const fPattern = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Top bar (20 wide)
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Vertical bar start
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], // Middle bar start
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], // Middle bar end
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
 
-  const fX = Math.floor((SIZE - fWidth) / 2);
-  const fY = Math.floor((SIZE - fHeight) / 2);
+  // Center the F pattern
+  const patternHeight = fPattern.length;
+  const patternWidth = fPattern[0].length;
+  const fStartY = Math.floor((SIZE - patternHeight * PIXEL_SIZE) / 2);
+  const fStartX = Math.floor((SIZE - patternWidth * PIXEL_SIZE) / 2);
 
-  // Vertical bar of F
-  drawRect(image, fX, fY, strokeWidth, fHeight, ACCENT_COLOR);
-
-  // Top horizontal bar
-  drawRect(image, fX, fY, fWidth, strokeWidth, ACCENT_COLOR);
-
-  // Middle crossbar
-  const crossbarY = fY + Math.floor(fHeight / 2 - crossbarHeight / 2 - 40);
-  drawRect(image, fX, crossbarY, crossbarWidth, crossbarHeight, ACCENT_COLOR);
-
-  console.log('Adding border details...');
-  // Add border/outline to F for depth
-  drawRectOutline(image, fX, fY, strokeWidth, fHeight, FRAME_COLOR, 4);
-  drawRectOutline(image, fX, fY, fWidth, strokeWidth, FRAME_COLOR, 4);
-  drawRectOutline(image, fX, crossbarY, crossbarWidth, crossbarHeight, FRAME_COLOR, 4);
+  // Draw each pixel as a box
+  for (let row = 0; row < patternHeight; row++) {
+    for (let col = 0; col < patternWidth; col++) {
+      if (fPattern[row][col] === 1) {
+        const pixelY = fStartY + row * PIXEL_SIZE;
+        const pixelX = fStartX + col * PIXEL_SIZE;
+        drawPixelBox(image, pixelX, pixelY, PIXEL_SIZE, ACCENT_COLOR, FRAME_COLOR);
+      }
+    }
+  }
 
   console.log('Saving icons...');
   // Save main icon
   await image.write('assets/icon.png');
   console.log('✓ Generated assets/icon.png (1024x1024)');
 
-  // Android adaptive icon is the same for this design
+  // Android adaptive icon
   await image.write('assets/adaptive-icon.png');
   console.log('✓ Generated assets/adaptive-icon.png (1024x1024)');
 
+  // Favicon (smaller version)
+  const favicon = image.clone();
+  await favicon.resize({ w: 48, h: 48 });
+  await favicon.write('assets/favicon.png');
+  console.log('✓ Generated assets/favicon.png (48x48)');
+
+  // Splash screen (same as icon but can be different if needed)
+  await image.write('assets/splash.png');
+  console.log('✓ Generated assets/splash.png (1024x1024)');
+
   console.log('\n✓ Icon generation complete!');
-  console.log('Film strip with retro F design created.');
+  console.log('Pixelated film strip with blocky retro F design created.');
 }
 
-// Helper function to draw a filled rectangle
-function drawRect(image, x, y, width, height, color) {
-  for (let py = y; py < y + height; py++) {
-    for (let px = x; px < x + width; px++) {
+// Draw a single pixel box with border
+function drawPixelBox(image, x, y, size, fillColor, borderColor) {
+  const borderWidth = 2;
+
+  // Draw fill
+  for (let py = y; py < y + size; py++) {
+    for (let px = x; px < x + size; px++) {
       if (py >= 0 && py < SIZE && px >= 0 && px < SIZE) {
-        image.setPixelColor(color, px, py);
+        image.setPixelColor(fillColor, px, py);
       }
     }
   }
-}
 
-// Helper function to draw rectangle outline
-function drawRectOutline(image, x, y, width, height, color, thickness) {
-  // Top border
-  drawRect(image, x - thickness, y - thickness, width + 2 * thickness, thickness, color);
-  // Bottom border
-  drawRect(image, x - thickness, y + height, width + 2 * thickness, thickness, color);
-  // Left border
-  drawRect(image, x - thickness, y, thickness, height, color);
-  // Right border
-  drawRect(image, x + width, y, thickness, height, color);
+  // Draw border
+  for (let py = y; py < y + size; py++) {
+    for (let px = x; px < x + borderWidth; px++) {
+      if (py >= 0 && py < SIZE && px >= 0 && px < SIZE) {
+        image.setPixelColor(borderColor, px, py);
+      }
+    }
+    for (let px = x + size - borderWidth; px < x + size; px++) {
+      if (py >= 0 && py < SIZE && px >= 0 && px < SIZE) {
+        image.setPixelColor(borderColor, px, py);
+      }
+    }
+  }
+  for (let px = x; px < x + size; px++) {
+    for (let py = y; py < y + borderWidth; py++) {
+      if (py >= 0 && py < SIZE && px >= 0 && px < SIZE) {
+        image.setPixelColor(borderColor, px, py);
+      }
+    }
+    for (let py = y + size - borderWidth; py < y + size; py++) {
+      if (py >= 0 && py < SIZE && px >= 0 && px < SIZE) {
+        image.setPixelColor(borderColor, px, py);
+      }
+    }
+  }
 }
 
 // Helper function to blend two colors (RGBA hex format)
