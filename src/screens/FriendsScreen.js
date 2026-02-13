@@ -1257,7 +1257,8 @@ const FriendsScreen = ({ navigation }) => {
     const keyExtractor = (item, index) => {
       if (item.type === 'header') return `header-${item.title}`;
       if (item.type === 'sync_prompt') return 'sync-prompt';
-      return item.data?.id || item.data?.userId || `item-${index}`;
+      // Include item type in key to prevent duplicates when same user appears in multiple sections
+      return `${item.type}-${item.data?.id || item.data?.userId || index}`;
     };
 
     return (
