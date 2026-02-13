@@ -760,6 +760,7 @@ export const getFriendStoriesData = async currentUserId => {
         username: userData.username || 'unknown',
         displayName: userData.displayName || 'Unknown User',
         profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+        nameColor: userData.nameColor || null,
       };
 
       // Map and sort photos by capturedAt ASCENDING (oldest first for timeline viewing)
@@ -797,6 +798,7 @@ export const getFriendStoriesData = async currentUserId => {
         username: userObj.username,
         displayName: userObj.displayName,
         profilePhotoURL: userObj.profilePhotoURL,
+        nameColor: userObj.nameColor,
         topPhotos: allPhotos, // All photos in chronological order (backwards compatible name)
         thumbnailURL, // Most recent photo for story card preview
         totalPhotoCount,

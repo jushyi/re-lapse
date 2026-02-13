@@ -134,6 +134,7 @@ const FriendsScreen = ({ navigation }) => {
               displayName: userData.displayName,
               username: userData.username,
               profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+              nameColor: userData.nameColor,
             };
           }
           return null;
@@ -191,6 +192,7 @@ const FriendsScreen = ({ navigation }) => {
                 displayName: userData.displayName,
                 username: userData.username,
                 profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+                nameColor: userData.nameColor,
               };
             }
             return null;
@@ -211,6 +213,7 @@ const FriendsScreen = ({ navigation }) => {
                 displayName: userData.displayName,
                 username: userData.username,
                 profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+                nameColor: userData.nameColor,
               };
             }
             return null;
@@ -379,6 +382,7 @@ const FriendsScreen = ({ navigation }) => {
               displayName: userData.displayName,
               username: userData.username,
               profilePhotoURL: userData.profilePhotoURL || userData.photoURL,
+              nameColor: userData.nameColor,
             };
 
             const existingIdx = updated.findIndex(f => f.friendshipId === friendshipId);
