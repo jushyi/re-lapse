@@ -89,12 +89,21 @@ export default function App() {
     logger.info('App: Notification navigating', { screen, params });
 
     // Wait for navigation to be ready (important for cold starts)
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max wait time
     const attemptNavigation = () => {
+      attempts++;
       if (!navigationRef.current?.isReady()) {
-        logger.debug('Navigation not ready, retrying in 100ms');
+        if (attempts >= maxAttempts) {
+          logger.error('Navigation not ready after 5s, giving up', { screen, attempts });
+          return;
+        }
+        logger.debug('Navigation not ready, retrying', { attempts, screen });
         setTimeout(attemptNavigation, 100);
         return;
       }
+
+      logger.info('Navigation ready, executing navigation', { screen, attempts });
 
       if (screen === 'Camera') {
         // Navigate to Camera tab with all params (openDarkroom, etc.)
