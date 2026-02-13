@@ -258,7 +258,7 @@ Plans:
 - [x] 51-01: Rebrand to Flick (replace all Rewind references, new icon, updated splash)
 - [x] 51-02: Production Firebase Environment Setup (separate project, EAS profile switching)
 - [x] 51-03: app.json & eas.json Production Configuration (privacy manifests, APS, supportsTablet)
-- [ ] 51-04: Domain & Support Infrastructure (domain registration, email, in-app links)
+- [x] 51-04: Domain & Support Infrastructure (domain registration, email, in-app links)
 - [ ] 51-05: Report Email Routing (Cloud Function to email reports)
 - [ ] 51-06: Giphy Production Key & Attribution
 - [ ] 51-07: Contributions Page UI & IAP Integration (pitch, tiers, color picker)
