@@ -9,13 +9,13 @@ const FRAME_COLOR = 0x1e1e35ff; // Dark indigo
 const ACCENT_COLOR = 0x00d4ffff; // Electric cyan
 const SECONDARY_COLOR = 0xff2d78ff; // Hot magenta
 
-// Film strip constants - THICKER
-const PERF_WIDTH = 100; // Increased from 60 - thicker film strip
-const PERF_HOLE_SIZE = 40; // Larger perforation holes
-const PERF_SPACING = 60; // Space between perforations
+// Film strip constants - EXTRA THICK
+const PERF_WIDTH = 250; // Extra thick film strip (250px)
+const PERF_HOLE_SIZE = 100; // Larger perforation holes (scaled proportionally)
+const PERF_SPACING = 150; // Space between perforations (scaled proportionally)
 
 // Pixel size for blocky F
-const PIXEL_SIZE = 20; // Size of each "pixel" box in the F
+const PIXEL_SIZE = 80; // Size of each "pixel" box in the F (4x larger blocks)
 
 async function generateIcon() {
   console.log('Creating icon canvas...');
@@ -73,39 +73,17 @@ async function generateIcon() {
   }
 
   console.log('Drawing pixelated retro F letter...');
-  // Draw pixelated "F" - made of boxes
-  // F pattern: 30 pixels wide x 50 pixels tall
+  // Draw pixelated "F" - made of larger boxes (consolidated 4x4 blocks)
+  // F pattern: 5 blocks wide x 8 blocks tall
   const fPattern = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Top bar (20 wide)
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Vertical bar start
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], // Middle bar start
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], // Middle bar end
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1], // Top bar (full width)
+    [1, 0, 0, 0, 0], // Vertical bar
+    [1, 0, 0, 0, 0], // Vertical bar
+    [1, 1, 1, 1, 0], // Middle bar (slightly shorter)
+    [1, 0, 0, 0, 0], // Vertical bar
+    [1, 0, 0, 0, 0], // Vertical bar
+    [1, 0, 0, 0, 0], // Vertical bar
+    [1, 0, 0, 0, 0], // Vertical bar
   ];
 
   // Center the F pattern
