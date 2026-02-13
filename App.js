@@ -90,12 +90,12 @@ export default function App() {
 
     // Wait for navigation to be ready (important for cold starts)
     let attempts = 0;
-    const maxAttempts = 300; // 30 seconds max wait time (for Metro bundler in dev mode)
+    const maxAttempts = 600; // 60 seconds max wait time (for Metro bundler in dev mode)
     const attemptNavigation = () => {
       attempts++;
       if (!navigationRef.current?.isReady()) {
         if (attempts >= maxAttempts) {
-          logger.error('Navigation not ready after 30s, giving up', { screen, attempts });
+          logger.error('Navigation not ready after 60s, giving up', { screen, attempts });
           return;
         }
         logger.debug('Navigation not ready, retrying', { attempts, screen });
