@@ -41,7 +41,6 @@ import {
   archivePhoto,
   restorePhoto,
   updatePhotoTags,
-  subscribePhoto,
 } from '../services/firebase/photoService';
 import DropdownMenu from '../components/DropdownMenu';
 import { TagFriendsModal, TaggedPeopleModal } from '../components';
@@ -131,34 +130,6 @@ const PhotoDetailScreen = () => {
       return () => clearTimeout(timer);
     }
   }, []);
-
-  // Subscribe to current photo for real-time updates (tags, reactions, etc.)
-  useEffect(() => {
-    if (!contextPhoto?.id) return;
-
-    logger.debug('PhotoDetailScreen: Setting up photo subscription', { photoId: contextPhoto.id });
-
-    const unsubscribe = subscribePhoto(contextPhoto.id, result => {
-      if (result.success && result.photo) {
-        logger.debug('PhotoDetailScreen: Photo updated from subscription', {
-          photoId: result.photo.id,
-          tagCount: result.photo.taggedUserIds?.length || 0,
-        });
-
-        // Update current photo with latest data from Firestore
-        updateCurrentPhoto(result.photo);
-      } else {
-        logger.warn('PhotoDetailScreen: Photo subscription error', { error: result.error });
-      }
-    });
-
-    return () => {
-      logger.debug('PhotoDetailScreen: Cleaning up photo subscription', {
-        photoId: contextPhoto.id,
-      });
-      unsubscribe();
-    };
-  }, [contextPhoto?.id, updateCurrentPhoto]);
 
   const handleClose = useCallback(() => {
     // Call context close handler
@@ -1192,7 +1163,15 @@ const PhotoDetailScreen = () => {
         onClose={() => setTagModalVisible(false)}
         initialSelectedIds={currentPhoto?.taggedUserIds || []}
         onConfirm={async selectedIds => {
-          await updatePhotoTags(currentPhoto.id, selectedIds);
+          const result = await updatePhotoTags(currentPhoto.id, selectedIds);
+          if (result.success) {
+            // Update local state immediately so tags appear instantly
+            updateCurrentPhoto({
+              ...currentPhoto,
+              taggedUserIds: selectedIds,
+              taggedAt: new Date(),
+            });
+          }
           setTagModalVisible(false);
         }}
       />

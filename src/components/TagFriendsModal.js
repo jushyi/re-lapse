@@ -162,7 +162,7 @@ const TagFriendsModal = ({ visible, onClose, onConfirm, initialSelectedIds = [] 
 
           {/* Selection indicator */}
           <PixelIcon
-            name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+            name={isSelected ? 'checkmark-circle' : 'checkmark-circle-outline'}
             size={24}
             color={isSelected ? colors.interactive.primary : colors.icon.inactive}
             style={styles.checkIcon}
