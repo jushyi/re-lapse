@@ -1164,15 +1164,21 @@ const PhotoDetailScreen = () => {
         initialSelectedIds={currentPhoto?.taggedUserIds || []}
         onConfirm={async selectedIds => {
           const result = await updatePhotoTags(currentPhoto.id, selectedIds);
-          if (result.success) {
-            // Update context photo immediately so tags appear instantly
-            updateCurrentPhoto({
-              ...contextPhoto,
-              taggedUserIds: selectedIds,
-              taggedAt: new Date(),
-            });
-          }
           setTagModalVisible(false);
+
+          if (result.success) {
+            const count = selectedIds.length;
+            if (count === 0) {
+              Alert.alert('Tags removed', 'All tags have been removed from this photo');
+            } else {
+              Alert.alert(
+                'Tagged successfully',
+                `Tagged ${count} ${count === 1 ? 'person' : 'people'}. Reopen to see updated tags.`
+              );
+            }
+          } else {
+            Alert.alert('Error', result.error || 'Could not update tags');
+          }
         }}
       />
 
