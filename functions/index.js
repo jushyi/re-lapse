@@ -1459,12 +1459,13 @@ exports.sendCommentNotification = functions
             if (masterEnabled && commentsEnabled) {
               // Send notification via Expo Push API
               const title = '💬 New Comment';
-              const body = `${commenterName}: ${commentPreview}`;
+              const pushBody = `${commenterName} commented on your photo: ${commentPreview}`;
+              const inAppMessage = `commented on your photo: ${commentPreview}`;
 
               await sendPushNotification(
                 ownerData.fcmToken,
                 title,
-                body,
+                pushBody,
                 {
                   type: 'comment',
                   photoId,
@@ -1483,7 +1484,7 @@ exports.sendCommentNotification = functions
                 senderProfilePhotoURL: commenterProfilePhotoURL,
                 photoId: photoId,
                 commentId: commentId,
-                message: body,
+                message: inAppMessage,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 read: false,
               });

@@ -301,8 +301,8 @@ export const handleNotificationTapped = notification => {
           success: true,
           data: {
             type: 'reaction',
-            screen: 'Feed',
-            params: { photoId },
+            screen: 'Activity',
+            params: {},
           },
         };
 
@@ -311,8 +311,8 @@ export const handleNotificationTapped = notification => {
           success: true,
           data: {
             type: 'comment',
-            screen: 'Feed',
-            params: { photoId },
+            screen: 'Activity',
+            params: {},
           },
         };
 
@@ -321,8 +321,8 @@ export const handleNotificationTapped = notification => {
           success: true,
           data: {
             type: 'mention',
-            screen: 'Feed',
-            params: { photoId },
+            screen: 'Activity',
+            params: {},
           },
         };
 

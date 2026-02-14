@@ -24,9 +24,10 @@ import {
   isDarkroomReadyToReveal,
   scheduleNextReveal,
 } from './src/services/firebase/darkroomService';
-import { revealPhotos } from './src/services/firebase/photoService';
+import { revealPhotos, getPhotoById } from './src/services/firebase/photoService';
 import { initializeGiphy } from './src/components/comments/GifPicker';
 import { initPerformanceMonitoring } from './src/services/firebase/performanceService';
+import { usePhotoDetailActions } from './src/context/PhotoDetailContext';
 import logger from './src/utils/logger';
 import { GIPHY_API_KEY } from '@env';
 
@@ -135,6 +136,10 @@ export default function App() {
         } else if (screen === 'OtherUserProfile') {
           // Navigate to another user's profile (e.g., friend accepted notification)
           navigationRef.current.navigate('OtherUserProfile', params);
+        } else if (screen === 'Activity') {
+          // Navigate to Activity screen (notifications) for comment/mention/reaction
+          // ActivityScreen handles opening PhotoDetail with proper context
+          navigationRef.current.navigate('Activity', params);
         }
       };
 
