@@ -6,6 +6,7 @@
 !logger.js
 !validation.js
 !notifications/*.js
+!tasks/*.js
 !jest.config.js
 !__tests__/**/*.js
 

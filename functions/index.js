@@ -179,6 +179,16 @@ async function revealUserPhotos(userId, now) {
 }
 
 /**
+ * Cloud Function: HTTP handler for batched notification sends
+ * Triggered by Cloud Tasks after 30-second delay
+ * Idempotent handler for sending accumulated reaction notifications
+ */
+const { sendBatchedNotificationHandler } = require('./tasks/sendBatchedNotification');
+exports.sendBatchedNotification = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60 })
+  .https.onRequest(sendBatchedNotificationHandler);
+
+/**
  * Cloud Function: Process darkroom reveals on schedule
  * Runs every 2 minutes to check all darkrooms and reveal overdue photos
  * This ensures photos reveal at scheduled time even when app is closed
