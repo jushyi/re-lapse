@@ -2243,6 +2243,104 @@ exports.processScheduledPhotoDeletions = functions
   });
 
 /**
+ * Clean up old notification batches and in-app notifications
+ * Runs daily at 2 AM UTC to prevent storage accumulation
+ * - Deletes reactionBatches with status='sent' older than 7 days
+ * - Deletes notifications older than 30 days
+ * Uses batched writes to handle large volumes efficiently
+ */
+exports.cleanupOldNotifications = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 120 })
+  .pubsub.schedule('0 2 * * *') // 2 AM UTC daily
+  .onRun(async _context => {
+    const now = admin.firestore.Timestamp.now();
+    const sevenDaysAgo = new Date(now.toMillis() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.toMillis() - 30 * 24 * 60 * 60 * 1000);
+
+    logger.info('cleanupOldNotifications: Starting cleanup', {
+      checkTime: now.toDate(),
+      sevenDaysAgo,
+      thirtyDaysAgo,
+    });
+
+    let totalDeleted = 0;
+
+    try {
+      // Step 1: Clean up old reaction batches (7 days retention)
+      logger.debug('cleanupOldNotifications: Querying old reactionBatches');
+
+      const batchesSnapshot = await db
+        .collection('reactionBatches')
+        .where('status', '==', 'sent')
+        .where('sentAt', '<', admin.firestore.Timestamp.fromDate(sevenDaysAgo))
+        .limit(500) // Process in chunks to avoid timeouts
+        .get();
+
+      if (!batchesSnapshot.empty) {
+        logger.info('cleanupOldNotifications: Found old reactionBatches', {
+          count: batchesSnapshot.size,
+        });
+
+        const batchDelete = db.batch();
+        batchesSnapshot.docs.forEach(doc => batchDelete.delete(doc.ref));
+        await batchDelete.commit();
+
+        totalDeleted += batchesSnapshot.size;
+
+        logger.info('cleanupOldNotifications: Deleted old reactionBatches', {
+          deleted: batchesSnapshot.size,
+        });
+      } else {
+        logger.debug('cleanupOldNotifications: No old reactionBatches to delete');
+      }
+
+      // Step 2: Clean up old in-app notifications (30 days retention)
+      logger.debug('cleanupOldNotifications: Querying old notifications');
+
+      const notificationsSnapshot = await db
+        .collection('notifications')
+        .where('createdAt', '<', admin.firestore.Timestamp.fromDate(thirtyDaysAgo))
+        .limit(500) // Process in chunks
+        .get();
+
+      if (!notificationsSnapshot.empty) {
+        logger.info('cleanupOldNotifications: Found old notifications', {
+          count: notificationsSnapshot.size,
+        });
+
+        const notifBatch = db.batch();
+        notificationsSnapshot.docs.forEach(doc => notifBatch.delete(doc.ref));
+        await notifBatch.commit();
+
+        totalDeleted += notificationsSnapshot.size;
+
+        logger.info('cleanupOldNotifications: Deleted old notifications', {
+          deleted: notificationsSnapshot.size,
+        });
+      } else {
+        logger.debug('cleanupOldNotifications: No old notifications to delete');
+      }
+
+      logger.info('cleanupOldNotifications: Completed successfully', {
+        totalDeleted,
+      });
+
+      return {
+        success: true,
+        batchesDeleted: batchesSnapshot.size,
+        notificationsDeleted: notificationsSnapshot.size,
+        totalDeleted,
+      };
+    } catch (error) {
+      logger.error('cleanupOldNotifications: Fatal error', {
+        error: error.message,
+        stack: error.stack,
+      });
+      return { success: false, error: error.message };
+    }
+  });
+
+/**
  * Increment friendCount on both users when a friendship is accepted
  * Triggers on friendship document update (pending → accepted)
  */
