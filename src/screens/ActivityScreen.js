@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import PixelSpinner from '../components/PixelSpinner';
+import FriendCard from '../components/FriendCard';
 import {
   getFirestore,
   collection,
@@ -98,6 +99,7 @@ const ActivityScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState({});
 
   const fetchFriendRequests = useCallback(async () => {
     if (!user?.uid) return [];
@@ -212,7 +214,9 @@ const ActivityScreen = () => {
 
   const handleAccept = async requestId => {
     mediumImpact();
+    setActionLoading(prev => ({ ...prev, [requestId]: true }));
     const result = await acceptFriendRequest(requestId, user.uid);
+    setActionLoading(prev => ({ ...prev, [requestId]: false }));
     if (result.success) {
       setFriendRequests(prev => prev.filter(r => r.id !== requestId));
     } else {
@@ -222,7 +226,9 @@ const ActivityScreen = () => {
 
   const handleDecline = async requestId => {
     mediumImpact();
+    setActionLoading(prev => ({ ...prev, [requestId]: true }));
     const result = await declineFriendRequest(requestId, user.uid);
+    setActionLoading(prev => ({ ...prev, [requestId]: false }));
     if (result.success) {
       setFriendRequests(prev => prev.filter(r => r.id !== requestId));
     } else {
@@ -338,37 +344,24 @@ const ActivityScreen = () => {
     const { otherUser } = item;
     if (!otherUser) return null;
 
+    // Transform otherUser to match FriendCard's expected user shape
+    const user = {
+      userId: otherUser.id,
+      displayName: otherUser.displayName,
+      username: otherUser.username,
+      profilePhotoURL: otherUser.profilePhotoURL,
+    };
+
     return (
-      <View style={styles.requestItem}>
-        <TouchableOpacity
-          onPress={() => handleAvatarPress(otherUser.id, otherUser.displayName)}
-          activeOpacity={0.7}
-        >
-          {otherUser.profilePhotoURL ? (
-            <Image source={{ uri: otherUser.profilePhotoURL }} style={styles.requestPhoto} />
-          ) : (
-            <View style={[styles.requestPhoto, styles.requestPhotoPlaceholder]}>
-              <Text style={styles.requestPhotoText}>
-                {otherUser.displayName?.[0]?.toUpperCase() || '?'}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <View style={styles.requestInfo}>
-          <Text style={styles.requestName} numberOfLines={1}>
-            {otherUser.displayName || otherUser.username}
-          </Text>
-          <Text style={styles.requestSubtext}>wants to be friends</Text>
-        </View>
-        <View style={styles.requestActions}>
-          <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.id)}>
-            <PixelIcon name="checkmark" size={18} color={colors.icon.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item.id)}>
-            <PixelIcon name="close" size={18} color={colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <FriendCard
+        user={user}
+        relationshipStatus="pending_received"
+        friendshipId={item.id}
+        onAccept={handleAccept}
+        onDeny={handleDecline}
+        loading={actionLoading[item.id]}
+        onPress={() => handleAvatarPress(otherUser.id, otherUser.displayName)}
+      />
     );
   };
 
@@ -565,66 +558,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
-  },
-  requestItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  requestPhoto: {
-    width: layout.dimensions.avatarMedium + 4,
-    height: layout.dimensions.avatarMedium + 4,
-    borderRadius: layout.borderRadius.round,
-    marginRight: spacing.sm,
-  },
-  requestPhotoPlaceholder: {
-    backgroundColor: colors.background.tertiary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  requestPhotoText: {
-    fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.bodyBold,
-    color: colors.text.secondary,
-  },
-  requestInfo: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  requestName: {
-    fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.bodyBold,
-    color: colors.text.primary,
-  },
-  requestSubtext: {
-    fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  requestActions: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  acceptButton: {
-    backgroundColor: colors.interactive.primary,
-    width: 36,
-    height: 36,
-    borderRadius: layout.borderRadius.round,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  declineButton: {
-    backgroundColor: colors.background.tertiary,
-    width: 36,
-    height: 36,
-    borderRadius: layout.borderRadius.round,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   notificationItem: {
     flexDirection: 'row',
