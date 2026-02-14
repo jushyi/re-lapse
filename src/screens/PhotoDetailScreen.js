@@ -1221,10 +1221,8 @@ const PhotoDetailScreen = () => {
 
       {/* Toast notification */}
       {toastVisible && (
-        <Animated.View
-          style={[styles.toast, { opacity: toastOpacity, bottom: insets.bottom + 100 }]}
-        >
-          <PixelIcon name="checkmark-circle" size={20} color={colors.status.ready} />
+        <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+          <PixelIcon name="checkmark-circle" size={20} color="#FFFFFF" />
           <Text style={styles.toastText}>{toastMessage}</Text>
         </Animated.View>
       )}
