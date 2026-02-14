@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 52 of 53 (Systematic UAT)
-Plan: 2 of 10 in current phase
+Phase: 52.2 of 53 (Photo Tagging Lag Fix)
+Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-02-13 — Completed 52-02 (Multi-Device Tests) — 13 inline fixes, 2 deferred issues
+Last activity: 2026-02-14 — Completed 52.2-01 (Photo Tagging Lag Fix) — ISS-016 resolved
 
-Progress: ████████████░ 12/13 (v1.0.0 phases)
+Progress: █████████████ 13/13 (v1.0.0 phases)
 
 ## Performance Metrics
 
@@ -86,10 +86,9 @@ See PROJECT.md Key Decisions table for full history.
 ~~ISS-012: Friends screen N+1 query pattern causes slow initial load~~ → Fixed in Phase 48-04
 ~~ISS-014: Profile navigation from PhotoDetail renders behind transparentModal~~ → Fixed in Phase 48.1
 ~~ISS-015: Reaction notification batching broken (Cloud Functions stateless instances causing duplicates)~~ → Fixed in Phase 52.1
+~~ISS-016: Photo tagging lag (tag doesn't update without feed refresh)~~ → Fixed in Phase 52.2
 
-**ISS-016:** Photo tagging lag (tag doesn't update without feed refresh) — Found in 52-02, defer to post-UAT
-
-**Closed:** ISS-001, ISS-002, ISS-003, ISS-004, ISS-005, ISS-006, ISS-007, ISS-008, ISS-011, ISS-012, ISS-013, ISS-014, ISS-015
+**Closed:** ISS-001, ISS-002, ISS-003, ISS-004, ISS-005, ISS-006, ISS-007, ISS-008, ISS-011, ISS-012, ISS-013, ISS-014, ISS-015, ISS-016
 
 ### Blockers/Concerns
 
@@ -106,11 +105,11 @@ None.
 - Phase 48.1 inserted after Phase 48: PhotoDetail Profile Navigation Fix — ISS-014 (URGENT)
 - Phase 50.1 inserted after Phase 50: Fix Failing Test Suites — 76 tests across 10 suites (URGENT)
 - Phase 52.1 inserted after Phase 52: Fix Reaction Notification Batching — ISS-015 (URGENT) — COMPLETE
-- Phase 52.2 inserted after Phase 52: Fix Photo Tagging Lag — ISS-016 (URGENT)
+- Phase 52.2 inserted after Phase 52: Fix Photo Tagging Lag — ISS-016 (URGENT) — COMPLETE
 
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 52.1-01 (Reaction Notification Batching Fix — replaced in-memory state with Firestore transactions and Cloud Tasks, ISS-015 resolved)
+Stopped at: Completed 52.2-01 (Photo Tagging Lag Fix — added subscribePhoto service, FlatList extraData, PhotoDetailScreen subscription, ISS-016 resolved)
 Resume file: None
-Next: Ready for 52-03 (Auth & Account Management) or 52.2 (Photo Tagging Lag Fix) or continue UAT
+Next: Ready for 52-03 (Camera & Photo Lifecycle) or continue UAT

@@ -310,7 +310,7 @@ Issue found during Plan 52-02 UAT testing. Cloud Functions are stateless - each 
 
 Plans:
 
-- [ ] 52.2-01: Debug and fix tag update real-time flow (investigate Firestore subscription, state updates, FlatList re-render, ensure immediate tag visibility)
+- [x] 52.2-01: Debug and fix tag update real-time flow (investigate Firestore subscription, state updates, FlatList re-render, ensure immediate tag visibility)
 
 **Details:**
 
@@ -349,7 +349,7 @@ Plans:
 | 51. iOS Release Preparation    | v1.0.0    | 10/10 | Complete    | 2026-02-13 |
 | 52. Systematic UAT             | v1.0.0    | 2/10  | In progress | -          |
 | 52.1 Reaction Notif Batching   | v1.0.0    | 1/1   | Complete    | 2026-02-14 |
-| 52.2 Photo Tagging Lag         | v1.0.0    | 0/1   | Not started | -          |
+| 52.2 Photo Tagging Lag         | v1.0.0    | 1/1   | Complete    | 2026-02-14 |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |
 
 See [MILESTONES.md](MILESTONES.md) for milestone history.
