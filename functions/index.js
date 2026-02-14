@@ -1056,20 +1056,17 @@ async function sendBatchedTagNotification(pendingKey) {
 }
 
 /**
+/**
  * Cloud Function: Send notification when someone is tagged in a photo
  * Triggered when photo document is updated with new taggedUserIds
- *
- * DEBOUNCING: Batches rapid tags from same tagger into single notification
- * - First tag starts 30-second window
- * - Subsequent tags extend window and aggregate
- * - After 30 seconds of inactivity, sends "Name tagged you in X photos"
- *
- * Tagging is fully implemented in Darkroom and Feed UIs.
+ * Sends notifications immediately (no debouncing)
  */
 exports.sendTaggedPhotoNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('photos/{photoId}')
   .onUpdate(async (change, context) => {
+    const { sendPushNotification } = require('./notifications/sender');
+
     try {
       const photoId = context.params.photoId;
       const before = change.before.data();
@@ -1103,75 +1100,22 @@ exports.sendTaggedPhotoNotification = functions
         return null;
       }
 
-      // The tagger is the photo owner
-      const photoOwnerId = after.userId;
+      const taggerId = after.userId;
 
-      // Cap tagged users, deduplicate, filter invalid entries and self-tags
+      // Filter and validate tagged user IDs
       const rawAfterTags = (after.taggedUserIds || []).slice(0, MAX_TAGS_PER_PHOTO);
       const validAfterTags = [...new Set(rawAfterTags)].filter(
-        id => typeof id === 'string' && id.length > 0 && id !== photoOwnerId
+        id => typeof id === 'string' && id.length > 0 && id !== taggerId
       );
-
-      if (rawAfterTags.length < (after.taggedUserIds || []).length) {
-        logger.warn('sendTaggedPhotoNotification: taggedUserIds capped', {
-          photoId,
-          total: (after.taggedUserIds || []).length,
-          capped: MAX_TAGS_PER_PHOTO,
-        });
-      }
-
-      // Check if taggedUserIds array has NEW entries
-      const beforeTaggedUserIds = before.taggedUserIds || [];
-      const afterTaggedUserIds = validAfterTags;
 
       // Find newly added user IDs (in after but not in before)
-      const newlyTaggedUserIds = afterTaggedUserIds.filter(id => !beforeTaggedUserIds.includes(id));
-
-      // Handle tag removals: cancel pending debounce notifications for untagged users
-      const removedTaggedUserIds = beforeTaggedUserIds.filter(
-        id => !afterTaggedUserIds.includes(id)
-      );
-
-      for (const removedUserId of removedTaggedUserIds) {
-        const pendingKey = `${after.userId}_${removedUserId}`;
-        if (pendingTags[pendingKey]) {
-          clearTimeout(pendingTags[pendingKey].timeout);
-          // Remove the photoId from the pending batch
-          const idx = pendingTags[pendingKey].photoIds.indexOf(photoId);
-          if (idx !== -1) {
-            pendingTags[pendingKey].photoIds.splice(idx, 1);
-          }
-          // If no photos left in batch, delete the entire pending entry
-          if (pendingTags[pendingKey].photoIds.length === 0) {
-            delete pendingTags[pendingKey];
-            logger.debug(
-              'sendTaggedPhotoNotification: Cancelled pending notification (all photos untagged)',
-              {
-                pendingKey,
-                removedUserId,
-              }
-            );
-          } else {
-            // Restart debounce timer with remaining photos
-            pendingTags[pendingKey].timeout = setTimeout(
-              () => sendBatchedTagNotification(pendingKey),
-              TAG_DEBOUNCE_MS
-            );
-            logger.debug('sendTaggedPhotoNotification: Removed photo from pending batch', {
-              pendingKey,
-              removedPhotoId: photoId,
-              remainingCount: pendingTags[pendingKey].photoIds.length,
-            });
-          }
-        }
-      }
+      const beforeTaggedUserIds = before.taggedUserIds || [];
+      const newlyTaggedUserIds = validAfterTags.filter(id => !beforeTaggedUserIds.includes(id));
 
       if (newlyTaggedUserIds.length === 0) {
         logger.debug('sendTaggedPhotoNotification: No new tags, skipping', { photoId });
         return null;
       }
-
-      const taggerId = photoOwnerId;
 
       logger.info('sendTaggedPhotoNotification: Processing new tags', {
         photoId,
@@ -1190,89 +1134,80 @@ exports.sendTaggedPhotoNotification = functions
       const taggerName = taggerData.displayName || taggerData.username || 'Someone';
       const taggerProfilePhotoURL = taggerData.profilePhotoURL || taggerData.photoURL || null;
 
-      // Process each newly tagged user
+      // Send immediate notification to each newly tagged user
       for (const taggedUserId of newlyTaggedUserIds) {
-        // Skip if tagger is tagging themselves
-        if (taggedUserId === taggerId) {
-          logger.debug('sendTaggedPhotoNotification: Skipping self-tag', {
-            photoId,
-            taggerId,
-          });
-          continue;
-        }
-
-        // Get tagged user's FCM token and preferences
-        const taggedUserDoc = await db.collection('users').doc(taggedUserId).get();
-        if (!taggedUserDoc.exists) {
-          logger.debug('sendTaggedPhotoNotification: Tagged user not found', { taggedUserId });
-          continue;
-        }
-
-        const taggedUserData = taggedUserDoc.data();
-        const fcmToken = taggedUserData.fcmToken;
-
-        if (!fcmToken) {
-          logger.debug('sendTaggedPhotoNotification: Tagged user has no FCM token', {
-            taggedUserId,
-          });
-          continue;
-        }
-
-        // Check notification preferences
-        const prefs = taggedUserData.notificationPreferences || {};
-        const masterEnabled = prefs.enabled !== false;
-        // Tags preference controlled via NotificationSettingsScreen toggle
-        const tagsEnabled = prefs.tags !== false;
-
-        if (!masterEnabled || !tagsEnabled) {
-          logger.debug('sendTaggedPhotoNotification: Notifications disabled by preferences', {
-            taggedUserId,
-            masterEnabled,
-            tagsEnabled,
-          });
-          continue;
-        }
-
-        // Generate unique key for this tagger+tagged combination
-        const pendingKey = `${taggerId}_${taggedUserId}`;
-
-        // Check if we already have a pending entry for this key (debouncing)
-        if (pendingTags[pendingKey]) {
-          // Clear existing timeout
-          clearTimeout(pendingTags[pendingKey].timeout);
-
-          // Add photoId to batch if not already present
-          if (!pendingTags[pendingKey].photoIds.includes(photoId)) {
-            pendingTags[pendingKey].photoIds.push(photoId);
+        try {
+          // Get tagged user's FCM token and preferences
+          const taggedUserDoc = await db.collection('users').doc(taggedUserId).get();
+          if (!taggedUserDoc.exists) {
+            logger.debug('sendTaggedPhotoNotification: Tagged user not found', { taggedUserId });
+            continue;
           }
 
-          logger.debug('sendTaggedPhotoNotification: Extended debounce window', {
-            pendingKey,
-            photoCount: pendingTags[pendingKey].photoIds.length,
-          });
+          const taggedUserData = taggedUserDoc.data();
+          const fcmToken = taggedUserData.fcmToken;
 
-          // Set new timeout
-          pendingTags[pendingKey].timeout = setTimeout(
-            () => sendBatchedTagNotification(pendingKey),
-            TAG_DEBOUNCE_MS
-          );
-        } else {
-          // Create new pending entry
-          pendingTags[pendingKey] = {
-            photoIds: [photoId],
-            taggerId,
-            taggerName,
-            taggerProfilePhotoURL,
-            taggedUserId,
+          if (!fcmToken) {
+            logger.debug('sendTaggedPhotoNotification: Tagged user has no FCM token', {
+              taggedUserId,
+            });
+            continue;
+          }
+
+          // Check notification preferences
+          const prefs = taggedUserData.notificationPreferences || {};
+          const masterEnabled = prefs.enabled !== false;
+          const tagsEnabled = prefs.tags !== false;
+
+          if (!masterEnabled || !tagsEnabled) {
+            logger.debug('sendTaggedPhotoNotification: Notifications disabled by preferences', {
+              taggedUserId,
+              masterEnabled,
+              tagsEnabled,
+            });
+            continue;
+          }
+
+          // Send push notification immediately
+          const title = '🏷️ Tagged in Photo';
+          const body = `${taggerName} tagged you in a photo`;
+
+          await sendPushNotification(
             fcmToken,
-            timeout: setTimeout(() => sendBatchedTagNotification(pendingKey), TAG_DEBOUNCE_MS),
-          };
+            title,
+            body,
+            {
+              type: 'tagged',
+              photoId: photoId,
+              taggerId: taggerId,
+            },
+            taggedUserId
+          );
 
-          logger.debug('sendTaggedPhotoNotification: Started new debounce window', {
-            pendingKey,
-            photoId,
-            debounceMs: TAG_DEBOUNCE_MS,
+          // Write to notifications collection for in-app display
+          await db.collection('notifications').add({
+            recipientId: taggedUserId,
+            type: 'tagged',
+            senderId: taggerId,
+            senderName: taggerName,
+            senderProfilePhotoURL: taggerProfilePhotoURL || null,
+            photoId: photoId,
+            message: body,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
           });
+
+          logger.info('sendTaggedPhotoNotification: Notification sent', {
+            photoId,
+            taggerId,
+            taggedUserId,
+          });
+        } catch (error) {
+          logger.error('sendTaggedPhotoNotification: Error sending to user', {
+            taggedUserId,
+            error: error.message,
+          });
+          // Continue to next user even if one fails
         }
       }
 
@@ -1282,14 +1217,6 @@ exports.sendTaggedPhotoNotification = functions
       return null;
     }
   });
-
-/**
- * Cloud Function: Generate a signed URL for secure photo access
- * Callable function that requires authentication
- *
- * Uses v4 signing with 24-hour expiration. Even if a URL leaks,
- * it becomes invalid after 24 hours.
- */
 exports.getSignedPhotoUrl = onCall({ memory: '256MiB', timeoutSeconds: 30 }, async request => {
   const userId = request.auth?.uid;
 

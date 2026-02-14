@@ -214,11 +214,25 @@ const useCamera = () => {
     logger.debug('useCamera: route.params changed', { params: route.params });
     if (route.params?.openDarkroom) {
       logger.info('useCamera: Opening darkroom from notification deep link');
-      setIsBottomSheetVisible(true);
+
+      // Refresh darkroom counts first to get latest status (revealed vs developing)
+      // This prevents showing stale "developing" state when photos have been revealed
+      const refreshAndOpen = async () => {
+        if (user) {
+          logger.info('useCamera: Refreshing darkroom counts before opening sheet');
+          const counts = await getDarkroomCounts(user.uid);
+          logger.debug('useCamera: Fresh counts from notification', counts);
+          setDarkroomCounts(counts);
+        }
+        setIsBottomSheetVisible(true);
+      };
+
+      refreshAndOpen();
+
       // Clear the param to prevent re-opening on subsequent renders
       navigation.setParams({ openDarkroom: undefined });
     }
-  }, [route.params, navigation]);
+  }, [route.params, navigation, user]);
 
   // Debug: Log lens changes to verify switching works
   useEffect(() => {

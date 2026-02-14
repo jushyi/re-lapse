@@ -286,6 +286,36 @@ Plans:
 - [ ] 52-09: Edge Cases & Error States
 - [ ] 52-10: Production Build & Submit
 
+#### Phase 52.1: Fix Reaction Notification Batching - ISS-015 (INSERTED)
+
+**Goal**: Fix reaction notification batching broken by Cloud Functions stateless instances. Replace in-memory state with Firestore-based batching to properly batch rapid reactions into single notifications.
+**Depends on**: Phase 52 (Plan 52-02)
+**Research**: Unlikely (investigating existing Cloud Function batching logic)
+**Plans**: 1
+
+Plans:
+
+- [ ] 52.1-01: Implement Firestore-based reaction batching (replace in-memory pendingReactions with Firestore documents, 30s batching window, single notification per photo)
+
+**Details:**
+
+Issue found during Plan 52-02 UAT testing. Cloud Functions are stateless - each photo update triggers a separate instance with its own in-memory `pendingReactions` state, causing duplicate notifications instead of proper batching. Solution: Use Firestore to track pending reactions with timestamps, batch within 30-second windows, send single consolidated notification per photo.
+
+#### Phase 52.2: Fix Photo Tagging Lag - ISS-016 (INSERTED)
+
+**Goal**: Fix photo tagging lag where tags don't appear immediately without feed refresh. Debug real-time subscription and state update flow to ensure tags update instantly.
+**Depends on**: Phase 52 (Plan 52-02)
+**Research**: Likely (debugging real-time subscriptions and state flow)
+**Plans**: 1
+
+Plans:
+
+- [ ] 52.2-01: Debug and fix tag update real-time flow (investigate Firestore subscription, state updates, FlatList re-render, ensure immediate tag visibility)
+
+**Details:**
+
+Issue found during Plan 52-02 UAT testing. After tagging a user in a photo from feed or story view, the tag doesn't appear immediately - requires navigating away and refreshing to see the update. Root cause unknown, likely related to real-time subscription or state propagation. Must ensure tags update instantly across all views.
+
 #### Phase 53: App Store Release
 
 **Goal**: Build via EAS Build, submit via EAS Submit, pass App Review, publish publicly (no marketing — shared via direct link with friends/family). Post-release: verify CI/CD pipeline with a follow-up update, document future release playbook.
@@ -318,6 +348,8 @@ Plans:
 | 50.1 Fix Failing Test Suites   | v1.0.0    | 2/2   | Complete    | 2026-02-13 |
 | 51. iOS Release Preparation    | v1.0.0    | 10/10 | Complete    | 2026-02-13 |
 | 52. Systematic UAT             | v1.0.0    | 1/10  | In progress | -          |
+| 52.1 Reaction Notif Batching   | v1.0.0    | 0/1   | Not started | -          |
+| 52.2 Photo Tagging Lag         | v1.0.0    | 0/1   | Not started | -          |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |
 
 See [MILESTONES.md](MILESTONES.md) for milestone history.
