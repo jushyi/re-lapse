@@ -18,9 +18,6 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const app = getApps().length > 0 ? getApp() : initializeApp();
 const db = initializeFirestore(app, { preferRest: true });
 
-// Track pending reactions for debouncing: { "photoId_reactorId": { timeout, reactions, photoOwnerId, fcmToken, reactorName, reactorProfilePhotoURL } }
-const pendingReactions = {};
-
 /**
  * Varied notification templates for tagged photos (single tag)
  * Makes notifications feel human and not robotic
@@ -59,8 +56,8 @@ function getRandomTemplate(templates) {
   return templates[index];
 }
 
-// Debounce window in milliseconds (10 seconds)
-const REACTION_DEBOUNCE_MS = 10000;
+// Reaction batch window in milliseconds (30 seconds)
+const REACTION_BATCH_WINDOW_MS = 30000;
 
 // Abuse prevention limits
 const MAX_MENTIONS_PER_COMMENT = 10;
@@ -725,91 +722,20 @@ exports.sendFriendAcceptedNotification = functions
   });
 
 /**
- * Send the batched reaction notification after debounce window expires
- * @param {string} pendingKey - Key in pendingReactions object
- */
-async function sendBatchedReactionNotification(pendingKey) {
-  const { sendPushNotification } = require('./notifications/sender');
-  const pending = pendingReactions[pendingKey];
-  if (!pending) {
-    logger.debug('sendBatchedReactionNotification: No pending entry found for', pendingKey);
-    return;
-  }
-
-  const {
-    reactions,
-    photoOwnerId,
-    fcmToken,
-    reactorName,
-    reactorId,
-    reactorProfilePhotoURL,
-    photoId,
-  } = pending;
-
-  // Delete pending entry immediately to prevent duplicate sends
-  delete pendingReactions[pendingKey];
-
-  const reactionSummary = formatReactionSummary(reactions);
-  if (!reactionSummary) {
-    logger.debug('sendBatchedReactionNotification: No reactions to send for', pendingKey);
-    return;
-  }
-
-  const title = '❤️ New Reaction';
-  const body = `${reactorName} reacted ${reactionSummary} to your photo`;
-
-  logger.debug('sendBatchedReactionNotification: Sending batched notification', {
-    pendingKey,
-    reactorName,
-    reactions,
-    body,
-  });
-
-  // Send push notification
-  const result = await sendPushNotification(
-    fcmToken,
-    title,
-    body,
-    {
-      type: 'reaction',
-      photoId: photoId,
-    },
-    photoOwnerId
-  );
-
-  // Write to notifications collection for in-app display
-  await db.collection('notifications').add({
-    recipientId: photoOwnerId,
-    type: 'reaction',
-    senderId: reactorId,
-    senderName: reactorName,
-    senderProfilePhotoURL: reactorProfilePhotoURL || null,
-    photoId: photoId,
-    reactions: reactions,
-    message: body,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    read: false,
-  });
-
-  logger.debug('sendBatchedReactionNotification: Notification sent and stored', {
-    pendingKey,
-    result,
-  });
-}
-
-/**
  * Cloud Function: Send notification when someone reacts to user's photo
  * Triggered when photo document is updated with new reactions
  *
- * DEBOUNCING: Batches rapid reactions from same user into single notification
- * - First reaction starts 10-second window
- * - Subsequent reactions extend window and aggregate
- * - After 10 seconds of inactivity, sends "Name reacted 😂×2 ❤️×1 to your photo"
+ * BATCHING: Uses Firestore-based batching for stateless aggregation
+ * - Reactions stored in Firestore reactionBatches collection
+ * - Cloud Tasks schedule delayed sends after 30-second window
+ * - Multiple instances safely merge reactions via transactions
  */
 exports.sendReactionNotification = functions
   .runWith({ memory: '256MB', timeoutSeconds: 60 })
   .firestore.document('photos/{photoId}')
   .onUpdate(async (change, context) => {
+    const { addReactionToBatch } = require('./notifications/batching');
+
     try {
       const photoId = context.params.photoId;
       const before = change.before.data();
@@ -891,94 +817,15 @@ exports.sendReactionNotification = functions
         reactorId,
         reactionDiff,
         pendingKey,
-        hasPendingEntry: !!pendingReactions[pendingKey],
       });
 
-      // Check if we already have a pending entry for this key
-      if (pendingReactions[pendingKey]) {
-        // Clear existing timeout
-        clearTimeout(pendingReactions[pendingKey].timeout);
+      // Add reaction to Firestore batch (replaces in-memory batching)
+      await addReactionToBatch(photoId, reactorId, reactionDiff);
 
-        // Merge new reactions into existing batch
-        for (const [emoji, count] of Object.entries(reactionDiff)) {
-          pendingReactions[pendingKey].reactions[emoji] =
-            (pendingReactions[pendingKey].reactions[emoji] || 0) + count;
-        }
-
-        logger.debug('sendReactionNotification: Extended debounce window', {
-          pendingKey,
-          mergedReactions: pendingReactions[pendingKey].reactions,
-        });
-
-        // Set new timeout
-        pendingReactions[pendingKey].timeout = setTimeout(
-          () => sendBatchedReactionNotification(pendingKey),
-          REACTION_DEBOUNCE_MS
-        );
-
-        return null;
-      }
-
-      // New pending entry - fetch user data
-      // Get photo owner's FCM token
-      const ownerDoc = await db.collection('users').doc(photoOwnerId).get();
-
-      if (!ownerDoc.exists) {
-        logger.error('sendReactionNotification: Photo owner not found:', photoOwnerId);
-        return null;
-      }
-
-      const ownerData = ownerDoc.data();
-      const fcmToken = ownerData.fcmToken;
-
-      if (!fcmToken) {
-        logger.debug(
-          'sendReactionNotification: Photo owner has no FCM token, skipping:',
-          photoOwnerId
-        );
-        return null;
-      }
-
-      // Check notification preferences (enabled AND likes)
-      const prefs = ownerData.notificationPreferences || {};
-      const masterEnabled = prefs.enabled !== false;
-      const likesEnabled = prefs.likes !== false;
-
-      if (!masterEnabled || !likesEnabled) {
-        logger.debug('sendReactionNotification: Notifications disabled by user preferences', {
-          photoOwnerId,
-          masterEnabled,
-          likesEnabled,
-        });
-        return null;
-      }
-
-      // Get reactor's display name and profile photo
-      const reactorDoc = await db.collection('users').doc(reactorId).get();
-
-      const reactorData = reactorDoc.exists ? reactorDoc.data() : {};
-      const reactorName = reactorData.displayName || reactorData.username || 'Someone';
-      const reactorProfilePhotoURL = reactorData.profilePhotoURL || reactorData.photoURL || null;
-
-      // Create new pending entry
-      pendingReactions[pendingKey] = {
-        reactions: { ...reactionDiff },
-        photoOwnerId,
-        fcmToken,
-        reactorId,
-        reactorName,
-        reactorProfilePhotoURL,
+      logger.debug('sendReactionNotification: Added to Firestore batch', {
         photoId,
-        timeout: setTimeout(
-          () => sendBatchedReactionNotification(pendingKey),
-          REACTION_DEBOUNCE_MS
-        ),
-      };
-
-      logger.debug('sendReactionNotification: Started new debounce window', {
+        reactorId,
         pendingKey,
-        reactions: reactionDiff,
-        debounceMs: REACTION_DEBOUNCE_MS,
       });
 
       return null;
