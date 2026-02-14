@@ -232,4 +232,23 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+  // Toast notification
+  toast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.tertiary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: layout.borderRadius.xl,
+    gap: spacing.xs,
+    zIndex: 1000,
+  },
+  toastText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+  },
 });

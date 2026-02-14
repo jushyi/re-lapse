@@ -46,6 +46,7 @@ import DropdownMenu from '../components/DropdownMenu';
 import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
 import logger from '../utils/logger';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
 const PROGRESS_BAR_HORIZONTAL_PADDING = 8;
@@ -63,6 +64,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
  */
 const PhotoDetailScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // Get state and callbacks from context
   const {
@@ -108,6 +110,11 @@ const PhotoDetailScreen = () => {
   // Highlight fade animation for newly added emoji (1 second fade)
   const highlightOpacity = useRef(new Animated.Value(1)).current;
 
+  // Toast notification for tag success
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+
   // Photo menu state (for owner actions: delete, archive, restore)
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -137,6 +144,28 @@ const PhotoDetailScreen = () => {
     // Navigate back
     navigation.goBack();
   }, [contextClose, navigation]);
+
+  // Show toast notification
+  const showToast = useCallback(
+    message => {
+      setToastMessage(message);
+      setToastVisible(true);
+      Animated.sequence([
+        Animated.timing(toastOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1600),
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setToastVisible(false));
+    },
+    [toastOpacity]
+  );
 
   /**
    * Handle friend-to-friend transition with 3D cube animation
@@ -1169,12 +1198,9 @@ const PhotoDetailScreen = () => {
           if (result.success) {
             const count = selectedIds.length;
             if (count === 0) {
-              Alert.alert('Tags removed', 'All tags have been removed from this photo');
+              showToast('Tags removed');
             } else {
-              Alert.alert(
-                'Tagged successfully',
-                `Tagged ${count} ${count === 1 ? 'person' : 'people'}. Reopen to see updated tags.`
-              );
+              showToast(`Tagged ${count} ${count === 1 ? 'person' : 'people'}`);
             }
           } else {
             Alert.alert('Error', result.error || 'Could not update tags');
@@ -1192,6 +1218,16 @@ const PhotoDetailScreen = () => {
           contextAvatarPress?.(userId, userName);
         }}
       />
+
+      {/* Toast notification */}
+      {toastVisible && (
+        <Animated.View
+          style={[styles.toast, { opacity: toastOpacity, bottom: insets.bottom + 100 }]}
+        >
+          <PixelIcon name="checkmark-circle" size={20} color={colors.status.ready} />
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 };
