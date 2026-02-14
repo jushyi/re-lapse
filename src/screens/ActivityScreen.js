@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
 import PixelSpinner from '../components/PixelSpinner';
 import FriendCard from '../components/FriendCard';
@@ -93,6 +93,7 @@ const groupNotificationsByTime = notifs => {
  */
 const ActivityScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useAuth();
   const { openPhotoDetail } = usePhotoDetailActions();
   const [friendRequests, setFriendRequests] = useState([]);
@@ -132,6 +133,51 @@ const ActivityScreen = () => {
     }
     return [];
   }, [user?.uid]);
+
+  /**
+   * Handle deep link navigation from notifications
+   * Opens PhotoDetail modal when shouldOpenPhoto param is present
+   */
+  useEffect(() => {
+    const handleDeepLinkParams = async () => {
+      const params = route.params || {};
+      const { photoId, commentId, shouldOpenPhoto } = params;
+
+      if (!shouldOpenPhoto || !photoId) {
+        return;
+      }
+
+      logger.info('ActivityScreen: Opening photo from notification', { photoId, commentId });
+
+      // Fetch photo
+      const result = await getPhotoById(photoId);
+      if (!result.success) {
+        logger.error('ActivityScreen: Failed to fetch photo', { photoId, error: result.error });
+        navigation.setParams({ shouldOpenPhoto: undefined });
+        return;
+      }
+
+      // Open PhotoDetail modal
+      openPhotoDetail({
+        mode: 'feed',
+        photo: result.photo,
+        currentUserId: user?.uid,
+        initialShowComments: !!commentId,
+        targetCommentId: commentId || null,
+      });
+
+      navigation.navigate('PhotoDetail');
+
+      // Clear params to prevent re-opening on back navigation
+      navigation.setParams({
+        shouldOpenPhoto: undefined,
+        photoId: undefined,
+        commentId: undefined,
+      });
+    };
+
+    handleDeepLinkParams();
+  }, [route.params, navigation, openPhotoDetail, user?.uid]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.uid) return [];

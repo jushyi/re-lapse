@@ -76,6 +76,7 @@ const PhotoDetailScreen = () => {
     currentUserId: contextUserId,
     sourceRect: contextSourceRect,
     initialShowComments,
+    targetCommentId,
     showComments,
     setShowComments,
     handleReactionToggle,
@@ -1114,6 +1115,7 @@ const PhotoDetailScreen = () => {
         currentUserId={contextUserId}
         onAvatarPress={handleCommentAvatarPress}
         onCommentCountChange={handleCommentCountChange}
+        initialScrollToCommentId={targetCommentId}
       />
 
       {/* Custom Emoji Picker */}

@@ -302,7 +302,10 @@ export const handleNotificationTapped = notification => {
           data: {
             type: 'reaction',
             screen: 'Activity',
-            params: {},
+            params: {
+              photoId,
+              shouldOpenPhoto: true,
+            },
           },
         };
 
@@ -312,7 +315,11 @@ export const handleNotificationTapped = notification => {
           data: {
             type: 'comment',
             screen: 'Activity',
-            params: {},
+            params: {
+              photoId,
+              commentId,
+              shouldOpenPhoto: true,
+            },
           },
         };
 
@@ -322,7 +329,11 @@ export const handleNotificationTapped = notification => {
           data: {
             type: 'mention',
             screen: 'Activity',
-            params: {},
+            params: {
+              photoId,
+              commentId,
+              shouldOpenPhoto: true,
+            },
           },
         };
 
@@ -333,7 +344,10 @@ export const handleNotificationTapped = notification => {
           data: {
             type: 'tagged',
             screen: 'Activity',
-            params: {},
+            params: {
+              photoId,
+              shouldOpenPhoto: true,
+            },
           },
         };
 
