@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.text.secondary,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
   },
   header: {
     position: 'absolute',
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   },
   photoCount: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },

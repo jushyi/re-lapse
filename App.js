@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
 import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/silkscreen';
+import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
 import { colors } from './src/constants/colors';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
@@ -56,6 +57,8 @@ export default function App() {
     PressStart2P_400Regular,
     Silkscreen_400Regular,
     Silkscreen_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
   });
 
   /**

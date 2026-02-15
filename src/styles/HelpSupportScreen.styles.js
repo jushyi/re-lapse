@@ -60,7 +60,7 @@ export const styles = StyleSheet.create({
   reasonLabel: {
     flex: 1,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
   },
   checkmark: {
@@ -74,14 +74,14 @@ export const styles = StyleSheet.create({
     borderRadius: layout.borderRadius.md,
     padding: spacing.md,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
     minHeight: 120,
     textAlignVertical: 'top',
   },
   charCount: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     textAlign: 'right',
     marginTop: spacing.xs,

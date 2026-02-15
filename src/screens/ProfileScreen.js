@@ -1037,7 +1037,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.text.secondary,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
   },
   header: {
     position: 'absolute',
@@ -1123,7 +1123,7 @@ const styles = StyleSheet.create({
   },
   bio: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: colors.text.secondary,
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
   },
 });
 

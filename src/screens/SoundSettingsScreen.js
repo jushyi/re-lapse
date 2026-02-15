@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   toggleItemSubtitle: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
   },
   infoSection: {
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.tertiary,
     lineHeight: 20,
   },

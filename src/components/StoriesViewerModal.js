@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: 1,
   },

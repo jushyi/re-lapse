@@ -69,7 +69,7 @@ export const styles = StyleSheet.create({
   // Comment text
   commentText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
     lineHeight: 20,
     marginBottom: spacing.xs,
@@ -107,13 +107,13 @@ export const styles = StyleSheet.create({
   },
   dot: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.tertiary,
     marginHorizontal: 0, // No margin - replyButton paddingRight provides spacing
   },
   timestamp: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.tertiary,
     paddingLeft: 4,
   },
@@ -126,7 +126,7 @@ export const styles = StyleSheet.create({
   },
   likeCount: {
     fontSize: typography.size.xs,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: 2,
   },

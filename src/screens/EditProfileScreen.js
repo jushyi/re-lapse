@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   },
   usernameRestrictionHint: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.tertiary,
     marginTop: -spacing.xs,
     marginBottom: spacing.md,

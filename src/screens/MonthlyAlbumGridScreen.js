@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.text.secondary,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
   },
   emptyContainer: {
     flex: 1,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.text.secondary,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
   },
   header: {
     position: 'absolute',
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   },
   photoCount: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: 2,
   },

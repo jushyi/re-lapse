@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: spacing.md,
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
   },
   pitchContainer: {
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   pitchText: {
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
     lineHeight: 24,
   },
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   thankYouText: {
     flex: 1,
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     lineHeight: 20,
   },
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   tierPrice: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
   },
   colorPickerContainer: {
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   colorPickerDescription: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginBottom: spacing.lg,
   },

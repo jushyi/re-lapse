@@ -169,7 +169,11 @@ const SettingsScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.scrollView} bounces={false}>
+      <ScrollView
+        style={styles.scrollView}
+        bounces={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Sectioned Menu Items */}
         <View style={styles.menuContainer}>
           {sections.map(section => (
@@ -308,8 +312,8 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
-    color: colors.text.tertiary,
+    fontFamily: typography.fontFamily.readable,
+    color: colors.text.secondary,
   },
 });
 

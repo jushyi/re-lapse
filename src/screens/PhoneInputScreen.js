@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.xl,

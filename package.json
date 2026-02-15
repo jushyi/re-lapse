@@ -19,6 +19,7 @@
   "dependencies": {
     "@expo-google-fonts/press-start-2p": "^0.4.1",
     "@expo-google-fonts/silkscreen": "^0.4.2",
+    "@expo-google-fonts/space-mono": "^0.4.2",
     "@giphy/react-native-sdk": "^5.0.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-firebase/app": "^23.8.6",

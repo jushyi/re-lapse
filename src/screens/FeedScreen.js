@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   footerText: {
     marginLeft: spacing.sm,
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
   },
   emptyContainer: {
@@ -1337,7 +1337,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,

@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: COLORS.textSecondary,
   },
   // Card stack container
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
   },
   developingText: {
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,

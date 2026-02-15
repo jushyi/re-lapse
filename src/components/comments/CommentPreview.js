@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
     lineHeight: 18,
   },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   commentContent: {
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
   },
   mediaIndicator: {
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },

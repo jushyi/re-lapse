@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   },
   notifMessage: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.primary,
     lineHeight: 20,
   },
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   },
   notifTime: {
     fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.tertiary,
   },
   emptyContainer: {
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
+    fontFamily: typography.fontFamily.readable,
     color: colors.text.secondary,
     textAlign: 'center',
     marginTop: spacing.xs,
