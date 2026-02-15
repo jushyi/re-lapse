@@ -21,6 +21,7 @@ import { SwipeablePhotoCard, TagFriendsModal } from '../components';
 import { useScreenTrace } from '../hooks/useScreenTrace';
 import { styles } from '../styles/DarkroomScreen.styles';
 import { colors } from '../constants/colors';
+import { spacing } from '../constants/spacing';
 import logger from '../utils/logger';
 
 const DarkroomScreen = () => {
@@ -291,7 +292,12 @@ const DarkroomScreen = () => {
           <View style={styles.triageButtonBar}>
             {/* Archive Button */}
             <TouchableOpacity style={styles.archiveButton} onPress={handleArchiveButton}>
-              <Text style={styles.triageButtonIcon}>{'☐'}</Text>
+              <PixelIcon
+                name="archive-outline"
+                size={18}
+                color={colors.text.primary}
+                style={{ marginRight: spacing.xxs }}
+              />
               <Text style={styles.archiveButtonText}>Archive</Text>
             </TouchableOpacity>
 
