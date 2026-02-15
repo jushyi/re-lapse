@@ -66,6 +66,13 @@ const EditProfileScreen = ({ navigation }) => {
   const [daysUntilUsernameChange, setDaysUntilUsernameChange] = useState(0);
 
   const usernameCheckTimeout = useRef(null);
+  const scrollViewRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
 
   // Check username restriction on mount
   useEffect(() => {
@@ -429,6 +436,7 @@ const EditProfileScreen = ({ navigation }) => {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -525,6 +533,7 @@ const EditProfileScreen = ({ navigation }) => {
                 <ColorPickerGrid
                   selectedColor={nameColor}
                   onColorSelect={color => setNameColor(color)}
+                  onExpandPicker={scrollToBottom}
                 />
               </View>
             )}
