@@ -621,10 +621,10 @@ const DarkroomBottomSheet = ({ visible, revealedCount, developingCount, onClose,
   // Get status dot color and text
   const getStatusInfo = () => {
     if (hasRevealedPhotos) {
-      const photoWord = revealedCount === 1 ? 'photo' : 'photos';
+      const photoWord = totalCount === 1 ? 'photo' : 'photos';
       return {
         color: COLORS.statusReady,
-        text: `${revealedCount} ${photoWord} ready to reveal`,
+        text: `${totalCount} ${photoWord} ready to reveal`,
       };
     }
     return {
