@@ -84,7 +84,13 @@ const HueBar = ({ hue, onHueChange }) => {
     })
   ).current;
 
-  const thumbLeft = barWidth.current > 0 ? (hue / 360) * barWidth.current - THUMB_SIZE / 2 : 0;
+  const thumbLeft =
+    barWidth.current > 0
+      ? Math.min(
+          Math.max(0, (hue / 360) * barWidth.current - THUMB_SIZE / 2),
+          barWidth.current - THUMB_SIZE
+        )
+      : 0;
 
   return (
     <View
@@ -104,7 +110,7 @@ const HueBar = ({ hue, onHueChange }) => {
         end={{ x: 1, y: 0 }}
         style={styles.gradientBar}
       />
-      <View style={[styles.thumb, { left: Math.max(0, thumbLeft) }]} />
+      <View style={[styles.thumb, { left: thumbLeft }]} />
     </View>
   );
 };
@@ -137,7 +143,12 @@ const BrightnessBar = ({ hue, brightness, onBrightnessChange }) => {
   ).current;
 
   const thumbLeft =
-    barWidth.current > 0 ? (brightness / 100) * barWidth.current - THUMB_SIZE / 2 : 0;
+    barWidth.current > 0
+      ? Math.min(
+          Math.max(0, (brightness / 100) * barWidth.current - THUMB_SIZE / 2),
+          barWidth.current - THUMB_SIZE
+        )
+      : 0;
 
   return (
     <View
@@ -157,12 +168,12 @@ const BrightnessBar = ({ hue, brightness, onBrightnessChange }) => {
         end={{ x: 1, y: 0 }}
         style={styles.gradientBar}
       />
-      <View style={[styles.thumb, { left: Math.max(0, thumbLeft) }]} />
+      <View style={[styles.thumb, { left: thumbLeft }]} />
     </View>
   );
 };
 
-const ColorPickerGrid = ({ selectedColor, onColorSelect }) => {
+const ColorPickerGrid = ({ selectedColor, onColorSelect, onExpandPicker }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [hue, setHue] = useState(190);
   const [brightness, setBrightness] = useState(50);
@@ -176,7 +187,12 @@ const ColorPickerGrid = ({ selectedColor, onColorSelect }) => {
   };
 
   const handlePlusPress = () => {
-    setShowPicker(prev => !prev);
+    setShowPicker(prev => {
+      if (!prev && onExpandPicker) {
+        onExpandPicker();
+      }
+      return !prev;
+    });
   };
 
   const handleSaveCustomColor = () => {

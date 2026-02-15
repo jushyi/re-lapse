@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -80,6 +80,13 @@ const ContributionsScreen = () => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [savingColor, setSavingColor] = useState(false);
   const [simulatingPurchase, setSimulatingPurchase] = useState(false);
+  const scrollViewRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
 
   // Load products and contributor status
   useEffect(() => {
@@ -314,6 +321,7 @@ const ContributionsScreen = () => {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         bounces={false}
@@ -396,7 +404,11 @@ const ContributionsScreen = () => {
                 <Text style={styles.colorPickerDescription}>
                   Your chosen color will appear next to your name throughout the app.
                 </Text>
-                <ColorPickerGrid selectedColor={selectedColor} onColorSelect={handleColorSelect} />
+                <ColorPickerGrid
+                  selectedColor={selectedColor}
+                  onColorSelect={handleColorSelect}
+                  onExpandPicker={scrollToBottom}
+                />
               </View>
             )}
           </>
