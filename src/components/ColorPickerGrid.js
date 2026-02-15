@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   previewName: {
     fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.displayBold,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   saveButton: {
     backgroundColor: colors.brand.purple,
