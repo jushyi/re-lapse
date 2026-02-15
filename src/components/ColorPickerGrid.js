@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import ColorPicker, { HueCircular, Panel3, Preview } from 'reanimated-color-picker';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import ColorPicker, { HueCircular, Panel3 } from 'reanimated-color-picker';
 
 import PixelIcon from './PixelIcon';
 
@@ -11,84 +11,115 @@ import { typography } from '../constants/typography';
 /**
  * ColorPickerGrid
  *
- * Reusable color picker component for selecting name colors.
- * Features a color wheel, brightness panel, preset quick-picks, and reset option.
+ * Row of 4 preset color swatches + a "+" button to open a full color wheel.
+ * Tapping a preset selects it immediately. Tapping "+" expands the wheel picker.
  * Used in ContributionsScreen and EditProfileScreen.
  */
 
-// Curated preset colors that look good on dark backgrounds
 const PRESET_COLORS = [
   '#00D4FF', // Electric Cyan
   '#FF2D78', // Hot Magenta
   '#39FF14', // Neon Green
   '#FFD700', // Coin Gold
-  '#B24BF3', // Pixel Purple
-  '#FF6B6B', // Coral Pink
-  '#00FFC6', // Mint Glow
-  '#9D00FF', // Violet Beam
-  '#FF3366', // Neon Rose
-  '#FF1493', // Deep Pink
 ];
 
 const ColorPickerGrid = ({ selectedColor, onColorSelect }) => {
+  const [showWheel, setShowWheel] = useState(false);
   const [wheelColor, setWheelColor] = useState(selectedColor || '#00D4FF');
-
-  const handleWheelComplete = ({ hex }) => {
-    setWheelColor(hex);
-    onColorSelect(hex);
-  };
+  const isCustomColor = selectedColor && !PRESET_COLORS.includes(selectedColor);
 
   const handlePresetPress = color => {
-    setWheelColor(color);
+    setShowWheel(false);
     onColorSelect(color);
   };
 
+  const handlePlusPress = () => {
+    setShowWheel(prev => !prev);
+  };
+
+  const handleWheelComplete = ({ hex }) => {
+    setWheelColor(hex);
+  };
+
+  const handleSaveCustomColor = () => {
+    onColorSelect(wheelColor);
+    setShowWheel(false);
+  };
+
   const handleResetPress = () => {
-    onColorSelect(null); // null means default (white)
+    setShowWheel(false);
+    onColorSelect(null);
   };
 
   return (
     <View style={styles.container}>
-      {/* Color wheel */}
-      <View style={styles.wheelContainer}>
-        <ColorPicker value={wheelColor} onComplete={handleWheelComplete} style={styles.picker}>
-          <HueCircular containerStyle={styles.hueCircular} thumbShape="circle" thumbSize={28}>
-            <Panel3 style={styles.panel} />
-          </HueCircular>
-        </ColorPicker>
-      </View>
-
-      {/* Preview of selected color */}
-      {selectedColor && (
-        <View style={styles.previewRow}>
-          <View style={[styles.previewSwatch, { backgroundColor: selectedColor }]} />
-          <Text style={[styles.previewText, { color: selectedColor }]}>Your Name</Text>
-          <Text style={styles.previewHex}>{selectedColor.toUpperCase()}</Text>
-        </View>
-      )}
-
-      {/* Quick preset colors */}
-      <Text style={styles.presetsLabel}>Quick picks</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.presetsRow}
-      >
+      {/* Row: 4 presets + custom button */}
+      <View style={styles.row}>
         {PRESET_COLORS.map(color => (
           <TouchableOpacity
             key={color}
             style={[
-              styles.presetSwatch,
+              styles.swatch,
               { backgroundColor: color },
-              selectedColor === color && styles.presetSwatchSelected,
+              selectedColor === color && styles.swatchSelected,
             ]}
             onPress={() => handlePresetPress(color)}
             activeOpacity={0.7}
-          />
+          >
+            {selectedColor === color && (
+              <PixelIcon name="checkmark" size={18} color={colors.background.primary} />
+            )}
+          </TouchableOpacity>
         ))}
-      </ScrollView>
 
-      {/* Reset to default button */}
+        {/* Plus / custom color button */}
+        <TouchableOpacity
+          style={[
+            styles.swatch,
+            styles.plusSwatch,
+            isCustomColor && { backgroundColor: selectedColor },
+            showWheel && styles.swatchSelected,
+          ]}
+          onPress={handlePlusPress}
+          activeOpacity={0.7}
+        >
+          {isCustomColor && !showWheel ? (
+            <PixelIcon name="checkmark" size={18} color={colors.background.primary} />
+          ) : (
+            <PixelIcon
+              name={showWheel ? 'close' : 'add'}
+              size={24}
+              color={isCustomColor ? colors.background.primary : colors.text.secondary}
+            />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Expanded color wheel */}
+      {showWheel && (
+        <View style={styles.wheelSection}>
+          <View style={styles.wheelContainer}>
+            <ColorPicker value={wheelColor} onComplete={handleWheelComplete} style={styles.picker}>
+              <HueCircular containerStyle={styles.hueCircular} thumbShape="circle" thumbSize={28}>
+                <Panel3 style={styles.panel} />
+              </HueCircular>
+            </ColorPicker>
+          </View>
+
+          {/* Preview + save */}
+          <View style={styles.wheelFooter}>
+            <View style={styles.previewRow}>
+              <View style={[styles.previewSwatch, { backgroundColor: wheelColor }]} />
+              <Text style={[styles.previewName, { color: wheelColor }]}>Your Name</Text>
+            </View>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveCustomColor}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Reset to default */}
       <TouchableOpacity
         style={[styles.resetButton, selectedColor === null && styles.resetButtonSelected]}
         onPress={handleResetPress}
@@ -107,70 +138,81 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
-  wheelContainer: {
-    alignItems: 'center',
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
+  swatch: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  swatchSelected: {
+    borderColor: colors.text.primary,
+    borderWidth: 3,
+  },
+  plusSwatch: {
+    backgroundColor: colors.background.secondary,
+  },
+  wheelSection: {
+    marginBottom: spacing.lg,
+  },
+  wheelContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   picker: {
-    width: 260,
+    width: 240,
     alignItems: 'center',
   },
   hueCircular: {
-    width: 260,
-    height: 260,
+    width: 240,
+    height: 240,
     justifyContent: 'center',
     alignItems: 'center',
   },
   panel: {
-    width: 120,
-    height: 120,
+    width: 110,
+    height: 110,
     borderRadius: 8,
+  },
+  wheelFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
-  },
-  previewSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-  },
-  previewText: {
-    fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.displayBold,
     flex: 1,
   },
-  previewHex: {
-    fontSize: typography.size.sm,
-    fontFamily: typography.fontFamily.body,
-    color: colors.text.tertiary,
-  },
-  presetsLabel: {
-    fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.bodyBold,
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  presetSwatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  previewSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: colors.border.default,
   },
-  presetSwatchSelected: {
-    borderColor: colors.text.primary,
-    borderWidth: 3,
+  previewName: {
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.displayBold,
+  },
+  saveButton: {
+    backgroundColor: colors.brand.purple,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
   },
   resetButton: {
     flexDirection: 'row',
