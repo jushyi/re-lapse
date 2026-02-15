@@ -280,7 +280,7 @@ Plans:
 - [x] 52-03: Camera & Photo Lifecycle
 - [x] 52-04: Profile & Settings
 - [x] 52-05: Camera, Photos & Darkroom
-- [ ] 52-06: Notifications
+- [x] 52-06: Albums & Selects
 - [ ] 52-07: Profile & Albums
 - [ ] 52-08: Settings & Account
 - [ ] 52-09: Edge Cases & Error States
@@ -347,7 +347,7 @@ Plans:
 | 50. CI/CD Pipeline             | v1.0.0    | 3/3   | Complete    | 2026-02-12 |
 | 50.1 Fix Failing Test Suites   | v1.0.0    | 2/2   | Complete    | 2026-02-13 |
 | 51. iOS Release Preparation    | v1.0.0    | 10/10 | Complete    | 2026-02-13 |
-| 52. Systematic UAT             | v1.0.0    | 5/10  | In progress | -          |
+| 52. Systematic UAT             | v1.0.0    | 6/10  | In progress | -          |
 | 52.1 Reaction Notif Batching   | v1.0.0    | 1/1   | Complete    | 2026-02-14 |
 | 52.2 Photo Tagging Lag         | v1.0.0    | 1/1   | Complete    | 2026-02-14 |
 | 53. App Store Release          | v1.0.0    | 0/?   | Not started | -          |

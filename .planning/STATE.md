@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 52 of 53 (Systematic UAT)
-Plan: 5 of 10 in current phase
+Plan: 6 of 10 in current phase
 Status: In progress
-Last activity: 2026-02-15 — Completed 52-05 (Camera, Photos & Darkroom UAT)
+Last activity: 2026-02-15 — Completed 52-06 (Albums & Selects UAT)
 
 Progress: █████████████ 13/13 (v1.0.0 phases)
 
@@ -83,6 +83,7 @@ See PROJECT.md Key Decisions table for full history.
 | 52-03 | Clear expo-image cache on sign out                        | Prevents stale gray photos when user re-authenticates                 |
 | 52-03 | perf.dataCollectionEnabled instead of modular function    | setPerformanceCollectionEnabled not exported in RN Firebase v23       |
 | 52-04 | Feed must filter both blocker and blocked-by directions   | Previously only filtered users who blocked you, not users you blocked |
+| 52-06 | expo-image cacheKey must include coverPhotoId             | Static albumId-only key served stale cached cover after change        |
 
 ### Deferred Issues
 
@@ -113,6 +114,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 52-05 (Camera, Photos & Darkroom UAT — flip icon redesign, front camera 0.5x zoom, bottom sheet total count fix)
+Stopped at: Completed 52-06 (Albums & Selects UAT — fixed expo-image cover photo caching, dropdown menu dismiss before set-as-cover)
 Resume file: None
-Next: Ready for 52-06 (Notifications UAT)
+Next: Ready for 52-07
