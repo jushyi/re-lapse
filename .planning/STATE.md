@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 52.2 of 53 (Photo Tagging Lag Fix)
-Plan: 1 of 1 in current phase
-Status: Complete
-Last activity: 2026-02-14 — Completed 52.2-01 (Photo Tagging Lag Fix) — ISS-016 resolved
+Phase: 52 of 53 (Systematic UAT)
+Plan: 3 of 10 in current phase
+Status: In progress
+Last activity: 2026-02-14 — Completed 52-03 (Auth & Account Management UAT)
 
 Progress: █████████████ 13/13 (v1.0.0 phases)
 
@@ -80,6 +80,8 @@ See PROJECT.md Key Decisions table for full history.
 | 52.1  | Firestore-based batching state                            | Persists across stateless Cloud Function instances, prevents dupes  |
 | 52.1  | Cloud Tasks for delayed execution                         | Reliable delayed sends in serverless (replaces setTimeout)          |
 | 52.1  | User data fetching at send time                           | Respects preference changes during 30-second batch window           |
+| 52-03 | Clear expo-image cache on sign out                        | Prevents stale gray photos when user re-authenticates               |
+| 52-03 | perf.dataCollectionEnabled instead of modular function    | setPerformanceCollectionEnabled not exported in RN Firebase v23     |
 
 ### Deferred Issues
 
@@ -110,6 +112,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 52.2-01 (Photo Tagging Lag Fix — added subscribePhoto service, FlatList extraData, PhotoDetailScreen subscription, ISS-016 resolved)
+Stopped at: Completed 52-03 (Auth & Account Management UAT — sign out/in verified, delete account flow verified, 2 inline fixes)
 Resume file: None
-Next: Ready for 52-03 (Camera & Photo Lifecycle) or continue UAT
+Next: Ready for 52-04 (Feed & Stories UAT)
