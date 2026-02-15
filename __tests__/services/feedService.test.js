@@ -37,8 +37,10 @@ jest.mock('../../src/services/firebase/friendshipService', () => ({
 const mockGetBlockedByUserIds = jest.fn(() =>
   Promise.resolve({ success: true, blockedByUserIds: [] })
 );
+const mockGetBlockedUserIds = jest.fn(() => Promise.resolve({ success: true, blockedUserIds: [] }));
 jest.mock('../../src/services/firebase/blockService', () => ({
   getBlockedByUserIds: (...args) => mockGetBlockedByUserIds(...args),
+  getBlockedUserIds: (...args) => mockGetBlockedUserIds(...args),
 }));
 
 // Mock performanceService - feedService uses withTrace
@@ -90,6 +92,7 @@ describe('feedService', () => {
     jest.clearAllMocks();
     // Reset blockService mock to default (no blocked users)
     mockGetBlockedByUserIds.mockResolvedValue({ success: true, blockedByUserIds: [] });
+    mockGetBlockedUserIds.mockResolvedValue({ success: true, blockedUserIds: [] });
   });
 
   // ===========================================================================

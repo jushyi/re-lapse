@@ -50,6 +50,9 @@ jest.mock('firebase-functions', () => ({
   runWith: jest.fn(() => ({
     firestore: mockFirestore,
     pubsub: mockPubsub,
+    https: {
+      onRequest: jest.fn(handler => handler),
+    },
   })),
 }));
 

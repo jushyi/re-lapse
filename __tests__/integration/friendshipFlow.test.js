@@ -80,6 +80,7 @@ jest.mock('@react-native-firebase/firestore', () => ({
 // Mock blockService - feedService imports getBlockedByUserIds
 jest.mock('../../src/services/firebase/blockService', () => ({
   getBlockedByUserIds: jest.fn(() => Promise.resolve({ success: true, blockedByUserIds: [] })),
+  getBlockedUserIds: jest.fn(() => Promise.resolve({ success: true, blockedUserIds: [] })),
 }));
 
 // Mock performanceService - feedService uses withTrace
