@@ -1,6 +1,6 @@
 /**
- * Generate app icons for Rewind — 16-Bit Retro Edition
- * Creates pixel-art camera viewfinder frame with rewind arrows on CRT dark background
+ * Generate app icons for Flick
+ * Creates hand-frame gesture (director's frame) with "FLICK" text on dark background
  */
 const sharp = require('sharp');
 const path = require('path');
@@ -11,11 +11,10 @@ const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 const ICON_SIZE = 1024;
 const GRID = 32; // 32x32 pixel grid
 
-// 16-bit retro color palette (from src/constants/colors.js)
+// Color palette (from src/constants/colors.js)
 const COLORS = {
   background: '#0A0A1A', // CRT navy-black
-  cyan: '#00D4FF', // Electric cyan (viewfinder frame)
-  magenta: '#FF2D78', // Hot magenta (rewind arrows)
+  cyan: '#00D4FF', // Electric cyan (hands + text)
 };
 
 /**
@@ -32,95 +31,163 @@ function rectFill(x1, y1, x2, y2) {
 }
 
 /**
- * Helper: get pixels for a left-pointing triangle (rewind arrow <)
- * Tip (single pixel) on the left, base (full height) on the right
+ * 3x5 micro-font letter definitions for icon text
  */
-function leftTriangle(tipX, centerY, width, halfHeight) {
+const MICRO_LETTERS = {
+  F: {
+    width: 3,
+    height: 5,
+    pixels: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [0, 1],
+      [0, 2],
+      [1, 2],
+      [0, 3],
+      [0, 4],
+    ],
+  },
+  L: {
+    width: 3,
+    height: 5,
+    pixels: [
+      [0, 0],
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [1, 4],
+      [2, 4],
+    ],
+  },
+  I: {
+    width: 3,
+    height: 5,
+    pixels: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [1, 1],
+      [1, 2],
+      [1, 3],
+      [0, 4],
+      [1, 4],
+      [2, 4],
+    ],
+  },
+  C: {
+    width: 3,
+    height: 5,
+    pixels: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [1, 4],
+      [2, 4],
+    ],
+  },
+  K: {
+    width: 4,
+    height: 5,
+    pixels: [
+      [0, 0],
+      [3, 0],
+      [0, 1],
+      [2, 1],
+      [0, 2],
+      [1, 2],
+      [0, 3],
+      [2, 3],
+      [0, 4],
+      [3, 4],
+    ],
+  },
+};
+
+/**
+ * Render micro-font text as pixel coordinates
+ */
+function renderMicroText(word, startX, startY) {
   const pixels = [];
-  for (let col = 0; col < width; col++) {
-    const progress = col / (width - 1 || 1); // 0 at tip, 1 at base
-    const rowSpan = Math.max(0, Math.round(progress * halfHeight));
-    for (let row = -rowSpan; row <= rowSpan; row++) {
-      pixels.push([tipX + col, centerY + row]);
+  let offsetX = startX;
+
+  for (const char of word) {
+    const letter = MICRO_LETTERS[char];
+    if (!letter) continue;
+
+    for (const [x, y] of letter.pixels) {
+      pixels.push([offsetX + x, startY + y]);
     }
+
+    offsetX += letter.width + 1; // 1-cell gap between letters
   }
-  return pixels;
-}
-
-/**
- * Build camera viewfinder corner brackets (L-shaped corners)
- * Each corner is an L-shape, 2px thick, armLength long
- */
-function viewfinderCorners(x1, y1, x2, y2, armLength, thickness) {
-  const pixels = [];
-
-  // Top-left corner: horizontal arm going right, vertical arm going down
-  pixels.push(...rectFill(x1, y1, x1 + armLength - 1, y1 + thickness - 1)); // horizontal
-  pixels.push(...rectFill(x1, y1, x1 + thickness - 1, y1 + armLength - 1)); // vertical
-
-  // Top-right corner: horizontal arm going left, vertical arm going down
-  pixels.push(...rectFill(x2 - armLength + 1, y1, x2, y1 + thickness - 1)); // horizontal
-  pixels.push(...rectFill(x2 - thickness + 1, y1, x2, y1 + armLength - 1)); // vertical
-
-  // Bottom-left corner: horizontal arm going right, vertical arm going up
-  pixels.push(...rectFill(x1, y2 - thickness + 1, x1 + armLength - 1, y2)); // horizontal
-  pixels.push(...rectFill(x1, y2 - armLength + 1, x1 + thickness - 1, y2)); // vertical
-
-  // Bottom-right corner: horizontal arm going left, vertical arm going up
-  pixels.push(...rectFill(x2 - armLength + 1, y2 - thickness + 1, x2, y2)); // horizontal
-  pixels.push(...rectFill(x2 - thickness + 1, y2 - armLength + 1, x2, y2)); // vertical
 
   return pixels;
 }
 
 /**
- * Build the pixel camera viewfinder icon on a 32x32 grid
+ * Build the hand-frame icon on a 32x32 grid
+ * Two hands at opposite corners forming a director's frame gesture
+ * with "FLICK" text centered inside
  */
 function getIconPixels() {
   const layers = [];
 
-  // --- Camera viewfinder corner brackets (cyan) ---
-  // Frame area: rows 4-27, cols 4-27
-  // L-shaped corners, 2px thick, 7px arm length
+  // --- Hand frame gesture (cyan) ---
+  // Two L-shapes forming a rectangular frame, spaced out for breathing room
+
+  // Top-right hand: thumb across top, finger hangs DOWN from right end
+  const topRightHand = [
+    ...rectFill(1, 6, 30, 7), // thumb (horizontal bar, spans between both fingers)
+    ...rectFill(28, 6, 30, 19), // pointer finger (vertical, pointing DOWN from bar)
+  ];
+
+  // Bottom-left hand: thumb across bottom, finger reaches UP from left end
+  const bottomLeftHand = [
+    ...rectFill(1, 24, 30, 25), // thumb (horizontal bar, spans between both fingers)
+    ...rectFill(1, 12, 3, 25), // pointer finger (vertical, pointing UP toward bar)
+  ];
+
   layers.push({
     color: COLORS.cyan,
-    pixels: viewfinderCorners(4, 4, 27, 27, 7, 2),
+    pixels: [...topRightHand, ...bottomLeftHand],
   });
 
-  // --- Rewind arrows (magenta) — two left-pointing triangles << ---
-  // Arrows centered in the frame, pointing LEFT
-  // First arrow: tip at col 8, 7px wide, ±5 rows tall at base
-  const arrow1 = leftTriangle(8, 15, 7, 5);
-  // Second arrow: tip at col 16, 7px wide, ±5 rows tall at base
-  const arrow2 = leftTriangle(16, 15, 7, 5);
-
+  // --- "FLICK" micro-text (cyan) centered in the frame ---
+  const microText = renderMicroText('FLICK', 6, 14);
   layers.push({
-    color: COLORS.magenta,
-    pixels: [...arrow1, ...arrow2],
+    color: COLORS.cyan,
+    pixels: microText,
   });
 
   return layers;
 }
 
 /**
- * Build a simplified version for favicon (fewer details for 48x48 legibility)
+ * Simplified version for favicon (thicker strokes, no text)
  */
 function getFaviconPixels() {
   const layers = [];
 
-  // Simplified viewfinder corners (cyan)
+  // Thicker hand frame for favicon legibility (same spaced-out frame)
+  const topRightHand = [
+    ...rectFill(1, 5, 30, 7), // thumb across top (3px thick)
+    ...rectFill(27, 5, 30, 19), // finger DOWN from right end (4px wide)
+  ];
+
+  const bottomLeftHand = [
+    ...rectFill(1, 24, 30, 26), // thumb across bottom (3px thick)
+    ...rectFill(1, 12, 4, 26), // finger UP from left end (4px wide)
+  ];
+
   layers.push({
     color: COLORS.cyan,
-    pixels: viewfinderCorners(3, 3, 28, 28, 8, 3),
-  });
-
-  // Two rewind arrows (magenta) — slightly larger for legibility
-  const arrow1 = leftTriangle(7, 15, 8, 6);
-  const arrow2 = leftTriangle(16, 15, 8, 6);
-
-  layers.push({
-    color: COLORS.magenta,
-    pixels: [...arrow1, ...arrow2],
+    pixels: [...topRightHand, ...bottomLeftHand],
   });
 
   return layers;
@@ -150,7 +217,7 @@ function layersToSvg(size, layers, padding = 0) {
 }
 
 async function generateIcons() {
-  console.log('Generating Rewind 16-bit retro app icons...');
+  console.log('Generating Flick app icons...');
 
   try {
     // Generate main app icon (1024x1024)
@@ -176,7 +243,7 @@ async function generateIcons() {
     console.log('✓ Created assets/favicon.png (48x48)');
 
     console.log('\n✅ All icons generated successfully!');
-    console.log('Design: 16-bit camera viewfinder with rewind arrows');
+    console.log('Design: Hand-frame gesture with FLICK text');
   } catch (error) {
     console.error('Error generating icons:', error);
     process.exit(1);
