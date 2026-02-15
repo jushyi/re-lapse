@@ -24,6 +24,8 @@ key-files:
   created: []
   modified:
     - src/services/firebase/feedService.js
+    - src/screens/ActivityScreen.js
+    - src/components/FriendCard.js
 
 key-decisions:
   - 'Feed must filter both directions: users who blocked you AND users you blocked'
@@ -40,7 +42,7 @@ completed: 2026-02-15
 
 # Plan 52-04: Profile & Settings UAT Summary
 
-**Profile viewing/editing verified, settings screens tested, fixed bidirectional block filtering in feed service**
+**Profile viewing/editing verified, settings screens tested, fixed 3 block-related bugs (feed filtering, notification bypass, double unblock confirm)**
 
 ## Performance
 
@@ -48,7 +50,7 @@ completed: 2026-02-15
 - **Started:** 2026-02-15T02:36:59Z
 - **Completed:** 2026-02-15T03:06:35Z
 - **Tasks:** 3
-- **Files modified:** 1
+- **Files modified:** 3
 
 ## Test Results
 
@@ -62,7 +64,10 @@ completed: 2026-02-15
 
 - Navigation: PASS — all sections accessible, no crashes, back navigation works
 - Notifications: PASS — toggles update immediately, state persists across navigation
-- Blocked users: FAIL — blocking a user did not remove their content from the feed (fixed inline)
+- Blocked users: FAIL — 3 issues found (all fixed inline):
+  1. Blocking didn't remove user from feed
+  2. Blocked user could view stories via old notifications
+  3. Unblock confirmation dialog appeared twice
 - Legal documents: PASS — Privacy Policy and Terms load, formatted correctly, no "Rewind" references
 - Help screen: PASS — topics load, expandable/collapsible works, content accurate
 - Theme palette: PASS — palette options show, selection updates colors app-wide, persists
@@ -70,12 +75,14 @@ completed: 2026-02-15
 ## Task Commits
 
 1. **Task 1: Profile viewing and editing verification** — checkpoint:human-verify (approved, no code changes)
-2. **Task 2: Settings screens verification** — checkpoint:human-verify (issue found: block filtering)
-3. **Task 3: Fix blocked user feed filtering** — `c385214` (fix)
+2. **Task 2: Settings screens verification** — checkpoint:human-verify (3 issues found: block filtering, notification bypass, double confirm)
+3. **Task 3: Fix block-related bugs** — `c385214` (fix: feed filtering), `4b93b09` (fix: notification block check + double unblock confirm)
 
 ## Files Created/Modified
 
 - `src/services/firebase/feedService.js` — Added bidirectional block filtering to all 4 feed functions (getFeedPhotos, subscribeFeedPhotos, getFriendStoriesData, getRandomFriendPhotos)
+- `src/screens/ActivityScreen.js` — Added block check before showing content from notification taps
+- `src/components/FriendCard.js` — Removed duplicate unblock confirmation dialog (parent screen handles it)
 
 ## Decisions Made
 
@@ -94,14 +101,32 @@ completed: 2026-02-15
 - **Verification:** Lint passes clean
 - **Committed in:** c385214
 
+**2. [Rule 1 - Bug] Blocked user can view stories via notification tap**
+
+- **Found during:** Task 2 (Settings screens verification — further block testing)
+- **Issue:** If User A blocks User B, User B could still see User A's stories by tapping a notification received before the block. `handleNotificationPress` in ActivityScreen had no block validation.
+- **Fix:** Added bidirectional `isBlocked()` check at the top of `handleNotificationPress` — if either direction is blocked, the notification tap is silently ignored.
+- **Files modified:** src/screens/ActivityScreen.js
+- **Verification:** Lint passes clean
+- **Committed in:** 4b93b09
+
+**3. [Rule 1 - Bug] Double unblock confirmation dialog**
+
+- **Found during:** Task 2 (Settings screens verification — Blocked Users unblock test)
+- **Issue:** Both `FriendCard.handleUnblockUser()` and `BlockedUsersScreen.handleUnblock()` showed their own `Alert.alert` confirmation, causing two dialogs in sequence.
+- **Fix:** Removed the confirmation dialog from `FriendCard.handleUnblockUser()` — it now directly calls `onUnblock` prop, letting the parent screen handle confirmation.
+- **Files modified:** src/components/FriendCard.js
+- **Verification:** Lint passes clean
+- **Committed in:** 4b93b09
+
 ---
 
-**Total deviations:** 1 auto-fixed (1 bug)
-**Impact on plan:** Bug fix necessary for correct blocking behavior. No scope creep.
+**Total deviations:** 3 auto-fixed (3 bugs)
+**Impact on plan:** All fixes necessary for correct blocking behavior and UX. No scope creep.
 
 ## Issues Encountered
 
-None beyond the block filtering bug (fixed inline).
+None beyond the 3 block-related bugs (all fixed inline).
 
 ## Next Step
 

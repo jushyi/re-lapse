@@ -123,13 +123,7 @@ const FriendCard = ({
    * Handle unblock user action with confirmation
    */
   const handleUnblockUser = () => {
-    Alert.alert('Unblock User', `Unblock ${displayName || username}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unblock',
-        onPress: () => onUnblock && onUnblock(userId),
-      },
-    ]);
+    onUnblock && onUnblock(userId);
   };
 
   /**

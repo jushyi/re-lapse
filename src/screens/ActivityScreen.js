@@ -38,6 +38,7 @@ import { getTimeAgo } from '../utils/timeUtils';
 import { mediumImpact } from '../utils/haptics';
 import { markSingleNotificationAsRead } from '../services/firebase/notificationService';
 import { getPhotoById, getUserStoriesData } from '../services/firebase/feedService';
+import { isBlocked } from '../services/firebase/blockService';
 import { usePhotoDetailActions } from '../context/PhotoDetailContext';
 import { typography } from '../constants/typography';
 import logger from '../utils/logger';
@@ -338,6 +339,21 @@ const ActivityScreen = () => {
 
     // Navigate based on notification type/data
     const { type, photoId } = item;
+
+    // Check block status before showing content from sender
+    if (item.senderId && user?.uid) {
+      const [blockedBySender, blockedSender] = await Promise.all([
+        isBlocked(item.senderId, user.uid),
+        isBlocked(user.uid, item.senderId),
+      ]);
+      const eitherBlocked =
+        (blockedBySender.success && blockedBySender.isBlocked) ||
+        (blockedSender.success && blockedSender.isBlocked);
+      if (eitherBlocked) {
+        return; // Silently ignore — content from blocked users not shown
+      }
+    }
+
     if ((type === 'reaction' || type === 'comment' || type === 'mention') && photoId) {
       // Fetch the photo and open PhotoDetail directly
       const result = await getPhotoById(photoId);
