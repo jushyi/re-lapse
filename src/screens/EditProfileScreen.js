@@ -367,8 +367,8 @@ const EditProfileScreen = ({ navigation }) => {
             : {}),
         });
 
-        // Navigate to profile
-        navigation.navigate('ProfileMain');
+        // Navigate back to profile (pop past Settings)
+        navigation.pop(2);
       } else {
         Alert.alert('Update Failed', updateResult.error || 'Could not save profile changes');
       }
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 120,
   },
   photoContainer: {
     alignSelf: 'center',
