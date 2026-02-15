@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 52 of 53 (Systematic UAT)
-Plan: 7 of 10 in current phase
+Plan: 8 of 10 in current phase
 Status: In progress
-Last activity: 2026-02-15 — Completed 52-07 (Feed & Stories UAT)
+Last activity: 2026-02-15 — Completed 52-08 (Social Features UAT)
 
 Progress: █████████████ 13/13 (v1.0.0 phases)
 
@@ -84,6 +84,7 @@ See PROJECT.md Key Decisions table for full history.
 | 52-03 | perf.dataCollectionEnabled instead of modular function    | setPerformanceCollectionEnabled not exported in RN Firebase v23       |
 | 52-04 | Feed must filter both blocker and blocked-by directions   | Previously only filtered users who blocked you, not users you blocked |
 | 52-06 | expo-image cacheKey must include coverPhotoId             | Static albumId-only key served stale cached cover after change        |
+| 52-08 | Migrate functions.config() to process.env                 | Runtime Config deprecated March 2026, prevents future deploy failures |
 
 ### Deferred Issues
 
@@ -114,6 +115,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 52-07 (Feed & Stories UAT — all tests pass, zero issues)
+Stopped at: Completed 52-08 (Social Features UAT — all pass, fixed report email)
 Resume file: None
-Next: Ready for 52-08
+Next: Ready for 52-09
