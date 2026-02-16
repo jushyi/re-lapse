@@ -450,6 +450,9 @@ const FriendsScreen = ({ navigation }) => {
             });
             // Ensure not in incoming
             setIncomingRequests(prev => prev.filter(r => r.id !== friendshipId));
+            // Remove from suggestions (safety net for race condition with optimistic update)
+            setSuggestions(prev => prev.filter(s => s.id !== otherUserId));
+            setMutualSuggestions(prev => prev.filter(s => s.userId !== otherUserId));
           } else {
             // Incoming request
             setIncomingRequests(prev => {
@@ -605,27 +608,37 @@ const FriendsScreen = ({ navigation }) => {
 
         // Add to sent requests if we had the user data from suggestions
         if (suggestion) {
-          setSentRequests(prev => [
-            ...prev,
-            {
-              id: result.friendshipId, // Use 'id' to match server data shape
-              userId: suggestion.id,
-              displayName: suggestion.displayName,
-              username: suggestion.username,
-              profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
-            },
-          ]);
+          setSentRequests(prev => {
+            if (prev.some(r => r.id === result.friendshipId || r.userId === suggestion.id))
+              return prev;
+            return [
+              ...prev,
+              {
+                id: result.friendshipId, // Use 'id' to match server data shape
+                userId: suggestion.id,
+                displayName: suggestion.displayName,
+                username: suggestion.username,
+                profilePhotoURL: suggestion.profilePhotoURL || suggestion.photoURL,
+              },
+            ];
+          });
         } else if (mutualSuggestion) {
-          setSentRequests(prev => [
-            ...prev,
-            {
-              id: result.friendshipId,
-              userId: mutualSuggestion.userId,
-              displayName: mutualSuggestion.displayName,
-              username: mutualSuggestion.username,
-              profilePhotoURL: mutualSuggestion.profilePhotoURL,
-            },
-          ]);
+          setSentRequests(prev => {
+            if (
+              prev.some(r => r.id === result.friendshipId || r.userId === mutualSuggestion.userId)
+            )
+              return prev;
+            return [
+              ...prev,
+              {
+                id: result.friendshipId,
+                userId: mutualSuggestion.userId,
+                displayName: mutualSuggestion.displayName,
+                username: mutualSuggestion.username,
+                profilePhotoURL: mutualSuggestion.profilePhotoURL,
+              },
+            ];
+          });
         }
 
         // Update local state for search results
