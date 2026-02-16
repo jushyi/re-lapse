@@ -22,15 +22,38 @@ async function addReactionToBatch(photoId, reactorId, reactions) {
     reactions,
   });
 
+  // Track whether this invocation created the batch (vs updating an existing one)
+  let isNewBatch = false;
+
   await db.runTransaction(async transaction => {
     const batchDoc = await transaction.get(batchRef);
 
     if (batchDoc.exists) {
-      // Batch already exists - merge reactions and update timestamp
       const existingData = batchDoc.data();
+
+      // If batch was already sent or is processing, create a fresh batch
+      if (existingData.status === 'sent' || existingData.status === 'processing') {
+        logger.debug('addReactionToBatch: Previous batch completed, creating fresh batch', {
+          batchId,
+          previousStatus: existingData.status,
+        });
+
+        transaction.set(batchRef, {
+          photoId,
+          reactorId,
+          reactions,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          status: 'pending',
+          taskScheduled: false,
+        });
+        isNewBatch = true;
+        return;
+      }
+
+      // Batch exists and is pending - merge reactions
       const mergedReactions = { ...existingData.reactions };
 
-      // Merge new reactions with existing ones
       Object.keys(reactions).forEach(emoji => {
         mergedReactions[emoji] = (mergedReactions[emoji] || 0) + reactions[emoji];
       });
@@ -47,14 +70,10 @@ async function addReactionToBatch(photoId, reactorId, reactions) {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } else {
-      // Create new batch with 30-second expiry
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 30000); // 30 seconds from now
-
+      // Create new batch
       logger.debug('addReactionToBatch: Creating new batch', {
         batchId,
         reactions,
-        expiresAt,
       });
 
       transaction.set(batchRef, {
@@ -63,47 +82,37 @@ async function addReactionToBatch(photoId, reactorId, reactions) {
         reactions,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt,
         status: 'pending',
+        taskScheduled: false,
       });
-
-      // Schedule Cloud Task for delayed send (only for new batches)
-      // This happens after transaction commits to avoid scheduling duplicate tasks
-      logger.debug('addReactionToBatch: Scheduling Cloud Task for new batch', {
-        batchId,
-      });
+      isNewBatch = true;
     }
   });
 
-  // Schedule task AFTER transaction commits (for new batches only)
-  // Check if batch was just created by reading current status
-  const batchDoc = await batchRef.get();
-  const batchData = batchDoc.data();
+  // Schedule Cloud Task only for new batches
+  // Use atomic taskScheduled flag to prevent duplicate scheduling across instances
+  if (isNewBatch) {
+    const scheduled = await db.runTransaction(async transaction => {
+      const batchDoc = await transaction.get(batchRef);
+      const batchData = batchDoc.data();
 
-  // Only schedule if batch was created in this invocation (createdAt ~= updatedAt)
-  // This prevents duplicate task scheduling when updating existing batches
-  if (batchData && batchData.createdAt && batchData.updatedAt) {
-    const createdMs = batchData.createdAt.toMillis();
-    const updatedMs = batchData.updatedAt.toMillis();
+      // Only schedule if no task has been scheduled yet (prevents race condition)
+      if (batchData && batchData.taskScheduled === false) {
+        transaction.update(batchRef, { taskScheduled: true });
+        return true;
+      }
+      return false;
+    });
 
-    // If timestamps are within 1 second, this is a new batch
-    if (Math.abs(updatedMs - createdMs) < 1000) {
-      logger.debug('addReactionToBatch: New batch detected, scheduling task', {
-        batchId,
-        createdAt: createdMs,
-        updatedAt: updatedMs,
-      });
+    if (scheduled) {
+      logger.debug('addReactionToBatch: Scheduling Cloud Task for new batch', { batchId });
       await scheduleNotificationTask(batchId, 30);
     } else {
-      logger.debug('addReactionToBatch: Existing batch updated, skipping task scheduling', {
-        batchId,
-        createdAt: createdMs,
-        updatedAt: updatedMs,
-      });
+      logger.debug('addReactionToBatch: Task already scheduled by another instance', { batchId });
     }
   }
 
-  logger.debug('addReactionToBatch: Transaction complete', { batchId });
+  logger.debug('addReactionToBatch: Complete', { batchId, isNewBatch });
 }
 
 /**
@@ -119,7 +128,17 @@ async function scheduleNotificationTask(batchId, delaySeconds) {
   const { CloudTasksClient } = require('@google-cloud/tasks');
   const client = new CloudTasksClient();
 
-  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+  // GCLOUD_PROJECT and GCP_PROJECT are deprecated in Node 18+ runtimes
+  // Use FIREBASE_CONFIG (always available in Firebase Functions) as primary source
+  const project =
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId;
+
+  if (!project) {
+    throw new Error('Could not determine project ID from environment variables');
+  }
+
   const location = 'us-central1'; // Same as Cloud Functions region
   const queue = 'default';
 
@@ -138,6 +157,9 @@ async function scheduleNotificationTask(batchId, delaySeconds) {
         'Content-Type': 'application/json',
       },
       body: Buffer.from(JSON.stringify({ batchId })).toString('base64'),
+      oidcToken: {
+        serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+      },
     },
     scheduleTime: {
       seconds: Math.floor(scheduleTime.getTime() / 1000),

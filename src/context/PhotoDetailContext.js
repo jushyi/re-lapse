@@ -11,7 +11,15 @@
  * - PhotoDetailScreen reads state and calls callbacks from context
  * - Navigation handles actual screen presentation
  */
-import React, { createContext, useContext, useState, useRef, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
 
 const PhotoDetailContext = createContext({});
 
@@ -71,6 +79,18 @@ export const PhotoDetailProvider = ({ children }) => {
 
   // Source card position for expand/collapse animation
   const [sourceRect, setSourceRect] = useState(null);
+
+  // Timeout ref for delayed state cleanup on close
+  const cleanupTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Callback refs - using refs to avoid re-renders when callbacks change
   const callbacksRef = useRef({
@@ -134,6 +154,13 @@ export const PhotoDetailProvider = ({ children }) => {
         sourceRect: newSourceRect = null,
       } = params;
 
+      // Cancel any pending cleanup from a previous close
+      // Prevents race condition where delayed clear overwrites fresh state
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+        cleanupTimeoutRef.current = null;
+      }
+
       // Set photo state
       setCurrentPhoto(photo);
       setPhotos(photosArray);
@@ -165,8 +192,13 @@ export const PhotoDetailProvider = ({ children }) => {
   const closePhotoDetail = useCallback(() => {
     setIsActive(false);
     setShowComments(false); // Close comments when photo detail closes
+    // Cancel any existing cleanup timeout
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+    }
     // Keep state briefly for animation, then clear
-    setTimeout(() => {
+    cleanupTimeoutRef.current = setTimeout(() => {
+      cleanupTimeoutRef.current = null;
       setCurrentPhoto(null);
       setPhotos([]);
       setCurrentIndex(0);
