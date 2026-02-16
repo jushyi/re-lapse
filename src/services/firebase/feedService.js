@@ -640,6 +640,7 @@ export const getUserStoriesData = async userId => {
       where('userId', '==', userId),
       where('photoState', '==', 'journal'),
       where('triagedAt', '>=', cutoff),
+      orderBy('triagedAt', 'desc'),
       limit(100) // Safety bound on user's own stories within 7-day window
     );
     const photosSnapshot = await getDocs(photosQuery);
@@ -772,6 +773,7 @@ export const getFriendStoriesData = async currentUserId => {
         where('userId', '==', friendId),
         where('photoState', '==', 'journal'),
         where('triagedAt', '>=', cutoff),
+        orderBy('triagedAt', 'desc'),
         limit(100) // Safety bound on friend's stories within 7-day window
       );
       const photosSnapshot = await getDocs(photosQuery);

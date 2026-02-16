@@ -19,6 +19,14 @@ service firebase.storage {
                    && request.resource.size < 10 * 1024 * 1024;
     }
 
+    // Selects (highlights) photos - users can upload their own, authenticated users can view
+    match /selects/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId)
+                   && request.resource.contentType.matches('image/.*')
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
     // Main photos (darkroom/feed photos) - only owner can read directly from Storage
     // Other users access photos via getSignedPhotoUrl Cloud Function (uses Admin SDK)
     match /photos/{userId}/{allPaths=**} {
