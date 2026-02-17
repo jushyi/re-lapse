@@ -40,6 +40,8 @@ import { markSingleNotificationAsRead } from '../services/firebase/notificationS
 import { getPhotoById, getUserStoriesData } from '../services/firebase/feedService';
 import { isBlocked } from '../services/firebase/blockService';
 import { usePhotoDetailActions } from '../context/PhotoDetailContext';
+import StrokedNameText from '../components/StrokedNameText';
+
 import { typography } from '../constants/typography';
 import logger from '../utils/logger';
 
@@ -193,9 +195,30 @@ const ActivityScreen = () => {
       );
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(docSnap => ({
+      const notifs = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         ...docSnap.data(),
+      }));
+
+      // Batch-fetch unique sender user docs to get nameColor
+      const uniqueSenderIds = [...new Set(notifs.map(n => n.senderId).filter(Boolean))];
+      const colorMap = {};
+      await Promise.all(
+        uniqueSenderIds.map(async senderId => {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', senderId));
+            if (userDoc.exists()) {
+              colorMap[senderId] = userDoc.data().nameColor || null;
+            }
+          } catch {
+            // Ignore — will fall back to default color
+          }
+        })
+      );
+
+      return notifs.map(n => ({
+        ...n,
+        senderNameColor: n.senderId ? colorMap[n.senderId] || null : null,
       }));
     } catch (error) {
       logger.error('Error fetching notifications', { error: error.message });
@@ -453,7 +476,10 @@ const ActivityScreen = () => {
         </TouchableOpacity>
         <View style={styles.notifContent}>
           <Text style={styles.notifMessage} numberOfLines={2}>
-            <Text style={styles.notifSenderName}>{item.senderName || 'Someone'}</Text> {actionText}
+            <StrokedNameText style={styles.notifSenderName} nameColor={item.senderNameColor}>
+              {item.senderName || 'Someone'}
+            </StrokedNameText>{' '}
+            {actionText}
           </Text>
         </View>
         <Text style={styles.notifTime}>
