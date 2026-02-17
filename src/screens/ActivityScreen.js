@@ -91,7 +91,7 @@ const groupNotificationsByTime = notifs => {
   return sections;
 };
 
-const NotificationAvatar = ({ url, style }) => {
+const NotificationAvatar = ({ url, senderId, style }) => {
   const [failed, setFailed] = useState(false);
   if (!url || failed) {
     return (
@@ -102,7 +102,7 @@ const NotificationAvatar = ({ url, style }) => {
   }
   return (
     <Image
-      source={{ uri: url, cacheKey: profileCacheKey('notif-avatar', url) }}
+      source={{ uri: url, cacheKey: profileCacheKey(`notif-avatar-${senderId}`, url) }}
       style={style}
       cachePolicy="memory-disk"
       transition={0}
@@ -221,18 +221,21 @@ const ActivityScreen = () => {
         ...docSnap.data(),
       }));
 
-      // Batch-fetch unique sender user docs to get nameColor
+      // Batch-fetch unique sender user docs to get nameColor + current photoURL fallback
       const uniqueSenderIds = [...new Set(notifs.map(n => n.senderId).filter(Boolean))];
       const colorMap = {};
+      const photoMap = {};
       await Promise.all(
         uniqueSenderIds.map(async senderId => {
           try {
             const userDoc = await getDoc(doc(db, 'users', senderId));
             if (userDoc.exists()) {
-              colorMap[senderId] = userDoc.data().nameColor || null;
+              const data = userDoc.data();
+              colorMap[senderId] = data.nameColor || null;
+              photoMap[senderId] = data.profilePhotoURL || data.photoURL || null;
             }
           } catch {
-            // Ignore — will fall back to default color
+            // Ignore — will fall back to defaults
           }
         })
       );
@@ -240,6 +243,8 @@ const ActivityScreen = () => {
       return notifs.map(n => ({
         ...n,
         senderNameColor: n.senderId ? colorMap[n.senderId] || null : null,
+        senderProfilePhotoURL:
+          (n.senderId ? photoMap[n.senderId] || null : null) || n.senderProfilePhotoURL || null,
       }));
     } catch (error) {
       logger.error('Error fetching notifications', { error: error.message });
@@ -499,7 +504,11 @@ const ActivityScreen = () => {
           activeOpacity={0.7}
           disabled={!item.senderId}
         >
-          <NotificationAvatar url={item.senderProfilePhotoURL} style={styles.notifPhoto} />
+          <NotificationAvatar
+            url={item.senderProfilePhotoURL}
+            senderId={item.senderId}
+            style={styles.notifPhoto}
+          />
         </TouchableOpacity>
         <View style={styles.notifContent}>
           <Text style={styles.notifMessage} numberOfLines={2}>
