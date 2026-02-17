@@ -98,11 +98,21 @@ const MonthlyAlbumGridScreen = () => {
     fetchPhotos();
   }, [fetchPhotos]);
 
-  // Handle photo state change (archive/restore/delete) - refresh the album
-  const handlePhotoStateChanged = useCallback(() => {
-    logger.info('MonthlyAlbumGridScreen: Photo state changed, refreshing');
-    fetchPhotos();
-  }, [fetchPhotos]);
+  // Handle photo state change (archive/restore/delete) - refresh the album.
+  // If deletedPhotoId is provided (deletion case), optimistically remove the photo
+  // from local state immediately so the grid doesn't show stale data while
+  // fetchPhotos is in flight. This closes the race window where the user could
+  // tap the deleted photo's cell and open the viewer with a stale photos array.
+  const handlePhotoStateChanged = useCallback(
+    deletedPhotoId => {
+      logger.info('MonthlyAlbumGridScreen: Photo state changed, refreshing');
+      if (deletedPhotoId) {
+        setPhotos(prev => prev.filter(p => p.id !== deletedPhotoId));
+      }
+      fetchPhotos();
+    },
+    [fetchPhotos]
+  );
 
   // Format day header: "Monday, January 15"
   const formatDayHeader = capturedAt => {
@@ -119,7 +129,11 @@ const MonthlyAlbumGridScreen = () => {
   const getDayKey = capturedAt => {
     if (!capturedAt) return 'unknown';
     const date = capturedAt.toDate ? capturedAt.toDate() : new Date(capturedAt.seconds * 1000);
-    return date.toISOString().split('T')[0];
+    try {
+      return date.toISOString().split('T')[0];
+    } catch {
+      return 'unknown';
+    }
   };
 
   // Build flat list data with day headers interspersed

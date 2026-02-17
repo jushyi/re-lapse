@@ -619,7 +619,7 @@ const AlbumPhotoViewer = ({
           onPress: async () => {
             const result = await softDeletePhoto(currentPhoto.id, currentUserId);
             if (result.success) {
-              onPhotoStateChanged?.();
+              onPhotoStateChanged?.(currentPhoto.id);
               onClose?.();
             } else {
               Alert.alert('Error', result.error || 'Failed to delete photo');
