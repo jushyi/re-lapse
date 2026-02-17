@@ -47,6 +47,7 @@ import {
 import DropdownMenu from '../components/DropdownMenu';
 import { TagFriendsModal, TaggedPeopleModal } from '../components';
 import { colors } from '../constants/colors';
+import { profileCacheKey } from '../utils/imageUtils';
 import logger from '../utils/logger';
 
 // Progress bar constants - matches photo marginHorizontal (8px)
@@ -146,7 +147,6 @@ const PhotoDetailScreen = () => {
           tagCount: result.photo.taggedUserIds?.length || 0,
         });
 
-        // Update current photo with latest data from Firestore
         updateCurrentPhoto(result.photo);
       } else {
         logger.warn('PhotoDetailScreen: Photo subscription error', { error: result.error });
@@ -782,7 +782,10 @@ const PhotoDetailScreen = () => {
           >
             {profilePhotoURL ? (
               <Image
-                source={{ uri: profilePhotoURL, cacheKey: `profile-${currentPhoto?.userId}` }}
+                source={{
+                  uri: profilePhotoURL,
+                  cacheKey: profileCacheKey(`profile-${currentPhoto?.userId}`, profilePhotoURL),
+                }}
                 style={styles.profilePic}
                 contentFit="cover"
                 cachePolicy="memory-disk"

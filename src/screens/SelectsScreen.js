@@ -26,6 +26,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { Button, StepIndicator } from '../components';
+import { uploadSelectsPhotos } from '../services/firebase/storageService';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import { typography } from '../constants/typography';
@@ -646,8 +647,20 @@ const SelectsScreen = ({ navigation }) => {
     setUploading(true);
 
     try {
+      // Upload local images to Firebase Storage, get remote URLs
+      let remoteUrls = selectsData;
+      if (selectsData.length > 0) {
+        const uploadResult = await uploadSelectsPhotos(user.uid, selectsData);
+        if (!uploadResult.success) {
+          Alert.alert('Upload Failed', 'Could not upload your highlights. Please try again.');
+          setUploading(false);
+          return;
+        }
+        remoteUrls = uploadResult.urls;
+      }
+
       const updateData = {
-        selects: selectsData,
+        selects: remoteUrls,
         selectsCompleted: true,
       };
 

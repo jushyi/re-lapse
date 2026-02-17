@@ -185,6 +185,68 @@ export const getPhotoURL = async (userId, photoId) => {
 };
 
 /**
+ * Upload selects (highlights) photos to Firebase Storage
+ * Compresses and uploads each photo, returns array of download URLs
+ * Skips already-uploaded URLs (https://) to avoid re-uploading
+ *
+ * @param {string} userId - User ID
+ * @param {Array<string>} localUris - Array of local image URIs
+ * @returns {Promise<{success: boolean, urls?: string[], error?: string}>}
+ */
+export const uploadSelectsPhotos = async (userId, localUris) => {
+  return withTrace('profile/upload_selects', async () => {
+    try {
+      logger.info('StorageService.uploadSelectsPhotos: Starting', {
+        userId,
+        count: localUris.length,
+      });
+
+      const urls = [];
+      for (let i = 0; i < localUris.length; i++) {
+        const uri = localUris[i];
+
+        // Skip already-uploaded URLs (https://)
+        if (uri.startsWith('https://') || uri.startsWith('http://')) {
+          urls.push(uri);
+          continue;
+        }
+
+        const compressedUri = await compressImage(uri, 0.7);
+        const filePath = uriToFilePath(compressedUri);
+
+        // Path: selects/{userId}/select_{index}.jpg
+        const storageRef = ref(storageInstance, `selects/${userId}/select_${i}.jpg`);
+
+        await storageRef.putFile(filePath, {
+          contentType: 'image/jpeg',
+          cacheControl: 'public, max-age=31536000',
+        });
+
+        const downloadURL = await storageRef.getDownloadURL();
+        urls.push(downloadURL);
+
+        logger.debug('StorageService.uploadSelectsPhotos: Uploaded', {
+          index: i,
+          total: localUris.length,
+        });
+      }
+
+      logger.info('StorageService.uploadSelectsPhotos: All uploaded', {
+        userId,
+        count: urls.length,
+      });
+      return { success: true, urls };
+    } catch (error) {
+      logger.error('StorageService.uploadSelectsPhotos: Failed', {
+        userId,
+        error: error.message,
+      });
+      return { success: false, error: error.message };
+    }
+  });
+};
+
+/**
  * Upload comment image to Firebase Storage
  * Images are compressed before upload and stored in comment-images folder
  *

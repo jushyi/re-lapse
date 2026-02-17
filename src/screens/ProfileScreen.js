@@ -8,6 +8,7 @@ import StrokedNameText from '../components/StrokedNameText';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/colors';
 import { spacing } from '../constants/spacing';
+import { profileCacheKey } from '../utils/imageUtils';
 import { layout } from '../constants/layout';
 import {
   SelectsBanner,
@@ -34,6 +35,7 @@ import {
   unblockUser,
   isBlocked,
 } from '../services/firebase';
+import { uploadSelectsPhotos } from '../services/firebase/storageService';
 import { typography } from '../constants/typography';
 import { useScreenTrace } from '../hooks/useScreenTrace';
 import logger from '../utils/logger';
@@ -588,12 +590,23 @@ const ProfileScreen = () => {
   const handleSaveSelects = async newSelects => {
     logger.info('ProfileScreen: Saving selects', { count: newSelects.length });
     try {
-      const result = await updateUserDocumentNative(user.uid, { selects: newSelects });
+      // Upload local images to Firebase Storage first
+      let remoteUrls = newSelects;
+      if (newSelects.length > 0) {
+        const uploadResult = await uploadSelectsPhotos(user.uid, newSelects);
+        if (!uploadResult.success) {
+          Alert.alert('Upload Failed', 'Could not upload your highlights. Please try again.');
+          return;
+        }
+        remoteUrls = uploadResult.urls;
+      }
+
+      const result = await updateUserDocumentNative(user.uid, { selects: remoteUrls });
       if (result.success) {
         // Update local profile state
         updateUserProfile({
           ...userProfile,
-          selects: newSelects,
+          selects: remoteUrls,
         });
         logger.info('ProfileScreen: Selects saved successfully');
         setShowEditOverlay(false);
@@ -877,7 +890,10 @@ const ProfileScreen = () => {
               <Image
                 source={{
                   uri: profileData.photoURL,
-                  cacheKey: `profile-${isOwnProfile ? user?.uid : userId}`,
+                  cacheKey: profileCacheKey(
+                    `profile-${isOwnProfile ? user?.uid : userId}`,
+                    profileData?.photoURL
+                  ),
                 }}
                 style={styles.profilePhoto}
                 contentFit="cover"

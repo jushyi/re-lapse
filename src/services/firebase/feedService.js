@@ -303,28 +303,36 @@ export const subscribeFeedPhotos = (
       const unsubscribe = onSnapshot(
         q,
         async snapshot => {
-          const chunkPhotos = new Map();
+          try {
+            const chunkPhotos = new Map();
 
-          // Batch fetch user data with deduplication (eliminates N+1 reads)
-          const chunkUserIds = snapshot.docs.map(photoDoc => photoDoc.data().userId);
-          const userMap = await batchFetchUserData(chunkUserIds);
+            // Batch fetch user data with deduplication (eliminates N+1 reads)
+            const chunkUserIds = snapshot.docs.map(photoDoc => photoDoc.data().userId);
+            const userMap = await batchFetchUserData(chunkUserIds);
 
-          snapshot.docs.forEach(photoDoc => {
-            const photoData = photoDoc.data();
-            chunkPhotos.set(photoDoc.id, {
-              id: photoDoc.id,
-              ...photoData,
-              user: userMap.get(photoData.userId) || {
-                uid: photoData.userId,
-                username: 'unknown',
-                displayName: 'Unknown User',
-                profilePhotoURL: null,
-              },
+            snapshot.docs.forEach(photoDoc => {
+              const photoData = photoDoc.data();
+              chunkPhotos.set(photoDoc.id, {
+                id: photoDoc.id,
+                ...photoData,
+                user: userMap.get(photoData.userId) || {
+                  uid: photoData.userId,
+                  username: 'unknown',
+                  displayName: 'Unknown User',
+                  profilePhotoURL: null,
+                  nameColor: null,
+                },
+              });
             });
-          });
 
-          photosByChunk.set(chunkIndex, chunkPhotos);
-          await mergeAndNotify();
+            photosByChunk.set(chunkIndex, chunkPhotos);
+            await mergeAndNotify();
+          } catch (err) {
+            logger.error('Error processing feed snapshot chunk', {
+              chunkIndex,
+              error: err.message,
+            });
+          }
         },
         error => {
           logger.error('Error in feed subscription chunk', { chunkIndex, error });
@@ -640,6 +648,7 @@ export const getUserStoriesData = async userId => {
       where('userId', '==', userId),
       where('photoState', '==', 'journal'),
       where('triagedAt', '>=', cutoff),
+      orderBy('triagedAt', 'desc'),
       limit(100) // Safety bound on user's own stories within 7-day window
     );
     const photosSnapshot = await getDocs(photosQuery);
@@ -772,6 +781,7 @@ export const getFriendStoriesData = async currentUserId => {
         where('userId', '==', friendId),
         where('photoState', '==', 'journal'),
         where('triagedAt', '>=', cutoff),
+        orderBy('triagedAt', 'desc'),
         limit(100) // Safety bound on friend's stories within 7-day window
       );
       const photosSnapshot = await getDocs(photosQuery);

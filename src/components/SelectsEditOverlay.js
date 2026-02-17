@@ -338,6 +338,55 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
   const previewWidth = SCREEN_WIDTH - SCREEN_PADDING * 2;
   const previewHeight = previewWidth / PREVIEW_ASPECT_RATIO;
 
+  // Multi-select picker for preview area (matches onboarding flow)
+  const handlePickMultiplePhotos = async () => {
+    logger.debug('SelectsEditOverlay: Opening multi-select photo picker');
+
+    if (selectedPhotos.length >= MAX_SELECTS) {
+      Alert.alert('Maximum Reached', `You can only select up to ${MAX_SELECTS} photos`);
+      return;
+    }
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library');
+      return;
+    }
+
+    const remaining = MAX_SELECTS - selectedPhotos.length;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      logger.info('SelectsEditOverlay: Photos selected', { count: result.assets.length });
+
+      const existingIds = new Set(selectedPhotos.map(p => p.assetId || p.uri));
+      const newPhotos = result.assets
+        .map(asset => ({
+          uri: asset.uri,
+          assetId: asset.assetId || asset.uri,
+        }))
+        .filter(photo => !existingIds.has(photo.assetId));
+
+      if (newPhotos.length === 0) {
+        Alert.alert('Already Added', 'All selected photos are already in your highlights');
+        return;
+      }
+
+      setSelectedPhotos(prev => {
+        const combined = [...prev, ...newPhotos].slice(0, MAX_SELECTS);
+        setSelectedIndex(prev.length);
+        return combined;
+      });
+    }
+  };
+
   // Single photo picker for thumbnail slots
   const handlePickSinglePhoto = async () => {
     logger.debug('SelectsEditOverlay: Opening single photo picker');
@@ -543,7 +592,7 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
   const renderEmptyPreview = () => (
     <TouchableOpacity
       style={[styles.previewEmpty, { width: previewWidth, height: previewHeight }]}
-      onPress={handlePickSinglePhoto}
+      onPress={handlePickMultiplePhotos}
       activeOpacity={0.8}
     >
       <PixelIcon name="images-outline" size={64} color={colors.text.secondary} />
@@ -642,6 +691,9 @@ const SelectsEditOverlay = ({ visible, selects = [], onSave, onClose }) => {
                     renderThumbnailSlot(index)
                   )}
                 </ScrollView>
+                {/* Edge masks to hide horizontal scroll overflow while allowing vertical drag */}
+                <View style={styles.thumbnailMaskLeft} pointerEvents="none" />
+                <View style={styles.thumbnailMaskRight} pointerEvents="none" />
               </View>
 
               {/* Spacer to push button to bottom */}
@@ -747,6 +799,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: THUMBNAIL_GAP,
     overflow: 'visible',
+  },
+  thumbnailMaskLeft: {
+    position: 'absolute',
+    left: -SCREEN_PADDING,
+    top: 0,
+    bottom: 0,
+    width: SCREEN_PADDING,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    zIndex: 2,
+  },
+  thumbnailMaskRight: {
+    position: 'absolute',
+    right: -SCREEN_PADDING,
+    top: 0,
+    bottom: 0,
+    width: SCREEN_PADDING,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    zIndex: 2,
   },
   thumbnailSlot: {
     width: THUMBNAIL_SIZE,

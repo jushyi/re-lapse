@@ -1154,17 +1154,39 @@ export const subscribePhoto = (photoId, callback) => {
     logger.info('PhotoService.subscribePhoto: Setting up subscription', { photoId });
 
     const photoRef = doc(db, 'photos', photoId);
+    let cachedUser = null;
 
     const unsubscribe = onSnapshot(
       photoRef,
-      snapshot => {
+      async snapshot => {
         if (snapshot.exists()) {
           const photo = { id: snapshot.id, ...snapshot.data() };
           logger.debug('PhotoService.subscribePhoto: Photo updated', {
             photoId,
             tagCount: photo.taggedUserIds?.length || 0,
           });
-          callback({ success: true, photo });
+
+          // Fetch and cache user data on first snapshot
+          if (!cachedUser && photo.userId) {
+            try {
+              const userDocSnap = await getDoc(doc(db, 'users', photo.userId));
+              const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+              cachedUser = {
+                uid: photo.userId,
+                username: userData.username || 'unknown',
+                displayName: userData.displayName || 'Unknown User',
+                profilePhotoURL: userData.profilePhotoURL || userData.photoURL || null,
+                nameColor: userData.nameColor || null,
+              };
+            } catch (userError) {
+              logger.warn('PhotoService.subscribePhoto: Failed to fetch user', {
+                userId: photo.userId,
+                error: userError.message,
+              });
+            }
+          }
+
+          callback({ success: true, photo: { ...photo, user: cachedUser } });
         } else {
           logger.warn('PhotoService.subscribePhoto: Photo not found', { photoId });
           callback({ success: false, error: 'Photo not found' });
