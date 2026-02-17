@@ -336,26 +336,14 @@ const AppNavigator = () => {
     userProfile.selectsCompleted === true &&
     userProfile.contactsSyncCompleted === undefined;
 
-  // Show NotificationPermission if user completed contacts sync but hasn't been prompted for notifications
-  // Skip for existing users who already have a push token registered
-  const needsNotificationPermission =
-    isAuthenticated &&
-    userProfile &&
-    userProfile.profileSetupCompleted === true &&
-    userProfile.selectsCompleted === true &&
-    userProfile.contactsSyncCompleted !== undefined &&
-    userProfile.notificationPermissionCompleted !== true &&
-    !userProfile.fcmToken;
-
-  // Determine if user needs onboarding (profile setup, selects, contacts sync, or notification permission)
-  const needsOnboarding =
-    needsProfileSetup || needsSelects || needsContactsSync || needsNotificationPermission;
+  // Determine if user needs onboarding (profile setup, selects, or contacts sync)
+  // NotificationPermission is reached via ContactsSync navigation during onboarding,
+  // not auto-routed on startup for returning users
+  const needsOnboarding = needsProfileSetup || needsSelects || needsContactsSync;
 
   // Start at appropriate screen (furthest progress first)
   let onboardingInitialRoute = 'ProfileSetup';
-  if (needsNotificationPermission) {
-    onboardingInitialRoute = 'NotificationPermission';
-  } else if (needsContactsSync) {
+  if (needsContactsSync) {
     onboardingInitialRoute = 'ContactsSync';
   } else if (needsSelects) {
     onboardingInitialRoute = 'Selects';
