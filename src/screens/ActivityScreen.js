@@ -221,18 +221,21 @@ const ActivityScreen = () => {
         ...docSnap.data(),
       }));
 
-      // Batch-fetch unique sender user docs to get nameColor
+      // Batch-fetch unique sender user docs to get nameColor + current photoURL fallback
       const uniqueSenderIds = [...new Set(notifs.map(n => n.senderId).filter(Boolean))];
       const colorMap = {};
+      const photoMap = {};
       await Promise.all(
         uniqueSenderIds.map(async senderId => {
           try {
             const userDoc = await getDoc(doc(db, 'users', senderId));
             if (userDoc.exists()) {
-              colorMap[senderId] = userDoc.data().nameColor || null;
+              const data = userDoc.data();
+              colorMap[senderId] = data.nameColor || null;
+              photoMap[senderId] = data.profilePhotoURL || data.photoURL || null;
             }
           } catch {
-            // Ignore — will fall back to default color
+            // Ignore — will fall back to defaults
           }
         })
       );
@@ -240,6 +243,8 @@ const ActivityScreen = () => {
       return notifs.map(n => ({
         ...n,
         senderNameColor: n.senderId ? colorMap[n.senderId] || null : null,
+        senderProfilePhotoURL:
+          n.senderProfilePhotoURL || (n.senderId ? photoMap[n.senderId] || null : null),
       }));
     } catch (error) {
       logger.error('Error fetching notifications', { error: error.message });
