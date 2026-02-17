@@ -49,6 +49,7 @@ import RecentlyDeletedScreen from '../screens/RecentlyDeletedScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import ProfilePhotoCropScreen from '../screens/ProfilePhotoCropScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import ContactsSettingsScreen from '../screens/ContactsSettingsScreen';
 import ContributionsScreen from '../screens/ContributionsScreen';
 import SoundSettingsScreen from '../screens/SoundSettingsScreen';
 
@@ -158,6 +159,11 @@ const ProfileStackNavigator = () => {
       <Stack.Screen
         name="NotificationSettings"
         component={NotificationSettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ContactsSettings"
+        component={ContactsSettingsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
