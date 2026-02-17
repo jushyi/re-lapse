@@ -62,6 +62,15 @@
       "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
       "package": "com.spoodsjs.flick"
     },
+    "updates": {
+      "url": "https://u.expo.dev/1f2e8a22-b3bf-498d-adcf-c56c898b2508",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -91,7 +100,8 @@
       "./plugins/withFirebaseFix",
       "@giphy/react-native-sdk",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-updates"
     ],
     "owner": "spoodsjs",
     "extra": {

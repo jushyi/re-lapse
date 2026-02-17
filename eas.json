@@ -7,12 +7,14 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "env": {
         "GOOGLE_SERVICES_PLIST": "./GoogleService-Info.plist"
       }
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "ios": {
         "simulator": false
       },
@@ -22,6 +24,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "env": {
         "APP_ENV": "production",
         "GOOGLE_SERVICES_PLIST": "./GoogleService-Info-prod.plist"
