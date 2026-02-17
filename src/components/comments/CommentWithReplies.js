@@ -5,7 +5,7 @@
  * Handles expand/collapse state for the replies section.
  * Extracted from CommentsBottomSheet to allow useState for reply visibility.
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import CommentRow from './CommentRow';
@@ -47,6 +47,9 @@ const CommentWithReplies = ({
   onHighlightedReplyLayout,
 }) => {
   const [showReplies, setShowReplies] = useState(false);
+  // Track repliesSection Y offset (relative to CommentWithReplies root) so we can
+  // combine it with a reply's own Y to get the full offset from the item root.
+  const repliesSectionYRef = useRef(0);
 
   // Auto-expand replies when forceExpanded becomes true (e.g., @mention navigation)
   useEffect(() => {
@@ -94,7 +97,12 @@ const CommentWithReplies = ({
 
       {/* Replies section */}
       {hasReplies && (
-        <View style={styles.repliesSection}>
+        <View
+          style={styles.repliesSection}
+          onLayout={e => {
+            repliesSectionYRef.current = e.nativeEvent.layout.y;
+          }}
+        >
           {/* Toggle button */}
           <TouchableOpacity
             style={styles.viewRepliesButton}
@@ -117,7 +125,10 @@ const CommentWithReplies = ({
                 style={styles.replyItem}
                 onLayout={
                   reply.id === highlightedCommentId && onHighlightedReplyLayout
-                    ? e => onHighlightedReplyLayout(e.nativeEvent.layout.y)
+                    ? e =>
+                        onHighlightedReplyLayout(
+                          repliesSectionYRef.current + e.nativeEvent.layout.y
+                        )
                     : undefined
                 }
               >
