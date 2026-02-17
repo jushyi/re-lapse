@@ -181,11 +181,14 @@ const ProfileSetupScreen = ({ navigation, route }) => {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Navigate to crop screen
-      navigation.navigate('ProfilePhotoCrop', {
-        imageUri: result.assets[0].uri,
-        onCropComplete: handleCropComplete,
-      });
+      // Navigate to crop screen - setTimeout avoids iOS native picker dismissal timing issue in production
+      const uri = result.assets[0].uri;
+      setTimeout(() => {
+        navigation.navigate('ProfilePhotoCrop', {
+          imageUri: uri,
+          onCropComplete: handleCropComplete,
+        });
+      }, 150);
     }
   };
 
@@ -202,11 +205,14 @@ const ProfileSetupScreen = ({ navigation, route }) => {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Navigate to crop screen
-      navigation.navigate('ProfilePhotoCrop', {
-        imageUri: result.assets[0].uri,
-        onCropComplete: handleCropComplete,
-      });
+      // Navigate to crop screen - setTimeout avoids iOS native picker dismissal timing issue in production
+      const uri = result.assets[0].uri;
+      setTimeout(() => {
+        navigation.navigate('ProfilePhotoCrop', {
+          imageUri: uri,
+          onCropComplete: handleCropComplete,
+        });
+      }, 150);
     }
   };
 

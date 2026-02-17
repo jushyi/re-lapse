@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Alert,
   ScrollView,
   RefreshControl,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PixelIcon from '../components/PixelIcon';
@@ -35,6 +35,7 @@ import {
   declineFriendRequest,
 } from '../services/firebase/friendshipService';
 import { getTimeAgo } from '../utils/timeUtils';
+import { profileCacheKey } from '../utils/imageUtils';
 import { mediumImpact } from '../utils/haptics';
 import { markSingleNotificationAsRead } from '../services/firebase/notificationService';
 import { getPhotoById, getUserStoriesData } from '../services/firebase/feedService';
@@ -88,6 +89,26 @@ const groupNotificationsByTime = notifs => {
   if (earlier.length > 0) sections.push({ title: 'Earlier', data: earlier });
 
   return sections;
+};
+
+const NotificationAvatar = ({ url, style }) => {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) {
+    return (
+      <View style={[style, styles.notifPhotoPlaceholder]}>
+        <PixelIcon name="person" size={20} color={colors.text.tertiary} />
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri: url, cacheKey: profileCacheKey('notif-avatar', url) }}
+      style={style}
+      cachePolicy="memory-disk"
+      transition={0}
+      onError={() => setFailed(true)}
+    />
+  );
 };
 
 /**
@@ -478,13 +499,7 @@ const ActivityScreen = () => {
           activeOpacity={0.7}
           disabled={!item.senderId}
         >
-          {item.senderProfilePhotoURL ? (
-            <Image source={{ uri: item.senderProfilePhotoURL }} style={styles.notifPhoto} />
-          ) : (
-            <View style={[styles.notifPhoto, styles.notifPhotoPlaceholder]}>
-              <PixelIcon name="person" size={20} color={colors.text.tertiary} />
-            </View>
-          )}
+          <NotificationAvatar url={item.senderProfilePhotoURL} style={styles.notifPhoto} />
         </TouchableOpacity>
         <View style={styles.notifContent}>
           <Text style={styles.notifMessage} numberOfLines={2}>
