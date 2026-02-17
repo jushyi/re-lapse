@@ -138,11 +138,6 @@ const PhotoDetailScreen = () => {
   useEffect(() => {
     if (!contextPhoto?.id) return;
 
-    // Capture user data from the initial photo (embedded by feed/stories service).
-    // subscribePhoto returns raw Firestore data without the user object, so we
-    // preserve it across subscription updates to prevent "Unknown User" display.
-    const preservedUser = contextPhoto?.user;
-
     logger.debug('PhotoDetailScreen: Setting up photo subscription', { photoId: contextPhoto.id });
 
     const unsubscribe = subscribePhoto(contextPhoto.id, result => {
@@ -152,11 +147,7 @@ const PhotoDetailScreen = () => {
           tagCount: result.photo.taggedUserIds?.length || 0,
         });
 
-        // Merge subscription data with preserved user data
-        updateCurrentPhoto({
-          ...result.photo,
-          user: result.photo.user || preservedUser,
-        });
+        updateCurrentPhoto(result.photo);
       } else {
         logger.warn('PhotoDetailScreen: Photo subscription error', { error: result.error });
       }
