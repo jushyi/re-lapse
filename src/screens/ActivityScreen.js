@@ -377,7 +377,10 @@ const ActivityScreen = () => {
       }
     }
 
-    if ((type === 'reaction' || type === 'comment' || type === 'mention') && photoId) {
+    if (
+      (type === 'reaction' || type === 'comment' || type === 'mention' || type === 'reply') &&
+      photoId
+    ) {
       // Fetch the photo and open PhotoDetail directly
       const result = await getPhotoById(photoId);
       if (result.success) {
@@ -385,7 +388,8 @@ const ActivityScreen = () => {
           mode: 'feed',
           photo: result.photo,
           currentUserId: user?.uid,
-          initialShowComments: type === 'comment' || type === 'mention',
+          initialShowComments: type === 'comment' || type === 'mention' || type === 'reply',
+          targetCommentId: item.commentId || null,
         });
         navigation.navigate('PhotoDetail');
       }

@@ -1383,16 +1383,19 @@ exports.sendCommentNotification = functions
               continue;
             }
 
-            // Send mention notification
+            // Send mention/reply notification
             const mentionTitle = 'Flick';
-            const mentionBody = `${commenterName} mentioned you in a comment`;
+            const notifType = isReply ? 'reply' : 'mention';
+            const mentionBody = isReply
+              ? `${commenterName} replied to your comment`
+              : `${commenterName} mentioned you in a comment`;
 
             await sendPushNotification(
               fcmToken,
               mentionTitle,
               mentionBody,
               {
-                type: 'mention',
+                type: notifType,
                 photoId,
                 commentId,
               },
@@ -1402,7 +1405,7 @@ exports.sendCommentNotification = functions
             // Write to notifications collection for in-app display
             await db.collection('notifications').add({
               recipientId: mentionedUserId,
-              type: 'mention',
+              type: notifType,
               senderId: comment.userId,
               senderName: commenterName,
               senderProfilePhotoURL: commenterProfilePhotoURL,
