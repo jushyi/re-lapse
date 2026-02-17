@@ -209,7 +209,7 @@ const MainTabNavigator = () => {
       screenOptions={{
         lazy: false,
         swipeEnabled: true,
-        animationEnabled: true,
+        animationEnabled: false,
         sceneStyle: { backgroundColor: colors.background.primary },
       }}
     >
