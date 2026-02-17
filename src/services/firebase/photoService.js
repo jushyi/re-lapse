@@ -913,10 +913,19 @@ export const softDeletePhoto = async (photoId, userId) => {
     });
 
     // Clean up notifications referencing this photo so they no longer appear in ActivityScreen
-    const notifSnap = await getDocs(
-      query(collection(db, 'notifications'), where('photoId', '==', photoId))
-    );
-    await Promise.all(notifSnap.docs.map(d => deleteDoc(d.ref)));
+    // Wrapped in its own try-catch — notification cleanup is best-effort and should not
+    // fail the delete if Firestore rules prevent querying by photoId alone.
+    try {
+      const notifSnap = await getDocs(
+        query(collection(db, 'notifications'), where('photoId', '==', photoId))
+      );
+      await Promise.all(notifSnap.docs.map(d => deleteDoc(d.ref)));
+    } catch (notifError) {
+      logger.warn('PhotoService.softDeletePhoto: Notification cleanup failed (non-fatal)', {
+        photoId,
+        error: notifError.message,
+      });
+    }
 
     logger.info('PhotoService.softDeletePhoto: Photo soft deleted successfully', {
       photoId,
@@ -1315,12 +1324,19 @@ const cascadeDeletePhoto = async (photoId, userId) => {
     logger.debug('PhotoService.cascadeDeletePhoto: Deleting document', { photoId });
     await deleteDoc(photoRef);
 
-    // Step 5: Delete notifications referencing this photo
-    logger.debug('PhotoService.cascadeDeletePhoto: Deleting notifications', { photoId });
-    const notifSnap = await getDocs(
-      query(collection(db, 'notifications'), where('photoId', '==', photoId))
-    );
-    await Promise.all(notifSnap.docs.map(d => deleteDoc(d.ref)));
+    // Step 5: Delete notifications referencing this photo (best-effort — admin cleanup
+    // handles this definitively via processScheduledPhotoDeletions)
+    try {
+      const notifSnap = await getDocs(
+        query(collection(db, 'notifications'), where('photoId', '==', photoId))
+      );
+      await Promise.all(notifSnap.docs.map(d => deleteDoc(d.ref)));
+    } catch (notifError) {
+      logger.warn('PhotoService.cascadeDeletePhoto: Notification cleanup failed (non-fatal)', {
+        photoId,
+        error: notifError.message,
+      });
+    }
 
     logger.info('PhotoService.cascadeDeletePhoto: Cascade delete complete', { photoId, userId });
     return { success: true };
