@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PixelSpinner from '../components/PixelSpinner';
@@ -23,34 +23,42 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CIRCLE_SIZE = SCREEN_WIDTH * 0.8;
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2;
 
+// Maximum dp dimension for the rendered image view.
+// Android image libraries (Coil/Glide) silently downsample views that are
+// larger than the screen, breaking the gesture math.  We cap at CIRCLE_SIZE*4
+// and apply a displayScale factor so the crop formula can convert back to
+// original pixel coordinates.
+const MAX_DISPLAY_DP = CIRCLE_SIZE * 4;
+
 /**
  * ProfilePhotoCropScreen (Android)
- *
- * Uses the same rendering approach as iOS (image at raw pixel dimensions with
- * initialScale to fit the circle) — the math is identical and proven correct.
  *
  * Android-specific additions vs the iOS file:
  *  1. EXIF normalization via ImageManipulator before getting image size.
  *     On Android, Image.getSize() returns the raw (EXIF-unrotated) dimensions
- *     while expo-image renders with EXIF rotation applied, creating a mismatch.
- *     Baking the rotation in via ImageManipulator aligns both coordinate systems.
- *  2. Measured imageAreaLayout for the circle overlay.
- *     With edgeToEdgeEnabled: true, Dimensions.get('window').height includes the
- *     system bars, making SCREEN_HEIGHT larger than the actual imageArea and
- *     displacing the overlay circle.  We measure the real imageArea height via
- *     onLayout and use those values for the SVG overlay.
+ *     while expo-image renders with EXIF rotation applied.  Baking the rotation
+ *     in aligns both coordinate systems.
+ *  2. displayScale capping.
+ *     Camera photos can be 3000+ pixels wide.  Rendering at raw pixel dp values
+ *     causes Android to silently scale the view down, breaking gesture math.
+ *     We cap the rendered view at MAX_DISPLAY_DP and store displayScale so the
+ *     crop formula can convert display-dp coords back to original pixel coords.
+ *  3. Measured imageAreaLayout for the circle overlay.
+ *     With edgeToEdgeEnabled: true, Dimensions.get('window').height includes
+ *     system bars.  We measure the real imageArea height via onLayout.
  *
- * Crop formula (same as iOS):
- *   The image is rendered at imageSize.width × imageSize.height dp, centred in
- *   imageArea.  At initialScale the image's shorter side fills CIRCLE_SIZE.
+ * Crop formula:
+ *   Image rendered at displayWidth × displayHeight dp (= original * displayScale).
+ *   imageWidth/imageHeight shared values hold display dp dimensions.
  *   After transform [translateX: tx, translateY: ty, scale: s]:
- *     image centre on screen = imageArea.centre + (tx, ty)
- *     circle centre = imageArea.centre (fixed)
- *   Circle centre in image pixel coordinates:
- *     cropCentreX = imageWidth/2 - tx/s
- *     cropCentreY = imageHeight/2 - ty/s
- *   Crop size in pixels:
- *     cropSize = CIRCLE_SIZE / s
+ *     Circle centre in display-dp coords:
+ *       cx_dp = displayWidth/2 - tx/s
+ *       cy_dp = displayHeight/2 - ty/s
+ *     Convert to original pixel coords (÷ displayScale):
+ *       cropCentreX = imageOrigWidth/2  - (tx/s) / displayScale
+ *       cropCentreY = imageOrigHeight/2 - (ty/s) / displayScale
+ *     Crop size in original pixels:
+ *       cropSize = (CIRCLE_SIZE / s) / displayScale
  */
 const ProfilePhotoCropScreen = ({ navigation, route }) => {
   const { imageUri, onCropComplete } = route.params || {};
@@ -62,6 +70,9 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
   // workingUri has EXIF rotation baked in so Image.getSize() and the crop
   // operation share the same coordinate system.
   const [workingUri, setWorkingUri] = useState(null);
+  // displayScale < 1 when the image is larger than MAX_DISPLAY_DP.
+  // Stored as a ref (not state) because it only needs to be read in handleConfirm.
+  const displayScaleRef = useRef(1);
   // Measured imageArea dimensions so the circle overlay is centred in the real
   // available space — not the full window height which includes system bars on
   // Android with edgeToEdgeEnabled.
@@ -95,60 +106,101 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
     setLoading(true);
 
     const normalizeAndLoad = async () => {
-      let uri = imageUri;
-
+      // Normalize EXIF rotation and capture true pixel dimensions in one step.
+      // manipulateAsync returns { uri, width, height } where width/height are the
+      // actual pixel dimensions of the output file — unlike Image.getSize() which
+      // uses Fresco and silently downsamples images larger than ~2048px.
+      let normalized = null;
       try {
-        const normalized = await ImageManipulator.manipulateAsync(imageUri, [], {
+        normalized = await ImageManipulator.manipulateAsync(imageUri, [], {
           compress: 1,
           format: ImageManipulator.SaveFormat.JPEG,
         });
-        uri = normalized.uri;
       } catch (err) {
         logger.warn('ProfilePhotoCropScreen (Android): EXIF normalization failed, using original', {
           error: err.message,
         });
       }
 
+      const uri = normalized ? normalized.uri : imageUri;
       setWorkingUri(uri);
 
-      const ImageRN = require('react-native').Image;
-      ImageRN.getSize(
-        uri,
-        (width, height) => {
-          setImageSize({ width, height });
-          imageWidth.value = width;
-          imageHeight.value = height;
+      // Use the dimensions from the manipulateAsync result.  If normalization
+      // failed, fall back to Image.getSize() on the original URI.
+      let width = normalized?.width;
+      let height = normalized?.height;
 
-          // initialScale: scale the shorter side to fill CIRCLE_SIZE
-          const imageAspect = width / height;
-          const initialScale =
-            imageAspect > 1
-              ? CIRCLE_SIZE / height // landscape: height is shorter
-              : CIRCLE_SIZE / width; // portrait / square: width is shorter
+      if (!width || !height) {
+        // Fallback: Image.getSize via Fresco (may downsample >2048px images on
+        // Android but is better than nothing if manipulateAsync failed).
+        await new Promise(resolve => {
+          const ImageRN = require('react-native').Image;
+          ImageRN.getSize(
+            uri,
+            (w, h) => {
+              width = w;
+              height = h;
+              resolve();
+            },
+            err => {
+              logger.error('ProfilePhotoCropScreen (Android): Failed to get image size', {
+                error: err,
+              });
+              resolve();
+            }
+          );
+        });
+      }
 
-          minScaleValue.value = initialScale;
-          scale.value = initialScale;
-          savedScale.value = initialScale;
+      if (!width || !height) {
+        logger.error('ProfilePhotoCropScreen (Android): Could not determine image dimensions');
+        setLoading(false);
+        return;
+      }
 
-          // Reset pan
-          translateX.value = 0;
-          translateY.value = 0;
-          savedTranslateX.value = 0;
-          savedTranslateY.value = 0;
+      setImageSize({ width, height });
 
-          setLoading(false);
+      // Cap rendered dp size so Coil doesn't silently downsample the view.
+      // (expo-image allowDownscaling=false is set on the Image; this cap keeps
+      // the view small enough that full-quality decoding won't cause OOM.)
+      const rawMax = Math.max(width, height);
+      const displayScale = rawMax > MAX_DISPLAY_DP ? MAX_DISPLAY_DP / rawMax : 1;
+      displayScaleRef.current = displayScale;
 
-          logger.debug('ProfilePhotoCropScreen (Android): Image loaded', {
-            width,
-            height,
-            initialScale,
-          });
-        },
-        error => {
-          logger.error('ProfilePhotoCropScreen (Android): Failed to get image size', { error });
-          setLoading(false);
-        }
-      );
+      const displayWidth = Math.round(width * displayScale);
+      const displayHeight = Math.round(height * displayScale);
+
+      // Shared values hold DISPLAY dp dimensions (used for gesture clamping)
+      imageWidth.value = displayWidth;
+      imageHeight.value = displayHeight;
+
+      // initialScale: shorter DISPLAY side fills CIRCLE_SIZE
+      const imageAspect = width / height;
+      const initialScale =
+        imageAspect > 1
+          ? CIRCLE_SIZE / displayHeight // landscape: displayHeight is shorter
+          : CIRCLE_SIZE / displayWidth; // portrait / square: displayWidth is shorter
+
+      minScaleValue.value = initialScale;
+      scale.value = initialScale;
+      savedScale.value = initialScale;
+
+      // Reset pan
+      translateX.value = 0;
+      translateY.value = 0;
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
+
+      setLoading(false);
+
+      logger.debug('ProfilePhotoCropScreen (Android): Image loaded', {
+        width,
+        height,
+        displayWidth,
+        displayHeight,
+        displayScale,
+        initialScale,
+      });
     };
 
     normalizeAndLoad();
@@ -243,12 +295,18 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
         imageSize,
       });
 
-      // Crop size in original image pixels
-      const cropSizeInOriginal = CIRCLE_SIZE / currentScale;
+      // displayScale converts between display-dp coordinates (used by gestures)
+      // and original pixel coordinates (used by ImageManipulator.crop).
+      const ds = displayScaleRef.current;
 
-      // Crop centre in original image pixels (same formula as iOS)
-      const cropCenterX = imageSize.width / 2 - currentTranslateX / currentScale;
-      const cropCenterY = imageSize.height / 2 - currentTranslateY / currentScale;
+      // Crop size in original image pixels
+      const cropSizeInOriginal = CIRCLE_SIZE / currentScale / ds;
+
+      // Crop centre in original image pixels.
+      // Circle centre in display-dp = (displayWidth/2 - tx/s, displayHeight/2 - ty/s).
+      // Divide by ds to get original pixel coords.
+      const cropCenterX = imageSize.width / 2 - currentTranslateX / currentScale / ds;
+      const cropCenterY = imageSize.height / 2 - currentTranslateY / currentScale / ds;
 
       const originX = cropCenterX - cropSizeInOriginal / 2;
       const originY = cropCenterY - cropSizeInOriginal / 2;
@@ -369,11 +427,12 @@ const ProfilePhotoCropScreen = ({ navigation, route }) => {
                 <Image
                   source={{ uri: workingUri }}
                   style={{
-                    width: imageSize.width,
-                    height: imageSize.height,
+                    width: Math.round(imageSize.width * displayScaleRef.current),
+                    height: Math.round(imageSize.height * displayScaleRef.current),
                   }}
                   contentFit="contain"
                   cachePolicy="memory"
+                  allowDownscaling={false}
                 />
               </Animated.View>
             </GestureDetector>
