@@ -6,11 +6,13 @@ import {
   Modal,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   Dimensions,
   Alert,
   Animated,
   PanResponder,
   Easing,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +64,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  albumPositionText: {
+    fontSize: typography.size.sm,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: 2,
   },
   photoContainer: {
     width: SCREEN_WIDTH,
@@ -822,18 +831,8 @@ const AlbumPhotoViewer = ({
     []
   );
 
-  // Get thumbnail layout for optimization
-  const getThumbnailLayout = useCallback(
-    (_, index) => ({
-      length: THUMBNAIL_WIDTH + THUMBNAIL_MARGIN * 2,
-      offset: (THUMBNAIL_WIDTH + THUMBNAIL_MARGIN * 2) * index,
-      index,
-    }),
-    [THUMBNAIL_WIDTH, THUMBNAIL_MARGIN]
-  );
-
-  // Scroll thumbnail strip to center a specific index using scrollToOffset (more reliable
-  // than scrollToIndex on Android, especially inside a Modal).
+  // Scroll thumbnail strip to center a specific index.
+  // Uses ScrollView.scrollTo (more reliable on Android than FlatList.scrollToOffset in a Modal).
   const THUMB_ITEM_WIDTH = THUMBNAIL_WIDTH + THUMBNAIL_MARGIN * 2; // 58px
   const THUMB_CONTENT_PADDING = spacing.xs; // 8px (from contentContainerStyle paddingHorizontal)
   const scrollThumbnailTo = useCallback(
@@ -847,23 +846,9 @@ const AlbumPhotoViewer = ({
         totalItems * THUMB_ITEM_WIDTH + THUMB_CONTENT_PADDING * 2 - SCREEN_WIDTH
       );
       const offset = Math.max(0, Math.min(centeredOffset, maxOffset));
-      thumbnailListRef.current.scrollToOffset({ offset, animated });
+      thumbnailListRef.current.scrollTo({ x: offset, animated });
     },
     [THUMB_ITEM_WIDTH, THUMB_CONTENT_PADDING]
-  );
-
-  // Render thumbnail item — delegates to memoized ThumbnailItem so expo-image only
-  // re-renders for the 2 thumbnails that change isActive state, not all visible ones.
-  const renderThumbnail = useCallback(
-    ({ item, index }) => (
-      <ThumbnailItem
-        item={item}
-        index={index}
-        isActive={index === currentIndex}
-        onPress={goToIndex}
-      />
-    ),
-    [currentIndex, goToIndex]
   );
 
   if (!visible || photos.length === 0) {
@@ -943,8 +928,15 @@ const AlbumPhotoViewer = ({
             {/* Album name + position */}
             <View style={styles.headerCenter}>
               <Text style={styles.albumNameText} numberOfLines={1}>
-                {albumName} • {currentIndex + 1} of {photos.length}
+                {Platform.OS === 'android'
+                  ? albumName
+                  : `${albumName} • ${currentIndex + 1} of ${photos.length}`}
               </Text>
+              {Platform.OS === 'android' && (
+                <Text style={styles.albumPositionText}>
+                  {currentIndex + 1} of {photos.length}
+                </Text>
+              )}
             </View>
 
             {/* 3-dot menu (only for own profile) */}
@@ -991,29 +983,24 @@ const AlbumPhotoViewer = ({
           ]}
           pointerEvents="box-none"
         >
-          <FlatList
+          <ScrollView
             ref={thumbnailListRef}
-            data={photos}
-            renderItem={renderThumbnail}
-            keyExtractor={item => `thumb-${item.id}`}
             horizontal
             showsHorizontalScrollIndicator={false}
-            getItemLayout={getThumbnailLayout}
             contentContainerStyle={styles.thumbnailContent}
-            initialNumToRender={10}
-            maxToRenderPerBatch={5}
-            windowSize={21}
-            removeClippedSubviews={false}
+            scrollEventThrottle={0}
             onLayout={() => scrollThumbnailTo(currentIndex, false)}
-            onScrollToIndexFailed={info => {
-              const safeIndex = Math.min(info.index, photosRef.current.length - 1);
-              if (safeIndex >= 0) {
-                setTimeout(() => {
-                  scrollThumbnailTo(safeIndex, false);
-                }, 100);
-              }
-            }}
-          />
+          >
+            {photos.map((item, index) => (
+              <ThumbnailItem
+                key={item.id}
+                item={item}
+                index={index}
+                isActive={index === currentIndex}
+                onPress={goToIndex}
+              />
+            ))}
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
