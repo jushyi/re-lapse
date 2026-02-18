@@ -39,7 +39,7 @@ import {
 
 const ReanimatedView = ReanimatedModule.View;
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 85 : 65;
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 85 : 54;
 
 /**
  * RecentlyDeletedScreen

@@ -16,7 +16,7 @@ const CustomBottomTabBar = ({ state, navigation, userProfile }) => {
         styles.tabBar,
         androidBottomPadding > 0 && {
           paddingBottom: androidBottomPadding,
-          height: 65 + androidBottomPadding,
+          height: 54 + androidBottomPadding,
         },
       ]}
     >
@@ -84,8 +84,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
-    height: Platform.OS === 'ios' ? 85 : 65,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+    height: Platform.OS === 'ios' ? 85 : 54,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 6,
     paddingTop: Platform.OS === 'android' ? 6 : 12,
     position: 'absolute',
     bottom: 0,

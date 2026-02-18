@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Animated, Dimensions } from 'react-native';
+import { Animated, Dimensions, Platform } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +39,7 @@ export const ULTRA_WIDE_LEVEL = {
 };
 
 // Layout constants (exported for component use)
-export const TAB_BAR_HEIGHT = 65; // Bottom tab navigator height (includes safe area)
+export const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 65 : 54; // Bottom tab navigator height
 export const FOOTER_HEIGHT = 200; // Covers ~1/4 of screen for native camera feel
 export const CAMERA_HEIGHT = SCREEN_HEIGHT - FOOTER_HEIGHT - TAB_BAR_HEIGHT;
 export const CAMERA_BORDER_RADIUS = 24; // Rounded corners for camera preview
