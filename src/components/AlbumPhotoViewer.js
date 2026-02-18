@@ -26,6 +26,123 @@ import DropdownMenu from './DropdownMenu';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Styles defined at module level so ThumbnailItem (below) can reference them without
+// triggering ESLint's no-use-before-define rule.
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.overlay.dark,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: spacing.xs,
+  },
+  albumNameText: {
+    fontSize: typography.size.lg,
+    fontFamily: typography.fontFamily.bodyBold,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  photoContainer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photo: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  toast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.tertiary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: layout.borderRadius.xl,
+    gap: spacing.xs,
+  },
+  toastText: {
+    color: colors.text.primary,
+    fontSize: typography.size.md,
+    fontFamily: typography.fontFamily.body,
+  },
+  thumbnailBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    elevation: 10,
+    backgroundColor: colors.overlay.dark,
+    paddingTop: spacing.xs,
+  },
+  thumbnailContent: {
+    paddingHorizontal: spacing.xs,
+  },
+  thumbnailWrapper: {
+    marginHorizontal: spacing.xxs,
+  },
+  thumbnail: {
+    width: 50,
+    height: 67,
+    borderRadius: layout.borderRadius.md,
+  },
+  thumbnailActive: {
+    borderWidth: 2,
+    borderColor: colors.text.primary,
+  },
+});
+
+/**
+ * Memoized thumbnail item — prevents expo-image from re-rendering on every swipe.
+ * When the user swipes photos, renderThumbnail recreates (currentIndex dep), causing
+ * FlatList to call renderItem for every visible cell. Without memo, expo-image briefly
+ * blanks each thumbnail during its update cycle. With memo, only the 2 thumbnails
+ * that change their isActive state actually re-render.
+ */
+const ThumbnailItem = React.memo(function ThumbnailItem({ item, index, isActive, onPress }) {
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(index)}
+      activeOpacity={0.8}
+      style={styles.thumbnailWrapper}
+    >
+      <Image
+        source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
+        style={[styles.thumbnail, isActive && styles.thumbnailActive]}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        priority="normal"
+        recyclingKey={`thumb-${item.id}`}
+      />
+    </TouchableOpacity>
+  );
+});
+
 /**
  * AlbumPhotoViewer - Full-screen photo viewer for browsing album photos
  *
@@ -735,23 +852,16 @@ const AlbumPhotoViewer = ({
     [THUMB_ITEM_WIDTH, THUMB_CONTENT_PADDING]
   );
 
-  // Render thumbnail item
+  // Render thumbnail item — delegates to memoized ThumbnailItem so expo-image only
+  // re-renders for the 2 thumbnails that change isActive state, not all visible ones.
   const renderThumbnail = useCallback(
     ({ item, index }) => (
-      <TouchableOpacity
-        onPress={() => goToIndex(index)}
-        activeOpacity={0.8}
-        style={styles.thumbnailWrapper}
-      >
-        <Image
-          source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
-          style={[styles.thumbnail, index === currentIndex && styles.thumbnailActive]}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          priority="normal"
-          recyclingKey={`thumb-${item.id}`}
-        />
-      </TouchableOpacity>
+      <ThumbnailItem
+        item={item}
+        index={index}
+        isActive={index === currentIndex}
+        onPress={goToIndex}
+      />
     ),
     [currentIndex, goToIndex]
   );
@@ -901,94 +1011,5 @@ const AlbumPhotoViewer = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.overlay.dark,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: spacing.xs,
-  },
-  albumNameText: {
-    fontSize: typography.size.lg,
-    fontFamily: typography.fontFamily.bodyBold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  photoContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photo: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  toast: {
-    position: 'absolute',
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.tertiary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: layout.borderRadius.xl,
-    gap: spacing.xs,
-  },
-  toastText: {
-    color: colors.text.primary,
-    fontSize: typography.size.md,
-    fontFamily: typography.fontFamily.body,
-  },
-  thumbnailBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    elevation: 10,
-    backgroundColor: colors.overlay.dark,
-    paddingTop: spacing.xs,
-  },
-  thumbnailContent: {
-    paddingHorizontal: spacing.xs,
-  },
-  thumbnailWrapper: {
-    marginHorizontal: spacing.xxs,
-  },
-  thumbnail: {
-    width: 50,
-    height: 67,
-    borderRadius: layout.borderRadius.md,
-  },
-  thumbnailActive: {
-    borderWidth: 2,
-    borderColor: colors.text.primary,
-  },
-});
 
 export default AlbumPhotoViewer;
