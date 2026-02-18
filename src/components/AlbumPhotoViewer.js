@@ -398,10 +398,11 @@ const AlbumPhotoViewer = ({
     }
   }, [visible, photos.length, currentIndex]);
 
-  // Auto-scroll thumbnail bar when currentIndex changes (during swiping)
+  // Auto-scroll thumbnail bar when currentIndex changes (during swiping).
+  // Use animated:false to avoid rapid competing animations (handleScroll fires at 16ms throttle).
   useEffect(() => {
     if (visible && photos.length > 0) {
-      scrollThumbnailTo(currentIndex, true);
+      scrollThumbnailTo(currentIndex, false);
     }
   }, [currentIndex, visible, photos.length, scrollThumbnailTo]);
 
@@ -747,7 +748,7 @@ const AlbumPhotoViewer = ({
           style={[styles.thumbnail, index === currentIndex && styles.thumbnailActive]}
           contentFit="cover"
           cachePolicy="memory-disk"
-          priority="low"
+          priority="normal"
           recyclingKey={`thumb-${item.id}`}
         />
       </TouchableOpacity>
