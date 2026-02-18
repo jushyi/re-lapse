@@ -4,7 +4,7 @@
  * StyleSheet definitions for the darkroom screen component.
  */
 
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 import { spacing } from '../constants/spacing';
 import { typography } from '../constants/typography';
@@ -133,6 +133,7 @@ export const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.xxs,
     textAlign: 'center',
+    ...Platform.select({ android: { includeFontPadding: false, lineHeight: 32 } }),
   },
   headerSubtitle: {
     fontSize: typography.size.md,
@@ -227,6 +228,7 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
     textAlign: 'center',
+    ...Platform.select({ android: { includeFontPadding: false, lineHeight: 44 } }),
   },
   doneButtonBottom: {
     backgroundColor: colors.system.blue, // iOS blue
@@ -240,5 +242,6 @@ export const styles = StyleSheet.create({
     fontSize: typography.size.xl,
     fontFamily: typography.fontFamily.display,
     color: colors.text.primary,
+    ...Platform.select({ android: { includeFontPadding: false, lineHeight: 26 } }),
   },
 });
