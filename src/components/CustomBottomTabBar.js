@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.subtle,
     height: Platform.OS === 'ios' ? 85 : 65,
     paddingBottom: Platform.OS === 'ios' ? 28 : 8,
-    paddingTop: 12,
+    paddingTop: Platform.OS === 'android' ? 6 : 12,
     position: 'absolute',
     bottom: 0,
     left: 0,

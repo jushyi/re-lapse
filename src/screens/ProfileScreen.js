@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: Platform.OS === 'android' ? 6 : spacing.sm,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,

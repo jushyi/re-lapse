@@ -68,6 +68,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    paddingBottom: Platform.OS === 'android' ? 8 : spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.overlay.light,
     zIndex: layout.zIndex.dropdown,

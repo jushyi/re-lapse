@@ -738,7 +738,6 @@ const AlbumPhotoViewer = ({
           cachePolicy="memory-disk"
           priority="low"
           recyclingKey={`thumb-${item.id}`}
-          transition={100}
         />
       </TouchableOpacity>
     ),
@@ -852,11 +851,22 @@ const AlbumPhotoViewer = ({
               showsHorizontalScrollIndicator={false}
               getItemLayout={getThumbnailLayout}
               contentContainerStyle={styles.thumbnailContent}
+              initialScrollIndex={Math.min(initialIndex, Math.max(0, photos.length - 1))}
               initialNumToRender={10}
               maxToRenderPerBatch={5}
-              windowSize={7}
-              onScrollToIndexFailed={() => {
-                // Silently handle scroll failure
+              windowSize={21}
+              removeClippedSubviews={false}
+              onScrollToIndexFailed={info => {
+                const safeIndex = Math.min(info.index, photosRef.current.length - 1);
+                if (safeIndex >= 0) {
+                  setTimeout(() => {
+                    thumbnailListRef.current?.scrollToIndex({
+                      index: safeIndex,
+                      animated: false,
+                      viewPosition: 0.5,
+                    });
+                  }, 100);
+                }
               }}
             />
           </View>

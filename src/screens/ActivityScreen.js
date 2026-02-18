@@ -661,6 +661,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    paddingBottom: Platform.OS === 'android' ? 6 : spacing.sm,
     backgroundColor: colors.background.primary,
   },
   backButton: {

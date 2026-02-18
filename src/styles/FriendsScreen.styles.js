@@ -14,6 +14,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
+    paddingBottom: Platform.OS === 'android' ? 8 : spacing.md,
     backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,

@@ -570,6 +570,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    paddingBottom: Platform.OS === 'android' ? 6 : spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
