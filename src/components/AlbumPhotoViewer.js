@@ -115,12 +115,18 @@ const styles = StyleSheet.create({
   thumbnailWrapper: {
     marginHorizontal: spacing.xxs,
   },
-  thumbnail: {
+  thumbnailContainer: {
     width: 50,
     height: 67,
     borderRadius: layout.borderRadius.md,
+    overflow: 'hidden',
   },
-  thumbnailActive: {
+  thumbnail: {
+    width: 50,
+    height: 67,
+  },
+  thumbnailActiveBorder: {
+    ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
     borderColor: colors.text.primary,
   },
@@ -134,20 +140,33 @@ const styles = StyleSheet.create({
  * that change their isActive state actually re-render.
  */
 const ThumbnailItem = React.memo(function ThumbnailItem({ item, index, isActive, onPress }) {
+  // Stable source reference — expo-image won't re-render unless the URI actually changes.
+  // Without useMemo, every parent render creates a new object, causing expo-image to
+  // briefly blank on Android even when the image is already in memory cache.
+  const source = useMemo(
+    () => ({ uri: item.imageURL, cacheKey: `photo-${item.id}` }),
+    [item.imageURL, item.id]
+  );
+
   return (
     <TouchableOpacity
       onPress={() => onPress(index)}
       activeOpacity={0.8}
       style={styles.thumbnailWrapper}
     >
-      <Image
-        source={{ uri: item.imageURL, cacheKey: `photo-${item.id}` }}
-        style={[styles.thumbnail, isActive && styles.thumbnailActive]}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        priority="normal"
-        recyclingKey={`thumb-${item.id}`}
-      />
+      {/* Container handles border-radius clipping for both image and active overlay */}
+      <View style={styles.thumbnailContainer}>
+        <Image
+          source={source}
+          style={styles.thumbnail}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="normal"
+        />
+        {/* Active border is an overlay so Image.style never changes — prevents expo-image
+            from blanking on Android when isActive toggles between photos. */}
+        {isActive && <View style={styles.thumbnailActiveBorder} />}
+      </View>
     </TouchableOpacity>
   );
 });
