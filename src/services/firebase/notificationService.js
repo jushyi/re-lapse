@@ -249,7 +249,18 @@ export const handleNotificationReceived = notification => {
 export const handleNotificationTapped = notification => {
   try {
     const { data } = notification.request.content;
-    const { type, photoId, friendshipId, userId, taggerId, commentId } = data || {};
+    const {
+      type,
+      photoId,
+      friendshipId,
+      userId,
+      taggerId,
+      commentId,
+      conversationId,
+      senderId,
+      senderName,
+      senderProfilePhotoURL,
+    } = data || {};
 
     logger.debug('Notification tapped', {
       type,
@@ -258,6 +269,7 @@ export const handleNotificationTapped = notification => {
       userId,
       taggerId,
       commentId,
+      conversationId,
     });
 
     // Return navigation data based on notification type
@@ -366,6 +378,24 @@ export const handleNotificationTapped = notification => {
               photoId,
               shouldOpenPhoto: true,
               notifType: 'tagged',
+            },
+          },
+        };
+
+      case 'direct_message':
+        return {
+          success: true,
+          data: {
+            type: 'direct_message',
+            screen: 'Conversation',
+            params: {
+              conversationId: conversationId,
+              friendId: senderId,
+              friendProfile: {
+                uid: senderId,
+                displayName: senderName || 'Unknown',
+                photoURL: senderProfilePhotoURL || null,
+              },
             },
           },
         };

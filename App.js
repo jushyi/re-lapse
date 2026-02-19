@@ -159,6 +159,15 @@ export default function App() {
           // Navigate to Activity screen (notifications) for comment/mention/reaction
           // ActivityScreen handles opening PhotoDetail with proper context
           navigationRef.current.navigate('Activity', params);
+        } else if (screen === 'Conversation') {
+          // Navigate to Messages tab > Conversation screen
+          navigationRef.current.navigate('MainTabs', {
+            screen: 'Messages',
+            params: {
+              screen: 'Conversation',
+              params: params,
+            },
+          });
         }
       };
 
@@ -251,6 +260,18 @@ export default function App() {
     // Listener for notifications received while app is in foreground
     // Shows custom InAppNotificationBanner instead of system notification
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      // Suppress DM notifications if user is currently viewing that conversation
+      const notifData = notification.request.content.data;
+      if (notifData?.type === 'direct_message' && notifData?.conversationId) {
+        const currentRoute = navigationRef.current?.getCurrentRoute?.();
+        if (
+          currentRoute?.name === 'Conversation' &&
+          currentRoute?.params?.conversationId === notifData.conversationId
+        ) {
+          return; // Skip banner — user is already viewing this conversation
+        }
+      }
+
       const result = handleNotificationReceived(notification);
       if (result.success) {
         setBannerData(result.data);
