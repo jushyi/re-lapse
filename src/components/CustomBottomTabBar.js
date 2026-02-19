@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,7 +7,7 @@ import PixelIcon from './PixelIcon';
 import { colors } from '../constants/colors';
 import { profileCacheKey } from '../utils/imageUtils';
 
-const CustomBottomTabBar = ({ state, navigation, userProfile }) => {
+const CustomBottomTabBar = ({ state, navigation, userProfile, totalUnreadCount = 0 }) => {
   const insets = useSafeAreaInsets();
   const androidBottomPadding = Platform.OS === 'android' ? insets.bottom : 0;
 
@@ -40,6 +40,19 @@ const CustomBottomTabBar = ({ state, navigation, userProfile }) => {
         let icon;
         if (route.name === 'Feed') {
           icon = <PixelIcon name="tab-feed" size={24} color={color} />;
+        } else if (route.name === 'Messages') {
+          icon = (
+            <View>
+              <PixelIcon name="tab-messages" size={24} color={color} />
+              {totalUnreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          );
         } else if (route.name === 'Camera') {
           icon = <PixelIcon name="tab-camera" size={24} color={color} />;
         } else if (route.name === 'Profile') {
@@ -105,6 +118,23 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: colors.interactive.primary,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: colors.text.inverse,
+    fontSize: 9,
+    fontWeight: '700',
   },
 });
 
