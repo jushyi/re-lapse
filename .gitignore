@@ -50,6 +50,8 @@ coverage/
 tmpclaude-*
 nul
 CLAUDE.md
+.work/
+.planning/
 
 # Firebase config files (never commit)
 GoogleService-Info.plist
