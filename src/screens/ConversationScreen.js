@@ -1,0 +1,227 @@
+/**
+ * ConversationScreen — Chat Thread
+ *
+ * The core DM experience: displays message history with real-time updates,
+ * supports text and GIF sending, handles keyboard interaction, and provides
+ * pagination for older messages via an inverted FlatList.
+ */
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+
+import { useNavigation, useRoute } from '@react-navigation/native';
+
+import ConversationHeader from '../components/ConversationHeader';
+import MessageBubble from '../components/MessageBubble';
+import TimeDivider from '../components/TimeDivider';
+import DMInput from '../components/DMInput';
+import PixelSpinner from '../components/PixelSpinner';
+
+import { useAuth } from '../context/AuthContext';
+import useConversation from '../hooks/useConversation';
+
+import { colors } from '../constants/colors';
+
+/**
+ * Empty state shown when no messages exist in the conversation.
+ */
+const EmptyConversation = ({ displayName }) => (
+  <View style={styles.emptyContainer}>
+    <Text style={styles.emptyText}>Say hi to {displayName}!</Text>
+  </View>
+);
+
+const ConversationScreen = () => {
+  const { user } = useAuth();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { conversationId, friendId, friendProfile, deletedAt } = route.params;
+
+  const { messages, loading, loadingMore, hasMore, loadMore, handleSendMessage } = useConversation(
+    conversationId,
+    user.uid,
+    deletedAt
+  );
+
+  const flatListRef = useRef(null);
+  const [visibleTimestamps, setVisibleTimestamps] = useState(new Set());
+  const isReadOnly = route.params?.readOnly || false;
+
+  /**
+   * Toggle tap-to-reveal timestamp for a specific message.
+   */
+  const toggleTimestamp = useCallback(messageId => {
+    setVisibleTimestamps(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
+
+  /**
+   * Process messages array to insert TimeDivider items between
+   * messages from different dates. Messages are newest-first
+   * (for inverted list), so we process in reverse to group by date,
+   * then reverse back.
+   */
+  const messagesWithDividers = useMemo(() => {
+    if (!messages.length) return [];
+    const result = [];
+    let lastDate = null;
+
+    // Messages are sorted newest-first (for inverted list)
+    // Process in reverse to insert dividers correctly
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      const msgDate = msg.createdAt?.toDate?.() ? msg.createdAt.toDate() : new Date();
+      const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`;
+
+      if (dateKey !== lastDate) {
+        result.push({
+          type: 'divider',
+          id: `divider-${dateKey}`,
+          dividerKey: `divider-${dateKey}`,
+          timestamp: msgDate,
+        });
+        lastDate = dateKey;
+      }
+
+      result.push({ ...msg, type: 'message' });
+    }
+
+    return result.reverse(); // Back to newest-first for inverted list
+  }, [messages]);
+
+  /**
+   * Render a single item — either a TimeDivider or a MessageBubble
+   * wrapped with consistent spacing.
+   */
+  const renderItem = useCallback(
+    ({ item }) => {
+      if (item.type === 'divider') {
+        return <TimeDivider timestamp={item.timestamp} />;
+      }
+
+      return (
+        <View style={styles.messageWrapper}>
+          <MessageBubble
+            message={item}
+            isCurrentUser={item.senderId === user.uid}
+            showTimestamp={visibleTimestamps.has(item.id)}
+            onPress={() => toggleTimestamp(item.id)}
+          />
+        </View>
+      );
+    },
+    [user.uid, visibleTimestamps, toggleTimestamp]
+  );
+
+  /**
+   * Guard loadMore: only trigger if not already loading and more pages exist.
+   */
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      loadMore();
+    }
+  }, [loadingMore, hasMore, loadMore]);
+
+  const keyExtractor = useCallback(item => item.id || item.dividerKey, []);
+
+  // Show loading spinner while initial data loads
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ConversationHeader
+          friendProfile={friendProfile}
+          onBackPress={() => navigation.goBack()}
+          onProfilePress={() =>
+            navigation.navigate('OtherUserProfile', {
+              userId: friendId,
+              username: friendProfile.username,
+            })
+          }
+          onReportPress={() =>
+            navigation.navigate('ReportUser', {
+              userId: friendId,
+              username: friendProfile.username,
+            })
+          }
+        />
+        <View style={styles.loadingContainer}>
+          <PixelSpinner size="large" />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <ConversationHeader
+        friendProfile={friendProfile}
+        onBackPress={() => navigation.goBack()}
+        onProfilePress={() =>
+          navigation.navigate('OtherUserProfile', {
+            userId: friendId,
+            username: friendProfile.username,
+          })
+        }
+        onReportPress={() =>
+          navigation.navigate('ReportUser', {
+            userId: friendId,
+            username: friendProfile.username,
+          })
+        }
+      />
+      <FlatList
+        ref={flatListRef}
+        data={messagesWithDividers}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        inverted
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={loadingMore ? <PixelSpinner size="small" /> : null}
+        ListEmptyComponent={
+          !loading ? <EmptyConversation displayName={friendProfile?.displayName || 'them'} /> : null
+        }
+        contentContainerStyle={messages.length === 0 ? styles.emptyContainer : undefined}
+        keyboardDismissMode="interactive"
+        removeClippedSubviews={true}
+      />
+      <DMInput onSendMessage={handleSendMessage} disabled={isReadOnly} placeholder="Message..." />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.text.secondary,
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  messageWrapper: {
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+});
+
+export default ConversationScreen;
