@@ -40,6 +40,15 @@ service cloud.firestore {
              (parts[0] == request.auth.uid || parts[1] == request.auth.uid);
     }
 
+    // Helper function to check if user is a conversation participant by parsing document ID
+    // Document ID format: [lowerUserId]_[higherUserId] (deterministic, same as friendships)
+    function isConversationMemberById(conversationId) {
+      let parts = conversationId.split('_');
+      return isAuthenticated() &&
+             parts.size() == 2 &&
+             (parts[0] == request.auth.uid || parts[1] == request.auth.uid);
+    }
+
     // Helper function to check if users are friends
     function areFriends(userId) {
       return isAuthenticated() &&
@@ -364,6 +373,45 @@ service cloud.firestore {
 
       // Update/Delete: Not allowed (support requests are immutable once created)
       allow update, delete: if false;
+    }
+
+    // =============================================================================
+    // CONVERSATIONS COLLECTION (direct messaging)
+    // =============================================================================
+    // Document ID format: [lowerUserId]_[higherUserId] (deterministic, same as friendships)
+    match /conversations/{conversationId} {
+      // Read: Only conversation participants
+      allow read: if isConversationMemberById(conversationId);
+
+      // Create: Authenticated user who is a participant, with required fields
+      allow create: if isConversationMemberById(conversationId) &&
+                       request.resource.data.participants.hasAll([request.auth.uid]) &&
+                       request.resource.data.participants.size() == 2 &&
+                       request.resource.data.keys().hasAll(['participants', 'createdAt', 'updatedAt', 'deletedAt', 'unreadCount']);
+
+      // Update: Only participants can update (for markAsRead, softDelete, metadata)
+      // Restrict to specific fields: deletedAt, unreadCount (user-initiated)
+      // Cloud Functions use admin SDK and bypass rules for lastMessage/updatedAt updates
+      allow update: if isConversationMemberById(conversationId) &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['deletedAt', 'unreadCount']);
+
+      // Delete: Never — conversations are permanent
+      allow delete: if false;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Read: Only conversation participants
+        allow read: if isConversationMemberById(conversationId);
+
+        // Create: Only conversation participant, must be the sender
+        allow create: if isConversationMemberById(conversationId) &&
+                         request.resource.data.senderId == request.auth.uid &&
+                         request.resource.data.keys().hasAll(['senderId', 'type', 'createdAt']);
+
+        // Update/Delete: Never — messages are permanent (retained for moderation)
+        allow update, delete: if false;
+      }
     }
 
     // =============================================================================
