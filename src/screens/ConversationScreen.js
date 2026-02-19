@@ -6,7 +6,7 @@
  * pagination for older messages via an inverted FlatList.
  */
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -175,23 +175,34 @@ const ConversationScreen = () => {
           })
         }
       />
-      <FlatList
-        ref={flatListRef}
-        data={messagesWithDividers}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        inverted
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={loadingMore ? <PixelSpinner size="small" /> : null}
-        ListEmptyComponent={
-          !loading ? <EmptyConversation displayName={friendProfile?.displayName || 'them'} /> : null
-        }
-        contentContainerStyle={messages.length === 0 ? styles.emptyContainer : undefined}
-        keyboardDismissMode="interactive"
-        removeClippedSubviews={true}
-      />
-      <DMInput onSendMessage={handleSendMessage} disabled={isReadOnly} placeholder="Message..." />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.select({ ios: 'padding', android: 'height' })}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messagesWithDividers}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          inverted
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={loadingMore ? <PixelSpinner size="small" /> : null}
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyConversation displayName={friendProfile?.displayName || 'them'} />
+            ) : null
+          }
+          contentContainerStyle={messages.length === 0 ? styles.emptyContainer : undefined}
+          keyboardDismissMode="interactive"
+          removeClippedSubviews={true}
+          maintainVisibleContentPosition={
+            Platform.OS === 'ios' ? { minIndexForVisible: 0 } : undefined
+          }
+        />
+        <DMInput onSendMessage={handleSendMessage} disabled={isReadOnly} placeholder="Message..." />
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -200,6 +211,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  flex: {
+    flex: 1,
   },
   emptyContainer: {
     flex: 1,
