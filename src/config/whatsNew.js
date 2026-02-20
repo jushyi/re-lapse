@@ -5,5 +5,5 @@
  */
 export const WHATS_NEW = {
   title: "What's New",
-  items: ['Enhancements to story loading', 'Fixed android clipping issues'],
+  items: ['Story viewing enhancements and android clipping fixes', 'Enjoy :D'],
 };
